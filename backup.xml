@@ -1,0 +1,8 @@
+<domainbackup mode="pull">
+ <server name="localhost" port="10809"/>
+ <disks>
+ <disk name="sda">
+  <scratch file="/tmp/scratch.qcow2"/>
+ </disk>
+ </disks>
+</domainbackup>
