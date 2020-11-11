@@ -12,17 +12,14 @@ extentHandler = extenthandler.ExtentHandler(h)
 
 extents = extentHandler.queryBlockStatus()
 
-writer = open('backup.data','wb')
-metadata = sparsestream.SparseStream().dump_metadata("0", "", "none", "vda", False)
-sparsestream.SparseStream().write_frame(writer, sparsestream.SparseStreamTypes().META, 0, len(metadata))
-writer.write(metadata)
-writer.write(sparsestream.SparseStreamTypes().TERM)
+writer = open('rawbackup.data','wb')
+writer.truncate(h.get_size())
 print("got %s extents" % len(extents))
 
+# crate raw backup file, just like
+#  qemu-img convert -f raw nbd://localhost:10809/sda <file> would do
 for save in extents:
     if save.data == True:
-        print("read %s from %s" %(save.length, save.offset))
-        sparsestream.SparseStream().write_frame(writer, sparsestream.SparseStreamTypes().DATA, save.offset, save.length)
         if save.length >= 33554432:
             print("bigger")
             assert save.length % 65536 == 0
@@ -33,15 +30,14 @@ for save in extents:
             while ct <= count:
                 data = h.pread(bs, offset)
                 ct+=1
+                writer.seek(offset)
                 writer.write(data)
                 offset+=bs
         else:
+            writer.seek(save.offset)
             data = h.pread(save.length, save.offset)
             writer.write(data)
-        writer.write(sparsestream.SparseStreamTypes().TERM)
     else:
-        print("skip %s from %s" %(save.length, save.offset))
-        sparsestream.SparseStream().write_frame(writer, sparsestream.SparseStreamTypes().ZERO, save.offset, save.length)
+        writer.seek(save.offset)
 
-sparsestream.SparseStream().write_frame(writer, sparsestream.SparseStreamTypes().STOP, 0, 0)
 writer.close()
