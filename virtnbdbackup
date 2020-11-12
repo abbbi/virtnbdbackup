@@ -45,11 +45,17 @@ def main():
 
     if args.killonly == True:
         logger.info("Stopping domain jobs")
-        for disk in disks:
-            virtClient.stopBackup(disk.diskTarget)
+        try:
+            virtClient.stopBackup(disks[0].diskTarget)
+        except Exception as e:
+            logging.warn('%s' % e)
         sys.exit(0)
 
-    virtClient.startBackup(disks)
+    try:
+        virtClient.startBackup(disks)
+    except Exception as e:
+        logging.error('%s' % e)
+        sys.exit(1)
 
     if args.startonly == True:
         logging.info("Exiting after backup Start")
@@ -57,7 +63,8 @@ def main():
 
     for disk in disks:
         backupDisk(disk.diskTarget,args, logger)
-        virtClient.stopBackup(disk.diskTarget)
+
+    virtClient.stopBackup(disk.diskTarget)
 
 def backupDisk(diskTarget, args, logger):
     nbdClient = nbdhelper.nbdClient(diskTarget)

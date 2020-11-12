@@ -2,6 +2,13 @@ import libvirt
 import sys
 from xml.etree import ElementTree
 
+# this is needed so libvirt.py does not report errors to stderr
+# which it does by default. Error messages are fetched accordingly
+# using exceptions.
+def libvirt_ignore(ignore, err):
+    pass
+libvirt.registerErrorHandler(f=libvirt_ignore, ctx=None)
+
 class DomainDisk(object):
 
     """Docstring for DomainDisk. """

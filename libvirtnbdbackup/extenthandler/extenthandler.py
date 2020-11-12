@@ -61,7 +61,10 @@ class ExtentHandler(object):
         offset = 0
         size = self._nbdFh.get_size()
         while offset < size:
-            request_length = min(size - offset, maxRequestLen)
+            if size < maxRequestLen:
+                request_length=size
+            else:
+                request_length = min(size - offset, maxRequestLen)
             self._nbdFh.block_status(request_length, offset, self._getExtentCallback)
             offset+=request_length
 
