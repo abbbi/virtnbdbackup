@@ -26,7 +26,7 @@ setup(
     include_package_data=True,
     install_requires=[
     ],
-    scripts=['virtnbdbackup'],
+    scripts=['virtnbdbackup','restorestream'],
     extras_require={
     'dev': [],
     'docs': [],
