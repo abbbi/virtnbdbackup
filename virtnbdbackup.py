@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import nbdhelper
 import extenthandler
@@ -11,8 +12,15 @@ def main():
     logger = logging
     logger.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(description='Backup')
-    parser.add_argument("-t", "--type", default="stream", choices=['stream','raw'], type=str, help="Output type: stream or raw")
-    parser.add_argument("-q", "--qemu", default=False, help="Use Qemu tools to query extents",
+    parser.add_argument("-t", "--type", default="stream",
+        choices=['stream','raw'],
+        type=str,
+        help="Output type: stream or raw")
+    parser.add_argument("-f", "--file", required=True,
+        type=str,
+        help="Output target file")
+    parser.add_argument("-q", "--qemu", default=False,
+        help="Use Qemu tools to query extents",
         action="store_true")
     try:
         args = parser.parse_args()
@@ -41,10 +49,11 @@ def main():
     logger.info("%s bytes imagesize" % fullBackupSize)
     logger.info("%s bytes of used data in image" % thinBackupSize)
 
-    writer = open('sda.data','wb')
+    writer = open(args.file,'wb')
     if args.type == "raw":
         logging.info("Creating full provisioned raw backup image")
         writer.truncate(fullBackupSize)
+        writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
         metadata = sparsestream.SparseStream().dump_metadata(
@@ -83,6 +92,7 @@ def main():
                     ct+=1
                     offset+=bs
             else:
+                writer.seek(save.offset)
                 writer.write(connection.pread(save.length, save.offset))
             if args.type == "stream":
                 writer.write(sparsestream.SparseStreamTypes().TERM)
