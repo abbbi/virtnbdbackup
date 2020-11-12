@@ -47,7 +47,7 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
 ..) if option "-q" is specified, or by an custom implemented extent handler.
 
  
-# Workflow
+# Examples
 
 * Start backup of virtual machine, to create a full provisioned raw
   backup for all disks, run the following command:
@@ -64,6 +64,19 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
     add map loop1p2 (253:6): 0 55101440 linear 7:1 7813120
   ```
   
+* Backup only one disk in streaming mode to stdout, compress data on the
+  fly:
+
+  ```
+  virtnbdbackup  -t stream -d cbt -i sda  -f - | gzip -v9 > data
+  ```
+
+* Have some throughput using "p":
+
+  ```
+  virtnbdbackup  -t stream -d cbt -i sda  -f - | pv > /tmp/data
+  ```
+
 # TODO
 
  * Call filesystem freeze/thaw before starting backup session

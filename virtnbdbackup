@@ -26,6 +26,9 @@ def main():
     parser.add_argument("-q", "--qemu", default=False,
         help="Use Qemu tools to query extents",
         action="store_true")
+    parser.add_argument("-i", "--include", default=None,
+        type=str,
+        help="Backup only disk with target dev name specified")
     parser.add_argument("-s", "--startonly", default=False,
         help="Only initialize backup job via libvirt, do not backup any data",
         action="store_true")
@@ -67,7 +70,15 @@ def main():
         sys.exit(0)
 
     for disk in disks:
-        backupDisk(disk.diskTarget,args, logger)
+        if args.include != None and disk.diskTarget != args.include:
+            logging.info("Skipping disk: %s" % disk.diskTarget)
+            continue
+        try:
+            backupDisk(disk.diskTarget,args, logger)
+        except Exception as e:
+            logger.error('%s' % e)
+            virtClient.stopBackup(disk.diskTarget)
+            sys.exit(1)
 
     virtClient.stopBackup(disk.diskTarget)
 
@@ -98,8 +109,14 @@ def backupDisk(diskTarget, args, logger):
         args.file,
         diskTarget
     )
-    logger.info("Write data to target file: %s" % targetFile)
-    writer = open(targetFile,'wb')
+    if args.file == '-':
+        if args.type == 'stream':
+            writer = sys.stdout.buffer
+        else:
+            logger.error('Stdout not supported with raw output')
+    else:
+        logger.info("Write data to target file: %s" % targetFile)
+        writer = open(targetFile,'wb')
     if args.type == "raw":
         logging.info("Creating full provisioned raw backup image")
         writer.truncate(fullBackupSize)
