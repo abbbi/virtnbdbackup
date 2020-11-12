@@ -1,16 +1,24 @@
-import nbd
+import nbdhelper
 import extenthandler
 import sparsestream
+import qemuhelper
 import sys
 
-h = nbd.NBD()
-h.add_meta_context("base:allocation")
-h.set_export_name("sda")
-h.connect_tcp('localhost','10809')
 
-extentHandler = extenthandler.ExtentHandler(h)
+def main():
+    nbdClient = nbdhelper.nbdClient('sda')
+    connection = nbdClient.connect()
+    extentHandler = extenthandler.ExtentHandler(connection)
+    print(extentHandler.queryBlockStatus())
 
-extents = extentHandler.queryBlockStatus()
+    extentHandler = extenthandler.ExtentHandler(qemuhelper.qemuHelper('sda'))
+    print(extentHandler.queryBlockStatus())
+
+
+if __name__ == "__main__":
+    main()
+
+sys.exit(1)
 
 writer = open('backup.data','wb')
 metadata = sparsestream.SparseStream().dump_metadata("0", "", "none", "vda", False)
@@ -23,7 +31,7 @@ for save in extents:
     if save.data == True:
         print("read %s from %s" %(save.length, save.offset))
         sparsestream.SparseStream().write_frame(writer, sparsestream.SparseStreamTypes().DATA, save.offset, save.length)
-        if save.length >= 33554432:
+        if save.length >= nbdClient.maxRequestSize:
             print("bigger")
             assert save.length % 65536 == 0
             bs = 65536
@@ -31,12 +39,12 @@ for save in extents:
             count = int(save.length/bs)
             ct = 1
             while ct <= count:
-                data = h.pread(bs, offset)
+                data = connection.pread(bs, offset)
                 ct+=1
                 writer.write(data)
                 offset+=bs
         else:
-            data = h.pread(save.length, save.offset)
+            data = connection.pread(save.length, save.offset)
             writer.write(data)
         writer.write(sparsestream.SparseStreamTypes().TERM)
     else:

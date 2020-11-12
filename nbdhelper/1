@@ -7,7 +7,7 @@ class Extent(object):
 
 class ExtentHandler(object):
 
-    """Docstring for ExtentHandler. """
+    """Docstring for ExtentHanlder. """
 
     def __init__(self, nbdFh, metaContext="base:allocation"):
         """TODO: to be defined.
@@ -15,10 +15,7 @@ class ExtentHandler(object):
         :nbdFh: TODO
 
         """
-        self. useQemu = False
-        if nbdFh.__class__.__name__ == "qemuHelper":
-            self.useQemu = True
-
+        print(dir(nbdFh))
         self._nbdFh = nbdFh
         self._extentEntries = []
         self._metaContext = metaContext
@@ -37,29 +34,10 @@ class ExtentHandler(object):
         return self._maxRequestBlock - align + 1
 
     def queryExtents(self):
-        if self.useQemu:
-            return self.queryExtentsQemu()
-
-        return self.queryExtentsNbd()
-
-    def queryExtentsQemu(self):
-        extents = []
-        for extent in self._nbdFh.map():
-            extentObj = Extent()
-            if extent['data'] == True:
-                extentObj.data = True
-            else:
-                extentObj.data = False
-            extentObj.offset = extent['start']
-            extentObj.length = extent['length']
-            extents.append(extentObj)
-
-        return extents
-
-    def queryExtentsNbd(self):
         maxRequestLen = self._setRequestAligment()
         offset = 0
         size = self._nbdFh.get_size()
+        print(size)
         while offset < size:
             request_length = min(size - offset, maxRequestLen)
             self._nbdFh.block_status(request_length, offset, self._getExtentCallback)
@@ -94,10 +72,8 @@ class ExtentHandler(object):
         return self._extentEntries
 
     def queryBlockStatus(self, extentList=None):
-        if extentList == None and self.useQemu == False:
-            self.queryExtentsNbd()
-        else:
-            return self.queryExtentsQemu()
+        if extentList == None:
+            self.queryExtents()
 
         if len(self._extentEntries) < 1:
             return None

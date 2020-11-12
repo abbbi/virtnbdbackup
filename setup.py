@@ -2,7 +2,7 @@
 
 import os
 from setuptools import setup, find_packages
-from structure import __version__
+__version__ = "0.1"
 
 
 # Utility function to read the README file.
@@ -14,16 +14,15 @@ def read(fname):
 
 # the setup
 setup(
-    name='structure',
+    name='virtndbbackup',
     version=__version__,
-    description='An demonstration of PyPi.',
-    # long_description=read('README'),
-    url='https://github.com/kengz/structure',
-    author='kengz',
-    author_email='kengzwl@gmail.com',
-    license='MIT',
-    keywords='example pypi tutorial',
-    packages=find_packages(exclude=('docs', 'tests', 'env', 'index.py')),
+    description='Backup via NBD',
+    url='https://github.com/abbbi/virtnbdbackup/',
+    author='Michael Ablassmeier',
+    author_email='abi@grinser.de',
+    license='GPL',
+    keywords='libnbd backup libvirt',
+    packages=find_packages(exclude=('docs', 'tests', 'env', 'virtnbdbackup.py')),
     include_package_data=True,
     install_requires=[
     ],

@@ -1,1 +1,3 @@
-nbd
+nbd==1.5.5
+logging
+sh
