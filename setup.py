@@ -26,6 +26,7 @@ setup(
     include_package_data=True,
     install_requires=[
     ],
+    scripts=['virtnbdbackup'],
     extras_require={
     'dev': [],
     'docs': [],

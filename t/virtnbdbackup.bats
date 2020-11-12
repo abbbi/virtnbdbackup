@@ -9,12 +9,12 @@ BACKUP_FILE_Q=/tmp/virtnbdbackupq.full.raw
 }
 @test "Backup raw using virtnbdbackup, query extents with extenthandler" {
     rm -f $BACKUP_FILE
-    run ../virtnbdbackup.py -t raw -f $BACKUP_FILE
+    run ../virtnbdbackup -t raw -f $BACKUP_FILE
     [ "$status" -eq 0 ]
 }
 @test "Backup raw using virtnbdbackup, query extents with qemu-img" {
     rm -f $BACKUP_FILE_Q
-    run ../virtnbdbackup.py -q -t raw -f $BACKUP_FILE_Q
+    run ../virtnbdbackup -q -t raw -f $BACKUP_FILE_Q
     [ "$status" -eq 0 ]
 }
 @test "Compare image contents for backup with extenthandler" {
