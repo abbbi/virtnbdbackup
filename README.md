@@ -28,6 +28,8 @@ optional arguments:
   -t {stream,raw}, --type {stream,raw}
                         Output type: stream or raw
   -f FILE, --file FILE  Output target file
+  -d DOMAIN, --domain DOMAIN
+                        Domain to backup
   -q, --qemu            Use Qemu tools to query extents
 ```
 
@@ -48,19 +50,10 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
 # Workflow
 
 * Start backup of virtual machine via virsh and a defined
-  backup XML:
+  To create a full provisioned backup raw run:
   
   ```
-  virsh backup-begin --backupxml backup.xml --domain XX
-  ```
-
-* Now the libvirt process has created an NBD server handle
-  which can be used to backup the data.
-  
-  To create a full provisioned backup run:
-  
-  ```
-  virtnbdbackup -t raw -f /tmp/backup.data
+  virtnbdbackup -t raw -f /tmp/backup.data -d DOMAIN_NAME
   ```
   
   The resulting image can be mounted via kpartx, for example:
@@ -73,5 +66,5 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
   
 # TODO
 
- * implement complete VM backup via libvirt
+ * Call filesystem freeze/thaw before starting backup session
  * implement restore :-)

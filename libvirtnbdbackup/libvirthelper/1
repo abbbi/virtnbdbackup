@@ -1,0 +1,53 @@
+import libvirt
+import sys
+from xml.etree import ElementTree
+
+class DomainDisk(object):
+
+    """Docstring for DomainDisk. """
+
+    def __init__(self):
+        self.diskTarget = None
+
+class client(object):
+
+    """Docstring for libvirtHelper. """
+    def __init__(self):
+        """TODO: to be defined.
+
+        :host: TODO
+        :port: TODO
+
+        """
+
+        self._conn = self._connect()
+
+    def _connect(self):
+        try:
+            return libvirt.openReadOnly(None)
+        except libvirt.libvirtError:
+            raise
+
+    def _getDomain(self, name):
+        return self._conn.lookupByName(name)
+
+    def getDomainDisks(self, domName):
+        domObj = self._getDomain(domName)
+        tree=ElementTree.fromstring(domObj.XMLDesc(0))
+        devices=[]
+
+        for target in tree.findall("devices/disk"):
+            for src in target.findall("target"):
+                dev=src.get("dev")
+
+            diskObj = DomainDisk()
+            diskObj.diskTarget = dev
+            devices.append(diskObj)
+
+        return devices
+
+    def createBackupXml(self, diskList):
+        top = ElementTree.Element('domainbackup')
+        print(ElementTree.tostring(top))
+
+
