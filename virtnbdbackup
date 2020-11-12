@@ -139,7 +139,7 @@ def backupDisk(diskTarget, args, logger, checkpointName):
     nbdClient = nbdhelper.nbdClient(diskTarget, metaContext)
     connection = nbdClient.connect()
 
-    if(args.qemu):
+    if args.qemu and args.level != "inc":
         logger.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(qemuhelper.qemuHelper(diskTarget))
     else:

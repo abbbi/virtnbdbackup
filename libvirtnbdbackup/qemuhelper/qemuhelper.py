@@ -14,7 +14,6 @@ class qemuHelper(object):
         self._exportName = exportName
         self._host = host
         self._port = port
-        self.__name__ = "we"
 
         self.qemuImg = sh.Command("qemu-img")
 
