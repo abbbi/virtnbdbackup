@@ -1,4 +1,5 @@
 import libvirt
+import logging
 import sys
 from xml.etree import ElementTree
 
@@ -26,7 +27,6 @@ class client(object):
         :port: TODO
 
         """
-
         self._conn = self._connect()
         self._domObj = None
 

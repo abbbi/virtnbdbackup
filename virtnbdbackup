@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
+import sys
+import logging
 import argparse
 import libvirtnbdbackup.nbdhelper as nbdhelper
 import libvirtnbdbackup.extenthandler as extenthandler
 import libvirtnbdbackup.sparsestream  as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 import libvirtnbdbackup.libvirthelper as libvirthelper
-import logging
-import sys
 
 def main():
     logging.getLogger("sh").setLevel(logging.WARNING)
-    logger = logging
-    logger.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(description='Backup')
     parser.add_argument("-t", "--type", default="stream",
         choices=['stream','raw'],
@@ -25,6 +23,9 @@ def main():
         help="Domain to backup")
     parser.add_argument("-q", "--qemu", default=False,
         help="Use Qemu tools to query extents",
+        action="store_true")
+    parser.add_argument("-v", "--verbose", default=False,
+        help="Enable debug output",
         action="store_true")
     parser.add_argument("-i", "--include", default=None,
         type=str,
@@ -41,6 +42,13 @@ def main():
     except:
         parser.print_help()
         sys.exit(1)
+
+    logger = logging
+    if args.verbose == True:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    logger.basicConfig(level=level)
 
     try:
         virtClient = libvirthelper.client()
