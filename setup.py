@@ -22,7 +22,7 @@ setup(
     author_email='abi@grinser.de',
     license='GPL',
     keywords='libnbd backup libvirt',
-    packages=find_packages(exclude=('docs', 'tests', 'env', 'virtnbdbackup.py')),
+    packages=find_packages(exclude=('docs', 'tests', 'env')),
     include_package_data=True,
     install_requires=[
     ],

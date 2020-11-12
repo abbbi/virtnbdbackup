@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-import nbdhelper
-import extenthandler
-import sparsestream
-import qemuhelper
+import libvirtnbdbackup.nbdhelper
+import libvirtnbdbackup.extenthandler
+import libvirtnbdbackup.sparsestream
+import libvirtnbdbackup.qemuhelper
 import logging
 import sys
 
