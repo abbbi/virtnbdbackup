@@ -39,8 +39,13 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    virtClient = libvirthelper.client()
-    disks = virtClient.getDomainDisks(args.domain)
+    try:
+        virtClient = libvirthelper.client()
+        disks = virtClient.getDomainDisks(args.domain)
+    except Exception as e:
+        logging.error('Unable to get domain information: %s' % e)
+        sys.exit(1)
+
     logger.info("Domain has %s disks attached" % len(disks))
 
     if args.killonly == True:
@@ -154,7 +159,6 @@ def backupDisk(diskTarget, args, logger):
     if args.type == "stream":
         sparsestream.SparseStream().write_frame(writer, sparsestream.SparseStreamTypes().STOP, 0, 0)
         writer.close()
-
 
 if __name__ == "__main__":
     main()
