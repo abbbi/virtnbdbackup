@@ -92,7 +92,7 @@ def main():
                     ct+=1
                     offset+=bs
             else:
-                if args.type == "raw"
+                if args.type == "raw":
                     writer.seek(save.offset)
                 writer.write(connection.pread(save.length, save.offset))
             if args.type == "stream":
