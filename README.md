@@ -19,7 +19,7 @@ disk image. Work in progress, many features yet to be implemented.
  
 # Help
 ```
-usage: virtnbdbackup.py [-h] [-t {stream,raw}] [-q]
+usage: virtnbdbackup [-h] [-t {stream,raw}] -f FILE [-q]
 
 Backup
 
@@ -27,6 +27,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -t {stream,raw}, --type {stream,raw}
                         Output type: stream or raw
+  -f FILE, --file FILE  Output target file
   -q, --qemu            Use Qemu tools to query extents
 ```
 
@@ -49,19 +50,23 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
 * Start backup of virtual machine via virsh and a defined
   backup XML:
   
+  ```
   virsh backup-begin --backupxml backup.xml --domain XX
+  ```
 
 * Now the libvirt process has created an NBD server handle
   which can be used to backup the data.
   
   To create a full provisioned backup run:
   
-  virtnbdbackup --type raw
+  ```
+  virtnbdbackup -t raw -f /tmp/backup.data
+  ```
   
   The resulting image can be mounted via kpartx, for example:
   
   ```
-   kpartx -av sda.data 
+   kpartx -av /tmp/backup.data
     add map loop1p1 (253:5): 0 7811072 linear 7:1 2048
     add map loop1p2 (253:6): 0 55101440 linear 7:1 7813120
   ```
