@@ -49,17 +49,17 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
  
 # Workflow
 
-* Start backup of virtual machine via virsh and a defined
-  To create a full provisioned backup raw run:
+* Start backup of virtual machine, to create a full provisioned raw
+  backup for all disks, run the following command:
   
   ```
-  virtnbdbackup -t raw -f /tmp/backup.data -d DOMAIN_NAME
+  virtnbdbackup -t raw -f /tmp/prefix -d DOMAIN_NAME
   ```
   
-  The resulting image can be mounted via kpartx, for example:
+  The resulting image(s) can be mounted via kpartx, for example:
   
   ```
-   kpartx -av /tmp/backup.data
+   kpartx -av /tmp/prefix.sda.data
     add map loop1p1 (253:5): 0 7811072 linear 7:1 2048
     add map loop1p2 (253:6): 0 55101440 linear 7:1 7813120
   ```
