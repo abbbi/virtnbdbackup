@@ -1,7 +1,7 @@
 # virtnbdbackup
 
-Just a simple sample how backing up virtual machine disk via NBD,
-using libnbd to query block status and only save used data within
+Just a simple sample showing how to backup a libvirt virtual machine disk
+via NBD, using libnbd to query its block status and only save used data within
 disk image. Work in progress, many features yet to be implemented.
 
 # prerequisites
