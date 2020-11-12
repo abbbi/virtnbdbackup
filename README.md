@@ -67,4 +67,5 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
 # TODO
 
  * Call filesystem freeze/thaw before starting backup session
+ * implement incremental backup via checkpoints
  * implement restore :-)
