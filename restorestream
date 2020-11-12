@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+import nbd
+import sys
+import libvirtnbdbackup.sparsestream  as sparsestream
+
+# restore stream backup format to qcow 2 file using
+# 1) create a file with the same size as original:
+# qemu-img create -f qcow2 /tmp/RESTORE.qcow2 30G
+# 2) attach qemu-nbd process to it:
+# qemu-nbd -x vda -f qcow2 /tmp/RESTORE.qcow2
+# start restore via:
+# ./restorestream < /tmp/BACKUP.sda.data
+r = nbd.NBD()
+r.set_export_name("vda")
+r.connect_tcp('localhost','10809')
+
+reader = sys.stdin.buffer
+kind, start, length = sparsestream.SparseStream().read_frame(reader)
+meta = sparsestream.SparseStream().load_metadata(reader.read(length))
+print(meta)
+assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
+while True:
+    kind, start, length = sparsestream.SparseStream().read_frame(reader)
+    if kind == sparsestream.SparseStreamTypes().ZERO:
+        print("do zero from %s to %s" % (start, length))
+        #r.zero(length, start)
+    elif kind == sparsestream.SparseStreamTypes().DATA:
+        print("do data, length %s" % length)
+        if length >= 33554432:
+            assert length % 65536 == 0
+            bs = 65536
+            count = int(length/bs)
+            ct = 1
+            offset = start
+            while ct <= count:
+                ct+=1
+                data = reader.read(bs)
+                r.pwrite(data, offset)
+                offset += 65536
+        else:
+            data = reader.read(length)
+            r.pwrite(data, start)
+        assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
+    elif kind == sparsestream.SparseStreamTypes().STOP:
+        break
+
+r.shutdown()
+print("end")

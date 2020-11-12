@@ -46,8 +46,8 @@ In order to save only used data from the images, extent information is queried
 from the NBD server. This happens by either using the qemu tools (qemu-img map
 ..) if option "-q" is specified, or by an custom implemented extent handler.
 
- 
-# Examples
+
+# Backup Examples
 
 * Start backup of virtual machine, to create a full provisioned raw
   backup for all disks, run the following command:
@@ -76,6 +76,29 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
   ```
   virtnbdbackup  -t stream -d cbt -i sda  -f - | pv > /tmp/data
   ```
+
+# Restore examples
+
+In order to restore the regular raw images one can use qemu-img convert
+and simply convert them into a qcow2 image or write them to an nbd mapped
+qcow file.
+
+For the stream format, restorestream can be used, the workflow is as
+follows:
+
+ * create a file with the same size as original:
+    ```
+    `qemu-img create -f qcow2 /tmp/RESTORE.qcow2 30G`
+    ```
+* Attach an qemu-nbd process to it:
+    ```
+    qemu-nbd -x vda -f qcow2 /tmp/RESTORE.qcow2
+    ```
+* Restore the data via:
+    ```
+    restorestream < /tmp/BACKUP.sda.data
+    ```
+
 
 # TODO
 
