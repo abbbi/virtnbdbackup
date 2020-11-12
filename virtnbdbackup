@@ -23,7 +23,7 @@ def main():
     parser.add_argument("-l", "--level", default="copy",
         choices=['copy','full','inc'],
         type=str,
-        help="Backup level")
+        help="Backup level, defaults to copy")
     parser.add_argument("-f", "--file", required=True,
         type=str,
         help="Output target file prefix")

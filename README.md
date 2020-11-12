@@ -19,7 +19,8 @@ disk image. Work in progress, many features yet to be implemented.
  
 # Help
 ```
-usage: virtnbdbackup [-h] [-t {stream,raw}] -f FILE [-q]
+usage: virtnbdbackup [-h] [-t {stream,raw}] [-l {copy,full,inc}] -f FILE -d
+                     DOMAIN [-q] [-v] [-i INCLUDE] [-s] [-k]
 
 Backup
 
@@ -27,10 +28,18 @@ optional arguments:
   -h, --help            show this help message and exit
   -t {stream,raw}, --type {stream,raw}
                         Output type: stream or raw
-  -f FILE, --file FILE  Output target file
+  -l {copy,full,inc}, --level {copy,full,inc}
+                        Backup level, defaults to copy
+  -f FILE, --file FILE  Output target file prefix
   -d DOMAIN, --domain DOMAIN
                         Domain to backup
   -q, --qemu            Use Qemu tools to query extents
+  -v, --verbose         Enable debug output
+  -i INCLUDE, --include INCLUDE
+                        Backup only disk with target dev name specified
+  -s, --startonly       Only initialize backup job via libvirt, do not backup
+                        any data
+  -k, --killonly        Kill any running block job
 ```
 
 # Backup Format
