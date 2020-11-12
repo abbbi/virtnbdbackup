@@ -129,13 +129,20 @@ class ExtentHandler(object):
                     case 0: return strdup ("clean");
                     case 1: return strdup ("dirty");
                 """
-                assert extentType[ct] in (0,2,3)
-                if extentType[ct] == 0:
-                    extObj.data = True
-                elif extentType[ct] == 2:
-                    extObj.data = True
-                elif extentType[ct] == 3:
-                    extObj.data = False
+                if self._metaContext == "base:allocation":
+                    assert extentType[ct] in (0,2,3)
+                    if extentType[ct] == 0:
+                        extObj.data = True
+                    elif extentType[ct] == 2:
+                        extObj.data = True
+                    elif extentType[ct] == 3:
+                        extObj.data = False
+                else:
+                    assert extentType[ct] in (0,1)
+                    if extentType[ct] == 1:
+                        extObj.data = True
+                    else:
+                        extObj.data = False
 
                 extObj.offset = start
                 extObj.length = extentLength[ct]

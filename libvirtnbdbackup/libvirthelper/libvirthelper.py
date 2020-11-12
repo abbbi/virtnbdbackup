@@ -55,20 +55,48 @@ class client(object):
 
         return devices
 
-    def _createBackupXml(self, diskList):
+    def _createBackupXml(self, diskList, parentCheckpoint):
         top = ElementTree.Element('domainbackup', {'mode':'pull'})
         child = ElementTree.SubElement(top, 'server', {'name':'localhost','port':'10809'})
         disks = ElementTree.SubElement(top, 'disks')
+
+        if parentCheckpoint != None:
+            inc = ElementTree.SubElement(top, 'incremental')
+            inc.text=parentCheckpoint
+
         for disk in diskList:
             dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
             ElementTree.SubElement(dE, 'scratch', {'file':'/tmp/backup.%s' % disk.diskTarget})
 
         return ElementTree.tostring(top)
 
-    def startBackup(self, diskList):
-        backupXml = self._createBackupXml(diskList)
+    def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
+        top = ElementTree.Element('domaincheckpoint')
+        desc = ElementTree.SubElement(top, 'description')
+        desc.text='Backup checkpoint'
+        name = ElementTree.SubElement(top, 'name')
+        name.text=checkpointName
+        if parentCheckpoint != None:
+            pct = ElementTree.SubElement(top, 'parent')
+            cptName = ElementTree.SubElement(pct, 'name')
+            cptName.text = parentCheckpoint
+        disks = ElementTree.SubElement(top, 'disks')
+        for disk in diskList:
+            dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
+
+        return ElementTree.tostring(top)
+
+    def startBackup(self, diskList, backupLevel, checkpointName, parentCheckpoint):
+        backupXml = self._createBackupXml(diskList, parentCheckpoint)
+        checkpointXml = None
         try:
-            self.domObj.backupBegin(backupXml.decode(),None)
+            if backupLevel != "copy":
+                checkpointXml = self._createCheckpointXml(
+                    diskList,
+                    parentCheckpoint,
+                    checkpointName
+                ).decode()
+            self.domObj.backupBegin(backupXml.decode(), checkpointXml)
         except:
             raise
 

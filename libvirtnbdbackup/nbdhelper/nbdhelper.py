@@ -4,7 +4,7 @@ class nbdClient(object):
 
     """Docstring for nbdClient. """
 
-    def __init__(self, exportName, host="localhost", port="10809", metaContext=nbd.CONTEXT_BASE_ALLOCATION):
+    def __init__(self, exportName, metaContext=nbd.CONTEXT_BASE_ALLOCATION, host="localhost", port="10809"):
         """TODO: to be defined.
 
         :host: TODO

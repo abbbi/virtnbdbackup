@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
+import os
 import sys
+import json
 import logging
 import argparse
+
 import libvirtnbdbackup.nbdhelper as nbdhelper
 import libvirtnbdbackup.extenthandler as extenthandler
 import libvirtnbdbackup.sparsestream  as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 import libvirtnbdbackup.libvirthelper as libvirthelper
+
+CHECKPOINTDIR="./checkpoints/"
 
 def main():
     logging.getLogger("sh").setLevel(logging.WARNING)
@@ -15,6 +20,10 @@ def main():
         choices=['stream','raw'],
         type=str,
         help="Output type: stream or raw")
+    parser.add_argument("-l", "--level", default="copy",
+        choices=['copy','full','inc'],
+        type=str,
+        help="Backup level")
     parser.add_argument("-f", "--file", required=True,
         type=str,
         help="Output target file prefix")
@@ -67,11 +76,42 @@ def main():
             logging.warn('%s' % e)
         sys.exit(0)
 
+    checkpointName = "virtnbdbackup"
+    parentCheckpoint = None
+    checkpoints = []
+    if args.level != "copy":
+        logging.info('Looking for existent checkpoints')
+        cptFile = '%s/%s.cpt' % (CHECKPOINTDIR, args.domain)
+        if os.path.exists(cptFile):
+            with open(cptFile,'r') as cptFh:
+                checkpoints = json.loads(cptFh.read())
+            if len(checkpoints) > 0:
+                nextCpt = len(checkpoints)+1
+                checkpointName = "virtnbdbackup.%s" % nextCpt
+
+                if args.level == "inc":
+                    parentCheckpoint = checkpoints[-1]
+                    logging.info("Parent checkpoint name %s" % parentCheckpoint)
+
+            logging.info('Found checkpoints, next name: %s' % nextCpt)
+
+        logging.info("Using checkpoint name %s" % checkpointName)
+
     try:
-        virtClient.startBackup(disks)
+        virtClient.startBackup(disks, args.level, checkpointName, parentCheckpoint)
     except Exception as e:
         logging.error('%s' % e)
         sys.exit(1)
+
+    if args.level != "copy":
+        logging.info('Started backup with checkpoint, saving information')
+        if not os.path.exists(CHECKPOINTDIR):
+            os.mkdir(CHECKPOINTDIR)
+        if len(checkpoints) < 1:
+            checkpoints = []
+        checkpoints.append(checkpointName)
+        with open(cptFile,'w') as cFw:
+            cFw.write(json.dumps(checkpoints))
 
     if args.startonly == True:
         logging.info("Exiting after backup Start")
@@ -82,7 +122,7 @@ def main():
             logging.info("Skipping disk: %s" % disk.diskTarget)
             continue
         try:
-            backupDisk(disk.diskTarget,args, logger)
+            backupDisk(disk.diskTarget,args, logger, checkpointName)
         except Exception as e:
             logger.error('%s' % e)
             virtClient.stopBackup(disk.diskTarget)
@@ -90,8 +130,13 @@ def main():
 
     virtClient.stopBackup(disk.diskTarget)
 
-def backupDisk(diskTarget, args, logger):
-    nbdClient = nbdhelper.nbdClient(diskTarget)
+def backupDisk(diskTarget, args, logger, checkpointName):
+    metaContext = None
+    if args.level == "inc":
+        metaContext = "qemu:dirty-bitmap:backup-%s" % diskTarget
+        logger.info("INC backup: set context to %s" % metaContext)
+
+    nbdClient = nbdhelper.nbdClient(diskTarget, metaContext)
     connection = nbdClient.connect()
 
     if(args.qemu):
@@ -99,24 +144,39 @@ def backupDisk(diskTarget, args, logger):
         extentHandler = extenthandler.ExtentHandler(qemuhelper.qemuHelper(diskTarget))
     else:
         logger.info("Using nbd to query extents")
-        extentHandler = extenthandler.ExtentHandler(connection)
+        extentHandler = extenthandler.ExtentHandler(
+            connection,
+            metaContext
+        )
 
     extents = extentHandler.queryBlockStatus()
 
-    if len(extents) < 1:
+    if extents == None:
         logging.error("No extents found")
         sys.exit(1)
 
     thinBackupSize = sum([extent.length for extent in extents if extent.data == True])
     fullBackupSize = sum([extent.length for extent in extents])
-    logger.info("Found %s extents to backup" % len(extents))
+    logger.info("Got %s extents" % len(extents))
     logger.info("%s bytes imagesize" % fullBackupSize)
-    logger.info("%s bytes of used data in image" % thinBackupSize)
+    logger.info("%s bytes of data extents to backup" % thinBackupSize)
 
-    targetFile = '%s.%s.data' % (
-        args.file,
-        diskTarget
-    )
+    if args.level == "inc" and thinBackupSize == 0:
+        logger.info("No dirty blocks found")
+#        return True
+
+    if checkpointName == None:
+        targetFile = '%s.%s.data' % (
+            args.file,
+            diskTarget
+        )
+    else:
+        targetFile = '%s.%s.inc.%s.data' % (
+            args.file,
+            diskTarget,
+            checkpointName
+        )
+
     if args.file == '-':
         if args.type == 'stream':
             writer = sys.stdout.buffer
@@ -131,12 +191,15 @@ def backupDisk(diskTarget, args, logger):
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
+        inc = False
+        if args.level == "inc":
+            inc = True
         metadata = sparsestream.SparseStream().dump_metadata(
             fullBackupSize,
             thinBackupSize,
+            diskTarget,
             "none",
-            "sda",
-            False
+            inc
         )
         sparsestream.SparseStream().write_frame(writer,
             sparsestream.SparseStreamTypes().META,

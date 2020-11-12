@@ -77,6 +77,17 @@ from the NBD server. This happens by either using the qemu tools (qemu-img map
   virtnbdbackup  -t stream -d cbt -i sda  -f - | pv > /tmp/data
   ```
 
+* Starting a full backup will create an checkpoint:
+  ```
+   virtnbdbackup -l full -t stream -d cbt  -f /tmp/prefix
+  ```
+
+* After creating a full backup, a incremental backup can be created:
+
+  ```
+   virtnbdbackup -l inc -t stream -d cbt  -f /tmp/prefix
+  ```
+
 # Restore examples
 
 In order to restore the regular raw images one can use qemu-img convert
