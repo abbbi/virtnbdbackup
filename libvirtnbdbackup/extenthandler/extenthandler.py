@@ -9,7 +9,7 @@ class ExtentHandler(object):
 
     """Docstring for ExtentHandler. """
 
-    def __init__(self, nbdFh, metaContext="base:allocation"):
+    def __init__(self, nbdFh, metaContext):
         """TODO: to be defined.
 
         :nbdFh: TODO
@@ -21,7 +21,10 @@ class ExtentHandler(object):
 
         self._nbdFh = nbdFh
         self._extentEntries = []
-        self._metaContext = metaContext
+        if metaContext == None:
+            self._metaContext = "base:allocation"
+        else:
+            self._metaContext = metaContext
         self._maxRequestBlock = 4294967295
         self._align = 512
 

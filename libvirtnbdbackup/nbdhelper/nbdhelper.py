@@ -4,7 +4,7 @@ class nbdClient(object):
 
     """Docstring for nbdClient. """
 
-    def __init__(self, exportName, metaContext=nbd.CONTEXT_BASE_ALLOCATION, host="localhost", port="10809"):
+    def __init__(self, exportName, metaContext, host="localhost", port="10809"):
         """TODO: to be defined.
 
         :host: TODO
@@ -14,7 +14,10 @@ class nbdClient(object):
         self._host = host
         self._port = port
         self._exportName = exportName
-        self._metaContext = metaContext
+        if metaContext == None:
+            self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
+        else:
+            self._metaContext = metaContext
 
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536

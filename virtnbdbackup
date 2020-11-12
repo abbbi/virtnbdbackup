@@ -80,7 +80,7 @@ def main():
     parentCheckpoint = None
     checkpoints = []
     if args.level != "copy":
-        logging.info('Looking for existent checkpoints')
+        logging.info('Looking for checkpoints')
         cptFile = '%s/%s.cpt' % (CHECKPOINTDIR, args.domain)
         if os.path.exists(cptFile):
             with open(cptFile,'r') as cptFh:
@@ -94,6 +94,10 @@ def main():
                     logging.info("Parent checkpoint name %s" % parentCheckpoint)
 
             logging.info('Found checkpoints, next name: %s' % nextCpt)
+        else:
+            if args.level == "inc":
+                logger.error("No prior checkpoints found, execute full backup first")
+                sys.exit(1)
 
         logging.info("Using checkpoint name %s" % checkpointName)
 
@@ -153,7 +157,7 @@ def backupDisk(diskTarget, args, logger, checkpointName):
 
     if extents == None:
         logging.error("No extents found")
-        sys.exit(1)
+        return
 
     thinBackupSize = sum([extent.length for extent in extents if extent.data == True])
     fullBackupSize = sum([extent.length for extent in extents])
@@ -163,7 +167,7 @@ def backupDisk(diskTarget, args, logger, checkpointName):
 
     if args.level == "inc" and thinBackupSize == 0:
         logger.info("No dirty blocks found")
-#        return True
+        return True
 
     if checkpointName == None:
         targetFile = '%s.%s.data' % (
