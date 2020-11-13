@@ -100,5 +100,14 @@ class client(object):
         except:
             raise
 
+    def checkpointExists(self, checkpointName):
+        return self.domObj.checkpointLookupByName(checkpointName)
+
+    def removeAllCheckpoints(self, checkpointList):
+        for checkpoint in checkpointList:
+            cptObj = self.checkpointExists(checkpoint)
+            if cptObj:
+                cptObj.delete()
+
     def stopBackup(self, diskTarget):
         self.domObj.blockJobAbort(diskTarget)

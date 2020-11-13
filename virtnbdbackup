@@ -85,15 +85,19 @@ def main():
         if os.path.exists(cptFile):
             with open(cptFile,'r') as cptFh:
                 checkpoints = json.loads(cptFh.read())
-            if len(checkpoints) > 0:
+
+            if args.level == "full" and len(checkpoints) > 0:
+                logging.info("Removing all existant checkpoints before full backup")
+                virtClient.removeAllCheckpoints(checkpoints)
+                os.remove(cptFile)
+                checkpoints = []
+
+            if len(checkpoints) > 0 and args.level == "inc":
                 nextCpt = len(checkpoints)+1
                 checkpointName = "virtnbdbackup.%s" % nextCpt
-
-                if args.level == "inc":
-                    parentCheckpoint = checkpoints[-1]
-                    logging.info("Parent checkpoint name %s" % parentCheckpoint)
-
-            logging.info('Found checkpoints, next name: %s' % nextCpt)
+                parentCheckpoint = checkpoints[-1]
+                logging.info("Parent checkpoint name %s" % parentCheckpoint)
+                logging.info('Found checkpoints, next name: %s' % nextCpt)
         else:
             if args.level == "inc":
                 logger.error("No prior checkpoints found, execute full backup first")
