@@ -40,6 +40,16 @@ class client(object):
     def _getDomain(self, name):
         return self._conn.lookupByName(name)
 
+    def hasIncrementalEnabled(self, domName):
+        domObj = self._getDomain(domName)
+        tree=ElementTree.fromstring(domObj.XMLDesc(0))
+        for target in tree.findall("{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"):
+            for cap in target.findall("{http://libvirt.org/schemas/domain/qemu/1.0}add"):
+                if 'incremental-backup' in cap.items()[0]:
+                    return True
+
+        return False
+
     def getDomainDisks(self, domName):
         self.domObj = self._getDomain(domName)
         tree=ElementTree.fromstring(self.domObj.XMLDesc(0))

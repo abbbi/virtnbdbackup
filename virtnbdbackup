@@ -59,8 +59,13 @@ def main():
         level = logging.INFO
     logger.basicConfig(level=level)
 
+    virtClient = libvirthelper.client()
+
+    if virtClient.hasIncrementalEnabled(args.domain) == False:
+        logger.error("Domain is missing required incremental-backup capability.")
+        sys.exit(1)
+
     try:
-        virtClient = libvirthelper.client()
         disks = virtClient.getDomainDisks(args.domain)
     except Exception as e:
         logging.error('Unable to get domain information: %s' % e)
