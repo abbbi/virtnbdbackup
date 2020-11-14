@@ -93,7 +93,7 @@ class SparseStream:
         self.version = version
         self.types = SparseStreamTypes()
 
-    def dump_metadata(self, virtual_size, data_size, disk_name, disk_uuid, incremental):
+    def dump_metadata(self, virtualSize, dataSize, diskName, checkpointName, parentCheckpoint, incremental):
         '''
             First block in backup stream is Meta data information
             about virtual size of the disk beeing backed up
@@ -102,21 +102,23 @@ class SparseStream:
             json format.
 
                 Parameters:
-                    virtual_size:(int)       virtual size of disk
-                    data_size:   (int)       used space of disk
-                    disk_name:   (str)       name of the disk backed up
-                    disk_uuid:   (str)       uuid of disk backed up
+                    virtualSize:(int)       virtual size of disk
+                    dataSize:   (int)       used space of disk
+                    diskName:   (str)       name of the disk backed up
+                    checkpointName:   (str)  checkpoint name
+                    parentCheckpoint: (str)  parent checkpoint
                     incremental: (boolean)   wether if backup is incremental
 
                 Returns:
                     json.dumps: (str)   json encoded meta frame
         '''
         meta = {
-            "virtual-size": virtual_size,
-            "data-size": data_size,
+            "virtualSize": virtualSize,
+            "dataSize": dataSize,
             "date": datetime.datetime.now().isoformat(),
-            "disk_name": disk_name,
-            "disk_uuid": disk_uuid,
+            "diskName": diskName,
+            "checkpointName": checkpointName,
+            "parentCheckpoint": parentCheckpoint,
             "incremental": incremental,
             "stream-version": self.version
         }

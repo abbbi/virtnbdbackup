@@ -70,7 +70,7 @@ class client(object):
         child = ElementTree.SubElement(top, 'server', {'name':'localhost','port':'10809'})
         disks = ElementTree.SubElement(top, 'disks')
 
-        if parentCheckpoint != None:
+        if parentCheckpoint != False:
             inc = ElementTree.SubElement(top, 'incremental')
             inc.text=parentCheckpoint
 
@@ -86,7 +86,7 @@ class client(object):
         desc.text='Backup checkpoint'
         name = ElementTree.SubElement(top, 'name')
         name.text=checkpointName
-        if parentCheckpoint != None:
+        if parentCheckpoint != False:
             pct = ElementTree.SubElement(top, 'parent')
             cptName = ElementTree.SubElement(pct, 'name')
             cptName.text = parentCheckpoint
@@ -114,10 +114,19 @@ class client(object):
         return self.domObj.checkpointLookupByName(checkpointName)
 
     def removeAllCheckpoints(self, checkpointList):
+        if checkpointList == None:
+            cpts = self.domObj.listAllCheckpoints()
+            if cpts:
+                for cpt in self.domObj.listAllCheckpoints():
+                    if 'virtnbdbackup' in cpt.getName():
+                        cpt.delete()
+            return True
+
         for checkpoint in checkpointList:
             cptObj = self.checkpointExists(checkpoint)
             if cptObj:
                 cptObj.delete()
+        return True
 
     def stopBackup(self, diskTarget):
         self.domObj.blockJobAbort(diskTarget)

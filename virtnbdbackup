@@ -11,8 +11,6 @@ import libvirtnbdbackup.sparsestream  as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 import libvirtnbdbackup.libvirthelper as libvirthelper
 
-CHECKPOINTDIR="./checkpoints/"
-
 def main():
     logging.getLogger("sh").setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(description='Backup')
@@ -24,9 +22,9 @@ def main():
         choices=['copy','full','inc'],
         type=str,
         help="Backup level, defaults to copy")
-    parser.add_argument("-f", "--file", required=True,
+    parser.add_argument("-o", "--output", required=True,
         type=str,
-        help="Output target file prefix")
+        help="Output target directory")
     parser.add_argument("-d", "--domain", required=True,
         type=str,
         help="Domain to backup")
@@ -81,32 +79,42 @@ def main():
             logging.warn('%s' % e)
         sys.exit(0)
 
+    if not os.path.exists(args.output):
+        try:
+            os.mkdir(args.output)
+        except Exception as e:
+            logger.error("%s" % e)
+            sys.exit(1)
+
     checkpointName = "virtnbdbackup"
-    parentCheckpoint = None
+    parentCheckpoint = False
     checkpoints = []
+    cptFile = '%s/%s.cpt' % (args.output, args.domain)
+    if os.path.exists(cptFile):
+        with open(cptFile,'r') as cptFh:
+             checkpoints = json.loads(cptFh.read())
+
     if args.level != "copy":
         logging.info('Looking for checkpoints')
-        cptFile = '%s/%s.cpt' % (CHECKPOINTDIR, args.domain)
-        if os.path.exists(cptFile):
-            with open(cptFile,'r') as cptFh:
-                checkpoints = json.loads(cptFh.read())
+        if args.level == "full" and len(checkpoints) > 0:
+            logging.info("Removing all existant checkpoints before full backup")
+            virtClient.removeAllCheckpoints(checkpoints)
+            os.remove(cptFile)
+            checkpoints = []
+        elif args.level == "full" and len(checkpoints) < 1:
+            virtClient.removeAllCheckpoints(None)
+            checkpoints = []
 
-            if args.level == "full" and len(checkpoints) > 0:
-                logging.info("Removing all existant checkpoints before full backup")
-                virtClient.removeAllCheckpoints(checkpoints)
-                os.remove(cptFile)
-                checkpoints = []
+        if len(checkpoints) > 0 and args.level == "inc":
+            nextCpt = len(checkpoints)+1
+            checkpointName = "virtnbdbackup.%s" % nextCpt
+            parentCheckpoint = checkpoints[-1]
+            logging.info("Parent checkpoint name %s" % parentCheckpoint)
+            logging.info('Found checkpoints, next name: %s' % nextCpt)
 
-            if len(checkpoints) > 0 and args.level == "inc":
-                nextCpt = len(checkpoints)+1
-                checkpointName = "virtnbdbackup.%s" % nextCpt
-                parentCheckpoint = checkpoints[-1]
-                logging.info("Parent checkpoint name %s" % parentCheckpoint)
-                logging.info('Found checkpoints, next name: %s' % nextCpt)
-        else:
-            if args.level == "inc":
-                logger.error("No prior checkpoints found, execute full backup first")
-                sys.exit(1)
+        if args.level == "inc" and len(checkpoints)<1:
+            logger.error("No prior checkpoints found, execute full backup first")
+            sys.exit(1)
 
         logging.info("Using checkpoint name %s" % checkpointName)
 
@@ -118,8 +126,6 @@ def main():
 
     if args.level != "copy":
         logging.info('Started backup with checkpoint, saving information')
-        if not os.path.exists(CHECKPOINTDIR):
-            os.mkdir(CHECKPOINTDIR)
         if len(checkpoints) < 1:
             checkpoints = []
         checkpoints.append(checkpointName)
@@ -135,7 +141,7 @@ def main():
             logging.info("Skipping disk: %s" % disk.diskTarget)
             continue
         try:
-            backupDisk(disk.diskTarget,args, logger, checkpointName)
+            backupDisk(disk.diskTarget,args, logger, checkpointName,parentCheckpoint)
         except Exception as e:
             logger.error('%s' % e)
             virtClient.stopBackup(disk.diskTarget)
@@ -143,7 +149,7 @@ def main():
 
     virtClient.stopBackup(disk.diskTarget)
 
-def backupDisk(diskTarget, args, logger, checkpointName):
+def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
     metaContext = None
     if args.level == "inc":
         metaContext = "qemu:dirty-bitmap:backup-%s" % diskTarget
@@ -178,19 +184,24 @@ def backupDisk(diskTarget, args, logger, checkpointName):
         logger.info("No dirty blocks found")
         return True
 
-    if checkpointName == None:
-        targetFile = '%s.%s.data' % (
-            args.file,
+    if args.level == "full":
+        targetFile = '%s/%s.full.data' % (
+            args.output,
             diskTarget
         )
-    else:
-        targetFile = '%s.%s.inc.%s.data' % (
-            args.file,
+    elif args.level == "copy":
+        targetFile = '%s/%s.copy.data' % (
+            args.output,
+            diskTarget
+        )
+    elif args.level == "inc":
+        targetFile = '%s/%s.inc.%s.data' % (
+            args.output,
             diskTarget,
             checkpointName
         )
 
-    if args.file == '-':
+    if args.output == '-':
         if args.type == 'stream':
             writer = sys.stdout.buffer
         else:
@@ -211,7 +222,8 @@ def backupDisk(diskTarget, args, logger, checkpointName):
             fullBackupSize,
             thinBackupSize,
             diskTarget,
-            "none",
+            checkpointName,
+            parentCheckpoint,
             inc
         )
         sparsestream.SparseStream().write_frame(writer,
