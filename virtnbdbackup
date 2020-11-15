@@ -57,6 +57,10 @@ def main():
         level = logging.INFO
     logger.basicConfig(level=level)
 
+    if args.type == "raw" and args.level == "inc":
+        logger.error("Backup format raw does not support incremental backup")
+        sys.exit(1)
+
     virtClient = libvirthelper.client()
 
     if virtClient.hasIncrementalEnabled(args.domain) == False:
@@ -196,7 +200,6 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
 
     if args.level == "inc" and thinBackupSize == 0:
         logger.info("No dirty blocks found")
-        return True
 
     if args.level == "full":
         targetFile = '%s/%s.full.data' % (
