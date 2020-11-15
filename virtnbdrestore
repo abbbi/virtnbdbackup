@@ -1,24 +1,32 @@
 #!/usr/bin/env python3
 import os
 import sys
+import nbd
 import json
 import logging
 import argparse
 import pprint
+from time import sleep
 
-import libvirtnbdbackup.nbdhelper as nbdhelper
-import libvirtnbdbackup.sparsestream  as sparsestream
 import libvirtnbdbackup.common as common
+import libvirtnbdbackup.nbdhelper as nbdhelper
+import libvirtnbdbackup.libvirthelper as virtclient
+import libvirtnbdbackup.sparsestream  as sparsestream
+import libvirtnbdbackup.qemuhelper as qemuhelper
 
 def main():
+    logging.getLogger("sh").setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(description='Restore')
     parser.add_argument("-a", "--action", required=True,
-        choices=['dump'],
+        choices=['dump','restore'],
         type=str,
         help="Actions")
     parser.add_argument("-i", "--input", required=True,
         type=str,
         help="Directory including a backup set")
+    parser.add_argument("-o", "--output", required=True,
+        type=str,
+        help="Restore target directory")
     parser.add_argument("-v", "--verbose", required=False,
         action="store_true",
         default=False,
@@ -37,62 +45,97 @@ def main():
         level = logging.INFO
     logger.basicConfig(level=level)
 
+    if not os.path.exists(args.input):
+        logger.error("Backup set directory does not exist")
+        sys.exit(1)
+
     lib = common.Common()
     if args.action == "dump":
         logger.info("Dumping saveset meta information")
         dataFiles = lib.getDataFiles(args.input)
         for dataFile in dataFiles:
-            with open(dataFile, 'rb') as reader:
-                kind, start, length = sparsestream.SparseStream().read_frame(reader)
-                meta = sparsestream.SparseStream().load_metadata(reader.read(length))
+            pprint.pprint(lib.dumpMetaData(dataFile, sparsestream))
+
+    if args.action == "restore":
+        logger.info("Read latest config file")
+        vmConfig = lib.getLastConfigFile(args.input)
+        if not vmConfig:
+            logger.error("No domain config file found")
+            sys.exit(1)
+
+        with open(vmConfig,'r') as vmConf:
+            vmDisks = virtclient.client().getDomainDisks(vmConf.read())
+
+        for disk in vmDisks:
+            restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
+            if not "full" in restoreDisk[0]:
+                logger.error("Unable to find full backup")
+                sys.exit(1)
+            meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
+            logger.info("Create virtual Disk %s/%s" % (args.output,meta['diskName']))
+            logger.info("Size %s" % meta['virtualSize'])
+            qFh = qemuhelper.qemuHelper(meta['diskName'])
+
+            try:
+                qFh.create(args.output, meta['virtualSize'])
+            except Exception as e:
+                logger.error("Cant create restore target: %s" % e)
+                sys.exit(1)
+
+            logger.info("Starting nbd server")
+            try:
+                nbdSrv = qFh.startNbdServer(args.output)
+            except Exception as e:
+                logger.error("Unable to start nbd server: %s" %e)
+                sys.exit(1)
+
+            logging.info("Waiting until nbd server is up")
+            sleep(5)
+
+            nbdClient = nbdhelper.nbdClient(meta['diskName'],None)
+            connection = nbdClient.connect()
+
+            for restoreFile in restoreDisk:
+                logger.info("Applying data from file %s" % restoreFile)
+                reader = open(restoreFile,'rb')
+                kind, start, length = sparsestream.SparseStream().read_frame(
+                    reader
+                )
+                meta = sparsestream.SparseStream().load_metadata(reader.read(
+                    length
+                ))
                 pprint.pprint(meta)
+                assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
+                dataSize = 0
+                while True:
+                    kind, start, length = sparsestream.SparseStream().read_frame(reader)
+                    if kind == sparsestream.SparseStreamTypes().ZERO:
+                        continue
+                        #logger.info("Zeroing region from %s length: %s" %(start, length))
+                        #connection.zero(start, length)
+                    elif kind == sparsestream.SparseStreamTypes().DATA:
+                        logger.info("Write data segment from %s length: %s" % (start,length))
+                        if length >= nbdClient.maxRequestSize:
+                            bs = nbdClient.minRequestSize
+                            assert length % nbdClient.minRequestSize == 0
+                            count = int(length/bs)
+                            ct = 1
+                            offset = start
+                            while ct <= count:
+                                ct+=1
+                                data = reader.read(bs)
+                                connection.pwrite(data, offset)
+                                offset += nbdClient.minRequestSize
+                        else:
+                            data = reader.read(length)
+                            connection.pwrite(data, start)
+                        assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
+                        dataSize += length
+                    elif kind == sparsestream.SparseStreamTypes().STOP:
+                        logger.info("End of stream, %s data processed" % dataSize)
+                        break
+
+            nbdClient.disconnect()
 
 if __name__ == "__main__":
     main()
-
-sys.exit(1)
-
-#TODO
-# restore stream backup format to qcow 2 file using
-# 1) create a file with the same size as original:
-# qemu-img create -f qcow2 /tmp/RESTORE.qcow2 30G
-# 2) attach qemu-nbd process to it:
-# qemu-nbd -x vda -f qcow2 /tmp/RESTORE.qcow2
-# start restore via:
-# ./restorestream < /tmp/BACKUP.sda.data
-r = nbd.NBD()
-r.set_export_name("vda")
-r.connect_tcp('localhost','10809')
-
-reader = sys.stdin.buffer
-kind, start, length = sparsestream.SparseStream().read_frame(reader)
-meta = sparsestream.SparseStream().load_metadata(reader.read(length))
-print(meta)
-assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
-while True:
-    kind, start, length = sparsestream.SparseStream().read_frame(reader)
-    if kind == sparsestream.SparseStreamTypes().ZERO:
-        print("do zero from %s to %s" % (start, length))
-        #r.zero(length, start)
-    elif kind == sparsestream.SparseStreamTypes().DATA:
-        print("do data, length %s" % length)
-        if length >= 33554432:
-            assert length % 65536 == 0
-            bs = 65536
-            count = int(length/bs)
-            ct = 1
-            offset = start
-            while ct <= count:
-                ct+=1
-                data = reader.read(bs)
-                r.pwrite(data, offset)
-                offset += 65536
-        else:
-            data = reader.read(length)
-            r.pwrite(data, start)
-        assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
-    elif kind == sparsestream.SparseStreamTypes().STOP:
-        break
-
-r.shutdown()
-print("end")

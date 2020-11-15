@@ -32,3 +32,6 @@ class nbdClient(object):
         self._nbdHandle.connect_tcp(self._host,self._port)
 
         return self._nbdHandle
+
+    def disconnect(self):
+        self._nbdHandle.shutdown()

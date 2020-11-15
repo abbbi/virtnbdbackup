@@ -37,11 +37,10 @@ class client(object):
         except libvirt.libvirtError:
             raise
 
-    def _getDomain(self, name):
+    def getDomain(self, name):
         return self._conn.lookupByName(name)
 
-    def hasIncrementalEnabled(self, domName):
-        domObj = self._getDomain(domName)
+    def hasIncrementalEnabled(self, domObj):
         tree=ElementTree.fromstring(domObj.XMLDesc(0))
         for target in tree.findall("{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"):
             for cap in target.findall("{http://libvirt.org/schemas/domain/qemu/1.0}add"):
@@ -50,12 +49,11 @@ class client(object):
 
         return False
 
-    def getDomainConfig(self):
-        return self.domObj.XMLDesc(0)
+    def getDomainConfig(self, domObj):
+        return domObj.XMLDesc(0)
 
-    def getDomainDisks(self, domName):
-        self.domObj = self._getDomain(domName)
-        tree=ElementTree.fromstring(self.domObj.XMLDesc(0))
+    def getDomainDisks(self, vmConfig):
+        tree=ElementTree.fromstring(vmConfig)
         devices=[]
 
         for target in tree.findall("devices/disk"):
@@ -99,7 +97,7 @@ class client(object):
 
         return ElementTree.tostring(top)
 
-    def startBackup(self, diskList, backupLevel, checkpointName, parentCheckpoint):
+    def startBackup(self, domObj, diskList, backupLevel, checkpointName, parentCheckpoint):
         backupXml = self._createBackupXml(diskList, parentCheckpoint)
         checkpointXml = None
         try:
@@ -109,27 +107,27 @@ class client(object):
                     parentCheckpoint,
                     checkpointName
                 ).decode()
-            self.domObj.backupBegin(backupXml.decode(), checkpointXml)
+            domObj.backupBegin(backupXml.decode(), checkpointXml)
         except:
             raise
 
-    def checkpointExists(self, checkpointName):
-        return self.domObj.checkpointLookupByName(checkpointName)
+    def checkpointExists(self, domObj, checkpointName):
+        return domObj.checkpointLookupByName(checkpointName)
 
-    def removeAllCheckpoints(self, checkpointList):
+    def removeAllCheckpoints(self, domObj, checkpointList):
         if checkpointList == None:
-            cpts = self.domObj.listAllCheckpoints()
+            cpts = domObj.listAllCheckpoints()
             if cpts:
-                for cpt in self.domObj.listAllCheckpoints():
+                for cpt in domObj.listAllCheckpoints():
                     if 'virtnbdbackup' in cpt.getName():
                         cpt.delete()
             return True
 
         for checkpoint in checkpointList:
-            cptObj = self.checkpointExists(checkpoint)
+            cptObj = self.checkpointExists(domObj, checkpoint)
             if cptObj:
                 cptObj.delete()
         return True
 
-    def stopBackup(self, diskTarget):
-        self.domObj.blockJobAbort(diskTarget)
+    def stopBackup(self, domObj, diskTarget):
+        domObj.blockJobAbort(diskTarget)

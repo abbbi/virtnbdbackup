@@ -62,18 +62,19 @@ def main():
         sys.exit(1)
 
     virtClient = libvirthelper.client()
-
-    if virtClient.hasIncrementalEnabled(args.domain) == False:
-        logger.error("Domain is missing required incremental-backup capability.")
-        sys.exit(1)
-
     try:
-        disks = virtClient.getDomainDisks(args.domain)
+        domObj = virtClient.getDomain(args.domain)
     except Exception as e:
         logging.error('Unable to get domain information: %s' % e)
         sys.exit(1)
 
-    vmConfig = virtClient.getDomainConfig()
+    if virtClient.hasIncrementalEnabled(domObj) == False:
+        logger.error("Domain is missing required incremental-backup capability.")
+        sys.exit(1)
+
+    vmConfig = virtClient.getDomainConfig(domObj)
+
+    disks = virtClient.getDomainDisks(vmConfig)
 
     logger.info("Domain has %s disks attached" % len(disks))
 
@@ -104,11 +105,11 @@ def main():
         logging.info('Looking for checkpoints')
         if args.level == "full" and len(checkpoints) > 0:
             logging.info("Removing all existant checkpoints before full backup")
-            virtClient.removeAllCheckpoints(checkpoints)
+            virtClient.removeAllCheckpoints(domObj, checkpoints)
             os.remove(cptFile)
             checkpoints = []
         elif args.level == "full" and len(checkpoints) < 1:
-            virtClient.removeAllCheckpoints(None)
+            virtClient.removeAllCheckpoints(domObj,None)
             checkpoints = []
 
         if len(checkpoints) > 0 and args.level == "inc":
@@ -125,7 +126,7 @@ def main():
         logging.info("Using checkpoint name %s" % checkpointName)
 
     try:
-        virtClient.startBackup(disks, args.level, checkpointName, parentCheckpoint)
+        virtClient.startBackup(domObj, disks, args.level, checkpointName, parentCheckpoint)
     except Exception as e:
         logging.error('%s' % e)
         sys.exit(1)
@@ -155,11 +156,11 @@ def main():
             )
         except Exception as e:
             logger.error('%s' % e)
-            virtClient.stopBackup(disk.diskTarget)
+            virtClient.stopBackup(domObj, disk.diskTarget)
             sys.exit(1)
 
     backupConfig(vmConfig, args, checkpointName, logger)
-    virtClient.stopBackup(disk.diskTarget)
+    virtClient.stopBackup(domObj, disk.diskTarget)
 
 def backupConfig(vmConfig, args, checkpointName, logger):
     configFile = '%s/vmconfig.%s.xml' % (args.output, checkpointName)
@@ -178,7 +179,9 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
 
     if args.qemu and args.level != "inc":
         logger.info("Using qemu tools to query extents")
-        extentHandler = extenthandler.ExtentHandler(qemuhelper.qemuHelper(diskTarget))
+        extentHandler = extenthandler.ExtentHandler(
+            qemuhelper.qemuHelper(diskTarget),
+            metaContext)
     else:
         logger.info("Using nbd to query extents")
         extentHandler = extenthandler.ExtentHandler(

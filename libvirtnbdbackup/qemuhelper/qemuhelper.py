@@ -1,26 +1,40 @@
 import sh
+import os
 import json
+from time import sleep
 
 class qemuHelper(object):
 
     """Docstring for qemuHelper. """
-    def __init__(self,exportName, host="localhost", port="10809", metaContext="base:allocation"):
+    def __init__(self, exportName):
         """TODO: to be defined.
 
         :host: TODO
         :port: TODO
 
         """
-        self._exportName = exportName
-        self._host = host
-        self._port = port
-
         self.qemuImg = sh.Command("qemu-img")
+        self.qemuNbd = sh.Command("qemu-nbd")
+        self.exportName = exportName
 
-    def map(self):
+    def map(self, host="localhost", port="10809"):
         extentMap = self.qemuImg("map", "--output", "json", "nbd://%s:%s/%s" % (
-            self._host,
-            self._port,
-            self._exportName
+            host,
+            port,
+            self.exportName
         )).stdout
         return json.loads(extentMap)
+
+    def create(self, targetDir, fileSize):
+        if not os.path.exists(targetDir):
+            os.mkdir(targetDir)
+        try:
+            self.qemuImg("create", "-f", "qcow2", "%s/%s" % (targetDir,self.exportName), "%s" % fileSize)
+        except:
+            raise
+
+    def startNbdServer(self, targetDir):
+        try:
+            return self.qemuNbd("--verbose","-x", "%s" % (self.exportName), "%s/%s" % (targetDir, self.exportName), _bg=True)
+        except:
+            raise
