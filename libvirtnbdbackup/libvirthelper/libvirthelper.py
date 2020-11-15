@@ -50,6 +50,9 @@ class client(object):
 
         return False
 
+    def getDomainConfig(self):
+        return self.domObj.XMLDesc(0)
+
     def getDomainDisks(self, domName):
         self.domObj = self._getDomain(domName)
         tree=ElementTree.fromstring(self.domObj.XMLDesc(0))

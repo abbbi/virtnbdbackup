@@ -69,6 +69,8 @@ def main():
         logging.error('Unable to get domain information: %s' % e)
         sys.exit(1)
 
+    vmConfig = virtClient.getDomainConfig()
+
     logger.info("Domain has %s disks attached" % len(disks))
 
     if args.killonly == True:
@@ -141,13 +143,25 @@ def main():
             logging.info("Skipping disk: %s" % disk.diskTarget)
             continue
         try:
-            backupDisk(disk.diskTarget,args, logger, checkpointName,parentCheckpoint)
+            backupDisk(disk.diskTarget,
+                args,
+                logger,
+                checkpointName,
+                parentCheckpoint
+            )
         except Exception as e:
             logger.error('%s' % e)
             virtClient.stopBackup(disk.diskTarget)
             sys.exit(1)
 
+    backupConfig(vmConfig, args, checkpointName, logger)
     virtClient.stopBackup(disk.diskTarget)
+
+def backupConfig(vmConfig, args, checkpointName, logger):
+    configFile = '%s/vmconfig.%s.xml' % (args.output, checkpointName)
+    logger.info("Saving VM config to: %s" % configFile)
+    with open(configFile, 'w') as configFh:
+        configFh.write(vmConfig)
 
 def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
     metaContext = None
