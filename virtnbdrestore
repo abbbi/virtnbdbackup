@@ -1,8 +1,58 @@
 #!/usr/bin/env python3
-import nbd
+import os
 import sys
-import libvirtnbdbackup.sparsestream  as sparsestream
+import json
+import logging
+import argparse
+import pprint
 
+import libvirtnbdbackup.nbdhelper as nbdhelper
+import libvirtnbdbackup.sparsestream  as sparsestream
+import libvirtnbdbackup.common as common
+
+def main():
+    parser = argparse.ArgumentParser(description='Restore')
+    parser.add_argument("-a", "--action", required=True,
+        choices=['dump'],
+        type=str,
+        help="Actions")
+    parser.add_argument("-i", "--input", required=True,
+        type=str,
+        help="Directory including a backup set")
+    parser.add_argument("-v", "--verbose", required=False,
+        action="store_true",
+        default=False,
+        help="Directory including a backup set")
+
+    try:
+        args = parser.parse_args()
+    except:
+        parser.print_help()
+        sys.exit(1)
+
+    logger = logging
+    if args.verbose == True:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    logger.basicConfig(level=level)
+
+    lib = common.Common()
+    if args.action == "dump":
+        logger.info("Dumping saveset meta information")
+        dataFiles = lib.getDataFiles(args.input)
+        for dataFile in dataFiles:
+            with open(dataFile, 'rb') as reader:
+                kind, start, length = sparsestream.SparseStream().read_frame(reader)
+                meta = sparsestream.SparseStream().load_metadata(reader.read(length))
+                pprint.pprint(meta)
+
+if __name__ == "__main__":
+    main()
+
+sys.exit(1)
+
+#TODO
 # restore stream backup format to qcow 2 file using
 # 1) create a file with the same size as original:
 # qemu-img create -f qcow2 /tmp/RESTORE.qcow2 30G
