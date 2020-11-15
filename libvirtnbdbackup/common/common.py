@@ -1,16 +1,29 @@
 import glob
 class Common(object):
-
-    """Docstring for Common. """
+    """
+        Common functions
+    """
     def getDataFiles(self, targetDir):
+        """
+            return data files within backupset
+            directory
+        """
         sStr = "%s/*.data" % targetDir
         return glob.glob(sStr)
 
     def getDataFilesByDisk(self, targetDir, targetDisk):
+        """
+            return data files subject to one disk
+            from backupset directory
+        """
         sStr = "%s/%s*.data" % (targetDir, targetDisk)
         return glob.glob(sStr)
 
     def getLastConfigFile(self, targetDir):
+        """
+            get the last backed up configuration file
+            from the backupset
+        """
         sStr = "%s/vmconfig*.xml" % targetDir
         try:
             return glob.glob(sStr)[-1]
@@ -18,6 +31,9 @@ class Common(object):
             return None
 
     def dumpMetaData(self, dataFile, sparsestream):
+        """
+            read metadata header
+        """
         with open(dataFile, 'rb') as reader:
             kind, start, length = sparsestream.SparseStream().read_frame(
                 reader

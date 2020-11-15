@@ -4,15 +4,10 @@ import json
 from time import sleep
 
 class qemuHelper(object):
-
-    """Docstring for qemuHelper. """
+    """
+        Wrapper for qemu executables
+    """
     def __init__(self, exportName):
-        """TODO: to be defined.
-
-        :host: TODO
-        :port: TODO
-
-        """
         self.qemuImg = sh.Command("qemu-img")
         self.qemuNbd = sh.Command("qemu-nbd")
         self.exportName = exportName

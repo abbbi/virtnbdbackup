@@ -7,14 +7,18 @@ class Extent(object):
 
 class ExtentHandler(object):
 
-    """Docstring for ExtentHandler. """
+    """
+        ExtentHandler()
+
+        Query extent information about allocated and
+        zeroed regions from the NBD server started by
+        libvirt/qemu
+
+        This implementation should return the same
+        extent information as nbdinfo or qemu-img map
+    """
 
     def __init__(self, nbdFh, metaContext):
-        """TODO: to be defined.
-
-        :nbdFh: TODO
-
-        """
         self. useQemu = False
         if nbdFh.__class__.__name__ == "qemuHelper":
             self.useQemu = True
@@ -123,14 +127,16 @@ class ExtentHandler(object):
             for ct in range(0,int(len(entry)/2)):
                 extObj = Extent()
                 """
-                    # full
-                    case 0: return strdup ("allocated");
-                    case 1: return strdup ("hole");
-                    case 2: return strdup ("zero");
-                    case 3: return strdup ("hole,zero");
-                    # inc
-                    case 0: return strdup ("clean");
-                    case 1: return strdup ("dirty");
+                    The extent types are as follows:
+
+                    For full backup:
+                        case 0  ("allocated")
+                        case 1: ("hole")
+                        case 2: ("zero")
+                        case 3: ("hole,zero")
+                    For checkpoint based inc/diff:
+                        case 0: ("clean")
+                        case 1: ("dirty")
                 """
                 if self._metaContext == "base:allocation":
                     assert extentType[ct] in (0,2,3)

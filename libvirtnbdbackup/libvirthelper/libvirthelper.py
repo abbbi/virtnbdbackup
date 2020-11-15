@@ -12,21 +12,23 @@ libvirt.registerErrorHandler(f=libvirt_ignore, ctx=None)
 
 class DomainDisk(object):
 
-    """Docstring for DomainDisk. """
+    """
+        Virtual machine Disk Object
+
+        @diskTarget: target name for virtual disk as defined
+        in the configuration. NBD server will use this target
+        name as export name
+    """
 
     def __init__(self):
         self.diskTarget = None
 
 class client(object):
+    """
+        Libvirt related functions
+    """
 
-    """Docstring for libvirtHelper. """
     def __init__(self):
-        """TODO: to be defined.
-
-        :host: TODO
-        :port: TODO
-
-        """
         self._conn = self._connect()
         self._domObj = None
 
