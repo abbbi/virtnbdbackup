@@ -76,11 +76,11 @@ each backup chain a new directory is mandatory.
 
 # Restore examples
 
-For restoring, ```virtnbdrestore```` can be used. It processes the streamed
-backup format back into a usable qemu qcow image. Option ```--until````
+For restoring, `virtnbdrestore` can be used. It processes the streamed
+backup format back into a usable qemu qcow image. Option `--until`
 allows to perform a point in time restore up to a desired checkpoint.
 
-As a first start, the ```dump```` parameter can be used to dump the saveset
+As a first start, the `dump` parameter can be used to dump the saveset
 information of an existing backupset:
 
 ```
