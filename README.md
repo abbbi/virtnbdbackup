@@ -1,6 +1,7 @@
 # virtnbdbackup
 
 Backup utility for libvirt, using latest CBT features.
+Work in progress ..
 
 # prerequisites
 
