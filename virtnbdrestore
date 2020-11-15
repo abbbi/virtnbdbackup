@@ -27,10 +27,13 @@ def main():
     parser.add_argument("-o", "--output", required=True,
         type=str,
         help="Restore target directory")
+    parser.add_argument("-u", "--until", required=False,
+        type=str,
+        help="Restore only until checkpoint, point in time restore")
     parser.add_argument("-v", "--verbose", required=False,
         action="store_true",
         default=False,
-        help="Directory including a backup set")
+        help="Enable debug output")
 
     try:
         args = parser.parse_args()
@@ -111,8 +114,6 @@ def main():
                     kind, start, length = sparsestream.SparseStream().read_frame(reader)
                     if kind == sparsestream.SparseStreamTypes().ZERO:
                         continue
-                        #logger.info("Zeroing region from %s length: %s" %(start, length))
-                        #connection.zero(start, length)
                     elif kind == sparsestream.SparseStreamTypes().DATA:
                         logger.info("Write data segment from %s length: %s" % (start,length))
                         if length >= nbdClient.maxRequestSize:
@@ -134,6 +135,10 @@ def main():
                     elif kind == sparsestream.SparseStreamTypes().STOP:
                         logger.info("End of stream, %s data processed" % dataSize)
                         break
+
+                if meta['checkpointName'] == args.until:
+                    logging.info("Reached checkpoint %s, stopping" % args.until)
+                    break
 
             nbdClient.disconnect()
 

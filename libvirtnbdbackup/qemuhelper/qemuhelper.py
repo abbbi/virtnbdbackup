@@ -35,6 +35,6 @@ class qemuHelper(object):
 
     def startNbdServer(self, targetDir):
         try:
-            return self.qemuNbd("--verbose","-x", "%s" % (self.exportName), "%s/%s" % (targetDir, self.exportName), _bg=True)
+            return self.qemuNbd("--discard=unmap", "--format=qcow2","-x", "%s" % (self.exportName), "%s/%s" % (targetDir, self.exportName), _bg=True)
         except:
             raise
