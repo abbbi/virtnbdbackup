@@ -99,7 +99,6 @@ def main():
             connection = nbdClient.connect()
 
             for restoreFile in restoreDisk:
-                logger.info("Applying data from file %s" % restoreFile)
                 reader = open(restoreFile,'rb')
                 kind, start, length = sparsestream.SparseStream().read_frame(
                     reader
@@ -107,6 +106,10 @@ def main():
                 meta = sparsestream.SparseStream().load_metadata(reader.read(
                     length
                 ))
+                if meta['dataSize'] == 0:
+                    logger.info("Saveset %s contains no dirty blocks, skipping" % restoreFile)
+                    continue
+                logger.info("Applying data from file %s" % restoreFile)
                 pprint.pprint(meta)
                 assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
                 dataSize = 0
