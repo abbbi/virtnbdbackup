@@ -71,6 +71,9 @@ def main():
 
         for disk in vmDisks:
             restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
+            if len(restoreDisk) < 1:
+                logger.warning("Did not find any backups for disk image %s" % disk.diskTarget)
+                continue
             if not "full" in restoreDisk[0]:
                 logger.error("Unable to find full backup")
                 sys.exit(1)
@@ -136,7 +139,7 @@ def main():
                         assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
                         dataSize += length
                     elif kind == sparsestream.SparseStreamTypes().STOP:
-                        logger.info("End of stream, %s data processed" % dataSize)
+                        logger.info("End of stream, %s bytes of data processed" % dataSize)
                         break
 
                 if meta['checkpointName'] == args.until:

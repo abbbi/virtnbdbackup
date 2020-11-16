@@ -43,6 +43,9 @@ def main():
     parser.add_argument("-k", "--killonly", default=False,
         help="Kill any running block job",
         action="store_true")
+    parser.add_argument("-c", "--checkpoint", default=False,
+        help="During incremental backup, use override parent checkpoint",
+        type=str)
 
     try:
         args = parser.parse_args()
@@ -81,7 +84,7 @@ def main():
     if args.killonly == True:
         logger.info("Stopping domain jobs")
         try:
-            virtClient.stopBackup(disks[0].diskTarget)
+            virtClient.stopBackup(domObj, disks[0].diskTarget)
         except Exception as e:
             logging.warn('%s' % e)
         sys.exit(0)
@@ -115,9 +118,13 @@ def main():
         if len(checkpoints) > 0 and args.level == "inc":
             nextCpt = len(checkpoints)+1
             checkpointName = "virtnbdbackup.%s" % nextCpt
-            parentCheckpoint = checkpoints[-1]
-            logging.info("Parent checkpoint name %s" % parentCheckpoint)
+            if args.checkpoint != False:
+                logging.info("Overriding checkpoint: %s" % args.checkpoint)
+                parentCheckpoint = args.checkpoint
+            else:
+                parentCheckpoint = checkpoints[-1]
             logging.info('Found checkpoints, next name: %s' % nextCpt)
+            logging.info("Parent checkpoint name %s" % parentCheckpoint)
 
         if args.level == "inc" and len(checkpoints)<1:
             logger.error("No prior checkpoints found, execute full backup first")
@@ -188,8 +195,8 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
             connection,
             metaContext
         )
-
     extents = extentHandler.queryBlockStatus()
+    diskSize = connection.get_size()
 
     if extents == None:
         logging.error("No extents found")
@@ -198,6 +205,7 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
     thinBackupSize = sum([extent.length for extent in extents if extent.data == True])
     fullBackupSize = sum([extent.length for extent in extents])
     logger.info("Got %s extents" % len(extents))
+    logger.info("%s bytes disk size" % diskSize)
     logger.info("%s bytes imagesize" % fullBackupSize)
     logger.info("%s bytes of data extents to backup" % thinBackupSize)
 
@@ -239,7 +247,7 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
         if args.level == "inc":
             inc = True
         metadata = sparsestream.SparseStream().dump_metadata(
-            fullBackupSize,
+            diskSize,
             thinBackupSize,
             diskTarget,
             checkpointName,
@@ -262,6 +270,7 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
                     save.offset,
                     save.length
                 )
+                logger.debug("Read data from: start %s, length: %s" % (save.offset, save.length))
             if save.length >= nbdClient.maxRequestSize:
                 bs = nbdClient.minRequestSize
                 assert save.length % bs == 0
