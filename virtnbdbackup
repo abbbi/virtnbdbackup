@@ -2,9 +2,11 @@
 import os
 import sys
 import json
+import pprint
 import logging
 import argparse
 
+import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
 import libvirtnbdbackup.extenthandler as extenthandler
 import libvirtnbdbackup.sparsestream  as sparsestream
@@ -46,6 +48,9 @@ def main():
     parser.add_argument("-c", "--checkpoint", default=False,
         help="During incremental backup, use override parent checkpoint",
         type=str)
+    parser.add_argument("-p", "--printonly", default=False,
+        help="Quit after printing extent information",
+        action="store_true")
 
     try:
         args = parser.parse_args()
@@ -203,24 +208,24 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
         return
 
     thinBackupSize = sum([extent.length for extent in extents if extent.data == True])
-    fullBackupSize = sum([extent.length for extent in extents])
     logger.info("Got %s extents" % len(extents))
+    lib = common.Common()
+    if args.verbose == True:
+        pprint.pprint(lib.dumpExtentJson(extents))
     logger.info("%s bytes disk size" % diskSize)
-    logger.info("%s bytes imagesize" % fullBackupSize)
     logger.info("%s bytes of data extents to backup" % thinBackupSize)
+    if args.printonly == True:
+        nbdClient.disconnect()
+        return
 
     if args.level == "inc" and thinBackupSize == 0:
         logger.info("No dirty blocks found")
 
-    if args.level == "full":
-        targetFile = '%s/%s.full.data' % (
+    if args.level == "full" or args.level == "copy":
+        targetFile = '%s/%s.%s.data' % (
             args.output,
-            diskTarget
-        )
-    elif args.level == "copy":
-        targetFile = '%s/%s.copy.data' % (
-            args.output,
-            diskTarget
+            diskTarget,
+            args.level
         )
     elif args.level == "inc":
         targetFile = '%s/%s.inc.%s.data' % (
@@ -239,7 +244,7 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
         writer = open(targetFile,'wb')
     if args.type == "raw":
         logging.info("Creating full provisioned raw backup image")
-        writer.truncate(fullBackupSize)
+        writer.truncate(diskSize)
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
@@ -270,7 +275,10 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
                     save.offset,
                     save.length
                 )
-                logger.debug("Read data from: start %s, length: %s" % (save.offset, save.length))
+                logger.debug("Read data from: start %s, length: %s" % (
+                    save.offset,
+                    save.length
+                ))
             if save.length >= nbdClient.maxRequestSize:
                 bs = nbdClient.minRequestSize
                 assert save.length % bs == 0
@@ -299,8 +307,14 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
                     save.length
                 )
     if args.type == "stream":
-        sparsestream.SparseStream().write_frame(writer, sparsestream.SparseStreamTypes().STOP, 0, 0)
-        writer.close()
+        sparsestream.SparseStream().write_frame(
+            writer,
+            sparsestream.SparseStreamTypes().STOP,
+            0,
+            0
+        )
+
+    writer.close()
 
 if __name__ == "__main__":
     main()

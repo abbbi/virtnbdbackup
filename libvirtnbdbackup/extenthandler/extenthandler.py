@@ -75,6 +75,8 @@ class ExtentHandler(object):
             extentObj.length = extent['length']
             extents.append(extentObj)
 
+        self._log.debug("Got %s extents from qemu command" % len(extents))
+
         return extents
 
     def _extentsToObj(self):
@@ -93,6 +95,7 @@ class ExtentHandler(object):
         return extentList
 
     def _unifyExtents(self, extentObjects):
+        self._log.debug("unify %s extents" % len(extentObjects))
         cur = None
         for myExtent in extentObjects:
             if cur == None:
@@ -102,6 +105,8 @@ class ExtentHandler(object):
             else:
                 yield cur
                 cur = myExtent
+
+        yield cur
 
     def queryExtentsNbd(self):
         maxRequestLen = self._setRequestAligment()
@@ -129,14 +134,19 @@ class ExtentHandler(object):
         return self._extentsToObj()
 
     def queryBlockStatus(self, extentList=None):
+        if self.useQemu == True:
+            return self.queryExtentsQemu()
+
         extentList = []
         start = 0
         for extent in self._unifyExtents(self.queryExtentsNbd()):
             extObj = Extent()
             if self._metaContext == "base:allocation":
-                assert extent.type in (0,2,3)
+                assert extent.type in (0,1,2,3)
                 if extent.type == 0:
                     extObj.data = True
+                if extent.type == 1:
+                    extObj.data = False
                 elif extent.type == 2:
                     extObj.data = True
                 elif extent.type == 3:

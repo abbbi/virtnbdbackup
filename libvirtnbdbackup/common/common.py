@@ -1,4 +1,6 @@
 import glob
+import json
+
 class Common(object):
     """
         Common functions
@@ -29,6 +31,18 @@ class Common(object):
             return glob.glob(sStr)[-1]
         except IndexError:
             return None
+
+    def dumpExtentJson(self, extents):
+        extList = []
+        for extent in extents:
+            ext = {}
+            ext['start'] = extent.offset
+            ext['length'] = extent.length
+            ext['data'] = extent.data
+            extList.append(ext)
+
+        return json.dumps(extList)
+
 
     def dumpMetaData(self, dataFile, sparsestream):
         """
