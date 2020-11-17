@@ -1,6 +1,5 @@
 <domain type='kvm' id='4' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
-  <name>cbt</name>
-  <uuid>b033783c-3271-4414-bb87-d1a6e2120011</uuid>
+  <name>vm1</name>
   <metadata>
     <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
       <libosinfo:os id="http://redhat.com/rhel/8.0"/>
@@ -56,19 +55,11 @@
     <emulator>/usr/libexec/qemu-kvm</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/var/lib/libvirt/images/test.qcow2' index='2'/>
+      <source file='/tmp/vm1-sda.qcow2' index='2'/>
       <backingStore/>
       <target dev='sda' bus='sata'/>
       <alias name='sata0-0-0'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
-    </disk>
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2'/>
-      <source file='/var/lib/libvirt/images/test2.qcow2' index='1'/>
-      <backingStore/>
-      <target dev='sdb' bus='scsi'/>
-      <alias name='scsi0-0-0-1'/>
-      <address type='drive' controller='0' bus='0' target='0' unit='1'/>
     </disk>
     <controller type='usb' index='0' model='qemu-xhci' ports='15'>
       <alias name='usb'/>
