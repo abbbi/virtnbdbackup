@@ -105,4 +105,7 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 
 # TODO
 
- * Call filesystem freeze/thaw before starting backup session
+ * Craft VM config during restore and register VM
+ * Define test cases for full+inc chains
+ * Allow remote backup without
+ * Does backup-begin issue filesystem thaw?
