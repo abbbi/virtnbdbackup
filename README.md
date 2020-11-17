@@ -62,8 +62,7 @@ All required informations for restore are saved within the same directory,
 including the virtual machine configuration, checkpoint information and disk
 data.
 
-The target directory should be rotead if a new backup set is created, as for
-each backup chain a new directory is mandatory.
+The target directory must be rotated if a new backup set is created.
 
 # Backup Examples
 
@@ -77,6 +76,18 @@ each backup chain a new directory is mandatory.
 
 ```
  virtnbdbackup -d cbt -l full -o /tmp/backupset
+```
+
+The resulting directory will contain all information for restoring the virtual machine:
+```
+/tmp/backupset/
+├── cbt.cpt                                # checkpoint informations
+├── sda.full.data                          # data from full backup, disk SDA
+├── sda.inc.virtnbdbackup.2.data           # data from inc backup, based on checkpoint "virtnbdbackup.2", disk SDA
+├── sdb.full.data                          # data from full backpu, disk SDB
+├── sdb.inc.virtnbdbackup.2.data           # data from inc backup, based on checkpoint "virtnbdbackup.2", disk SDB
+├── vmconfig.virtnbdbackup.2.xml           # vm config saved during incremental backup
+└── vmconfig.virtnbdbackup.xml             # vm config saved during full backup
 ```
 
 # Restore examples
@@ -107,6 +118,14 @@ Restoring all disks within the backupset into an usable qcow image via:
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 ```
+
+# FAQ
+## The thin provisioned backups are bigger than the original qcow images
+
+Virtual machines using the QCOW format do compress data. During backup, the image
+contents are exposed as NDB device which is a RAW device, as such, the backup data
+is as least as big as the used data within the virtual machine. Use xz or tar to
+compress the backup images in order to save storage space.
 
 # TODO
 
