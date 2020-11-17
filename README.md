@@ -51,12 +51,11 @@ Following backup modes can be used:
 * copy: Full backup of virtual machine, no checkpoint is created for further
   incremental backups, existing checkpoints will be left.
 
-* full: Full backup of virtual machine, but a checkpoint named `virnbdbackup'
-  will be created, all existant checkpoints including this name will be
-  removed: a new backup chain is created
+* full: Full backup of virtual machine, a new checkpoint named `virnbdbackup'
+  will be created, all existant checkpoints from prior backups including this name
+  will be removed: a new backup chain is created.
 
-* inc: Perform incremental backup, based on the last checkpoint, checkpoints
-  are tracked.
+* inc: Perform incremental backup, based on the last full backup.
 
 All required informations for restore are saved within the same directory,
 including the virtual machine configuration, checkpoint information and disk
@@ -118,6 +117,12 @@ Restoring all disks within the backupset into an usable qcow image via:
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 ```
+
+# Extents
+
+In order to save only used data from the images, extent information is queried
+from the NBD server. This happens by either using the qemu tools (qemu-img map
+..) if option "-q" is specified, or by an custom implemented extent handler.
 
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images
