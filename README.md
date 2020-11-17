@@ -45,7 +45,7 @@ Following backup modes can be used:
 * copy: Full backup of virtual machine, no checkpoint is created for further
   incremental backups, existing checkpoints will be left.
 
-* full: Full backup of virtual machine, a new checkpoint named `virnbdbackup'
+* full: Full backup of virtual machine, a new checkpoint named `virtnbdbackup'
   will be created, all existant checkpoints from prior backups including this name
   will be removed: a new backup chain is created.
 
