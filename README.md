@@ -49,7 +49,7 @@ Following backup modes can be used:
   will be created, all existant checkpoints from prior backups including this name
   will be removed: a new backup chain is created.
 
-* inc: Perform incremental backup, based on the last full backup.
+* inc: Perform incremental backup, based on the last full or incremental backup.
 
 All required informations for restore are saved within the same directory,
 including the virtual machine configuration, checkpoint information and disk
