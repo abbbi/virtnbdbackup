@@ -1,5 +1,7 @@
 QEMU_FILE=/tmp/convert.full.raw
+CONVERT_FILE=/tmp/restored.full.raw
 BACKUPSET=/tmp/testset
+RESTORESET=/tmp/restoreset
 
 setup() {
     if [ ! -e $BACKUPSET ]; then
@@ -7,7 +9,11 @@ setup() {
     fi
 }
 
-@test "Backup raw using qemu-img convert" {
+@test "Freeze filesystems within test VM to ensure consistency between test runs" {
+    virsh domfsthaw --domain cbt
+    virsh domfsfreeze --domain cbt
+}
+@test "Create reference backup image using qemu-img convert" {
     run ../virtnbdbackup -t raw -d cbt -s -o $BACKUPSET
     [ "$status" -eq 0 ]
     run qemu-img convert -f raw nbd://localhost:10809/sda  -O raw $QEMU_FILE
@@ -17,19 +23,40 @@ setup() {
 }
 @test "Backup raw using virtnbdbackup, query extents with extenthandler" {
     rm -rf /tmp/testset
-    run ../virtnbdbackup -t raw -d cbt -o $BACKUPSET
+    run ../virtnbdbackup -l full -t raw -d cbt -o $BACKUPSET
     [ "$status" -eq 0 ]
+    [[ "$output" =~ "Creating full provisioned" ]]
 }
-@test "Compare image contents for backup with extenthandler" {
-    run cmp -b $QEMU_FILE "${BACKUPSET}/sda.copy.data"
+@test "Compare backup image contents against reference image" {
+    run cmp -b $QEMU_FILE "${BACKUPSET}/sda.full.data"
     [ "$status" -eq 0 ]
 }
 @test "Backup raw using virtnbdbackup, query extents with qemu-img" {
     rm -rf /tmp/testset
-    run ../virtnbdbackup -q -t raw -d cbt -o $BACKUPSET
+    run ../virtnbdbackup -l full -q -t raw -d cbt -o $BACKUPSET
     [ "$status" -eq 0 ]
 }
-@test "Compare image contents for backup with qemu extents" {
-    run cmp -b $QEMU_FILE "${BACKUPSET}/sda.copy.data"
+@test "Compare backup image, extents queried via qemu tools" {
+    run cmp -b $QEMU_FILE "${BACKUPSET}/sda.full.data"
     [ "$status" -eq 0 ]
+}
+@test "Backup in stream format"  {
+    rm -rf /tmp/testset
+    run ../virtnbdbackup -l full -d cbt -o $BACKUPSET
+    [ "$status" -eq 0 ]
+}
+@test "Restore stream format"  {
+    run ../virtnbdrestore -a restore -i $BACKUPSET -o $RESTORESET
+    [ "$status" -eq 0 ]
+}
+@test "Convert restored qcow2 image to RAW image"  {
+    run qemu-img convert -f qcow2 -O raw $RESTORESET/sda $CONVERT_FILE
+    [ "$status" -eq 0 ]
+}
+@test "Compare image contents between converted image and reference image"  {
+    run cmp $QEMU_FILE $CONVERT_FILE
+    [ "$status" -eq 0 ]
+}
+@test "Thaw filesystems within test VM" {
+    virsh domfsthaw --domain cbt
 }

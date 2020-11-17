@@ -119,20 +119,28 @@ def main():
                 while True:
                     kind, start, length = sparsestream.SparseStream().read_frame(reader)
                     if kind == sparsestream.SparseStreamTypes().ZERO:
-                        continue
+                        logger.info("Write zero segment from %s length: %s" % (start,length))
+                        if length >= nbdClient.maxRequestSize:
+                            zeroOffset = start
+                            logger.debug('Big Zero block, start: %s length: %s' % (zeroOffset, length))
+                            while zeroOffset < start+length:
+                                zeroLen = min(start+length - zeroOffset, nbdClient.maxRequestSize)
+                                logger.debug('Junk zero block: %s' % zeroLen)
+                                connection.zero(zeroLen, zeroOffset)
+                                zeroOffset+=zeroLen
+                        else:
+                            connection.zero(length, start)
                     elif kind == sparsestream.SparseStreamTypes().DATA:
                         logger.info("Write data segment from %s length: %s" % (start,length))
                         if length >= nbdClient.maxRequestSize:
-                            bs = nbdClient.minRequestSize
-                            assert length % nbdClient.minRequestSize == 0
-                            count = int(length/bs)
-                            ct = 1
-                            offset = start
-                            while ct <= count:
-                                ct+=1
-                                data = reader.read(bs)
-                                connection.pwrite(data, offset)
-                                offset += nbdClient.minRequestSize
+                            blockOffset = start
+                            logger.debug('Bigger block, start: %s length: %s' % (blockOffset, start))
+                            while blockOffset < start+length:
+                                blocklen = min(start+length - blockOffset, nbdClient.maxRequestSize)
+                                logger.debug('Junk block: %s' % blocklen)
+                                data = reader.read(blocklen)
+                                connection.pwrite(data, blockOffset)
+                                blockOffset+=blocklen
                         else:
                             data = reader.read(length)
                             connection.pwrite(data, start)
