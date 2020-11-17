@@ -5,7 +5,9 @@ Work in progress ..
 
 # Prerequisites
 
-* libvirt 6.x from the centos8 advanced virtualization stream
+* Obviously an libvirt/qemu version that supports the incremental backup
+  features. (libvirt 6.x from the centos8 advanced virtualization stream does
+  come with required features)
 * Virtual machine must enable incremental backup feature by
   including following statement in its configuration:
  
@@ -16,6 +18,9 @@ Work in progress ..
   </qemu:capabilities
  ```
  
+ * python libvirt module version  >= 6.0.0
+ * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= 1.5.5
+
 # Backup Format
 
 Currently there are two output formats implemented:
