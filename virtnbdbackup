@@ -280,17 +280,20 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
                     save.length
                 ))
             if save.length >= nbdClient.maxRequestSize:
-                blockOffset = save.offset
-                while blockOffset < save.offset+save.length:
-                    blocklen = min(save.offset+save.length - blockOffset, nbdClient.maxRequestSize)
-                    if args.type == "raw":
-                        writer.seek(blockOffset)
-                    writer.write(connection.pread(blocklen, blockOffset))
-                    blockOffset+=blocklen
+                lib.writeChunk(writer,
+                    save.offset,
+                    save.length,
+                    nbdClient.maxRequestSize,
+                    connection,
+                    args.type
+                )
             else:
                 if args.type == "raw":
                     writer.seek(save.offset)
-                writer.write(connection.pread(save.length, save.offset))
+                writer.write(connection.pread(
+                    save.length,
+                    save.offset
+                ))
             if args.type == "stream":
                 writer.write(sparsestream.SparseStreamTypes().TERM)
         else:

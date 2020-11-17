@@ -43,7 +43,6 @@ class Common(object):
 
         return json.dumps(extList)
 
-
     def dumpMetaData(self, dataFile, sparsestream):
         """
             read metadata header
@@ -61,3 +60,32 @@ class Common(object):
             ))
             return meta
 
+    def writeChunk(self, writer, offset, length, maxRequestSize, nbdCon, btype):
+        blockOffset = offset
+        while blockOffset < offset+length:
+            blocklen = min(offset+length - blockOffset,
+                           maxRequestSize
+                        )
+            if btype == "raw":
+                writer.seek(blockOffset)
+            writer.write(nbdCon.pread(blocklen, blockOffset))
+            blockOffset+=blocklen
+
+    def zeroChunk(self, offset, length, maxRequestSize, nbdCon):
+        zeroOffset = offset
+        while zeroOffset < offset+length:
+            zeroLen = min(offset+length - zeroOffset,
+                maxRequestSize
+            )
+            nbdCon.zero(zeroLen, zeroOffset)
+            zeroOffset+=zeroLen
+
+    def readChunk(self, reader, offset, length, maxRequestSize, nbdCon):
+        blockOffset = offset
+        while blockOffset < offset+length:
+            blocklen = min(offset+length - blockOffset,
+                maxRequestSize
+            )
+            data = reader.read(blocklen)
+            nbdCon.pwrite(data, blockOffset)
+            blockOffset+=blocklen
