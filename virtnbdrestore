@@ -16,11 +16,13 @@ import libvirtnbdbackup.qemuhelper as qemuhelper
 
 def main():
     logging.getLogger("sh").setLevel(logging.WARNING)
-    parser = argparse.ArgumentParser(description='Restore')
+    parser = argparse.ArgumentParser(
+        description='Restore virtual machine disks'
+    )
     parser.add_argument("-a", "--action", required=True,
         choices=['dump','restore'],
         type=str,
-        help="Actions")
+        help="Action to perform")
     parser.add_argument("-i", "--input", required=True,
         type=str,
         help="Directory including a backup set")
@@ -38,7 +40,6 @@ def main():
     try:
         args = parser.parse_args()
     except:
-        parser.print_help()
         sys.exit(1)
 
     logger = logging

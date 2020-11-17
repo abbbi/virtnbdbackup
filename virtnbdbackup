@@ -15,47 +15,48 @@ import libvirtnbdbackup.libvirthelper as libvirthelper
 
 def main():
     logging.getLogger("sh").setLevel(logging.WARNING)
-    parser = argparse.ArgumentParser(description='Backup')
-    parser.add_argument("-t", "--type", default="stream",
-        choices=['stream','raw'],
+    parser = argparse.ArgumentParser(
+        description='Backup libvirt/qemu virtual machines'
+    )
+    parser.add_argument("-d", "--domain", required=True,
         type=str,
-        help="Output type: stream or raw")
+        help="Domain to backup")
     parser.add_argument("-l", "--level", default="copy",
         choices=['copy','full','inc'],
         type=str,
         help="Backup level, defaults to copy")
+    parser.add_argument("-t", "--type", default="stream",
+        choices=['stream','raw'],
+        type=str,
+        help="Output type: stream or raw")
     parser.add_argument("-o", "--output", required=True,
         type=str,
         help="Output target directory")
-    parser.add_argument("-d", "--domain", required=True,
-        type=str,
-        help="Domain to backup")
     parser.add_argument("-q", "--qemu", default=False,
         help="Use Qemu tools to query extents",
-        action="store_true")
-    parser.add_argument("-v", "--verbose", default=False,
-        help="Enable debug output",
         action="store_true")
     parser.add_argument("-i", "--include", default=None,
         type=str,
         help="Backup only disk with target dev name specified")
+    parser.add_argument("-c", "--checkpoint", default=False,
+        help="During incremental backup, use specified checkpoint as parent",
+        type=str)
     parser.add_argument("-s", "--startonly", default=False,
         help="Only initialize backup job via libvirt, do not backup any data",
         action="store_true")
     parser.add_argument("-k", "--killonly", default=False,
         help="Kill any running block job",
         action="store_true")
-    parser.add_argument("-c", "--checkpoint", default=False,
-        help="During incremental backup, use override parent checkpoint",
-        type=str)
     parser.add_argument("-p", "--printonly", default=False,
         help="Quit after printing extent information",
+        action="store_true")
+    parser.add_argument("-v", "--verbose", default=False,
+        help="Enable debug output",
         action="store_true")
 
     try:
         args = parser.parse_args()
     except:
-        parser.print_help()
         sys.exit(1)
 
     logger = logging
