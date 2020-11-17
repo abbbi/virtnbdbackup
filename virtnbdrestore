@@ -79,8 +79,8 @@ def main():
             if len(restoreDisk) < 1:
                 logger.warning("Did not find any backups for disk image %s" % disk.diskTarget)
                 continue
-            if not "full" in restoreDisk[0]:
-                logger.error("Unable to find full backup")
+            if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
+                logger.error("Unable to find base dataset.")
                 sys.exit(1)
             meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
             logger.info("Create virtual Disk %s/%s" % (args.output,meta['diskName']))
