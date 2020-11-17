@@ -69,6 +69,11 @@ def main():
         logger.error("Backup format raw does not support incremental backup")
         sys.exit(1)
 
+    if os.path.exists(args.output):
+        if os.listdir(args.output) and args.level in ("full","copy"):
+            logger.error("Target directory must empty")
+            sys.exit(1)
+
     virtClient = libvirthelper.client()
     try:
         domObj = virtClient.getDomain(args.domain)
