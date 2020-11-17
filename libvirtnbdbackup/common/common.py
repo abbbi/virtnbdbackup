@@ -49,9 +49,13 @@ class Common(object):
             read metadata header
         """
         with open(dataFile, 'rb') as reader:
-            kind, start, length = sparsestream.SparseStream().read_frame(
-                reader
-            )
+            try:
+                kind, start, length = sparsestream.SparseStream().read_frame(
+                    reader
+                )
+            except ValueError:
+                return False
+
             meta = sparsestream.SparseStream().load_metadata(reader.read(
                 length
             ))
