@@ -14,6 +14,7 @@ setup() {
     virsh domfsfreeze --domain cbt
 }
 @test "Create reference backup image using qemu-img convert" {
+    rm -rf $BACKUPSET
     run ../virtnbdbackup -t raw -d cbt -s -o $BACKUPSET
     [ "$status" -eq 0 ]
     run qemu-img convert -f raw nbd://localhost:10809/sda  -O raw $QEMU_FILE
@@ -22,7 +23,7 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Backup raw using virtnbdbackup, query extents with extenthandler" {
-    rm -rf /tmp/testset
+    rm -rf $BACKUPSET
     run ../virtnbdbackup -l full -t raw -d cbt -o $BACKUPSET
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Creating full provisioned" ]]
@@ -32,7 +33,7 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Backup raw using virtnbdbackup, query extents with qemu-img" {
-    rm -rf /tmp/testset
+    rm -rf $BACKUPSET
     run ../virtnbdbackup -l full -q -t raw -d cbt -o $BACKUPSET
     [ "$status" -eq 0 ]
 }
@@ -41,7 +42,7 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Backup in stream format"  {
-    rm -rf /tmp/testset
+    rm -rf $BACKUPSET
     run ../virtnbdbackup -l full -d cbt -o $BACKUPSET
     [ "$status" -eq 0 ]
 }
