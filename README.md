@@ -37,12 +37,6 @@ Currently there are two output formats implemented:
 Currently the required components have to be installed and executed on the
 libvirt host itself, remote connections are possible and are subject to
 further releases.
- 
-# Extents
-
-In order to save only used data from the images, extent information is queried
-from the NBD server. This happens by either using the qemu tools (qemu-img map
-..) if option "-q" is specified, or by an custom implemented extent handler.
 
 # Backup Operation
 
@@ -51,11 +45,11 @@ Following backup modes can be used:
 * copy: Full backup of virtual machine, no checkpoint is created for further
   incremental backups, existing checkpoints will be left.
 
-* full: Full backup of virtual machine, a new checkpoint named `virnbdbackup'
+* full: Full backup of virtual machine, a new checkpoint named `virtnbdbackup'
   will be created, all existant checkpoints from prior backups including this name
   will be removed: a new backup chain is created.
 
-* inc: Perform incremental backup, based on the last full backup.
+* inc: Perform incremental backup, based on the last full or incremental backup.
 
 All required informations for restore are saved within the same directory,
 including the virtual machine configuration, checkpoint information and disk
