@@ -207,7 +207,9 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
         logging.error("No extents found")
         return
 
-    thinBackupSize = sum([extent.length for extent in extents if extent.data == True])
+    thinBackupSize = sum(
+        [extent.length for extent in extents if extent.data == True]
+    )
     logger.info("Got %s extents" % len(extents))
     lib = common.Common()
     if args.verbose == True:
@@ -299,7 +301,7 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
         else:
             if args.type == "raw":
                 writer.seek(save.offset)
-            elif args.type == "stream":
+            elif args.type == "stream" and args.level != "inc":
                 sparsestream.SparseStream().write_frame(writer,
                     sparsestream.SparseStreamTypes().ZERO,
                     save.offset,

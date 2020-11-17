@@ -162,7 +162,14 @@ def main():
                         assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
                         dataSize += length
                     elif kind == sparsestream.SparseStreamTypes().STOP:
-                        logger.info("End of stream, %s bytes of data processed" % dataSize)
+                        if dataSize == meta['dataSize']:
+                            logger.info("End of stream, %s bytes of data processed" % dataSize)
+                        else:
+                            logger.error('Error: restored data size %s != %s' % (
+                                dataSize,
+                                meta['dataSize']
+                            ))
+                            sys.exit(1)
                         break
 
                 if meta['checkpointName'] == args.until:
