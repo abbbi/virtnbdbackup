@@ -1,30 +1,24 @@
-QEMU_FILE=/tmp/convert.full.raw
-CONVERT_FILE=/tmp/restored.full.raw
-BACKUPSET=/tmp/testset2
-RESTORESET=/tmp/restoreset2
-VM="vm2"
-# lets use an openstack image for testing,
-# as the defined virtual machine has way
-# too less memory, it wont boot so no changes
-# are applied to the image
-# VM image is qcow2 so no persistent bitmaps
-# are supported, create only copy backups
-VM_IMAGE="https://cdimage.debian.org/cdimage/openstack/archive/10.6.0/debian-10.6.0-openstack-amd64.qcow2"
+if [ -z "$TEST" ]; then
+    echo ""
+    echo "Missing required test env" >&2
+    echo "export TEST=<dir> to run specified tests" >&2
+    echo ""
+    exit
+fi
 
-setup() {
-    if [ ! -e $BACKUPSET ]; then
-        mkdir $BACKUPSET
+load $TEST/config.bash
+
+@test "Setup / download vm image $VM_IMAGE" {
+    if [ ! -e ${VM_IMAGE} ]; then
+        curl -L $VM_IMAGE > /tmp/${VM}-sda.qcow2
+    else 
+        cp ${VM_IMAGE} /tmp/
     fi
-}
-
-@test "Download vm image $VM_IMAGE" {
-    curl -L $VM_IMAGE > /tmp/${VM}-sda.qcow2
 }
 
 @test "Setup: Define and start test VM ${VM}" {
     virsh destroy ${VM} || true
     virsh undefine ${VM} --checkpoints-metadata || true
-    run cp ./${VM}/* /tmp/
     run virsh define /tmp/${VM}.xml
     run virsh start ${VM}
     [ "$status" -eq 0 ]
@@ -42,16 +36,16 @@ setup() {
 @test "Extent: Query extents using qemu tools" {
     rm -rf /tmp/extentquery
     run ../virtnbdbackup -q -l copy -d $VM -o /tmp/extentquery -p
-    [[ "$output" =~ "Got 866 extents" ]]
-    [[ "$output" =~ "2147483648 bytes disk size" ]]
-    [[ "$output" =~ "1394147328 bytes of data extents to backup" ]]
+    [[ "$output" =~ "$EXTENT_OUTPUT1" ]]
+    [[ "$output" =~ "$EXTENT_OUTPUT2" ]]
+    [[ "$output" =~ "$EXTENT_OUTPUT3" ]]
 }
 @test "Extent: Query extents using extent handler" {
     rm -rf /tmp/extentquery
     run ../virtnbdbackup -l copy -d $VM -o /tmp/extentquery -p
-    [[ "$output" =~ "Got 866 extents" ]]
-    [[ "$output" =~ "2147483648 bytes disk size" ]]
-    [[ "$output" =~ "1394147328 bytes of data extents to backup" ]]
+    [[ "$output" =~ "$EXTENT_OUTPUT1" ]]
+    [[ "$output" =~ "$EXTENT_OUTPUT2" ]]
+    [[ "$output" =~ "$EXTENT_OUTPUT3" ]]
 }
 @test "Backup raw using virtnbdbackup, query extents with extenthandler" {
     rm -rf $BACKUPSET
@@ -79,8 +73,8 @@ setup() {
 }
 @test "Dump metadata information" {
     run ../virtnbdrestore -i $BACKUPSET -a dump -o /dev/null
-    [[ "$output" =~ "1394147328" ]]
-    [[ "$output" =~ "2147483648" ]]
+    [[ "$output" =~ "$DATA_SIZE" ]]
+    [[ "$output" =~ "$VIRTUAL_SIZE" ]]
 }
 @test "Restore stream format"  {
     run ../virtnbdrestore -a restore -i $BACKUPSET -o $RESTORESET
