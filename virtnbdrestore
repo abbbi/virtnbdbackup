@@ -77,13 +77,24 @@ def main():
         for disk in vmDisks:
             restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
             if len(restoreDisk) < 1:
-                logger.warning("Did not find any backups for disk image %s" % disk.diskTarget)
+                logger.warning("Did not find any backups for disk image %s" %
+                    disk.diskTarget
+                )
                 continue
             if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
                 logger.error("Unable to find base dataset.")
                 sys.exit(1)
-            meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
-            logger.info("Create virtual Disk %s/%s" % (args.output,meta['diskName']))
+            try:
+                meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
+            except Exception as e:
+                logger.error("Reading metadata from %s failed: %s" % (
+                    restoreDisk[0],
+                    e
+                ))
+                sys.exit(1)
+            logger.info("Create virtual Disk %s/%s" % (
+                args.output,meta['diskName']
+            ))
             logger.info("Size %s" % meta['virtualSize'])
             qFh = qemuhelper.qemuHelper(meta['diskName'])
 
@@ -115,16 +126,26 @@ def main():
                     length
                 ))
                 if meta['dataSize'] == 0:
-                    logger.info("Saveset %s contains no dirty blocks, skipping" % restoreFile)
+                    logger.info("Saveset %s contains no dirty blocks, skipping" %
+                        restoreFile
+                    )
                     continue
                 logger.info("Applying data from file %s" % restoreFile)
                 pprint.pprint(meta)
-                assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
+                assert reader.read(
+                    len(sparsestream.SparseStreamTypes().TERM)
+                ) == sparsestream.SparseStreamTypes().TERM
                 dataSize = 0
                 while True:
-                    kind, start, length = sparsestream.SparseStream().read_frame(
-                        reader
-                    )
+                    try:
+                        kind, start, length = sparsestream.SparseStream().read_frame(
+                            reader
+                        )
+                    except Exception as e:
+                        logger.error("Unknown header at stream postition %s" %
+                            reader.tell()
+                        )
+                        sys.exit(1)
                     if kind == sparsestream.SparseStreamTypes().ZERO:
                         logger.info("Write zero segment from %s length: %s" % (
                             start,
@@ -144,7 +165,9 @@ def main():
                         else:
                             connection.zero(length, start)
                     elif kind == sparsestream.SparseStreamTypes().DATA:
-                        logger.info("Write data segment from %s length: %s" % (start,length))
+                        logger.info("Write data segment from %s length: %s" % (
+                            start,length
+                        ))
                         if length >= nbdClient.maxRequestSize:
                             logger.debug("Chunked read/write, start: %s, len: %s" %(
                                 start,
