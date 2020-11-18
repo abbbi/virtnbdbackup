@@ -68,7 +68,7 @@ The target directory must be rotated if a new backup set is created.
 * Start incremental backup for domain "cbt":
 
 ```
- virtnbdbackup -d cbt -l full -o /tmp/backupset
+ virtnbdbackup -d cbt -l inc -o /tmp/backupset
 ```
 
 The resulting directory will contain all information for restoring the virtual machine:
