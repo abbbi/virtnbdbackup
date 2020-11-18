@@ -4,5 +4,5 @@ Test cases, use BATS:
 
  run test case for specified VM via:
 
- export TEST=vm1 to run specified tests
+ export TEST=vm1
  ./bats-core/bin/bats tests.bats
