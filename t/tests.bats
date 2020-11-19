@@ -9,7 +9,7 @@ fi
 load $TEST/config.bash
 
 @test "Setup / download vm image $VM_IMAGE" {
-    if [ ! -e ${VM_IMAGE} ]; then
+    if [ ! ls $VM_IMAGE > /dev/null 2>&1 ]; then
         curl -L $VM_IMAGE > /tmp/${VM}-sda.qcow2
     else 
         cp ${VM_IMAGE} /tmp/
@@ -19,6 +19,7 @@ load $TEST/config.bash
 @test "Setup: Define and start test VM ${VM}" {
     virsh destroy ${VM} || true
     virsh undefine ${VM} --checkpoints-metadata || true
+    cp ${VM}/${VM}.xml /tmp/
     run virsh define /tmp/${VM}.xml
     run virsh start ${VM}
     [ "$status" -eq 0 ]
