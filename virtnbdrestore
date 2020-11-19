@@ -37,10 +37,8 @@ def main():
         default=False,
         help="Enable debug output")
 
-    try:
-        args = parser.parse_args()
-    except:
-        sys.exit(1)
+    lib = common.Common()
+    args = lib.argparse(parser)
 
     logger = logging
     if args.verbose == True:
@@ -119,10 +117,10 @@ def main():
 
             for restoreFile in restoreDisk:
                 reader = open(restoreFile,'rb')
-                kind, start, length = sparsestream.SparseStream().read_frame(
+                kind, start, length = sparsestream.SparseStream().readFrame(
                     reader
                 )
-                meta = sparsestream.SparseStream().load_metadata(reader.read(
+                meta = sparsestream.SparseStream().loadMetadata(reader.read(
                     length
                 ))
                 if meta['dataSize'] == 0:
@@ -138,7 +136,7 @@ def main():
                 dataSize = 0
                 while True:
                     try:
-                        kind, start, length = sparsestream.SparseStream().read_frame(
+                        kind, start, length = sparsestream.SparseStream().readFrame(
                             reader
                         )
                     except Exception as e:
@@ -156,12 +154,9 @@ def main():
                                 start,
                                 length
                             ))
-                            lib.zeroChunk(
-                                start,
-                                length,
-                                nbdClient.maxRequestSize,
-                                connection
-                            )
+                            lib.zeroChunk(start, length,
+                                          nbdClient.maxRequestSize,
+                                          connection)
                         else:
                             connection.zero(length, start)
                     elif kind == sparsestream.SparseStreamTypes().DATA:
@@ -170,16 +165,10 @@ def main():
                         ))
                         if length >= nbdClient.maxRequestSize:
                             logger.debug("Chunked read/write, start: %s, len: %s" %(
-                                start,
-                                length
-                            ))
-                            lib.readChunk(
-                                reader,
-                                start,
-                                length,
-                                nbdClient.maxRequestSize,
-                                connection
-                            )
+                                start, length))
+                            lib.readChunk(reader, start, length,
+                                          nbdClient.maxRequestSize,
+                                          connection)
                         else:
                             data = reader.read(length)
                             connection.pwrite(data, start)

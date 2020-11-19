@@ -93,7 +93,7 @@ class SparseStream:
         self.version = version
         self.types = SparseStreamTypes()
 
-    def dump_metadata(self, virtualSize, dataSize, diskName, checkpointName, parentCheckpoint, incremental):
+    def dumpMetadata(self, virtualSize, dataSize, diskName, checkpointName, parentCheckpoint, incremental):
         '''
             First block in backup stream is Meta data information
             about virtual size of the disk beeing backed up
@@ -124,7 +124,7 @@ class SparseStream:
         }
         return json.dumps(meta, indent=4).encode("utf-8")
 
-    def load_metadata(self, s):
+    def loadMetadata(self, s):
         '''
             Load and parse metadata information
 
@@ -135,7 +135,7 @@ class SparseStream:
         '''
         return json.loads(s.decode("utf-8"))
 
-    def write_frame(self, writer, kind, start, length):
+    def writeFrame(self, writer, kind, start, length):
         '''
             Write backup frame
 
@@ -145,7 +145,7 @@ class SparseStream:
         '''
         writer.write(self.types.FRAME % (kind, start, length))
 
-    def read_frame(self, reader):
+    def readFrame(self, reader):
         '''
             Read backup frame
 

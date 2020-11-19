@@ -54,10 +54,8 @@ def main():
         help="Enable debug output",
         action="store_true")
 
-    try:
-        args = parser.parse_args()
-    except:
-        sys.exit(1)
+    lib = common.Common()
+    args = lib.argparse(parser)
 
     logger = logging
     if args.verbose == True:
@@ -70,8 +68,8 @@ def main():
         logger.error("Backup format raw does not support incremental backup")
         sys.exit(1)
 
-    if os.path.exists(args.output):
-        if os.listdir(args.output) and args.level in ("full","copy"):
+    if not args.output == "-":
+        if not lib.targetIsEmpty(args):
             logger.error("Target directory must empty")
             sys.exit(1)
 
@@ -87,7 +85,6 @@ def main():
         sys.exit(1)
 
     vmConfig = virtClient.getDomainConfig(domObj)
-
     disks = virtClient.getDomainDisks(vmConfig)
 
     logger.info("Domain has %s disks attached" % len(disks))
@@ -144,7 +141,8 @@ def main():
         logging.info("Using checkpoint name %s" % checkpointName)
 
     try:
-        virtClient.startBackup(domObj, disks, args.level, checkpointName, parentCheckpoint)
+        virtClient.startBackup(domObj, disks, args.level,
+                               checkpointName, parentCheckpoint)
     except Exception as e:
         logging.error('%s' % e)
         sys.exit(1)
@@ -166,17 +164,13 @@ def main():
             logging.info("Skipping disk: %s" % disk.diskTarget)
             continue
         try:
-            backupDisk(disk.diskTarget,
-                args,
-                logger,
-                checkpointName,
-                parentCheckpoint
-            )
+            backupDisk(disk.diskTarget, args, lib, logger,
+                       checkpointName, parentCheckpoint)
         except Exception as e:
             logger.error('%s' % e)
             virtClient.stopBackup(domObj, disk.diskTarget)
             sys.exit(1)
-    if args.printonly is False:
+    if args.printonly is False and args.output != "-":
         backupConfig(vmConfig, args, checkpointName, logger)
     virtClient.stopBackup(domObj, disk.diskTarget)
 
@@ -186,7 +180,7 @@ def backupConfig(vmConfig, args, checkpointName, logger):
     with open(configFile, 'w') as configFh:
         configFh.write(vmConfig)
 
-def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
+def backupDisk(diskTarget, args, lib, logger, checkpointName, parentCheckpoint):
     metaContext = None
     if args.level == "inc":
         metaContext = "qemu:dirty-bitmap:backup-%s" % diskTarget
@@ -217,7 +211,6 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
         [extent.length for extent in extents if extent.data == True]
     )
     logger.info("Got %s extents" % len(extents))
-    lib = common.Common()
     if args.verbose == True:
         pprint.pprint(lib.dumpExtentJson(extents))
     logger.info("%s bytes disk size" % diskSize)
@@ -259,15 +252,10 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
         inc = False
         if args.level == "inc":
             inc = True
-        metadata = sparsestream.SparseStream().dump_metadata(
-            diskSize,
-            thinBackupSize,
-            diskTarget,
-            checkpointName,
-            parentCheckpoint,
-            inc
-        )
-        sparsestream.SparseStream().write_frame(writer,
+        metadata = sparsestream.SparseStream().dumpMetadata(diskSize,
+            thinBackupSize, diskTarget, checkpointName,
+            parentCheckpoint, inc)
+        sparsestream.SparseStream().writeFrame(writer,
             sparsestream.SparseStreamTypes().META,
             0,
             len(metadata)
@@ -278,7 +266,7 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
     for save in extents:
         if save.data == True:
             if args.type == "stream":
-                sparsestream.SparseStream().write_frame(writer,
+                sparsestream.SparseStream().writeFrame(writer,
                     sparsestream.SparseStreamTypes().DATA,
                     save.offset,
                     save.length
@@ -288,13 +276,9 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
                     save.length
                 ))
             if save.length >= nbdClient.maxRequestSize:
-                lib.writeChunk(writer,
-                    save.offset,
-                    save.length,
-                    nbdClient.maxRequestSize,
-                    connection,
-                    args.type
-                )
+                lib.writeChunk(writer, save.offset, save.length,
+                               nbdClient.maxRequestSize, connection,
+                               args.type)
             else:
                 if args.type == "raw":
                     writer.seek(save.offset)
@@ -308,13 +292,13 @@ def backupDisk(diskTarget, args, logger, checkpointName, parentCheckpoint):
             if args.type == "raw":
                 writer.seek(save.offset)
             elif args.type == "stream" and args.level != "inc":
-                sparsestream.SparseStream().write_frame(writer,
+                sparsestream.SparseStream().writeFrame(writer,
                     sparsestream.SparseStreamTypes().ZERO,
                     save.offset,
                     save.length
                 )
     if args.type == "stream":
-        sparsestream.SparseStream().write_frame(
+        sparsestream.SparseStream().writeFrame(
             writer,
             sparsestream.SparseStreamTypes().STOP,
             0,

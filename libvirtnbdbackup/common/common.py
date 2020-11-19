@@ -1,3 +1,5 @@
+import os
+import sys
 import glob
 import json
 
@@ -5,6 +7,20 @@ class Common(object):
     """
         Common functions
     """
+
+    def argparse(self, parser):
+        try:
+            return parser.parse_args()
+        except:
+            sys.exit(1)
+
+    def targetIsEmpty(self, args):
+        if os.path.exists(args.output):
+            if os.listdir(args.output) and args.level in ("full","copy"):
+                return False
+
+        return True
+
     def getDataFiles(self, targetDir):
         """
             return data files within backupset
@@ -49,13 +65,13 @@ class Common(object):
         """
         with open(dataFile, 'rb') as reader:
             try:
-                kind, start, length = sparsestream.SparseStream().read_frame(
+                kind, start, length = sparsestream.SparseStream().readFrame(
                     reader
                 )
             except ValueError:
                 return False
 
-            meta = sparsestream.SparseStream().load_metadata(reader.read(
+            meta = sparsestream.SparseStream().loadMetadata(reader.read(
                 length
             ))
             return meta

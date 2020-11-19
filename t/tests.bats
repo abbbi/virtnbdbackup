@@ -15,7 +15,6 @@ load $TEST/config.bash
         cp ${VM_IMAGE} /tmp/
     fi
 }
-
 @test "Setup: Define and start test VM ${VM}" {
     virsh destroy ${VM} || true
     virsh undefine ${VM} --checkpoints-metadata || true
@@ -24,7 +23,6 @@ load $TEST/config.bash
     run virsh start ${VM}
     [ "$status" -eq 0 ]
 }
-
 @test "Create reference backup image using qemu-img convert" {
     rm -rf $BACKUPSET
     run ../virtnbdbackup -t raw -d $VM -s -o $BACKUPSET
@@ -70,6 +68,11 @@ load $TEST/config.bash
 @test "Backup in stream format"  {
     rm -rf $BACKUPSET
     run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET
+    [ "$status" -eq 0 ]
+}
+@test "Backup in stream format,single disk write to stdout"  {
+    rm -f /tmp/stdout.sda
+    run ../virtnbdbackup -l copy -d $VM -i sda -o - > /dev/null
     [ "$status" -eq 0 ]
 }
 @test "Dump metadata information" {
