@@ -176,8 +176,8 @@ def main():
             logger.error('%s' % e)
             virtClient.stopBackup(domObj, disk.diskTarget)
             sys.exit(1)
-
-    backupConfig(vmConfig, args, checkpointName, logger)
+    if args.printonly is False:
+        backupConfig(vmConfig, args, checkpointName, logger)
     virtClient.stopBackup(domObj, disk.diskTarget)
 
 def backupConfig(vmConfig, args, checkpointName, logger):
