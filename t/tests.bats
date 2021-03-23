@@ -69,10 +69,18 @@ load $TEST/config.bash
     run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET
     [ "$status" -eq 0 ]
 }
+toOut() {
+    # for some reason bats likes to hijack stdout which results
+    # in data beeing read into memory  ... helper function works
+    # around this issue.
+    ../virtnbdbackup -l copy -d $VM -i sda -o - > /tmp/stdout.sda
+}
 @test "Backup in stream format,single disk write to stdout"  {
     rm -f /tmp/stdout.sda
-    run ../virtnbdbackup -l copy -d $VM -i sda -o - > /dev/null
+    export PYTHONUNBUFFERED=True
+    run toOut
     [ "$status" -eq 0 ]
+    [ -e /tmp/stdout.sda ]
 }
 @test "Dump metadata information" {
     run ../virtnbdrestore -i $BACKUPSET -a dump -o /dev/null
