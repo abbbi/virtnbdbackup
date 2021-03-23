@@ -7,19 +7,30 @@ Work in progress ..
 
 * Obviously an libvirt/qemu version that supports the incremental backup
   features. (libvirt 6.x from the centos8 advanced virtualization stream does
-  come with required features)
+  come with required features). To install libvirt from the stream use:
+
+  ```
+  yum install centos-release-advanced-virtualization
+  yum update
+  yum module install virt
+  ```
+
 * Virtual machine must enable incremental backup feature by
-  including following statement in its configuration:
+  including the capabilitys statement and using the extended schema 
+  in its configuration as shown below:
  
  ```
   <domain type='kvm' id='1' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
-    <qemu:capabilities>
+  [..]
+  <qemu:capabilities>
     <qemu:add capability='incremental-backup'/>
   </qemu:capabilities
+  [..]
+  </domain>
  ```
  
- * python libvirt module version  >= 6.0.0
- * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= 1.5.5
+ * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
+ * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= 1.5.5 (yum install python3-libnbd)
 
 # Backup Format
 
