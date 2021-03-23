@@ -32,6 +32,10 @@ def main():
     parser.add_argument("-o", "--output", required=True,
         type=str,
         help="Output target directory")
+    parser.add_argument("-S", "--scratchdir", required=False,
+        type=str,
+        help="Target directory for temporary scratch file",
+        default="/tmp/")
     parser.add_argument("-q", "--qemu", default=False,
         help="Use Qemu tools to query extents",
         action="store_true")
@@ -140,9 +144,19 @@ def main():
 
         logging.info("Using checkpoint name %s" % checkpointName)
 
+    logging.info('Temporary scratch file target directory: %s' % args.scratchdir)
+
+    if not os.path.exists(args.scratchdir):
+        try:
+            os.mkdir(args.scratchdir)
+        except Exception as e:
+            logging.error('Unable to create directory for scratch file: %s' % e)
+            sys.exit(1)
+
     try:
         virtClient.startBackup(domObj, disks, args.level,
-                               checkpointName, parentCheckpoint)
+                               checkpointName, parentCheckpoint,
+                               args.scratchdir)
     except Exception as e:
         logging.error('%s' % e)
         sys.exit(1)

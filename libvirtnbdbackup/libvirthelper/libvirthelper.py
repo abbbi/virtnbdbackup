@@ -100,7 +100,7 @@ class client(object):
 
         return devices
 
-    def _createBackupXml(self, diskList, parentCheckpoint):
+    def _createBackupXml(self, diskList, parentCheckpoint, scratchFilePath):
         """ Create XML file for starting an backup task using libvirt API.
         """
         top = ElementTree.Element('domainbackup', {'mode':'pull'})
@@ -113,7 +113,9 @@ class client(object):
 
         for disk in diskList:
             dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
-            ElementTree.SubElement(dE, 'scratch', {'file':'/tmp/backup.%s' % disk.diskTarget})
+            ElementTree.SubElement(dE, 'scratch',
+                {'file':'%s/backup.%s' % (scratchFilePath, disk.diskTarget)}
+            )
 
         return ElementTree.tostring(top)
 
@@ -135,10 +137,12 @@ class client(object):
 
         return ElementTree.tostring(top)
 
-    def startBackup(self, domObj, diskList, backupLevel, checkpointName, parentCheckpoint):
+    def startBackup(self, domObj, diskList, backupLevel, checkpointName,
+                    parentCheckpoint, scratchFilePath):
         """ Attempt to start pull based backup task using  XMl description
         """
-        backupXml = self._createBackupXml(diskList, parentCheckpoint)
+        backupXml = self._createBackupXml(diskList, parentCheckpoint,
+                                          scratchFilePath)
         checkpointXml = None
         try:
             if backupLevel != "copy":
