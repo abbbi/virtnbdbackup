@@ -20,25 +20,6 @@
     <apic/>
     <vmport state='off'/>
   </features>
-  <cpu mode='custom' match='exact' check='full'>
-    <model fallback='forbid'>Cascadelake-Server</model>
-    <vendor>Intel</vendor>
-    <feature policy='require' name='ss'/>
-    <feature policy='require' name='hypervisor'/>
-    <feature policy='require' name='tsc_adjust'/>
-    <feature policy='require' name='md-clear'/>
-    <feature policy='require' name='stibp'/>
-    <feature policy='require' name='arch-capabilities'/>
-    <feature policy='require' name='ibpb'/>
-    <feature policy='require' name='amd-ssbd'/>
-    <feature policy='require' name='skip-l1dfl-vmentry'/>
-    <feature policy='require' name='pschange-mc-no'/>
-    <feature policy='disable' name='invpcid'/>
-    <feature policy='disable' name='pku'/>
-    <feature policy='disable' name='avx512vnni'/>
-    <feature policy='disable' name='pdpe1gb'/>
-    <feature policy='disable' name='mpx'/>
-  </cpu>
   <clock offset='utc'>
     <timer name='rtc' tickpolicy='catchup'/>
     <timer name='pit' tickpolicy='delay'/>

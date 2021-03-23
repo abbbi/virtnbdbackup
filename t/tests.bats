@@ -8,12 +8,11 @@ fi
 
 load $TEST/config.bash
 
-@test "Setup / download vm image $VM_IMAGE" {
-    if [ ! ls $VM_IMAGE > /dev/null 2>&1 ]; then
-        curl -L $VM_IMAGE > /tmp/${VM}-sda.qcow2
-    else 
-        cp ${VM_IMAGE} /tmp/
+@test "Setup / download vm image $VM_IMAGE_URL" {
+    if [ ! ls "$VM_IMAGE" > /dev/null 2>&1 ]; then
+        curl -L $VM_IMAGE_URL > ${VM_IMAGE}
     fi
+    cp ${VM_IMAGE} /tmp/
 }
 @test "Setup: Define and start test VM ${VM}" {
     virsh destroy ${VM} || true

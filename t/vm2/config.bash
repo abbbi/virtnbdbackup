@@ -9,7 +9,8 @@ VM="vm2"
 # are applied to the image
 # VM image is qcow2 so no persistent bitmaps
 # are supported, create only copy backups
-VM_IMAGE="https://cdimage.debian.org/cdimage/openstack/archive/10.6.0/debian-10.6.0-openstack-amd64.qcow2"
+VM_IMAGE_URL="https://cdimage.debian.org/cdimage/openstack/archive/10.6.0/debian-10.6.0-openstack-amd64.qcow2"
+VM_IMAGE="debian-10.6.0-openstack-amd64.qcow2"
 
 EXTENT_OUTPUT1="Got 866 extents"
 EXTENT_OUTPUT2="2147483648 bytes disk size"
