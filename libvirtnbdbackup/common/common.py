@@ -15,8 +15,9 @@ class Common(object):
             sys.exit(1)
 
     def targetIsEmpty(self, args):
-        if os.path.exists(args.output):
-            if os.listdir(args.output) and args.level in ("full","copy"):
+        if os.path.exists(args.output) and args.level in ("full","copy"):
+            dirList = os.listdir(args.output)
+            if len(dirList) > 1:
                 return False
 
         return True
