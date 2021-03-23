@@ -3,7 +3,7 @@ import logging
 import sys
 from xml.etree import ElementTree
 
-# this is needed so libvirt.py does not report errors to stderr
+# this is required so libvirt.py does not report errors to stderr
 # which it does by default. Error messages are fetched accordingly
 # using exceptions.
 def libvirt_ignore(ignore, err):
@@ -11,23 +11,18 @@ def libvirt_ignore(ignore, err):
 libvirt.registerErrorHandler(f=libvirt_ignore, ctx=None)
 
 class DomainDisk(object):
-
-    """
-        Virtual machine Disk Object
+    """ Virtual machine Disk Object
 
         @diskTarget: target name for virtual disk as defined
         in the configuration. NBD server will use this target
         name as export name
     """
-
     def __init__(self):
         self.diskTarget = None
 
 class client(object):
+    """ Libvirt related functions
     """
-        Libvirt related functions
-    """
-
     def __init__(self):
         self._conn = self._connect()
         self._domObj = None
@@ -40,9 +35,13 @@ class client(object):
             raise
 
     def getDomain(self, name):
+        """ Lookup domain """
         return self._conn.lookupByName(name)
 
     def hasIncrementalEnabled(self, domObj):
+        """ Check if virtual machine has enabled required capabilities
+        for incremental backup
+        """
         tree=ElementTree.fromstring(domObj.XMLDesc(0))
         for target in tree.findall("{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"):
             for cap in target.findall("{http://libvirt.org/schemas/domain/qemu/1.0}add"):
@@ -52,23 +51,45 @@ class client(object):
         return False
 
     def getDomainConfig(self, domObj):
+        """ Return Virtual Machine configuration as XML
+        """
         return domObj.XMLDesc(0)
 
     def getDomainDisks(self, vmConfig):
+        """ Parse virtual machine configuration for disk devices, filter
+        all non supported devices
+        """
         tree=ElementTree.fromstring(vmConfig)
         devices=[]
 
         driver = None
+        device = None
         for target in tree.findall("devices/disk"):
             for src in target.findall("target"):
                 dev=src.get("dev")
 
-            # ignore raw and cdrom devices, they do not suppport
-            # incremental backup
+            # ignore attached lun or direct access block devices
+            if target.get('type') == "block":
+                    logging.warning(
+                        'Ignoring direct attaced block device %s does not support changed block tracking.' % dev
+                    )
+                    continue
+
+            device = target.get('device')
+            if device != None:
+                if device == "lun":
+                    logging.warning(
+                        'Ignoring direct attached lun disk %s does not support changed block tracking.' % dev
+                    )
+                    continue
+
+            # ignore disk which use raw format, they do not support CBT
             driver = target.find('driver')
             if driver != None:
                 if driver.get('type') == "raw":
-                    logging.warning('Ignoring disk %s with raw format: does not support changed block tracking.' % dev)
+                    logging.warning(
+                        'Ignoring disk %s with raw format: does not support changed block tracking.' % dev
+                    )
                     continue
             if target.get('device') == "cdrom":
                 continue
@@ -80,6 +101,8 @@ class client(object):
         return devices
 
     def _createBackupXml(self, diskList, parentCheckpoint):
+        """ Create XML file for starting an backup task using libvirt API.
+        """
         top = ElementTree.Element('domainbackup', {'mode':'pull'})
         child = ElementTree.SubElement(top, 'server', {'name':'localhost','port':'10809'})
         disks = ElementTree.SubElement(top, 'disks')
@@ -95,6 +118,8 @@ class client(object):
         return ElementTree.tostring(top)
 
     def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
+        """ Create valid checkpoint XML file which is passed to libvirt API
+        """
         top = ElementTree.Element('domaincheckpoint')
         desc = ElementTree.SubElement(top, 'description')
         desc.text='Backup checkpoint'
@@ -111,6 +136,8 @@ class client(object):
         return ElementTree.tostring(top)
 
     def startBackup(self, domObj, diskList, backupLevel, checkpointName, parentCheckpoint):
+        """ Attempt to start pull based backup task using  XMl description
+        """
         backupXml = self._createBackupXml(diskList, parentCheckpoint)
         checkpointXml = None
         try:
@@ -125,9 +152,14 @@ class client(object):
             raise
 
     def checkpointExists(self, domObj, checkpointName):
+        """ Check if an checkpoint exists
+        """
         return domObj.checkpointLookupByName(checkpointName)
 
     def removeAllCheckpoints(self, domObj, checkpointList):
+        """ Remove all existing checkpoints for a virtual machine,
+        used during FULL backup to reset checkpoint chain
+        """
         if checkpointList == None:
             cpts = domObj.listAllCheckpoints()
             if cpts:
@@ -143,4 +175,6 @@ class client(object):
         return True
 
     def stopBackup(self, domObj, diskTarget):
+        """ Cancel the backup task using block job abort
+        """
         domObj.blockJobAbort(diskTarget)
