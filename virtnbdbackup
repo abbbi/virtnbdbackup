@@ -87,7 +87,7 @@ def main():
     vmConfig = virtClient.getDomainConfig(domObj)
     disks = virtClient.getDomainDisks(vmConfig)
 
-    logger.info("Domain has %s disks attached" % len(disks))
+    logger.info("Domain has %s disks attached which support changed block tracking." % len(disks))
 
     if args.killonly == True:
         logger.info("Stopping domain jobs")
@@ -160,17 +160,6 @@ def main():
         sys.exit(0)
 
     for disk in disks:
-        if disk.diskType == "cdrom":
-            logging.info("Ignoring CDROM device: %s" % disk.diskTarget)
-            continue
-
-        if disk.diskDriver == None or disk.diskDriver == "raw":
-            logging.info("Skipping unsupported disk: %s, type: %s" % (
-                disk.diskTarget,
-                disk.diskDriver
-            ))
-            continue
-
         if args.include != None and disk.diskTarget != args.include:
             logging.info("Skipping disk: %s" % disk.diskTarget)
             continue

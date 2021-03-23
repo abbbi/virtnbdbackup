@@ -22,8 +22,6 @@ class DomainDisk(object):
 
     def __init__(self):
         self.diskTarget = None
-        self.diskType = None
-        self.diskDriver = None
 
 class client(object):
     """
@@ -65,13 +63,18 @@ class client(object):
             for src in target.findall("target"):
                 dev=src.get("dev")
 
+            # ignore raw and cdrom devices, they do not suppport
+            # incremental backup
             driver = target.find('driver')
+            if driver != None:
+                if driver.get('type') == "raw":
+                    logging.warning('Ignoring disk %s with raw format: does not support changed block tracking.' % dev)
+                    continue
+            if target.get('device') == "cdrom":
+                continue
 
             diskObj = DomainDisk()
             diskObj.diskTarget = dev
-            diskObj.diskType = target.get('device')
-            if driver != None:
-                diskObj.diskDriver = driver.get('type')
             devices.append(diskObj)
 
         return devices
