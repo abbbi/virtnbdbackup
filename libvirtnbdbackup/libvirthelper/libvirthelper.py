@@ -22,6 +22,8 @@ class DomainDisk(object):
 
     def __init__(self):
         self.diskTarget = None
+        self.diskType = None
+        self.diskDriver = None
 
 class client(object):
     """
@@ -58,12 +60,18 @@ class client(object):
         tree=ElementTree.fromstring(vmConfig)
         devices=[]
 
+        driver = None
         for target in tree.findall("devices/disk"):
             for src in target.findall("target"):
                 dev=src.get("dev")
 
+            driver = target.find('driver')
+
             diskObj = DomainDisk()
             diskObj.diskTarget = dev
+            diskObj.diskType = target.get('device')
+            if driver != None:
+                diskObj.diskDriver = driver.get('type')
             devices.append(diskObj)
 
         return devices
