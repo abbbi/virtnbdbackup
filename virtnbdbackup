@@ -169,6 +169,7 @@ def main():
                 disk.diskTarget,
                 disk.diskDriver
             ))
+            continue
 
         if args.include != None and disk.diskTarget != args.include:
             logging.info("Skipping disk: %s" % disk.diskTarget)
