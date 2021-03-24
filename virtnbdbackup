@@ -42,7 +42,10 @@ def main():
         action="store_true")
     parser.add_argument("-i", "--include", default=None,
         type=str,
-        help="Backup only disk with target dev name specified")
+        help="Backup only disk with target dev name (-i vda)")
+    parser.add_argument("-x", "--exclude", default=None,
+        type=str,
+        help="Exclude disk(s) with target dev name (-x vda,vdb)")
     parser.add_argument("-c", "--checkpoint", default=False,
         help="During incremental backup, use specified checkpoint as parent",
         type=str)
@@ -114,7 +117,11 @@ def main():
         sys.exit(1)
 
     vmConfig = virtClient.getDomainConfig(domObj)
-    disks = virtClient.getDomainDisks(vmConfig)
+    disks = virtClient.getDomainDisks(vmConfig, args.exclude)
+
+    if len(disks) == 0:
+        logger.error("Domain has no disks attached which support changed block tracking.")
+        sys.exit(1)
 
     logger.info("Domain has %s disks attached which support changed block tracking." % len(disks))
 

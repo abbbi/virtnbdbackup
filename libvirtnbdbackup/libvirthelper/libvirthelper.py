@@ -55,18 +55,27 @@ class client(object):
         """
         return domObj.XMLDesc(0)
 
-    def getDomainDisks(self, vmConfig):
+    def getDomainDisks(self, vmConfig, excludedDisks):
         """ Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
         tree=ElementTree.fromstring(vmConfig)
         devices=[]
 
+        excludeList = None
+        if excludedDisks != None:
+            excludeList = excludedDisks.split(',')
+
         driver = None
         device = None
         for target in tree.findall("devices/disk"):
             for src in target.findall("target"):
                 dev=src.get("dev")
+
+            if excludeList != None:
+                if dev in excludeList:
+                    logging.warning('Excluding Disks %s from backup as requested' % dev)
+                    continue
 
             # ignore attached lun or direct access block devices
             if target.get('type') == "block":
