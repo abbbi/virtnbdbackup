@@ -189,7 +189,7 @@ def main():
         sys.exit(1)
 
     if args.level != "copy":
-        logging.info('Started copy backup with checkpoint, saving information')
+        logging.info('Started full backup with checkpoint, saving information')
         if len(checkpoints) < 1:
             checkpoints = []
         checkpoints.append(checkpointName)
