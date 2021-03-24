@@ -88,7 +88,9 @@ def main():
         handlers=[
             logging.FileHandler(logPath),
             logging.StreamHandler()
-        ]
+        ],
+        format='%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
     )
 
     if args.type == "raw" and args.level == "inc":
