@@ -45,7 +45,16 @@ def main():
         level = logging.DEBUG
     else:
         level = logging.INFO
-    logger.basicConfig(level=level)
+
+    logger.basicConfig(
+        level=level,
+        handlers=[
+            logging.FileHandler("virtnbdrestore.log"),
+            logging.StreamHandler()
+        ],
+        format='%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
     if not os.path.exists(args.input):
         logger.error("Backup set directory does not exist")
