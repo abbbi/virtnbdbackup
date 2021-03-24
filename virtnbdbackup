@@ -160,7 +160,7 @@ def main():
                 parentCheckpoint = args.checkpoint
             else:
                 parentCheckpoint = checkpoints[-1]
-            logging.info('Found checkpoints, next name: %s' % nextCpt)
+            logging.info('Found checkpoints, next checkpoint id: %s' % nextCpt)
             logging.info("Parent checkpoint name %s" % parentCheckpoint)
 
         if args.level == "inc" and len(checkpoints)<1:
@@ -179,15 +179,17 @@ def main():
             sys.exit(1)
 
     try:
+        logging.debug('Starting backup job')
         virtClient.startBackup(domObj, disks, args.level,
                                checkpointName, parentCheckpoint,
                                args.scratchdir)
+        logging.debug('Backup job started')
     except Exception as e:
         logging.error('%s' % e)
         sys.exit(1)
 
     if args.level != "copy":
-        logging.info('Started backup with checkpoint, saving information')
+        logging.info('Started copy backup with checkpoint, saving information')
         if len(checkpoints) < 1:
             checkpoints = []
         checkpoints.append(checkpointName)
