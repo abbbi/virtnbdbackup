@@ -89,6 +89,7 @@ toOut() {
 }
 @test "Restore stream format"  {
     run ../virtnbdrestore -a restore -i $BACKUPSET -o $RESTORESET
+    [[ "$output" =~ "End of stream" ]]
     [ "$status" -eq 0 ]
 }
 @test "Convert restored qcow2 image to RAW image"  {
