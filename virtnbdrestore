@@ -79,7 +79,7 @@ def main():
             sys.exit(1)
 
         with open(vmConfig,'r') as vmConf:
-            vmDisks = virtclient.client().getDomainDisks(vmConf.read())
+            vmDisks = virtclient.client().getDomainDisks(vmConf.read(), None)
 
         for disk in vmDisks:
             restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
