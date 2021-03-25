@@ -4,8 +4,7 @@ import glob
 import json
 
 class Common(object):
-    """
-        Common functions
+    """ Common functions
     """
 
     def argparse(self, parser):
@@ -23,24 +22,21 @@ class Common(object):
         return True
 
     def getDataFiles(self, targetDir):
-        """
-            return data files within backupset
+        """ return data files within backupset
             directory
         """
         sStr = "%s/*.data" % targetDir
         return glob.glob(sStr)
 
     def getDataFilesByDisk(self, targetDir, targetDisk):
-        """
-            return data files subject to one disk
+        """ return data files subject to one disk
             from backupset directory
         """
         sStr = "%s/%s*.data" % (targetDir, targetDisk)
         return glob.glob(sStr)
 
     def getLastConfigFile(self, targetDir):
-        """
-            get the last backed up configuration file
+        """ get the last backed up configuration file
             from the backupset
         """
         sStr = "%s/vmconfig*.xml" % targetDir
@@ -61,8 +57,7 @@ class Common(object):
         return json.dumps(extList)
 
     def dumpMetaData(self, dataFile, sparsestream):
-        """
-            read metadata header
+        """ read metadata header
         """
         with open(dataFile, 'rb') as reader:
             try:
