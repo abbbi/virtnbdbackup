@@ -1,3 +1,5 @@
+import string
+import random
 import libvirt
 import logging
 import sys
@@ -121,9 +123,13 @@ class client(object):
             inc.text=parentCheckpoint
 
         for disk in diskList:
+            scratchId = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+            scratchFile = '%s/backup.%s.%s' % (scratchFilePath, scratchId,
+                                               disk.diskTarget)
+            logging.debug('Using scratchfile: %s' % scratchFile)
             dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
             ElementTree.SubElement(dE, 'scratch',
-                {'file':'%s/backup.%s' % (scratchFilePath, disk.diskTarget)}
+                {'file':'%s' % (scratchFile)}
             )
 
         return ElementTree.tostring(top)
