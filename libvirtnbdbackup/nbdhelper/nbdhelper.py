@@ -1,15 +1,14 @@
 import nbd
 
 class nbdClient(object):
-
-    """Docstring for nbdClient. """
-
+    """ Helper functions for NBD
+    """
     def __init__(self, exportName, metaContext, host="localhost", port="10809"):
-        """TODO: to be defined.
+        """ Parameters:
 
-        :host: TODO
-        :port: TODO
-
+        :exportName: name of nbd export
+        :host: ndb serer endpoint
+        :port: nbd server port
         """
         self._host = host
         self._port = port
@@ -27,6 +26,9 @@ class nbdClient(object):
         self._nbdHandle = nbd.NBD()
 
     def connect(self):
+        """ Setup connection to NBD server endpoint, return
+        connection handle
+        """
         self._nbdHandle.add_meta_context(self._metaContext)
         self._nbdHandle.set_export_name(self._exportName)
         self._nbdHandle.connect_tcp(self._host,self._port)
