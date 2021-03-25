@@ -22,7 +22,7 @@ load $TEST/config.bash
     run virsh start ${VM}
     [ "$status" -eq 0 ]
 }
-@test "Create reference backup image using qemu-img convert" {
+@test "Create reference backup image using qemu-img convert to $BACKUPSET" {
     rm -rf $BACKUPSET
     run ../virtnbdbackup -t raw -d $VM -s -o $BACKUPSET
     [ "$status" -eq 0 ]
