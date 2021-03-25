@@ -100,7 +100,7 @@ def main():
         logger.error("Backup format raw does not support incremental backup")
         sys.exit(1)
 
-    if not args.output == "-":
+    if not args.output == "-" and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
             logger.error("Target directory must empty for full or copy backup.")
             sys.exit(1)
