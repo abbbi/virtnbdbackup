@@ -217,7 +217,7 @@ def main():
             backupDisk(disk.diskTarget, args, lib, logger,
                        checkpointName, parentCheckpoint)
         except Exception as e:
-            logger.error('%s' % e)
+            logger.error('Unable to backup Disk: %s' % e)
             virtClient.stopBackup(domObj, disk.diskTarget)
             sys.exit(1)
     if args.printonly is False and args.output != "-":
@@ -243,7 +243,8 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName, parentCheckpoint):
         logger.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
             qemuhelper.qemuHelper(diskTarget),
-            metaContext)
+            metaContext
+        )
     else:
         logger.info("Using nbd to query extents")
         extentHandler = extenthandler.ExtentHandler(
