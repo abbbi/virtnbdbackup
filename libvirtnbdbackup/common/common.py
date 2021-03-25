@@ -17,7 +17,7 @@ class Common(object):
     def targetIsEmpty(self, args):
         if os.path.exists(args.output) and args.level in ("full","copy"):
             dirList = os.listdir(args.output)
-            if len(dirList) > 1:
+            if len(dirList) > 1 and not '.log' in dirList:
                 return False
 
         return True
