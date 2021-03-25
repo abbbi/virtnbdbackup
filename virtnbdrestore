@@ -56,6 +56,8 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
+    logger.info("Arguments: %s" % ' '.join(sys.argv))
+
     if not os.path.exists(args.input):
         logger.error("Backup set directory does not exist")
         sys.exit(1)
