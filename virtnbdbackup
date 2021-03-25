@@ -96,6 +96,8 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
+    logger.info("Arguments: %s" % ' '.join(sys.argv))
+
     if args.type == "raw" and args.level == "inc":
         logger.error("Backup format raw does not support incremental backup")
         sys.exit(1)
