@@ -153,9 +153,22 @@ contents are exposed as NDB device which is a RAW device, as such, the backup da
 is as least as big as the used data within the virtual machine. Use xz or tar to
 compress the backup images in order to save storage space.
 
+## Is the backup application consistent?
+
+During backup it is attempted to freeze the file systems within the
+domain using the qemu guest agent filesystem freeze and thaw functions.
+In case no qemu agent is installed or filesytem freeze fails, an warning
+is issued during backup:
+
+```
+WARNING libvirthelper - startBackup: Guest agent is not responding: QEMU guest agent is not connected
+```
+
+In case you receive this warning, check if the qemu agent is installed and
+running with in the virutla domain.
+
+
 # TODO
 
  * Allow remote backup
  * Add Progress information during backup and restore
- * Try to execute filesytem thaw within VM via qemu agent to have more
-   application consisteny during backup.

@@ -1,8 +1,8 @@
+import sys
 import string
 import random
 import libvirt
 import logging
-import sys
 from xml.etree import ElementTree
 
 # this is required so libvirt.py does not report errors to stderr
@@ -132,7 +132,7 @@ class client(object):
                 {'file':'%s' % (scratchFile)}
             )
 
-        return ElementTree.tostring(top)
+        return ElementTree.tostring(top).decode()
 
     def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
         """ Create valid checkpoint XML file which is passed to libvirt API
@@ -150,7 +150,7 @@ class client(object):
         for disk in diskList:
             dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
 
-        return ElementTree.tostring(top)
+        return ElementTree.tostring(top).decode()
 
     def startBackup(self, domObj, diskList, backupLevel, checkpointName,
                     parentCheckpoint, scratchFilePath):
@@ -165,8 +165,19 @@ class client(object):
                     diskList,
                     parentCheckpoint,
                     checkpointName
-                ).decode()
-            domObj.backupBegin(backupXml.decode(), checkpointXml)
+                )
+
+            freezed = False
+            try:
+                domObj.fsFreeze()
+                freezed = True
+            except Exception as e:
+                logging.warning(e)
+
+            domObj.backupBegin(backupXml, checkpointXml)
+
+            if freezed == True:
+                domObj.fsThaw()
         except:
             raise
 
