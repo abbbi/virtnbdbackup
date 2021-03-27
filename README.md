@@ -1,7 +1,6 @@
 # virtnbdbackup
 
 Backup utility for libvirt, using latest CBT features. Create full and incremental backups of your virtual machines.
-Work in progress ..
 
 # Prerequisites
 
