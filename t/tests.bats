@@ -16,7 +16,7 @@ load $TEST/config.bash
 }
 @test "Setup: Define and start test VM ${VM}" {
     virsh destroy ${VM} || true
-    virsh undefine ${VM} --checkpoints-metadata || true
+    virsh undefine ${VM} --remove-all-storage --checkpoints-metadata || true
     cp ${VM}/${VM}.xml /tmp/
     run virsh define /tmp/${VM}.xml
     run virsh start ${VM}
@@ -100,3 +100,52 @@ toOut() {
     run cmp $QEMU_FILE $CONVERT_FILE
     [ "$status" -eq 0 ]
 }
+
+# test for incremental backup
+
+@test "Prepare test for incremental backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    command -v guestmount || exit 1
+    rm -rf /tmp/inctest
+}
+@test "create full backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l full -o /tmp/inctest
+}
+@test "destroy VM" {
+    [ -z $INCTEST ] && skip "skipping"
+    run virsh destroy $VM
+    [ "$status" -eq 0 ]
+}
+@test "mount disk via guestmount and create file" {
+    [ -z $INCTEST ] && skip "skipping"
+    run guestmount -d $VM -m /dev/sda1  /mnt/
+    [ "$status" -eq 0 ]
+    echo incfile > /mnt/incfile
+    run umount /mnt/
+    [ "$status" -eq 0 ]
+}
+@test "start VM after creating file" {
+    [ -z $INCTEST ] && skip "skipping"
+    sleep 5 # not sure why..
+    run virsh start $VM
+    [ "$status" -eq 0 ]
+}
+@test "create inc backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l inc -o /tmp/inctest
+    [ "$status" -eq 0 ]
+}
+@test "restore data and check if file from incremental backup exists" {
+    [ -z $INCTEST ] && skip "skipping"
+    rm -rf /tmp/RESTOREINC/
+    run ../virtnbdrestore -a restore -i /tmp/inctest/ -o /tmp/RESTOREINC/
+    [ "$status" -eq 0 ]
+    run guestmount -a /tmp/RESTOREINC/sda -m /dev/sda1  /mnt
+    [ "$status" -eq 0 ]
+    [ -e /mnt/incfile ]
+    run umount /mnt
+    [ "$status" -eq 0 ]
+}
+
+

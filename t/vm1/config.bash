@@ -13,3 +13,5 @@ EXTENT_OUTPUT3="327680 bytes of data extents to backup"
 
 DATA_SIZE="327680"
 VIRTUAL_SIZE="1048576"
+
+INCTEST="1"
