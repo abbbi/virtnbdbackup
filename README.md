@@ -73,32 +73,44 @@ The target directory must be rotated if a new backup set is created.
 * Start full backup of domain "cbt":
 
 ```
- virtnbdbackup -d cbt -l full -o /tmp/backupset
+./virtnbdbackup -d vm1 -l full -o /tmp/backupset
 ```
 
 * Start incremental backup for domain "cbt":
 
 ```
- virtnbdbackup -d cbt -l inc -o /tmp/backupset
+./virtnbdbackup -d vm1 -l inc -o /tmp/backupset
 ```
 
-The resulting directory will contain all information for restoring the virtual machine:
+The resulting directory will contain all information for restoring the virtual
+machine, including logfiles that can be used for analyzing backup issues:
+
 ```
 /tmp/backupset/
-├── cbt.cpt                                # checkpoint informations
-├── sda.full.data                          # data from full backup, disk SDA
-├── sda.inc.virtnbdbackup.2.data           # data from inc backup, based on checkpoint "virtnbdbackup.2", disk SDA
-├── sdb.full.data                          # data from full backpu, disk SDB
-├── sdb.inc.virtnbdbackup.2.data           # data from inc backup, based on checkpoint "virtnbdbackup.2", disk SDB
-├── vmconfig.virtnbdbackup.2.xml           # vm config saved during incremental backup
-└── vmconfig.virtnbdbackup.xml             # vm config saved during full backup
+├── backup.full.03272021122832.log
+├── backup.inc.03272021122906.log
+├── sda.full.data
+├── sda.inc.virtnbdbackup.2.data
+├── vm1.cpt
+├── vmconfig.virtnbdbackup.2.xml
+└── vmconfig.virtnbdbackup.xml
+```
+
+## Excluding disks
+
+If certain disks shall be included option `-x` can be used, the name of the
+disk t be excluded shall match the virtual machines target device name as
+configured i the xml definition, for example:
+
+```
+./virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
 ```
 
 # Restore examples
 
-For restoring, `virtnbdrestore` can be used. It processes the streamed
-backup format back into a usable qemu qcow image. Option `--until`
-allows to perform a point in time restore up to a desired checkpoint.
+For restoring, `virtnbdrestore` can be used. It processes the streamed backup
+format back into a usable qemu qcow image. Option `--until` allows to perform a
+point in time restore up to a desired checkpoint.
 
 As a first start, the `dump` parameter can be used to dump the saveset
 information of an existing backupset:
@@ -117,11 +129,15 @@ INFO:root:Dumping saveset meta information
 [..]
 ```
 
-Restoring all disks within the backupset into an usable qcow image via:
+To restore all data within the backupset into an usable qcow image use
+command:
 
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 ```
+
+The restore will create an qcow image that has all changes applied and can be
+mounted or attached to a running virtual machine to recover required files.
 
 # Extents
 
@@ -139,7 +155,7 @@ compress the backup images in order to save storage space.
 
 # TODO
 
- * Craft VM config during restore and register VM
- * Define test cases for full+inc chains
- * Allow remote backup without
- * Does backup-begin issue filesystem thaw?
+ * Allow remote backup
+ * Add Progress information during backup and restore
+ * Try to execute filesytem thaw within VM via qemu agent to have more
+   application consisteny during backup.
