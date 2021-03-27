@@ -171,13 +171,18 @@ class client(object):
             try:
                 domObj.fsFreeze()
                 freezed = True
+                logging.info('Freezed filesystems.')
             except Exception as e:
                 logging.warning(e)
 
             domObj.backupBegin(backupXml, checkpointXml)
 
             if freezed == True:
-                domObj.fsThaw()
+                try:
+                    domObj.fsThaw()
+                    logging.info('Thawed filesystems.')
+                except Exception as e:
+                    logging.warning(e)
         except:
             raise
 
