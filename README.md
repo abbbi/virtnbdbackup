@@ -161,11 +161,11 @@ In case no qemu agent is installed or filesytem freeze fails, an warning
 is issued during backup:
 
 ```
-WARNING libvirthelper - startBackup: Guest agent is not responding: QEMU guest agent is not connected
+WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
 ```
 
 In case you receive this warning, check if the qemu agent is installed and
-running with in the virutla domain.
+running with in the domain.
 
 
 # TODO
