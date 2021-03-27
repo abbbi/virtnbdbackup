@@ -73,13 +73,13 @@ The target directory must be rotated if a new backup set is created.
 * Start full backup of domain "cbt":
 
 ```
-./virtnbdbackup -d vm1 -l full -o /tmp/backupset
+virtnbdbackup -d vm1 -l full -o /tmp/backupset
 ```
 
 * Start incremental backup for domain "cbt":
 
 ```
-./virtnbdbackup -d vm1 -l inc -o /tmp/backupset
+virtnbdbackup -d vm1 -l inc -o /tmp/backupset
 ```
 
 The resulting directory will contain all information for restoring the virtual
@@ -99,11 +99,11 @@ machine, including logfiles that can be used for analyzing backup issues:
 ## Excluding disks
 
 If certain disks shall be included option `-x` can be used, the name of the
-disk t be excluded shall match the virtual machines target device name as
-configured i the xml definition, for example:
+disk to be excluded must match the disks target device name as configured i the
+xml definition, for example:
 
 ```
-./virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
+virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
 ```
 
 # Restore examples
