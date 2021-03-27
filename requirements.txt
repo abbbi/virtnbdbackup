@@ -2,3 +2,4 @@ nbd>=1.5.5
 libvirt>=6.0.0
 logging
 sh
+tqdm

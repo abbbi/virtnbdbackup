@@ -5,6 +5,7 @@ import json
 import pprint
 import logging
 import argparse
+from tqdm import tqdm
 from datetime import datetime
 
 import libvirtnbdbackup.common as common
@@ -314,6 +315,10 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName, parentCheckpoint):
         writer.write(metadata)
         writer.write(sparsestream.SparseStreamTypes().TERM)
 
+    bar = tqdm(
+        total=thinBackupSize, desc="saving disk %s" % diskTarget,
+        unit='B', unit_scale=True
+    )
     for save in extents:
         if save.data == True:
             if args.type == "stream":
@@ -339,6 +344,8 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName, parentCheckpoint):
                 ))
             if args.type == "stream":
                 writer.write(sparsestream.SparseStreamTypes().TERM)
+
+            bar.update(save.length)
         else:
             if args.type == "raw":
                 writer.seek(save.offset)
@@ -357,6 +364,7 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName, parentCheckpoint):
         )
 
     writer.close()
+    bar.close()
 
 if __name__ == "__main__":
     main()
