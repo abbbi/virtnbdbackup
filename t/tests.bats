@@ -111,6 +111,7 @@ toOut() {
 @test "create full backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o /tmp/inctest
+    [ "$status" -eq 0 ]
 }
 @test "destroy VM" {
     [ -z $INCTEST ] && skip "skipping"
@@ -147,5 +148,3 @@ toOut() {
     run umount /mnt
     [ "$status" -eq 0 ]
 }
-
-
