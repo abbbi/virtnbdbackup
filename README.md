@@ -179,6 +179,27 @@ consider migrating your qcow files to version 3 format. QEMU QCOW Image version
 2 does not support storing advanced bitmap informations, as such only backup mode
 `copy` is supported.
 
+## Backup fails with "Timed out during operation: cannot qcquire state change lock"
+
+If backups fail with error:
+
+```
+ERROR [..] Timed out during operation: cannot acquire state change lock (held by monitor=remoteDispatchDomainBackupBegin)
+```
+
+there is still some backup operation active on the running domain. This may happen
+if `virtnbdbackup` crashes abnormally or is forcibly killed during backup operation,
+or simply if another application is currently executing an active backup job.
+
+You can use option `-k` to forcibly kill any running active backup jobs for the
+domain:
+
+```
+virtnbdbackup  -d vm2 -l copy -k  -o -
+[..]
+  INFO virtnbdbackup - main: Stopping domain jobs
+```
+
 # TODO
 
  * Allow remote backup
