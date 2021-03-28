@@ -97,9 +97,9 @@ machine, including logfiles that can be used for analyzing backup issues:
 
 ## Excluding disks
 
-If certain disks shall be included option `-x` can be used, the name of the
-disk to be excluded must match the disks target device name as configured i the
-xml definition, for example:
+Option `-x` can be used to exclude certain disks from the backup. The name of
+the disk to be excluded must match the disks target device name as configured
+in the domains xml definition, for example:
 
 ```
 virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
@@ -166,6 +166,17 @@ WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
 In case you receive this warning, check if the qemu agent is installed and
 running with in the domain.
 
+## Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"
+
+In case the backup fails with error:
+
+```
+ERROR [..] internal error: unable to execute QEMU command dirty bitmaps in qcow2 v2 files
+```
+
+consider migrating your qcow files to version 3 format. QEMU QCOW Image version
+2 does not support storing advanced bitmap informations, as such only backup mode
+`copy` is supported.
 
 # TODO
 
