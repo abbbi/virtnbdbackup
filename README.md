@@ -140,9 +140,10 @@ mounted or attached to a running virtual machine to recover required files.
 
 # Extents
 
-In order to save only used data from the images, extent information is queried
-from the NBD server. This happens by either using the qemu tools (qemu-img map
-..) if option "-q" is specified, or by an custom implemented extent handler.
+In order to save only used data from the images, dirty blocks are queried from
+the NBD server. The behavior can be changed by using option `-q` to use common
+qemu tools (qemu-img map ..). By default `virtnbdbackup` uses a custom
+implemented extent handler.
 
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images
@@ -154,10 +155,10 @@ compress the backup images in order to save storage space.
 
 ## Is the backup application consistent?
 
-During backup it is attempted to freeze the file systems within the
-domain using the qemu guest agent filesystem freeze and thaw functions.
-In case no qemu agent is installed or filesytem freeze fails, an warning
-is issued during backup:
+During backup `virtnbdbackup` attempts to freeze the file systems within the
+domain using the qemu guest agent filesystem freeze and thaw functions.  In
+case no qemu agent is installed or filesytem freeze fails, an warning is issued
+during backup:
 
 ```
 WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
