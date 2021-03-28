@@ -182,4 +182,3 @@ consider migrating your qcow files to version 3 format. QEMU QCOW Image version
 # TODO
 
  * Allow remote backup
- * Add Progress information during backup and restore
