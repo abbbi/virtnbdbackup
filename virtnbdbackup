@@ -2,11 +2,13 @@
 import os
 import sys
 import json
+import signal
 import pprint
 import logging
 import argparse
 from tqdm import tqdm
 from datetime import datetime
+from functools import partial
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -14,6 +16,12 @@ import libvirtnbdbackup.extenthandler as extenthandler
 import libvirtnbdbackup.sparsestream  as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 import libvirtnbdbackup.libvirthelper as libvirthelper
+
+def handleSignal(disks, domObj, virtClient, log, signal, frame):
+    log.error('Catched signal: %s' % signal)
+    log.error('Cleanup: Stopping backup job')
+    virtClient.stopBackup(domObj, disks[0].diskTarget)
+    sys.exit(1)
 
 def main():
     logging.getLogger("sh").setLevel(logging.WARNING)
@@ -121,6 +129,16 @@ def main():
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks = virtClient.getDomainDisks(vmConfig, args.exclude)
+
+    signal.signal(signal.SIGINT,
+        partial(
+            handleSignal,
+            disks,
+            domObj,
+            virtClient,
+            logger
+        )
+    )
 
     if len(disks) == 0:
         logger.error("Domain has no disks attached which support changed block tracking.")
