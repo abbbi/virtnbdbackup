@@ -7,6 +7,7 @@ import logging
 import argparse
 import pprint
 from time import sleep
+from tqdm import tqdm
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -104,7 +105,7 @@ def main():
             logger.info("Create virtual Disk %s/%s" % (
                 args.output,meta['diskName']
             ))
-            logger.info("Size %s" % meta['virtualSize'])
+            logger.info("Virtual Size %s" % meta['virtualSize'])
             qFh = qemuhelper.qemuHelper(meta['diskName'])
 
             try:
@@ -139,11 +140,21 @@ def main():
                         restoreFile
                     )
                     continue
-                logger.info("Applying data from file %s" % restoreFile)
+                logger.info("Applying data from file %s to %s/%s" % (
+                    restoreFile,
+                    args.output,
+                    meta['diskName']
+                ))
                 pprint.pprint(meta)
                 assert reader.read(
                     len(sparsestream.SparseStreamTypes().TERM)
                 ) == sparsestream.SparseStreamTypes().TERM
+
+                bar = tqdm(
+                    total=meta['dataSize'],
+                    desc="restoring disk %s" % meta['diskName'],
+                    unit='B', unit_scale=True
+                )
                 dataSize = 0
                 while True:
                     try:
@@ -156,7 +167,7 @@ def main():
                         )
                         sys.exit(1)
                     if kind == sparsestream.SparseStreamTypes().ZERO:
-                        logger.info("Write zero segment from %s length: %s" % (
+                        logger.debug("Write zero segment from %s length: %s" % (
                             start,
                             length
                         ))
@@ -171,7 +182,7 @@ def main():
                         else:
                             connection.zero(length, start)
                     elif kind == sparsestream.SparseStreamTypes().DATA:
-                        logger.info("Write data segment from %s length: %s" % (
+                        logger.debug("Write data segment from %s length: %s" % (
                             start,length
                         ))
                         if length >= nbdClient.maxRequestSize:
@@ -185,7 +196,9 @@ def main():
                             connection.pwrite(data, start)
                         assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
                         dataSize += length
+                        bar.update(length)
                     elif kind == sparsestream.SparseStreamTypes().STOP:
+                        bar.close()
                         if dataSize == meta['dataSize']:
                             logger.info("End of stream, %s bytes of data processed" % dataSize)
                         else:
@@ -198,9 +211,11 @@ def main():
 
                 if meta['checkpointName'] == args.until:
                     logging.info("Reached checkpoint %s, stopping" % args.until)
+                    bar.close()
                     break
 
             nbdClient.disconnect()
+            bar.close()
 
 if __name__ == "__main__":
     main()
