@@ -1,6 +1,8 @@
 # virtnbdbackup
 
-Backup utility for libvirt, using latest CBT features. Create full and incremental backups of your virtual machines.
+Backup utility for `libvirt`, using latest changed block tracking features.
+Create thin provisioned full and incremental backups of your `kvm/qemu` virtual
+machines.
 
 ![Alt text](screenshot.jpg?raw=true "Title")
 
@@ -54,12 +56,13 @@ further releases.
 
 Following backup modes can be used:
 
-* copy: Full backup of virtual machine, no checkpoint is created for further
-  incremental backups, existing checkpoints will be left.
+* copy: Full, thin provisioned backup of the virtual machine disks, no
+  checkpoint is created for further incremental backups, existing checkpoints
+  will be left.
 
-* full: Full backup of virtual machine, a new checkpoint named `virtnbdbackup'
-  will be created, all existant checkpoints from prior backups including this name
-  will be removed: a new backup chain is created.
+* full: Full, thin provisioned backup of the virtual machine, a new checkpoint
+  named `virtnbdbackup' will be created, all existant checkpoints from prior
+  backups including this name will be removed: a new backup chain is created.
 
 * inc: Perform incremental backup, based on the last full or incremental backup.
 
