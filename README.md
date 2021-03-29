@@ -121,7 +121,7 @@ query the virtual machine extents and provides an summary about the size of the
 changed extents:
 
 ```
-virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
+virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
 [..]
 2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: Got 866 extents
 2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 2147483648 bytes disk size
