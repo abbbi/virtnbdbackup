@@ -82,6 +82,8 @@ def main():
         logger.info("Dumping saveset meta information")
         dataFiles = lib.getDataFiles(args.input)
         for dataFile in dataFiles:
+            if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
+                continue
             meta = lib.dumpMetaData(dataFile, sparsestream)
             if meta is False:
                 logger.error('Unable to dump image contents, image defunct or raw image?')
