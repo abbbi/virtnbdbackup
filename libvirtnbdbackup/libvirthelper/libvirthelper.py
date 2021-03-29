@@ -33,8 +33,9 @@ class client(object):
         URI='qemu:///system'
         try:
             return libvirt.open(URI)
-        except libvirt.libvirtError:
-            raise
+        except libvirt.libvirtError as e:
+            logging.error('Cant connect libvirt daemon: %s' % e)
+            sys.exit(1)
 
     def getDomain(self, name):
         """ Lookup domain """
