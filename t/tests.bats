@@ -104,22 +104,22 @@ toOut() {
 
 # test for incremental backup
 
-@test "Prepare test for incremental backup" {
+@test "Setup: Prepare test for incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     command -v guestmount || exit 1
     rm -rf /tmp/inctest
 }
-@test "create full backup" {
+@test "Backup: create full backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o /tmp/inctest
     [ "$status" -eq 0 ]
 }
-@test "destroy VM" {
+@test "Setup: destroy VM" {
     [ -z $INCTEST ] && skip "skipping"
     run virsh destroy $VM
     [ "$status" -eq 0 ]
 }
-@test "mount disk via guestmount and create file" {
+@test "Setup: mount disk via guestmount and create file" {
     [ -z $INCTEST ] && skip "skipping"
     run guestmount -d $VM -m /dev/sda1  /mnt/
     [ "$status" -eq 0 ]
@@ -127,18 +127,18 @@ toOut() {
     run umount /mnt/
     [ "$status" -eq 0 ]
 }
-@test "start VM after creating file" {
+@test "Setup: start VM after creating file" {
     [ -z $INCTEST ] && skip "skipping"
     sleep 5 # not sure why..
     run virsh start $VM
     [ "$status" -eq 0 ]
 }
-@test "create inc backup" {
+@test "Backup: create incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o /tmp/inctest
     [ "$status" -eq 0 ]
 }
-@test "restore data and check if file from incremental backup exists" {
+@test "Restore: restore data and check if file from incremental backup exists" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf /tmp/RESTOREINC/
     run ../virtnbdrestore -a restore -i /tmp/inctest/ -o /tmp/RESTOREINC/
