@@ -8,7 +8,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name='virtndbbackup',
+    name='virtnbdbackup',
     version=libvirtnbdbackup.__version__,
     description='Backup via NBD',
     url='https://github.com/abbbi/virtnbdbackup/',
