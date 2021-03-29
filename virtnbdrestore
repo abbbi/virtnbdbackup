@@ -5,6 +5,8 @@ import nbd
 import json
 import logging
 import argparse
+import string
+import random
 import pprint
 from time import sleep
 from tqdm import tqdm
@@ -47,6 +49,9 @@ def main():
         action="store_true",
         default=False,
         help="Disable progress bar")
+    parser.add_argument("-f", "--socketfile", default=None,
+        type=str,
+        help="Use specified file for NBD Server socket instead of random file")
 
     lib = common.Common()
     args = lib.argparse(parser)
@@ -134,17 +139,30 @@ def main():
                 logger.error("Cant create restore target: %s" % e)
                 sys.exit(1)
 
-            logger.info("Starting nbd server")
+            if args.socketfile == None:
+                socketId = ''.join(random.choices(
+                    string.ascii_uppercase + string.digits,
+                    k=5
+                ))
+                socketFile = '/var/tmp/backup_%s' % socketId
+            else:
+                socketFile = args.socketfile
+
+            logger.info("Starting nbd server on socket: %s" % socketFile)
             try:
-                nbdSrv = qFh.startNbdServer(args.output)
+                nbdSrv = qFh.startNbdServer(args.output, socketFile)
             except Exception as e:
                 logger.error("Unable to start nbd server: %s" %e)
                 sys.exit(1)
 
-            logging.info("Waiting until nbd server is up")
+            logging.info("Waiting until nbd server on socket %s is up" % socketFile)
             sleep(5)
 
-            nbdClient = nbdhelper.nbdClient(meta['diskName'],None)
+            nbdClient = nbdhelper.nbdClient(
+                meta['diskName'],
+                None,
+                socketFile
+            )
             connection = nbdClient.connect()
 
             for restoreFile in restoreDisk:

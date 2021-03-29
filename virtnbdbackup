@@ -69,6 +69,9 @@ def main():
     parser.add_argument("-p", "--printonly", default=False,
         help="Quit after printing extent information",
         action="store_true")
+    parser.add_argument("-f", "--socketfile", default=None,
+        type=str,
+        help="Use specified file for NBD Server socket instead of random file")
     parser.add_argument("-v", "--verbose", default=False,
         help="Enable debug output",
         action="store_true")
@@ -217,10 +220,13 @@ def main():
 
     try:
         logging.debug('Starting backup job')
-        virtClient.startBackup(domObj, disks, args.level,
-                               checkpointName, parentCheckpoint,
-                               args.scratchdir)
-        logging.debug('Backup job started')
+        backupSocket = virtClient.startBackup(
+            domObj, disks, args.level,
+            checkpointName, parentCheckpoint,
+            args.scratchdir,
+            args.socketfile
+        )
+        logging.debug('Backup job started, using socket: %s' % backupSocket)
     except Exception as e:
         logging.error('%s' % e)
         sys.exit(1)
@@ -243,7 +249,8 @@ def main():
             continue
         try:
             backupDisk(disk.diskTarget, args, lib, logger,
-                       checkpointName, parentCheckpoint)
+                       checkpointName, parentCheckpoint,
+                       backupSocket)
         except Exception as e:
             logger.error('Unable to backup Disk: %s' % e)
             virtClient.stopBackup(domObj, disk.diskTarget)
@@ -258,26 +265,34 @@ def backupConfig(vmConfig, args, checkpointName, logger):
     with open(configFile, 'w') as configFh:
         configFh.write(vmConfig)
 
-def backupDisk(diskTarget, args, lib, logger, checkpointName, parentCheckpoint):
+def backupDisk(diskTarget, args, lib, logger, checkpointName,
+               parentCheckpoint, backupSocket):
     metaContext = None
     if args.level == "inc":
         metaContext = "qemu:dirty-bitmap:backup-%s" % diskTarget
         logger.info("INC backup: set context to %s" % metaContext)
 
-    nbdClient = nbdhelper.nbdClient(diskTarget, metaContext)
+    nbdClient = nbdhelper.nbdClient(
+        diskTarget,
+        metaContext,
+        backupSocket
+    )
+    logging.info('NDB Endpoint socket: %s' % backupSocket)
     connection = nbdClient.connect()
 
     if args.qemu and args.level != "inc":
         logger.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
             qemuhelper.qemuHelper(diskTarget),
-            metaContext
+            metaContext,
+            backupSocket
         )
     else:
         logger.info("Using nbd to query extents")
         extentHandler = extenthandler.ExtentHandler(
             connection,
-            metaContext
+            metaContext,
+            backupSocket
         )
     extents = extentHandler.queryBlockStatus()
     diskSize = connection.get_size()

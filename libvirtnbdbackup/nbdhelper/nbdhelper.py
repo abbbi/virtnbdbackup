@@ -3,15 +3,12 @@ import nbd
 class nbdClient(object):
     """ Helper functions for NBD
     """
-    def __init__(self, exportName, metaContext, host="localhost", port="10809"):
+    def __init__(self, exportName, metaContext, backupSocket):
         """ Parameters:
-
         :exportName: name of nbd export
-        :host: ndb serer endpoint
-        :port: nbd server port
+        :backupSocket: ndb server endpoint
         """
-        self._host = host
-        self._port = port
+        self._socket = backupSocket
         self._exportName = exportName
         if metaContext == None:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
@@ -31,7 +28,7 @@ class nbdClient(object):
         """
         self._nbdHandle.add_meta_context(self._metaContext)
         self._nbdHandle.set_export_name(self._exportName)
-        self._nbdHandle.connect_tcp(self._host,self._port)
+        self._nbdHandle.connect_unix(self._socket)
 
         return self._nbdHandle
 

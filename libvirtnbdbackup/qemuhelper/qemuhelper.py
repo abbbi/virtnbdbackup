@@ -12,11 +12,10 @@ class qemuHelper(object):
         self.qemuNbd = sh.Command("qemu-nbd")
         self.exportName = exportName
 
-    def map(self, host="localhost", port="10809"):
-        extentMap = self.qemuImg("map", "--output", "json", "nbd://%s:%s/%s" % (
-            host,
-            port,
-            self.exportName
+    def map(self, backupSocket):
+        extentMap = self.qemuImg("map", "--output", "json", "nbd+unix:///%s?socket=%s" % (
+            self.exportName,
+            backupSocket
         )).stdout
         return json.loads(extentMap)
 
@@ -28,8 +27,12 @@ class qemuHelper(object):
         except:
             raise
 
-    def startNbdServer(self, targetDir):
+    def startNbdServer(self, targetDir, socketFile):
         try:
-            return self.qemuNbd("--discard=unmap", "--format=qcow2","-x", "%s" % (self.exportName), "%s/%s" % (targetDir, self.exportName), _bg=True)
+            return self.qemuNbd(
+                "--discard=unmap", "--format=qcow2","-x", "%s" % (self.exportName),
+                "%s/%s" % (targetDir, self.exportName), "-k", "%s" % socketFile,
+                _bg=True
+            )
         except:
             raise

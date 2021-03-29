@@ -20,11 +20,12 @@ class ExtentHandler(object):
         This implementation should return the same
         extent information as nbdinfo or qemu-img map
     """
-    def __init__(self, nbdFh, metaContext):
+    def __init__(self, nbdFh, metaContext, backupSocket):
         self. useQemu = False
         if nbdFh.__class__.__name__ == "qemuHelper":
             self.useQemu = True
 
+        self._socket = backupSocket
         self._nbdFh = nbdFh
         self._extentEntries = []
         if metaContext == None:
@@ -59,7 +60,7 @@ class ExtentHandler(object):
 
     def queryExtentsQemu(self):
         extents = []
-        for extent in self._nbdFh.map():
+        for extent in self._nbdFh.map(self._socket):
             extentObj = Extent()
             if extent['data'] == True:
                 extentObj.data = True

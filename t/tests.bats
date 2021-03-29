@@ -25,9 +25,9 @@ load $TEST/config.bash
 }
 @test "Create reference backup image using qemu-img convert to $BACKUPSET" {
     rm -rf $BACKUPSET
-    run ../virtnbdbackup -t raw -d $VM -s -o $BACKUPSET
+    run ../virtnbdbackup -t raw -d $VM -s -o $BACKUPSET --socketfile /tmp/sock
     [ "$status" -eq 0 ]
-    run qemu-img convert -f raw nbd://localhost:10809/sda  -O raw $QEMU_FILE
+    run qemu-img convert -f raw nbd+unix:///sda?socket=/tmp/sock -O raw $QEMU_FILE
     [ "$status" -eq 0 ]
     run ../virtnbdbackup -t raw -d $VM -k -o $BACKUPSET
     [ "$status" -eq 0 ]

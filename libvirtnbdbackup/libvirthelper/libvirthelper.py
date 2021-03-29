@@ -112,11 +112,25 @@ class client(object):
 
         return devices
 
-    def _createBackupXml(self, diskList, parentCheckpoint, scratchFilePath):
+    def _createBackupXml(self, diskList, parentCheckpoint, scratchFilePath,
+                         socketFilePath):
         """ Create XML file for starting an backup task using libvirt API.
         """
+        if socketFilePath == None:
+            socketId = ''.join(random.choices(
+                string.ascii_uppercase + string.digits,
+                k=5
+            ))
+            socketFile = '/var/tmp/backup_%s' % socketId
+        else:
+            socketFile = socketFilePath
+
         top = ElementTree.Element('domainbackup', {'mode':'pull'})
-        child = ElementTree.SubElement(top, 'server', {'name':'localhost','port':'10809'})
+        child = ElementTree.SubElement(top, 'server',
+        {
+            'transport':'unix',
+            'socket':'%s' % socketFile}
+        )
         disks = ElementTree.SubElement(top, 'disks')
 
         if parentCheckpoint != False:
@@ -124,7 +138,11 @@ class client(object):
             inc.text=parentCheckpoint
 
         for disk in diskList:
-            scratchId = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+            scratchId = ''.join(random.choices(
+                string.ascii_uppercase + string.digits,
+                k=5
+            ))
+
             scratchFile = '%s/backup.%s.%s' % (scratchFilePath, scratchId,
                                                disk.diskTarget)
             logging.debug('Using scratchfile: %s' % scratchFile)
@@ -133,7 +151,7 @@ class client(object):
                 {'file':'%s' % (scratchFile)}
             )
 
-        return ElementTree.tostring(top).decode()
+        return ElementTree.tostring(top).decode(), socketFile
 
     def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
         """ Create valid checkpoint XML file which is passed to libvirt API
@@ -154,11 +172,15 @@ class client(object):
         return ElementTree.tostring(top).decode()
 
     def startBackup(self, domObj, diskList, backupLevel, checkpointName,
-                    parentCheckpoint, scratchFilePath):
+                    parentCheckpoint, scratchFilePath, socketFilePath):
         """ Attempt to start pull based backup task using  XMl description
         """
-        backupXml = self._createBackupXml(diskList, parentCheckpoint,
-                                          scratchFilePath)
+        backupXml, socketFile = self._createBackupXml(
+            diskList,
+            parentCheckpoint,
+            scratchFilePath,
+            socketFilePath
+        )
         checkpointXml = None
         try:
             if backupLevel != "copy":
@@ -186,6 +208,8 @@ class client(object):
                     logging.warning(e)
         except:
             raise
+
+        return socketFile
 
     def checkpointExists(self, domObj, checkpointName):
         """ Check if an checkpoint exists
