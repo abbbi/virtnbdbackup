@@ -72,6 +72,9 @@ def main():
     parser.add_argument("-v", "--verbose", default=False,
         help="Enable debug output",
         action="store_true")
+    parser.add_argument("-n", "--noprogress", default=False,
+        help="Disable progress bar",
+        action="store_true")
 
     lib = common.Common()
     args = lib.argparse(parser)
@@ -341,7 +344,7 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName, parentCheckpoint):
 
     bar = tqdm(
         total=thinBackupSize, desc="saving disk %s" % diskTarget,
-        unit='B', unit_scale=True
+        unit='B', unit_scale=True, disable=args.noprogress
     )
     for save in extents:
         if save.data == True:
