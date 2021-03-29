@@ -14,6 +14,7 @@ load $TEST/config.bash
     fi
     cp ${VM_IMAGE} /tmp/
 }
+
 @test "Setup: Define and start test VM ${VM}" {
     virsh destroy ${VM} || true
     virsh undefine ${VM} --remove-all-storage --checkpoints-metadata || true

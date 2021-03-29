@@ -1,8 +1,16 @@
-Test cases, use BATS:
+Test cases, use BATS. Each VM directory contains a special
+craftet virtual machine with a given set of disks to be
+backed up.
 
- git clone https://github.com/bats-core/bats-core
+to execute test for certain virtual machine use:
 
- run test case for specified VM via:
+    make vm1.test
+
+to execute all tests:
+
+    make all
+
+using bats directly:
 
  export TEST=vm1
  ./bats-core/bin/bats tests.bats
