@@ -6,7 +6,6 @@ import json
 class Common(object):
     """ Common functions
     """
-
     def argparse(self, parser):
         try:
             return parser.parse_args()
