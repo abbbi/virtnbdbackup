@@ -137,7 +137,6 @@ The restore process will create an qcow image that has all changes applied and
 can be mounted (using `guestmount`) or attached to a running virtual machine to
 recover required files.
 
-
 ## Dumping backup information
 
 As a first start, the `dump` parameter can be used to dump the saveset
@@ -177,7 +176,7 @@ to match the virtual disks target name, example:
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore -d sda
 ```
 
-## Restore to certain checkpoint
+## Point in time recovery
 
 Option `--until` allows to perform a point in time restore up to a desired
 checkpoint. The Checkpoint name has to be specified as reported by the
