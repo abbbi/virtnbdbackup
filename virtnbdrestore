@@ -15,6 +15,8 @@ import libvirtnbdbackup.libvirthelper as virtclient
 import libvirtnbdbackup.sparsestream  as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 
+from libvirtnbdbackup import __version__
+
 def main():
     logging.getLogger("sh").setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(
@@ -57,7 +59,11 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    logger.info("Arguments: %s" % ' '.join(sys.argv))
+    logger.info("Version: %s Arguments: %s" % (
+        __version__,
+        ' '.join(sys.argv)
+        )
+    )
 
     if not os.path.exists(args.input):
         logger.error("Backup set directory does not exist")

@@ -17,6 +17,8 @@ import libvirtnbdbackup.sparsestream  as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 import libvirtnbdbackup.libvirthelper as libvirthelper
 
+from libvirtnbdbackup import __version__
+
 def handleSignal(disks, domObj, virtClient, log, signal, frame):
     log.error('Catched signal: %s' % signal)
     log.error('Cleanup: Stopping backup job')
@@ -105,7 +107,11 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    logger.info("Arguments: %s" % ' '.join(sys.argv))
+    logger.info("Version: %s Arguments: %s" % (
+        __version__,
+        ' '.join(sys.argv)
+        )
+    )
 
     if args.type == "raw" and args.level == "inc":
         logger.error("Backup format raw does not support incremental backup")
