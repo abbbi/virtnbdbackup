@@ -74,7 +74,7 @@ The target directory must be rotated if a new backup set is created.
 
 # Backup Examples
 
-* Start full backup of domain "cbt":
+* Start full backup of domain `vm1`, save data to `/tmp/backupset`:
 
 ```
 virtnbdbackup -d vm1 -l full -o /tmp/backupset
@@ -108,6 +108,24 @@ in the domains xml definition, for example:
 
 ```
 virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
+```
+
+Special devices such as `cdrom` or `direct attached luns` are excluded by
+default, as they are not supported by the changed block tracking layer.
+
+## Estimating backup size
+
+Sometimes it can be useful to estimate the data size of the backup that is
+going to be executed. This can be archived by using option `-p` which will
+query the virtual machine extents and provides an summary about the size of the
+changed extents:
+
+```
+virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
+[..]
+2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: Got 866 extents
+2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 2147483648 bytes disk size
+2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 1394147328 bytes of data extents to backup
 ```
 
 # Restore examples
