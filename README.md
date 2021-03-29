@@ -131,8 +131,14 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
 # Restore examples
 
 For restoring, `virtnbdrestore` can be used. It processes the streamed backup
-format back into a usable qemu qcow image. Option `--until` allows to perform a
-point in time restore up to a desired checkpoint.
+format back into a usable qemu qcow image.
+
+The restore process will create an qcow image that has all changes applied and
+can be mounted (using `guestmount`) or attached to a running virtual machine to
+recover required files.
+
+
+## Dumping backup information
 
 As a first start, the `dump` parameter can be used to dump the saveset
 information of an existing backupset:
@@ -151,15 +157,35 @@ INFO:root:Dumping saveset meta information
 [..]
 ```
 
-To restore all data within the backupset into an usable qcow image use
+## Complete restore
+
+To restore all disks within the backupset into an usable qcow image use
 command:
 
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 ```
 
-The restore will create an qcow image that has all changes applied and can be
-mounted or attached to a running virtual machine to recover required files.
+All incremental backups found will be applied to the target image.
+
+## Process only specific disks during restore
+
+A single disk can be restored by using option `-d`, the disk name has
+to match the virtual disks target name, example:
+
+```
+virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore -d sda
+```
+
+## Restore to certain checkpoint
+
+Option `--until` allows to perform a point in time restore up to a desired
+checkpoint. The Checkpoint name has to be specified as reported by the
+dump option (`checkpointName`), example:
+
+```
+virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdbackup.2
+```
 
 # Extents
 

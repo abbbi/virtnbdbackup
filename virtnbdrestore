@@ -35,6 +35,10 @@ def main():
     parser.add_argument("-u", "--until", required=False,
         type=str,
         help="Restore only until checkpoint, point in time restore")
+    parser.add_argument("-d", "--disk", required=False,
+        type=str,
+        default="all",
+        help="Process only disk matching target dev name")
     parser.add_argument("-v", "--verbose", required=False,
         action="store_true",
         default=False,
@@ -95,6 +99,10 @@ def main():
             vmDisks = virtclient.client().getDomainDisks(vmConf.read(), None)
 
         for disk in vmDisks:
+            if args.disk != "all" and args.disk != disk.diskTarget:
+                logger.info('Skipping disk %s for restore' % disk.diskTarget)
+                continue
+
             restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
             if len(restoreDisk) < 1:
                 logger.warning("Did not find any backups for disk image %s" %
@@ -102,7 +110,7 @@ def main():
                 )
                 continue
             if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
-                logger.error("Unable to find base dataset.")
+                logger.error("Unable to locate base full or copy backup.")
                 sys.exit(1)
             try:
                 meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
