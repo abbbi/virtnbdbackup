@@ -2,6 +2,8 @@
 
 Backup utility for libvirt, using latest CBT features. Create full and incremental backups of your virtual machines.
 
+![Alt text](screenshot.jpg?raw=true "Title")
+
 # Prerequisites
 
 * Obviously an libvirt/qemu version that supports the incremental backup
