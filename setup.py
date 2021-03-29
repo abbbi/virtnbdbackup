@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 import os
 from setuptools import setup, find_packages
-__version__ = "0.6"
+
+import libvirtnbdbackup
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name='virtndbbackup',
-    version=__version__,
+    version=libvirtnbdbackup.__version__,
     description='Backup via NBD',
     url='https://github.com/abbbi/virtnbdbackup/',
     author='Michael Ablassmeier',
