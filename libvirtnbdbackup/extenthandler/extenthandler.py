@@ -13,20 +13,14 @@ class _ExtentObj(object):
         self.type = None
 
 class ExtentHandler(object):
-
-    """
-        ExtentHandler()
-
-        Query extent information about allocated and
+    """ Query extent information about allocated and
         zeroed regions from the NBD server started by
         libvirt/qemu
 
         This implementation should return the same
         extent information as nbdinfo or qemu-img map
     """
-
     def __init__(self, nbdFh, metaContext):
-        self._log = logging.getLogger(__name__)
         self. useQemu = False
         if nbdFh.__class__.__name__ == "qemuHelper":
             self.useQemu = True
@@ -38,18 +32,18 @@ class ExtentHandler(object):
         else:
             self._metaContext = metaContext
 
-        self._log.debug("Meta context: %s" % self._metaContext)
+        logging.debug("Meta context: %s" % self._metaContext)
         self._maxRequestBlock = 4294967295
         self._align = 512
 
     def _getExtentCallback(self, metacontext, offset, entries, status):
-        self._log.debug("Metacontext is: %s" % metacontext)
+        logging.debug("Metacontext is: %s" % metacontext)
         if metacontext != self._metaContext:
-            self._log.error("Meta context does not match")
+            logging.error("Meta context does not match")
             return
         for entry in entries:
             self._extentEntries.append(entry)
-        self._log.debug("entries: %s" % len(self._extentEntries))
+        logging.debug("entries: %s" % len(self._extentEntries))
 
     def _setRequestAligment(self):
         align = self._nbdFh.get_block_size(0)
@@ -75,7 +69,7 @@ class ExtentHandler(object):
             extentObj.length = extent['length']
             extents.append(extentObj)
 
-        self._log.debug("Got %s extents from qemu command" % len(extents))
+        logging.debug("Got %s extents from qemu command" % len(extents))
 
         return extents
 
@@ -95,7 +89,7 @@ class ExtentHandler(object):
         return extentList
 
     def _unifyExtents(self, extentObjects):
-        self._log.debug("unify %s extents" % len(extentObjects))
+        logging.debug("unify %s extents" % len(extentObjects))
         cur = None
         for myExtent in extentObjects:
             if cur == None:
@@ -112,24 +106,24 @@ class ExtentHandler(object):
         maxRequestLen = self._setRequestAligment()
         offset = 0
         size = self._nbdFh.get_size()
-        self._log.debug("Size returned from NDB server: %s" % size)
+        logging.debug("Size returned from NDB server: %s" % size)
         lastExtentLen = len(self._extentEntries)
         while offset < size:
             if size < maxRequestLen:
                 request_length=size
             else:
                 request_length = min(size - offset, maxRequestLen)
-            self._log.debug('Block status request length: %s' % request_length)
+            logging.debug('Block status request length: %s' % request_length)
             self._nbdFh.block_status(request_length, offset, self._getExtentCallback)
             if len(self._extentEntries) == 0:
-                self._log.error("No extents found")
+                logging.error("No extents found")
                 return False
 
             offset+=sum(self._extentEntries[lastExtentLen::2])
             lastExtentLen = len(self._extentEntries)
 
-        self._log.debug('Extents: %s' % self._extentEntries)
-        self._log.debug('Number Extents: %s' % len(self._extentEntries))
+        logging.debug('Extents: %s' % self._extentEntries)
+        logging.debug('Number Extents: %s' % len(self._extentEntries))
 
         return self._extentsToObj()
 
@@ -163,5 +157,5 @@ class ExtentHandler(object):
             extentList.append(extObj)
             start+=extent.length
 
-        self._log.debug('Returning extent list with %s objects' % len(extentList))
+        logging.debug('Returning extent list with %s objects' % len(extentList))
         return extentList
