@@ -325,7 +325,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         if args.type == 'stream':
             writer = sys.stdout.buffer
         else:
-            logging.error('Output to stdout not supported with raw output')
+            logging.error('Writing to stdout not supported with raw format.')
             return
     else:
         logging.info("Write data to target file: %s", targetFile)
