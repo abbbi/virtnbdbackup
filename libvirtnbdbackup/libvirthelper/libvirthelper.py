@@ -77,21 +77,26 @@ class client(object):
 
             if excludeList != None:
                 if dev in excludeList:
-                    logging.warning('Excluding Disks %s from backup as requested' % dev)
+                    logging.warning(
+                        'Excluding Disks %s from backup as requested',
+                        dev
+                    )
                     continue
 
             # ignore attached lun or direct access block devices
             if target.get('type') == "block":
-                    logging.warning(
-                        'Ignoring direct attaced block device %s does not support changed block tracking.' % dev
-                    )
-                    continue
+                logging.warning(
+                    'Ignoring device %s does not support changed block tracking.',
+                    dev
+                )
+                continue
 
             device = target.get('device')
             if device != None:
                 if device == "lun":
                     logging.warning(
-                        'Ignoring direct attached lun disk %s does not support changed block tracking.' % dev
+                        'Ignoring lun disk %s does not support changed block tracking.',
+                        dev
                     )
                     continue
 
@@ -100,7 +105,8 @@ class client(object):
             if driver != None:
                 if driver.get('type') == "raw":
                     logging.warning(
-                        'Ignoring disk %s with raw format: does not support changed block tracking.' % dev
+                        'Ignoring raw disk %s does not support changed block tracking.',
+                        dev
                     )
                     continue
             if target.get('device') == "cdrom":
@@ -117,10 +123,9 @@ class client(object):
         """ Create XML file for starting an backup task using libvirt API.
         """
         top = ElementTree.Element('domainbackup', {'mode':'pull'})
-        child = ElementTree.SubElement(top, 'server',
-        {
-            'transport':'unix',
-            'socket':'%s' % socketFilePath}
+        ElementTree.SubElement(
+            top,
+            'server', { 'transport':'unix', 'socket':'%s' % socketFilePath }
         )
         disks = ElementTree.SubElement(top, 'disks')
 
@@ -133,14 +138,14 @@ class client(object):
                 string.ascii_uppercase + string.digits,
                 k=5
             ))
-
-            scratchFile = '%s/backup.%s.%s' % (scratchFilePath, scratchId,
-                                               disk.diskTarget)
-            logging.debug('Using scratchfile: %s' % scratchFile)
-            dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
-            ElementTree.SubElement(dE, 'scratch',
-                {'file':'%s' % (scratchFile)}
+            scratchFile = '%s/backup.%s.%s' % (
+                scratchFilePath,
+                scratchId,
+                disk.diskTarget
             )
+            logging.debug('Using scratchfile: %s', scratchFile)
+            dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
+            ElementTree.SubElement(dE, 'scratch', {'file':'%s' % (scratchFile)})
 
         return ElementTree.tostring(top).decode()
 
@@ -158,7 +163,7 @@ class client(object):
             cptName.text = parentCheckpoint
         disks = ElementTree.SubElement(top, 'disks')
         for disk in diskList:
-            dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
+            ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
 
         return ElementTree.tostring(top).decode()
 
@@ -209,7 +214,7 @@ class client(object):
         """ Remove all existing checkpoints for a virtual machine,
         used during FULL backup to reset checkpoint chain
         """
-        if checkpointList == None:
+        if checkpointList is None:
             cpts = domObj.listAllCheckpoints()
             if cpts:
                 for cpt in domObj.listAllCheckpoints():

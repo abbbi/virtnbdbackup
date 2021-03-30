@@ -10,7 +10,7 @@ class nbdClient(object):
         """
         self._socket = backupSocket
         self._exportName = exportName
-        if metaContext == None:
+        if metaContext is None:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         else:
             self._metaContext = metaContext

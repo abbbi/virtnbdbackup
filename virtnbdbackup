@@ -215,8 +215,7 @@ def main():
         virtClient.startBackup(
             domObj, disks, args.level,
             checkpointName, parentCheckpoint,
-            args.scratchdir,
-            backupSocket
+            args.scratchdir, backupSocket
         )
         logging.debug('Backup job started, using socket: %s', backupSocket)
     except Exception as e:
@@ -268,9 +267,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         logging.info("INC backup: set context to %s", metaContext)
 
     nbdClient = nbdhelper.nbdClient(
-        diskTarget,
-        metaContext,
-        backupSocket
+        diskTarget, metaContext, backupSocket
     )
     logging.info('NDB Endpoint socket: %s', backupSocket)
     connection = nbdClient.connect()
@@ -278,16 +275,12 @@ def backupDisk(diskTarget, args, lib, checkpointName,
     if args.qemu and args.level != "inc":
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(diskTarget),
-            metaContext,
-            backupSocket
+            qemuhelper.qemuHelper(diskTarget), metaContext, backupSocket
         )
     else:
         logging.info("Using nbd to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            connection,
-            metaContext,
-            backupSocket
+            connection, metaContext, backupSocket
         )
     extents = extentHandler.queryBlockStatus()
     diskSize = connection.get_size()
@@ -346,10 +339,8 @@ def backupDisk(diskTarget, args, lib, checkpointName,
             parentCheckpoint, inc
         )
         sparsestream.SparseStream().writeFrame(
-            writer,
-            sparsestream.SparseStreamTypes().META,
-            0,
-            len(metadata)
+            writer, sparsestream.SparseStreamTypes().META,
+            0, len(metadata)
         )
         writer.write(metadata)
         writer.write(sparsestream.SparseStreamTypes().TERM)
@@ -362,17 +353,16 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         if save.data is True:
             if args.type == "stream":
                 sparsestream.SparseStream().writeFrame(
-                    writer,
-                    sparsestream.SparseStreamTypes().DATA,
-                    save.offset,
-                    save.length
+                    writer, sparsestream.SparseStreamTypes().DATA,
+                    save.offset, save.length
                 )
                 logging.debug("Read data from: start %s, length: %s",
                               save.offset, save.length)
             if save.length >= nbdClient.maxRequestSize:
-                lib.writeChunk(writer, save.offset, save.length,
-                               nbdClient.maxRequestSize, connection,
-                               args.type)
+                lib.writeChunk(
+                    writer, save.offset, save.length,
+                    nbdClient.maxRequestSize, connection, args.type
+                )
             else:
                 if args.type == "raw":
                     writer.seek(save.offset)
@@ -389,17 +379,13 @@ def backupDisk(diskTarget, args, lib, checkpointName,
                 writer.seek(save.offset)
             elif args.type == "stream" and args.level != "inc":
                 sparsestream.SparseStream().writeFrame(
-                    writer,
-                    sparsestream.SparseStreamTypes().ZERO,
-                    save.offset,
-                    save.length
+                    writer, sparsestream.SparseStreamTypes().ZERO,
+                    save.offset, save.length
                 )
     if args.type == "stream":
         sparsestream.SparseStream().writeFrame(
-            writer,
-            sparsestream.SparseStreamTypes().STOP,
-            0,
-            0
+            writer, sparsestream.SparseStreamTypes().STOP,
+            0, 0
         )
 
     writer.close()

@@ -28,23 +28,23 @@ class ExtentHandler(object):
         self._socket = backupSocket
         self._nbdFh = nbdFh
         self._extentEntries = []
-        if metaContext == None:
+        if metaContext is None:
             self._metaContext = "base:allocation"
         else:
             self._metaContext = metaContext
 
-        logging.debug("Meta context: %s" % self._metaContext)
+        logging.debug("Meta context: %s", self._metaContext)
         self._maxRequestBlock = 4294967295
         self._align = 512
 
     def _getExtentCallback(self, metacontext, offset, entries, status):
-        logging.debug("Metacontext is: %s" % metacontext)
+        logging.debug("Metacontext is: %s", metacontext)
         if metacontext != self._metaContext:
             logging.error("Meta context does not match")
             return
         for entry in entries:
             self._extentEntries.append(entry)
-        logging.debug("entries: %s" % len(self._extentEntries))
+        logging.debug("entries: %s", len(self._extentEntries))
 
     def _setRequestAligment(self):
         align = self._nbdFh.get_block_size(0)
@@ -62,7 +62,7 @@ class ExtentHandler(object):
         extents = []
         for extent in self._nbdFh.map(self._socket):
             extentObj = Extent()
-            if extent['data'] == True:
+            if extent['data'] is True:
                 extentObj.data = True
             else:
                 extentObj.data = False
@@ -70,7 +70,7 @@ class ExtentHandler(object):
             extentObj.length = extent['length']
             extents.append(extentObj)
 
-        logging.debug("Got %s extents from qemu command" % len(extents))
+        logging.debug("Got %s extents from qemu command", len(extents))
 
         return extents
 
@@ -90,10 +90,10 @@ class ExtentHandler(object):
         return extentList
 
     def _unifyExtents(self, extentObjects):
-        logging.debug("unify %s extents" % len(extentObjects))
+        logging.debug("unify %s extents", len(extentObjects))
         cur = None
         for myExtent in extentObjects:
-            if cur == None:
+            if cur is None:
                 cur = myExtent
             elif cur.type == myExtent.type:
                 cur.length += myExtent.length
@@ -107,14 +107,14 @@ class ExtentHandler(object):
         maxRequestLen = self._setRequestAligment()
         offset = 0
         size = self._nbdFh.get_size()
-        logging.debug("Size returned from NDB server: %s" % size)
+        logging.debug("Size returned from NDB server: %s", size)
         lastExtentLen = len(self._extentEntries)
         while offset < size:
             if size < maxRequestLen:
                 request_length=size
             else:
                 request_length = min(size - offset, maxRequestLen)
-            logging.debug('Block status request length: %s' % request_length)
+            logging.debug('Block status request length: %s', request_length)
             self._nbdFh.block_status(request_length, offset, self._getExtentCallback)
             if len(self._extentEntries) == 0:
                 logging.error("No extents found")
@@ -123,13 +123,13 @@ class ExtentHandler(object):
             offset+=sum(self._extentEntries[lastExtentLen::2])
             lastExtentLen = len(self._extentEntries)
 
-        logging.debug('Extents: %s' % self._extentEntries)
-        logging.debug('Number Extents: %s' % len(self._extentEntries))
+        logging.debug('Extents: %s', self._extentEntries)
+        logging.debug('Number Extents: %s', len(self._extentEntries))
 
         return self._extentsToObj()
 
     def queryBlockStatus(self, extentList=None):
-        if self.useQemu == True:
+        if self.useQemu is True:
             return self.queryExtentsQemu()
 
         extentList = []
@@ -158,5 +158,5 @@ class ExtentHandler(object):
             extentList.append(extObj)
             start+=extent.length
 
-        logging.debug('Returning extent list with %s objects' % len(extentList))
+        logging.debug('Returning extent list with %s objects', len(extentList))
         return extentList

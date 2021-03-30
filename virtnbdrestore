@@ -77,6 +77,7 @@ def main():
         sys.exit(1)
 
     lib = common.Common()
+
     if args.action == "dump":
         logging.info("Dumping saveset meta information")
         dataFiles = lib.getDataFiles(args.input)
@@ -211,9 +212,10 @@ def main():
                                 start,
                                 length
                             )
-                            lib.zeroChunk(start, length,
-                                          nbdClient.maxRequestSize,
-                                          connection)
+                            lib.zeroChunk(
+                                start, length,
+                                nbdClient.maxRequestSize, connection
+                            )
                         else:
                             connection.zero(length, start)
                     elif kind == sparsestream.SparseStreamTypes().DATA:
@@ -227,9 +229,10 @@ def main():
                                 "Chunked read/write, start: %s, len: %s",
                                 start, length
                             )
-                            lib.readChunk(reader, start, length,
-                                          nbdClient.maxRequestSize,
-                                          connection)
+                            lib.readChunk(
+                                reader, start, length,
+                                nbdClient.maxRequestSize, connection
+                            )
                         else:
                             data = reader.read(length)
                             connection.pwrite(data, start)
