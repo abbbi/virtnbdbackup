@@ -7,8 +7,8 @@ import pprint
 import logging
 import argparse
 from datetime import datetime
-from tqdm import tqdm
 from functools import partial
+from tqdm import tqdm
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -19,8 +19,8 @@ import libvirtnbdbackup.libvirthelper as libvirthelper
 
 from libvirtnbdbackup import __version__
 
-def handleSignal(disks, domObj, virtClient, log, signal, frame):
-    log.error('Catched signal: %s' % signal)
+def handleSignal(disks, domObj, virtClient, log, signum, frame):
+    log.error('Catched signal: %s' % signum)
     log.error('Cleanup: Stopping backup job')
     virtClient.stopBackup(domObj, disks[0].diskTarget)
     sys.exit(1)
@@ -29,52 +29,58 @@ def main():
     parser = argparse.ArgumentParser(
         description='Backup libvirt/qemu virtual machines'
     )
-    parser.add_argument("-d", "--domain", required=True,
-        type=str,
+    parser.add_argument(
+        "-d", "--domain", required=True, type=str,
         help="Domain to backup")
-    parser.add_argument("-l", "--level", default="copy",
-        choices=['copy','full','inc'],
-        type=str,
+    parser.add_argument(
+        "-l", "--level", default="copy",
+        choices=['copy','full','inc'], type=str,
         help="Backup level, defaults to copy")
-    parser.add_argument("-t", "--type", default="stream",
+    parser.add_argument(
+        "-t", "--type", default="stream", type=str,
         choices=['stream','raw'],
-        type=str,
         help="Output type: stream or raw")
-    parser.add_argument("-o", "--output", required=True,
-        type=str,
+    parser.add_argument(
+        "-o", "--output", required=True, type=str,
         help="Output target directory")
-    parser.add_argument("-S", "--scratchdir", required=False,
-        type=str,
-        help="Target directory for temporary scratch file",
-        default="/tmp/")
-    parser.add_argument("-q", "--qemu", default=False,
-        help="Use Qemu tools to query extents",
-        action="store_true")
-    parser.add_argument("-i", "--include", default=None,
-        type=str,
+    parser.add_argument(
+        "-S", "--scratchdir", default="/tmp", required=False, type=str,
+        help="Target directory for temporary scratch file")
+    parser.add_argument(
+        "-q", "--qemu", default=False, action="store_true",
+        help="Use Qemu tools to query extents")
+    parser.add_argument(
+        "-i", "--include", default=None, type=str,
         help="Backup only disk with target dev name (-i vda)")
-    parser.add_argument("-x", "--exclude", default=None,
-        type=str,
+    parser.add_argument(
+        "-x", "--exclude", default=None, type=str,
         help="Exclude disk(s) with target dev name (-x vda,vdb)")
-    parser.add_argument("-c", "--checkpoint", default=False,
+    parser.add_argument(
+        "-c", "--checkpoint", default=False,
         help="During incremental backup, use specified checkpoint as parent",
         type=str)
-    parser.add_argument("-s", "--startonly", default=False,
+    parser.add_argument(
+        "-s", "--startonly", default=False,
         help="Only initialize backup job via libvirt, do not backup any data",
         action="store_true")
-    parser.add_argument("-k", "--killonly", default=False,
+    parser.add_argument(
+        "-k", "--killonly", default=False,
         help="Kill any running block job",
         action="store_true")
-    parser.add_argument("-p", "--printonly", default=False,
+    parser.add_argument(
+        "-p", "--printonly", default=False,
         help="Quit after printing extent information",
         action="store_true")
-    parser.add_argument("-f", "--socketfile", default=None,
+    parser.add_argument(
+        "-f", "--socketfile", default=None,
         type=str,
         help="Use specified file for NBD Server socket instead of random file")
-    parser.add_argument("-v", "--verbose", default=False,
+    parser.add_argument(
+        "-v", "--verbose", default=False,
         help="Enable debug output",
         action="store_true")
-    parser.add_argument("-n", "--noprogress", default=False,
+    parser.add_argument(
+        "-n", "--noprogress", default=False,
         help="Disable progress bar",
         action="store_true")
 
@@ -93,11 +99,11 @@ def main():
     if not os.path.exists(args.output) and args.output != "-":
         try:
             os.mkdir(args.output)
-        except Exception as e:
+        except OSError as e:
             logging.error("%s", e)
             sys.exit(1)
 
-    if args.verbose == True:
+    if args.verbose is True:
         level = logging.DEBUG
     else:
         level = logging.INFO
@@ -169,7 +175,7 @@ def main():
     if not os.path.exists(args.output):
         try:
             os.mkdir(args.output)
-        except Exception as e:
+        except OSError as e:
             logging.error("%s", e)
             sys.exit(1)
 
@@ -214,7 +220,7 @@ def main():
     if not os.path.exists(args.scratchdir):
         try:
             os.mkdir(args.scratchdir)
-        except Exception as e:
+        except OSError as e:
             logging.error('Unable to create directory for scratch file: %s', e)
             sys.exit(1)
 
@@ -257,7 +263,8 @@ def main():
             sys.exit(1)
     if args.printonly is False and args.output != "-":
         backupConfig(vmConfig, args, checkpointName)
-    virtClient.stopBackup(domObj, disk.diskTarget)
+    logging.info('Stopping backup task')
+    virtClient.stopBackup(domObj, disks[0].diskTarget)
 
 def backupConfig(vmConfig, args, checkpointName):
     configFile = '%s/vmconfig.%s.xml' % (args.output, checkpointName)

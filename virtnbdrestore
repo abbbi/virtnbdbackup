@@ -19,33 +19,33 @@ def main():
     parser = argparse.ArgumentParser(
         description='Restore virtual machine disks'
     )
-    parser.add_argument("-a", "--action", required=True,
+    parser.add_argument(
+        "-a", "--action", required=True, type=str,
         choices=['dump','restore'],
-        type=str,
         help="Action to perform")
-    parser.add_argument("-i", "--input", required=True,
-        type=str,
+    parser.add_argument(
+        "-i", "--input", required=True, type=str,
         help="Directory including a backup set")
-    parser.add_argument("-o", "--output", required=True,
-        type=str,
+    parser.add_argument(
+        "-o", "--output", required=True, type=str,
         help="Restore target directory")
-    parser.add_argument("-u", "--until", required=False,
-        type=str,
+    parser.add_argument(
+        "-u", "--until", required=False, type=str,
         help="Restore only until checkpoint, point in time restore")
-    parser.add_argument("-d", "--disk", required=False,
-        type=str,
+    parser.add_argument(
+        "-d", "--disk", required=False, type=str,
         default="all",
         help="Process only disk matching target dev name")
-    parser.add_argument("-v", "--verbose", required=False,
-        action="store_true",
-        default=False,
+    parser.add_argument(
+        "-v", "--verbose", required=False,
+        action="store_true", default=False,
         help="Enable debug output")
-    parser.add_argument("-n", "--noprogress", required=False,
-        action="store_true",
-        default=False,
+    parser.add_argument(
+        "-n", "--noprogress", required=False,
+        action="store_true", default=False,
         help="Disable progress bar")
-    parser.add_argument("-f", "--socketfile", default=None,
-        type=str,
+    parser.add_argument(
+        "-f", "--socketfile", default=None, type=str,
         help="Use specified file for NBD Server socket instead of random file")
 
     lib = common.Common()
@@ -148,9 +148,7 @@ def main():
             sleep(5)
 
             nbdClient = nbdhelper.nbdClient(
-                meta['diskName'],
-                None,
-                socketFile
+                meta['diskName'], None, socketFile
             )
             connection = nbdClient.connect()
 
@@ -232,7 +230,9 @@ def main():
                         else:
                             data = reader.read(length)
                             connection.pwrite(data, start)
-                        assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
+                        assert reader.read(
+                            len(sparsestream.SparseStreamTypes().TERM)
+                        ) == sparsestream.SparseStreamTypes().TERM
                         dataSize += length
                         progressBar.update(length)
                     elif kind == sparsestream.SparseStreamTypes().STOP:
@@ -247,7 +247,6 @@ def main():
                             )
                             sys.exit(1)
                         break
-
                 if meta['checkpointName'] == args.until:
                     logging.info("Reached checkpoint %s, stopping", args.until)
                     progressBar.close()
