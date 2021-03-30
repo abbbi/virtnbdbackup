@@ -20,6 +20,13 @@ class Common(object):
 
         return socketFile
 
+    def partialBackup(self, args):
+        partialFiles = glob.glob('%s/*.partial' % args.output)
+        if len(partialFiles) > 0:
+            return True
+
+        return False
+
     def targetIsEmpty(self, args):
         if os.path.exists(args.output) and args.level in ("full","copy"):
             dirList = [ f for f in glob.glob('%s/*' % args.output) if not os.path.basename(f).endswith('.log') ]

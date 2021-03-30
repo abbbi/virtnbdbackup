@@ -122,6 +122,12 @@ def main():
         logging.info('Printing only extend information: enforce level copy')
         args.level = "copy"
 
+    if args.level == 'inc' and args.output != "-" and lib.partialBackup(args) is True:
+        logging.error('Partial backup found in target directory: %s', args.output)
+        logging.error('One of the last backups seems to have failed.')
+        logging.error('Consider re-executing full backup.')
+        sys.exit(1)
+
     if not args.output == "-" and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
             logging.error("Target directory must empty for full or copy backup.")
@@ -322,15 +328,17 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         )
 
     if args.output == '-':
+        targetFilePartial = args.output
         if args.type == 'stream':
             writer = sys.stdout.buffer
         else:
             logging.error('Writing to stdout not supported with raw format.')
             return
     else:
-        logging.info("Write data to target file: %s", targetFile)
+        targetFilePartial = '%s.partial' % targetFile
+        logging.info("Write data to target file: %s", targetFilePartial)
         try:
-            writer = open(targetFile,'wb')
+            writer = open(targetFilePartial,'wb')
         except Exception as e:
             logging.error('Unable to open target file: %s', e)
             return
@@ -399,6 +407,9 @@ def backupDisk(diskTarget, args, lib, checkpointName,
 
     writer.close()
     progressBar.close()
+    if targetFilePartial != "-":
+        logging.info('Backup of disk %s finished, renaming file', diskTarget)
+        os.rename(targetFilePartial, targetFile)
 
 if __name__ == "__main__":
     main()
