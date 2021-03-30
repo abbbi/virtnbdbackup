@@ -118,6 +118,10 @@ def main():
         logging.error("Backup format raw does not support incremental backup")
         sys.exit(1)
 
+    if args.printonly is True:
+        logging.info('Printing only extend information: enforce level copy')
+        args.level = "copy"
+
     if not args.output == "-" and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
             logging.error("Target directory must empty for full or copy backup.")
@@ -197,7 +201,7 @@ def main():
             logging.error("No prior checkpoints found, execute full backup first")
             sys.exit(1)
 
-        logging.info("Using checkpoint name %s", checkpointName)
+        logging.info("Using checkpoint name: %s", checkpointName)
 
     logging.info('Temporary scratch file target directory: %s', args.scratchdir)
 
