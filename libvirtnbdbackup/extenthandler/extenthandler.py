@@ -62,10 +62,7 @@ class ExtentHandler(object):
         extents = []
         for extent in self._nbdFh.map(self._socket):
             extentObj = Extent()
-            if extent['data'] is True:
-                extentObj.data = True
-            else:
-                extentObj.data = False
+            extentObj.data = bool(extent['data'])
             extentObj.offset = extent['start']
             extentObj.length = extent['length']
             extents.append(extentObj)
@@ -148,10 +145,7 @@ class ExtentHandler(object):
                     extObj.data = False
             else:
                 assert extent.type in (0,1)
-                if extent.type == 1:
-                    extObj.data = True
-                else:
-                    extObj.data = False
+                extObj.data = bool(extent.type)
 
             extObj.offset = start
             extObj.length = extent.length
