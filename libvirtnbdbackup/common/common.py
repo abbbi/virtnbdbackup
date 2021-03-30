@@ -82,9 +82,10 @@ class Common(object):
     def writeChunk(self, writer, offset, length, maxRequestSize, nbdCon, btype):
         blockOffset = offset
         while blockOffset < offset+length:
-            blocklen = min(offset+length - blockOffset,
-                           maxRequestSize
-                        )
+            blocklen = min(
+                offset+length - blockOffset,
+                maxRequestSize
+            )
             if btype == "raw":
                 writer.seek(blockOffset)
             writer.write(nbdCon.pread(blocklen, blockOffset))
@@ -93,7 +94,8 @@ class Common(object):
     def zeroChunk(self, offset, length, maxRequestSize, nbdCon):
         zeroOffset = offset
         while zeroOffset < offset+length:
-            zeroLen = min(offset+length - zeroOffset,
+            zeroLen = min(
+                offset+length - zeroOffset,
                 maxRequestSize
             )
             nbdCon.zero(zeroLen, zeroOffset)
@@ -102,7 +104,8 @@ class Common(object):
     def readChunk(self, reader, offset, length, maxRequestSize, nbdCon):
         blockOffset = offset
         while blockOffset < offset+length:
-            blocklen = min(offset+length - blockOffset,
+            blocklen = min(
+                offset+length - blockOffset,
                 maxRequestSize
             )
             data = reader.read(blocklen)

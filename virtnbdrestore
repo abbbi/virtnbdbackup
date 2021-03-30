@@ -55,13 +55,12 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
-    logger = logging
-    if args.verbose == True:
+    if args.verbose is True:
         level = logging.DEBUG
     else:
         level = logging.INFO
 
-    logger.basicConfig(
+    logging.basicConfig(
         level=level,
         handlers=[
             logging.FileHandler("virtnbdrestore.log"),
@@ -71,34 +70,30 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    logger.info("Version: %s Arguments: %s" % (
-        __version__,
-        ' '.join(sys.argv)
-        )
-    )
+    logging.info("Version: %s Arguments: %s", __version__, ' '.join(sys.argv))
 
     if not os.path.exists(args.input):
-        logger.error("Backup set directory does not exist")
+        logging.error("Backup set directory does not exist")
         sys.exit(1)
 
     lib = common.Common()
     if args.action == "dump":
-        logger.info("Dumping saveset meta information")
+        logging.info("Dumping saveset meta information")
         dataFiles = lib.getDataFiles(args.input)
         for dataFile in dataFiles:
             if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
                 continue
             meta = lib.dumpMetaData(dataFile, sparsestream)
             if meta is False:
-                logger.error('Unable to dump image contents, image defunct or raw image?')
+                logging.error('Unable to dump image contents, image defunct or raw image?')
                 continue
             pprint.pprint(meta)
 
     if args.action == "restore":
-        logger.info("Read latest config file")
+        logging.info("Read latest config file")
         vmConfig = lib.getLastConfigFile(args.input)
         if not vmConfig:
-            logger.error("No domain config file found")
+            logging.error("No domain config file found")
             sys.exit(1)
 
         with open(vmConfig,'r') as vmConf:
@@ -106,49 +101,53 @@ def main():
 
         for disk in vmDisks:
             if args.disk != "all" and args.disk != disk.diskTarget:
-                logger.info('Skipping disk %s for restore' % disk.diskTarget)
+                logging.info('Skipping disk %s for restore', disk.diskTarget)
                 continue
 
             restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
             if len(restoreDisk) < 1:
-                logger.warning("Did not find any backups for disk image %s" %
+                logging.warning(
+                    "Did not find any backups for disk image %s",
                     disk.diskTarget
                 )
                 continue
             if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
-                logger.error("Unable to locate base full or copy backup.")
+                logging.error("Unable to locate base full or copy backup.")
                 sys.exit(1)
             try:
                 meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
             except Exception as e:
-                logger.error("Reading metadata from %s failed: %s" % (
+                logging.error(
+                    "Reading metadata from %s failed: %s",
                     restoreDisk[0],
                     e
-                ))
+                )
                 sys.exit(1)
-            logger.info("Create virtual Disk %s/%s" % (
-                args.output,meta['diskName']
-            ))
-            logger.info("Virtual Size %s" % meta['virtualSize'])
+            logging.info(
+                "Create virtual Disk %s/%s",
+                args.output,
+                meta['diskName']
+            )
+            logging.info("Virtual Size %s", meta['virtualSize'])
             qFh = qemuhelper.qemuHelper(meta['diskName'])
 
             try:
                 qFh.create(args.output, meta['virtualSize'])
             except Exception as e:
-                logger.error("Cant create restore target: %s" % e)
+                logging.error("Cant create restore target: %s", e)
                 sys.exit(1)
 
             socketFile = lib.getSocketFile(args.socketfile)
 
-            logger.info("Starting nbd server on socket: %s" % socketFile)
+            logging.info("Starting nbd server on socket: %s", socketFile)
             try:
                 nbdSrv = qFh.startNbdServer(args.output, socketFile)
-                logging.info('NBD Server PID: %s' % nbdSrv)
+                logging.info('NBD Server PID: %s', nbdSrv)
             except Exception as e:
-                logger.error("Unable to start nbd server: %s" %e)
+                logging.error("Unable to start nbd server: %s", e)
                 sys.exit(1)
 
-            logging.info("Waiting until nbd server on socket %s is up" % socketFile)
+            logging.info("Waiting until nbd server on socket %s is up", socketFile)
             sleep(5)
 
             nbdClient = nbdhelper.nbdClient(
@@ -167,21 +166,23 @@ def main():
                     length
                 ))
                 if meta['dataSize'] == 0:
-                    logger.info("Saveset %s contains no dirty blocks, skipping" %
+                    logging.info(
+                        "Saveset %s contains no dirty blocks, skipping",
                         restoreFile
                     )
                     continue
-                logger.info("Applying data from file %s to %s/%s" % (
+                logging.info(
+                    "Applying data from file %s to %s/%s",
                     restoreFile,
                     args.output,
                     meta['diskName']
-                ))
+                )
                 pprint.pprint(meta)
                 assert reader.read(
                     len(sparsestream.SparseStreamTypes().TERM)
                 ) == sparsestream.SparseStreamTypes().TERM
 
-                bar = tqdm(
+                progressBar = tqdm(
                     total=meta['dataSize'],
                     desc="restoring disk %s" % meta['diskName'],
                     unit='B', unit_scale=True, disable=args.noprogress
@@ -193,32 +194,39 @@ def main():
                             reader
                         )
                     except Exception as e:
-                        logger.error("Unknown header at stream postition %s" %
+                        logging.error(
+                            "Unknown header at stream postition %s",
                             reader.tell()
                         )
                         sys.exit(1)
                     if kind == sparsestream.SparseStreamTypes().ZERO:
-                        logger.debug("Write zero segment from %s length: %s" % (
+                        logging.debug(
+                            "Write zero segment from %s length: %s",
                             start,
                             length
-                        ))
+                        )
                         if length >= nbdClient.maxRequestSize:
-                            logger.debug("Chunked zero, start: %s, len: %s" %(
+                            logging.debug(
+                                "Chunked zero, start: %s, len: %s",
                                 start,
                                 length
-                            ))
+                            )
                             lib.zeroChunk(start, length,
                                           nbdClient.maxRequestSize,
                                           connection)
                         else:
                             connection.zero(length, start)
                     elif kind == sparsestream.SparseStreamTypes().DATA:
-                        logger.debug("Write data segment from %s length: %s" % (
-                            start,length
-                        ))
+                        logging.debug(
+                            "Write data segment from %s length: %s",
+                            start,
+                            length
+                        )
                         if length >= nbdClient.maxRequestSize:
-                            logger.debug("Chunked read/write, start: %s, len: %s" %(
-                                start, length))
+                            logging.debug(
+                                "Chunked read/write, start: %s, len: %s",
+                                start, length
+                            )
                             lib.readChunk(reader, start, length,
                                           nbdClient.maxRequestSize,
                                           connection)
@@ -227,26 +235,27 @@ def main():
                             connection.pwrite(data, start)
                         assert reader.read(len(sparsestream.SparseStreamTypes().TERM)) == sparsestream.SparseStreamTypes().TERM
                         dataSize += length
-                        bar.update(length)
+                        progressBar.update(length)
                     elif kind == sparsestream.SparseStreamTypes().STOP:
-                        bar.close()
+                        progressBar.close()
                         if dataSize == meta['dataSize']:
-                            logger.info("End of stream, %s bytes of data processed" % dataSize)
+                            logging.info("End of stream, %s bytes of data processed", dataSize)
                         else:
-                            logger.error('Error: restored data size %s != %s' % (
+                            logging.error(
+                                'Error: restored data size %s != %s',
                                 dataSize,
                                 meta['dataSize']
-                            ))
+                            )
                             sys.exit(1)
                         break
 
                 if meta['checkpointName'] == args.until:
-                    logging.info("Reached checkpoint %s, stopping" % args.until)
-                    bar.close()
+                    logging.info("Reached checkpoint %s, stopping", args.until)
+                    progressBar.close()
                     break
 
             nbdClient.disconnect()
-            bar.close()
+            progressBar.close()
 
 if __name__ == "__main__":
     main()

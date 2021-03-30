@@ -6,8 +6,8 @@ import signal
 import pprint
 import logging
 import argparse
-from tqdm import tqdm
 from datetime import datetime
+from tqdm import tqdm
 from functools import partial
 
 import libvirtnbdbackup.common as common
@@ -80,7 +80,6 @@ def main():
 
     lib = common.Common()
     args = lib.argparse(parser)
-    logger = logging
 
     if args.output == "-":
         logPath = "./backup.log"
@@ -95,14 +94,15 @@ def main():
         try:
             os.mkdir(args.output)
         except Exception as e:
-            logger.error("%s" % e)
+            logging.error("%s", e)
             sys.exit(1)
 
     if args.verbose == True:
         level = logging.DEBUG
     else:
         level = logging.INFO
-    logger.basicConfig(
+
+    logging.basicConfig(
         level=level,
         handlers=[
             logging.FileHandler(logPath),
@@ -112,64 +112,55 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    logger.info("Version: %s Arguments: %s" % (
-        __version__,
-        ' '.join(sys.argv)
-        )
-    )
+    logging.info("Version: %s Arguments: %s", __version__, ' '.join(sys.argv))
 
     if args.type == "raw" and args.level == "inc":
-        logger.error("Backup format raw does not support incremental backup")
+        logging.error("Backup format raw does not support incremental backup")
         sys.exit(1)
 
     if not args.output == "-" and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
-            logger.error("Target directory must empty for full or copy backup.")
+            logging.error("Target directory must empty for full or copy backup.")
             sys.exit(1)
 
     virtClient = libvirthelper.client()
     try:
         domObj = virtClient.getDomain(args.domain)
     except Exception as e:
-        logging.error('Unable to get domain information: %s' % e)
+        logging.error('Unable to get domain information: %s', e)
         sys.exit(1)
 
-    if virtClient.hasIncrementalEnabled(domObj) == False:
-        logger.error("Domain is missing required incremental-backup capability.")
+    if virtClient.hasIncrementalEnabled(domObj) is False:
+        logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks = virtClient.getDomainDisks(vmConfig, args.exclude)
 
-    signal.signal(signal.SIGINT,
-        partial(
-            handleSignal,
-            disks,
-            domObj,
-            virtClient,
-            logger
-        )
+    signal.signal(
+        signal.SIGINT,
+        partial(handleSignal, disks, domObj, virtClient, logging)
     )
 
     if len(disks) == 0:
-        logger.error("Domain has no disks attached which support changed block tracking.")
+        logging.error("Domain has no disks attached which support changed block tracking.")
         sys.exit(1)
 
-    logger.info("Domain has %s disks attached which support changed block tracking." % len(disks))
+    logging.info("Domain has %s disks attached which support changed block tracking.", len(disks))
 
-    if args.killonly == True:
-        logger.info("Stopping domain jobs")
+    if args.killonly is True:
+        logging.info("Stopping domain jobs")
         try:
             virtClient.stopBackup(domObj, disks[0].diskTarget)
         except Exception as e:
-            logging.warn('%s' % e)
+            logging.warn('%s', e)
         sys.exit(0)
 
     if not os.path.exists(args.output):
         try:
             os.mkdir(args.output)
         except Exception as e:
-            logger.error("%s" % e)
+            logging.error("%s", e)
             sys.exit(1)
 
     checkpointName = "virtnbdbackup"
@@ -178,7 +169,7 @@ def main():
     cptFile = '%s/%s.cpt' % (args.output, args.domain)
     if os.path.exists(cptFile):
         with open(cptFile,'r') as cptFh:
-             checkpoints = json.loads(cptFh.read())
+            checkpoints = json.loads(cptFh.read())
 
     if args.level != "copy":
         logging.info('Looking for checkpoints')
@@ -195,26 +186,26 @@ def main():
             nextCpt = len(checkpoints)+1
             checkpointName = "virtnbdbackup.%s" % nextCpt
             if args.checkpoint != False:
-                logging.info("Overriding checkpoint: %s" % args.checkpoint)
+                logging.info("Overriding checkpoint: %s", args.checkpoint)
                 parentCheckpoint = args.checkpoint
             else:
                 parentCheckpoint = checkpoints[-1]
-            logging.info('Found checkpoints, next checkpoint id: %s' % nextCpt)
-            logging.info("Parent checkpoint name %s" % parentCheckpoint)
+            logging.info('Found checkpoints, next checkpoint id: %s', nextCpt)
+            logging.info("Parent checkpoint name %s", parentCheckpoint)
 
         if args.level == "inc" and len(checkpoints)<1:
-            logger.error("No prior checkpoints found, execute full backup first")
+            logging.error("No prior checkpoints found, execute full backup first")
             sys.exit(1)
 
-        logging.info("Using checkpoint name %s" % checkpointName)
+        logging.info("Using checkpoint name %s", checkpointName)
 
-    logging.info('Temporary scratch file target directory: %s' % args.scratchdir)
+    logging.info('Temporary scratch file target directory: %s', args.scratchdir)
 
     if not os.path.exists(args.scratchdir):
         try:
             os.mkdir(args.scratchdir)
         except Exception as e:
-            logging.error('Unable to create directory for scratch file: %s' % e)
+            logging.error('Unable to create directory for scratch file: %s', e)
             sys.exit(1)
 
     backupSocket = lib.getSocketFile(args.socketfile)
@@ -227,9 +218,9 @@ def main():
             args.scratchdir,
             backupSocket
         )
-        logging.debug('Backup job started, using socket: %s' % backupSocket)
+        logging.debug('Backup job started, using socket: %s', backupSocket)
     except Exception as e:
-        logging.error('%s' % e)
+        logging.error('%s', e)
         sys.exit(1)
 
     if args.level != "copy":
@@ -240,56 +231,59 @@ def main():
         with open(cptFile,'w') as cFw:
             cFw.write(json.dumps(checkpoints))
 
-    if args.startonly == True:
+    if args.startonly is True:
         logging.info("Exiting after backup Start")
         sys.exit(0)
 
     for disk in disks:
-        if args.include != None and disk.diskTarget != args.include:
-            logging.info("Skipping disk: %s" % disk.diskTarget)
+        if args.include is not None and disk.diskTarget != args.include:
+            logging.info("Skipping disk: %s", disk.diskTarget)
             continue
         try:
-            backupDisk(disk.diskTarget, args, lib, logger,
-                       checkpointName, parentCheckpoint,
-                       backupSocket)
+            backupDisk(disk.diskTarget, args, lib, checkpointName,
+                       parentCheckpoint, backupSocket)
         except Exception as e:
-            logger.error('Unable to backup Disk: %s' % e)
+            logging.error('Unable to backup Disk: %s', e)
             virtClient.stopBackup(domObj, disk.diskTarget)
             sys.exit(1)
     if args.printonly is False and args.output != "-":
-        backupConfig(vmConfig, args, checkpointName, logger)
+        backupConfig(vmConfig, args, checkpointName)
     virtClient.stopBackup(domObj, disk.diskTarget)
 
-def backupConfig(vmConfig, args, checkpointName, logger):
+def backupConfig(vmConfig, args, checkpointName):
     configFile = '%s/vmconfig.%s.xml' % (args.output, checkpointName)
-    logger.info("Saving VM config to: %s" % configFile)
-    with open(configFile, 'w') as configFh:
-        configFh.write(vmConfig)
+    logging.info("Saving VM config to: %s", configFile)
+    try:
+        with open(configFile, 'w') as configFh:
+            configFh.write(vmConfig)
+    except Exception as e:
+        logging.error('Unable to save VM config: %s', e)
+        sys.exit(1)
 
-def backupDisk(diskTarget, args, lib, logger, checkpointName,
+def backupDisk(diskTarget, args, lib, checkpointName,
                parentCheckpoint, backupSocket):
     metaContext = None
     if args.level == "inc":
         metaContext = "qemu:dirty-bitmap:backup-%s" % diskTarget
-        logger.info("INC backup: set context to %s" % metaContext)
+        logging.info("INC backup: set context to %s", metaContext)
 
     nbdClient = nbdhelper.nbdClient(
         diskTarget,
         metaContext,
         backupSocket
     )
-    logging.info('NDB Endpoint socket: %s' % backupSocket)
+    logging.info('NDB Endpoint socket: %s', backupSocket)
     connection = nbdClient.connect()
 
     if args.qemu and args.level != "inc":
-        logger.info("Using qemu tools to query extents")
+        logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
             qemuhelper.qemuHelper(diskTarget),
             metaContext,
             backupSocket
         )
     else:
-        logger.info("Using nbd to query extents")
+        logging.info("Using nbd to query extents")
         extentHandler = extenthandler.ExtentHandler(
             connection,
             metaContext,
@@ -298,24 +292,24 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName,
     extents = extentHandler.queryBlockStatus()
     diskSize = connection.get_size()
 
-    if extents == None:
+    if extents is None:
         logging.error("No extents found")
         return
 
     thinBackupSize = sum(
-        [extent.length for extent in extents if extent.data == True]
+        [extent.length for extent in extents if extent.data is True]
     )
-    logger.info("Got %s extents" % len(extents))
-    if args.verbose == True:
+    logging.info("Got %s extents", len(extents))
+    if args.verbose is True:
         pprint.pprint(lib.dumpExtentJson(extents))
-    logger.info("%s bytes disk size" % diskSize)
-    logger.info("%s bytes of data extents to backup" % thinBackupSize)
-    if args.printonly == True:
+    logging.info("%s bytes disk size", diskSize)
+    logging.info("%s bytes of data extents to backup", thinBackupSize)
+    if args.printonly is True:
         nbdClient.disconnect()
         return
 
     if args.level == "inc" and thinBackupSize == 0:
-        logger.info("No dirty blocks found")
+        logging.info("No dirty blocks found")
 
     if args.level == "full" or args.level == "copy":
         targetFile = '%s/%s.%s.data' % (
@@ -334,9 +328,9 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName,
         if args.type == 'stream':
             writer = sys.stdout.buffer
         else:
-            logger.error('Stdout not supported with raw output')
+            logging.error('Stdout not supported with raw output')
     else:
-        logger.info("Write data to target file: %s" % targetFile)
+        logging.info("Write data to target file: %s", targetFile)
         writer = open(targetFile,'wb')
     if args.type == "raw":
         logging.info("Creating full provisioned raw backup image")
@@ -347,10 +341,12 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName,
         inc = False
         if args.level == "inc":
             inc = True
-        metadata = sparsestream.SparseStream().dumpMetadata(diskSize,
-            thinBackupSize, diskTarget, checkpointName,
-            parentCheckpoint, inc)
-        sparsestream.SparseStream().writeFrame(writer,
+        metadata = sparsestream.SparseStream().dumpMetadata(
+            diskSize, thinBackupSize, diskTarget, checkpointName,
+            parentCheckpoint, inc
+        )
+        sparsestream.SparseStream().writeFrame(
+            writer,
             sparsestream.SparseStreamTypes().META,
             0,
             len(metadata)
@@ -358,22 +354,21 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName,
         writer.write(metadata)
         writer.write(sparsestream.SparseStreamTypes().TERM)
 
-    bar = tqdm(
+    progressBar = tqdm(
         total=thinBackupSize, desc="saving disk %s" % diskTarget,
         unit='B', unit_scale=True, disable=args.noprogress
     )
     for save in extents:
-        if save.data == True:
+        if save.data is True:
             if args.type == "stream":
-                sparsestream.SparseStream().writeFrame(writer,
+                sparsestream.SparseStream().writeFrame(
+                    writer,
                     sparsestream.SparseStreamTypes().DATA,
                     save.offset,
                     save.length
                 )
-                logger.debug("Read data from: start %s, length: %s" % (
-                    save.offset,
-                    save.length
-                ))
+                logging.debug("Read data from: start %s, length: %s",
+                              save.offset, save.length)
             if save.length >= nbdClient.maxRequestSize:
                 lib.writeChunk(writer, save.offset, save.length,
                                nbdClient.maxRequestSize, connection,
@@ -388,12 +383,13 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName,
             if args.type == "stream":
                 writer.write(sparsestream.SparseStreamTypes().TERM)
 
-            bar.update(save.length)
+            progressBar.update(save.length)
         else:
             if args.type == "raw":
                 writer.seek(save.offset)
             elif args.type == "stream" and args.level != "inc":
-                sparsestream.SparseStream().writeFrame(writer,
+                sparsestream.SparseStream().writeFrame(
+                    writer,
                     sparsestream.SparseStreamTypes().ZERO,
                     save.offset,
                     save.length
@@ -407,7 +403,7 @@ def backupDisk(diskTarget, args, lib, logger, checkpointName,
         )
 
     writer.close()
-    bar.close()
+    progressBar.close()
 
 if __name__ == "__main__":
     main()
