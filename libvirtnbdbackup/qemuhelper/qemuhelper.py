@@ -32,7 +32,6 @@ class qemuHelper(object):
             "-x", "%s" % self.exportName,
             "%s/%s" % (targetDir, self.exportName),
             "-k",
-            "%s" % socketFile ],
-        close_fds=True)
+            "%s" % socketFile ], close_fds=True)
 
         return p.pid

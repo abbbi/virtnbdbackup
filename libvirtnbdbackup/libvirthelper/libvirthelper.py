@@ -1,8 +1,8 @@
 import sys
 import string
 import random
-import libvirt
 import logging
+import libvirt
 from xml.etree import ElementTree
 
 # this is required so libvirt.py does not report errors to stderr
@@ -34,7 +34,7 @@ class client(object):
         try:
             return libvirt.open(URI)
         except libvirt.libvirtError as e:
-            logging.error('Cant connect libvirt daemon: %s' % e)
+            logging.error('Cant connect libvirt daemon: %s', e)
             sys.exit(1)
 
     def getDomain(self, name):
@@ -196,7 +196,7 @@ class client(object):
 
             domObj.backupBegin(backupXml, checkpointXml)
 
-            if freezed == True:
+            if freezed is True:
                 try:
                     domObj.fsThaw()
                     logging.info('Thawed filesystems.')
