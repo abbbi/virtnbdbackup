@@ -233,7 +233,7 @@ consider migrating your qcow files to version 3 format. QEMU QCOW Image version
 2 does not support storing advanced bitmap informations, as such only backup mode
 `copy` is supported.
 
-## Backup fails with "Timed out during operation: cannot qcquire state change lock"
+## Backup fails with "Timed out during operation: cannot acquire state change lock"
 
 If backups fail with error:
 
