@@ -231,4 +231,4 @@ class client(object):
     def stopBackup(self, domObj, diskTarget):
         """ Cancel the backup task using block job abort
         """
-        domObj.blockJobAbort(diskTarget)
+        return domObj.blockJobAbort(diskTarget)

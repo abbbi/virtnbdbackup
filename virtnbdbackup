@@ -227,7 +227,7 @@ def main():
     backupSocket = lib.getSocketFile(args.socketfile)
 
     try:
-        logging.debug('Starting backup job')
+        logging.info('Starting backup job.')
         virtClient.startBackup(
             domObj, disks, args.level,
             checkpointName, parentCheckpoint,
@@ -239,7 +239,7 @@ def main():
         sys.exit(1)
 
     if args.level != "copy":
-        logging.info('Started full backup with checkpoint, saving information')
+        logging.info('Started backup job with checkpoint, saving information.')
         if len(checkpoints) < 1:
             checkpoints = []
         checkpoints.append(checkpointName)
@@ -247,7 +247,7 @@ def main():
             cFw.write(json.dumps(checkpoints))
 
     if args.startonly is True:
-        logging.info("Exiting after backup Start")
+        logging.info("Started backup job for debugging, exiting.")
         sys.exit(0)
 
     for disk in disks:
@@ -264,7 +264,11 @@ def main():
     if args.printonly is False and args.output != "-":
         backupConfig(vmConfig, args, checkpointName)
     logging.info('Stopping backup task')
-    virtClient.stopBackup(domObj, disks[0].diskTarget)
+    ret = virtClient.stopBackup(domObj, disks[0].diskTarget)
+    if ret == 0:
+        logging.info('Finished')
+    else:
+        logging.warning('Unable to stop backup task, return: %s', e)
 
 def backupConfig(vmConfig, args, checkpointName):
     configFile = '%s/vmconfig.%s.xml' % (args.output, checkpointName)
