@@ -34,6 +34,7 @@ machines.
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
  * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= 1.5.5 (yum install python3-libnbd)
+ * The virtual machine should use qcow verison 3 images to support the full feature set.
 
 # Installation
 
@@ -41,20 +42,20 @@ To create an RPM package suitable for installation:
 
 ```
 python3 setup.py bdist_rpm
-rpm -i dist/virtnbdbackup-0.<version>-1.noarch.rpm
+rpm -i dist/virtnbdbackup-<version>-.noarch.rpm
 ```
 
 Pre Built Packages are also available, see: https://github.com/abbbi/virtnbdbackup/releases
-
 
 # Backup Format
 
 Currently there are two output formats implemented:
 
- * stream: the resulting backup image is saved in a streamlined format,
-   where the backup stream consists of meta data about offsets and lengths
-   of zeroed or allocated contents of the virtual machines disk.
- * raw: The resulting backup image will be a full provisioned raw image,
+ * `stream`: the resulting backup image is saved in a streamlined format,
+   where the backup file consists of meta data about offsets and lengths
+   of zeroed or allocated contents of the virtual machines disk. This is
+   the default.
+ * `raw`: The resulting backup image will be a full provisioned raw image,
    this should mostly be used for debugging any problems with the extent
    handler, it wont work with incremental backups.
 
@@ -67,14 +68,15 @@ Following backup modes can be used:
   will be left. This is the default mode.
 
 * `full`: Full, thin provisioned backup of the virtual machine, a new checkpoint
-  named `virtnbdbackup' will be created, all existant checkpoints from prior
-  backups including this name will be removed: a new backup chain is created.
+  named `virtnbdbackup` will be created, all existant checkpoints from prior
+  backups matching this name will be removed: a new backup chain is created.
 
-* `inc`: Perform incremental backup, based on the last full or incremental backup.
+* `inc`: Perform incremental backup, based on the last full or incremental
+  backup. An checkpoint for each incremental backup is created and saved.
 
 All required informations for restore are saved within the same directory,
 including the virtual machine configuration, checkpoint information and disk
-data.
+data and logfiles.
 
 The target directory must be rotated if a new backup set is created.
 
