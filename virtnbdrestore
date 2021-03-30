@@ -20,7 +20,6 @@ import libvirtnbdbackup.qemuhelper as qemuhelper
 from libvirtnbdbackup import __version__
 
 def main():
-    logging.getLogger("sh").setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(
         description='Restore virtual machine disks'
     )

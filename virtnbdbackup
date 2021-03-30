@@ -26,7 +26,6 @@ def handleSignal(disks, domObj, virtClient, log, signal, frame):
     sys.exit(1)
 
 def main():
-    logging.getLogger("sh").setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(
         description='Backup libvirt/qemu virtual machines'
     )
