@@ -308,7 +308,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
     if args.level == "inc" and thinBackupSize == 0:
         logging.info("No dirty blocks found")
 
-    if args.level == "full" or args.level == "copy":
+    if args.level in ('full','copy'):
         targetFile = '%s/%s.%s.data' % (
             args.output,
             diskTarget,
@@ -325,10 +325,15 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         if args.type == 'stream':
             writer = sys.stdout.buffer
         else:
-            logging.error('Stdout not supported with raw output')
+            logging.error('Output to stdout not supported with raw output')
+            return
     else:
         logging.info("Write data to target file: %s", targetFile)
-        writer = open(targetFile,'wb')
+        try:
+            writer = open(targetFile,'wb')
+        except Exception as e:
+            logging.error('Unable to open target file: %s', e)
+            return
     if args.type == "raw":
         logging.info("Creating full provisioned raw backup image")
         writer.truncate(diskSize)
