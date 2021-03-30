@@ -1,11 +1,9 @@
 import os
 import json
 import subprocess
-from time import sleep
 
 class qemuHelper(object):
-    """
-        Wrapper for qemu executables
+    """ Wrapper for qemu executables
     """
     def __init__(self, exportName):
         self.exportName = exportName
