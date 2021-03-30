@@ -74,11 +74,21 @@ Following backup modes can be used:
 * `inc`: Perform incremental backup, based on the last full or incremental
   backup. An checkpoint for each incremental backup is created and saved.
 
-All required informations for restore are saved within the same directory,
-including the virtual machine configuration, checkpoint information and disk
-data and logfiles.
+All required informations for restore are stored to the same directory,
+including the latest virtual machine configuration, checkpoint information,
+disk data and logfiles.
 
 The target directory must be rotated if a new backup set is created.
+
+Using the available `libvirt` api calls, a backup job operation is started,
+which in turn initializes a new nbd server backend listening on a local unix
+socket. This nbd backend provides consistent access to the virtual machines
+disk data and dirty blocks. After the backup process finishes, the job is
+stopped and the nbd server quits operation.
+
+It is possible to backup multiple virtual machines on the same host system at
+the same time, using seperate calls to the application with a different target
+directory to store the data.
 
 # Backup Examples
 
@@ -138,12 +148,15 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
 
 # Restore examples
 
-For restoring, `virtnbdrestore` can be used. It processes the streamed backup
-format back into a usable qemu qcow image.
+For restoring, `virtnbdrestore` can be used. It reconstructs the streamed
+backup format back into a usable qemu qcow image.
 
-The restore process will create an qcow image that has all changes applied and
-can be mounted (using `guestmount`) or attached to a running virtual machine to
-recover required files.
+The restore process will create an qcow image with the original virtual size.
+
+In a second step, the qcow image is then mapped to a ndb server instance where
+all exiting blocks are sent to and are applied accordingly. The resulting image
+can be mounted (using `guestmount`) or attached to a running virtual machine in
+order to recover required files.
 
 ## Dumping backup information
 
@@ -163,6 +176,8 @@ INFO:root:Dumping saveset meta information
  'virtualSize': 32212254720}
 [..]
 ```
+The output includes informations about the thick and thin provisioned disk
+space that is required for recovery, date of the backup and checkpoint chain.
 
 ## Complete restore
 
@@ -173,7 +188,8 @@ command:
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 ```
 
-All incremental backups found will be applied to the target image.
+All incremental backups found will be applied to the target images
+in the output directory `/tmp/restore`
 
 ## Process only specific disks during restore
 
@@ -187,7 +203,7 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore -d sda
 ## Point in time recovery
 
 Option `--until` allows to perform a point in time restore up to a desired
-checkpoint. The Checkpoint name has to be specified as reported by the
+checkpoint. The checkpoint name has to be specified as reported by the
 dump option (`checkpointName`), example:
 
 ```
@@ -204,10 +220,12 @@ implemented extent handler.
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images
 
-Virtual machines using the QCOW format do compress data. During backup, the image
-contents are exposed as NDB device which is a RAW device, as such, the backup data
-is as least as big as the used data within the virtual machine. Use xz or tar to
-compress the backup images in order to save storage space.
+Virtual machines using the qcow format do compress data. During backup, the
+image contents are exposed as NDB device which is a RAW device. The backup data
+will be at least as big as the used data within the virtual machine. 
+
+You can use xz or other tools to compress the backup images in order to save
+storage space or consider using a deduplication capable target file system.
 
 ## Is the backup application consistent?
 
@@ -225,15 +243,15 @@ running with in the domain.
 
 ## Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"
 
-In case the backup fails with error:
+If the backup fails with error:
 
 ```
 ERROR [..] internal error: unable to execute QEMU command dirty bitmaps in qcow2 v2 files
 ```
 
-consider migrating your qcow files to version 3 format. QEMU QCOW Image version
-2 does not support storing advanced bitmap informations, as such only backup mode
-`copy` is supported.
+consider migrating your qcow files to version 3 format. QEMU qcow image version
+2 does not support storing advanced bitmap informations, as such only backup
+mode `copy` is supported.
 
 ## Backup fails with "Timed out during operation: cannot acquire state change lock"
 
@@ -243,12 +261,14 @@ If backups fail with error:
 ERROR [..] Timed out during operation: cannot acquire state change lock (held by monitor=remoteDispatchDomainBackupBegin)
 ```
 
-there is still some backup operation active on the running domain. This may happen
-if `virtnbdbackup` crashes abnormally or is forcibly killed during backup operation,
-or simply if another application is currently executing an active backup job.
+there is still some block job operation active on the running domain, for
+example an live migration or another backup job. It may also happen that
+`virtnbdbackup` crashes abnormally or is forcibly killed during backup
+operation, unable to stop its own backup job.
 
-You can use option `-k` to forcibly kill any running active backup jobs for the
-domain:
+You can use option `-k` to forcibly kill any running active block jobs for the
+domain, but use with care. It is better to check which operation is active with
+the `virsh domjobinfo` command first.
 
 ```
 virtnbdbackup  -d vm2 -l copy -k  -o -
