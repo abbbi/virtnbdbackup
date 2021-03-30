@@ -35,6 +35,18 @@ machines.
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
  * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= 1.5.5 (yum install python3-libnbd)
 
+# Installation
+
+To create an RPM package suitable for installation:
+
+```
+python3 setup.py bdist_rpm
+rpm -i dist/virtnbdbackup-0.<version>-1.noarch.rpm
+```
+
+Pre Built Packages are also available, see: https://github.com/abbbi/virtnbdbackup/releases
+
+
 # Backup Format
 
 Currently there are two output formats implemented:
@@ -45,26 +57,20 @@ Currently there are two output formats implemented:
  * raw: The resulting backup image will be a full provisioned raw image,
    this should mostly be used for debugging any problems with the extent
    handler, it wont work with incremental backups.
-   
-# Execution
-
-Currently the required components have to be installed and executed on the
-libvirt host itself, remote connections are possible and are subject to
-further releases.
 
 # Backup Operation
 
 Following backup modes can be used:
 
-* copy: Full, thin provisioned backup of the virtual machine disks, no
+* `copy`: Full, thin provisioned backup of the virtual machine disks, no
   checkpoint is created for further incremental backups, existing checkpoints
-  will be left.
+  will be left. This is the default mode.
 
-* full: Full, thin provisioned backup of the virtual machine, a new checkpoint
+* `full`: Full, thin provisioned backup of the virtual machine, a new checkpoint
   named `virtnbdbackup' will be created, all existant checkpoints from prior
   backups including this name will be removed: a new backup chain is created.
 
-* inc: Perform incremental backup, based on the last full or incremental backup.
+* `inc`: Perform incremental backup, based on the last full or incremental backup.
 
 All required informations for restore are saved within the same directory,
 including the virtual machine configuration, checkpoint information and disk
@@ -247,7 +253,3 @@ virtnbdbackup  -d vm2 -l copy -k  -o -
 [..]
   INFO virtnbdbackup - main: Stopping domain jobs
 ```
-
-# TODO
-
- * Allow remote backup

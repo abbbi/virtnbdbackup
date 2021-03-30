@@ -12,6 +12,14 @@ class Common(object):
         except:
             sys.exit(1)
 
+    def getSocketFile(self, arg):
+        if not arg:
+            socketFile = "/var/tmp/virtnbdbackup.%s" % os.getpid()
+        else:
+            socketFile = arg
+
+        return socketFile
+
     def targetIsEmpty(self, args):
         if os.path.exists(args.output) and args.level in ("full","copy"):
             dirList = [ f for f in glob.glob('%s/*' % args.output) if not os.path.basename(f).endswith('.log') ]

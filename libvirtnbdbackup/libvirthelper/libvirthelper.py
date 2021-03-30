@@ -116,20 +116,11 @@ class client(object):
                          socketFilePath):
         """ Create XML file for starting an backup task using libvirt API.
         """
-        if socketFilePath == None:
-            socketId = ''.join(random.choices(
-                string.ascii_uppercase + string.digits,
-                k=5
-            ))
-            socketFile = '/var/tmp/backup_%s' % socketId
-        else:
-            socketFile = socketFilePath
-
         top = ElementTree.Element('domainbackup', {'mode':'pull'})
         child = ElementTree.SubElement(top, 'server',
         {
             'transport':'unix',
-            'socket':'%s' % socketFile}
+            'socket':'%s' % socketFilePath}
         )
         disks = ElementTree.SubElement(top, 'disks')
 
@@ -151,7 +142,7 @@ class client(object):
                 {'file':'%s' % (scratchFile)}
             )
 
-        return ElementTree.tostring(top).decode(), socketFile
+        return ElementTree.tostring(top).decode()
 
     def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
         """ Create valid checkpoint XML file which is passed to libvirt API
@@ -175,7 +166,7 @@ class client(object):
                     parentCheckpoint, scratchFilePath, socketFilePath):
         """ Attempt to start pull based backup task using  XMl description
         """
-        backupXml, socketFile = self._createBackupXml(
+        backupXml = self._createBackupXml(
             diskList,
             parentCheckpoint,
             scratchFilePath,
@@ -208,8 +199,6 @@ class client(object):
                     logging.warning(e)
         except:
             raise
-
-        return socketFile
 
     def checkpointExists(self, domObj, checkpointName):
         """ Check if an checkpoint exists

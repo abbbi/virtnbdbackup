@@ -139,18 +139,12 @@ def main():
                 logger.error("Cant create restore target: %s" % e)
                 sys.exit(1)
 
-            if args.socketfile == None:
-                socketId = ''.join(random.choices(
-                    string.ascii_uppercase + string.digits,
-                    k=5
-                ))
-                socketFile = '/var/tmp/backup_%s' % socketId
-            else:
-                socketFile = args.socketfile
+            socketFile = lib.getSocketFile(args.socketfile)
 
             logger.info("Starting nbd server on socket: %s" % socketFile)
             try:
                 nbdSrv = qFh.startNbdServer(args.output, socketFile)
+                logging.info('NBD Server PID: %s' % nbdSrv)
             except Exception as e:
                 logger.error("Unable to start nbd server: %s" %e)
                 sys.exit(1)

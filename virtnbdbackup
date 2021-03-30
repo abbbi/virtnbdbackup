@@ -218,13 +218,15 @@ def main():
             logging.error('Unable to create directory for scratch file: %s' % e)
             sys.exit(1)
 
+    backupSocket = lib.getSocketFile(args.socketfile)
+
     try:
         logging.debug('Starting backup job')
-        backupSocket = virtClient.startBackup(
+        virtClient.startBackup(
             domObj, disks, args.level,
             checkpointName, parentCheckpoint,
             args.scratchdir,
-            args.socketfile
+            backupSocket
         )
         logging.debug('Backup job started, using socket: %s' % backupSocket)
     except Exception as e:
