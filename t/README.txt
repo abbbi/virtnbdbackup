@@ -1,8 +1,12 @@
-Test cases, use BATS. Each VM directory contains a special
-craftet virtual machine with a given set of disks to be
-backed up.
+Test cases, use BATS. Each VM directory contains a special craftet virtual
+machine with a given set of disks to be backed up. The virtual machines are
+started but do not alter their filesytems while running, to ensure the same
+data-sizes are reported for each test.
 
-to execute test for certain virtual machine use:
+If files within virtual machine should be changed, vm is destroyed and disks
+are mounted via guestfs tools.
+
+To execute test for certain virtual machine use:
 
     make vm1.test
 
