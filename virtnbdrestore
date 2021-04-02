@@ -73,11 +73,11 @@ def main():
             logging.FileHandler("virtnbdrestore.log"),
             logging.StreamHandler()
         ],
-        format='%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        format=lib.logFormat,
+        datefmt=lib.logDateFormat
     )
 
-    logging.info("Version: %s Arguments: %s", __version__, ' '.join(sys.argv))
+    lib.printVersion(__version__)
 
     if not os.path.exists(args.input):
         logging.error("Backup set directory does not exist")
@@ -86,6 +86,9 @@ def main():
     if args.action == "dump":
         logging.info("Dumping saveset meta information")
         dataFiles = lib.getDataFiles(args.input)
+        if not dataFiles:
+            logging.error('No data files found in directory: %s', args.input)
+            sys.exit(1)
         for dataFile in dataFiles:
             if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
                 continue

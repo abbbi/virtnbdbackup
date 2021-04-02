@@ -7,11 +7,18 @@ import logging
 class Common(object):
     """ Common functions
     """
+    def __init__(self):
+        self.logFormat = "%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s"
+        self.logDateFormat = "%Y-%m-%d %H:%M:%S"
+
     def argparse(self, parser):
         try:
             return parser.parse_args()
         except:
             sys.exit(1)
+
+    def printVersion(self, version):
+         logging.info("Version: %s Arguments: %s", version, ' '.join(sys.argv))
 
     def createOutputDir(self, targetDir):
         if targetDir == "-":
