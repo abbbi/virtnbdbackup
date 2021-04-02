@@ -51,13 +51,8 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
-    if args.verbose is True:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
-
     logging.basicConfig(
-        level=level,
+        level=lib.setLogLevel(args.verbose),
         handlers=[
             logging.FileHandler("virtnbdrestore.log"),
             logging.StreamHandler()
@@ -71,8 +66,6 @@ def main():
     if not os.path.exists(args.input):
         logging.error("Backup set directory does not exist")
         sys.exit(1)
-
-    lib = common.Common()
 
     if args.action == "dump":
         logging.info("Dumping saveset meta information")

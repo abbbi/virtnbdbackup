@@ -2,6 +2,7 @@ import os
 import sys
 import glob
 import json
+import logging
 
 class Common(object):
     """ Common functions
@@ -11,6 +12,25 @@ class Common(object):
             return parser.parse_args()
         except:
             sys.exit(1)
+
+    def createOutputDir(self, targetDir):
+        if targetDir == "-":
+            return
+
+        if not os.path.exists(targetDir):
+            try:
+                os.makedirs(targetDir)
+            except OSError as e:
+                logging.error("Unable to create target directory: %s", e)
+                sys.exit(1)
+
+    def setLogLevel(self, verbose):
+        if verbose is True:
+            level = logging.DEBUG
+        else:
+            level = logging.INFO
+
+        return level
 
     def getSocketFile(self, arg):
         if not arg:

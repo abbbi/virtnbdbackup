@@ -96,20 +96,10 @@ def main():
             datetime.now().strftime("%m%d%Y%H%M%S")
         )
 
-    if not os.path.exists(args.output) and args.output != "-":
-        try:
-            os.mkdir(args.output)
-        except OSError as e:
-            logging.error("%s", e)
-            sys.exit(1)
-
-    if args.verbose is True:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
+    lib.createOutputDir(args.output)
 
     logging.basicConfig(
-        level=level,
+        level=lib.setLogLevel(args.verbose),
         handlers=[
             logging.FileHandler(logPath),
             logging.StreamHandler()
