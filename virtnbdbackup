@@ -165,10 +165,15 @@ def main():
     )
 
     if len(disks) == 0:
-        logging.error("Domain has no disks attached which support changed block tracking.")
+        logging.error(
+            "Domain has no disks attached which support changed block tracking."
+        )
         sys.exit(1)
 
-    logging.info("Domain has %s disks attached which support changed block tracking.", len(disks))
+    logging.info(
+        "Domain has %s disks attached which support changed block tracking.",
+        len(disks)
+    )
 
     if args.killonly is True:
         logging.info("Stopping domain jobs")
