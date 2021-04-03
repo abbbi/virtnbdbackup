@@ -164,7 +164,7 @@ def main():
         partial(handleSignal, disks, domObj, virtClient, logging)
     )
 
-    if len(disks) == 0:
+    if not disks:
         logging.error("Domain has no disks attached which support changed block tracking.")
         sys.exit(1)
 
@@ -178,13 +178,6 @@ def main():
             logging.warn('%s', e)
         sys.exit(0)
 
-    if not os.path.exists(args.output):
-        try:
-            os.mkdir(args.output)
-        except OSError as e:
-            logging.error("%s", e)
-            sys.exit(1)
-
     checkpointName = "virtnbdbackup"
     parentCheckpoint = False
     checkpoints = []
@@ -195,7 +188,7 @@ def main():
 
     if args.level != "copy":
         logging.info('Looking for checkpoints')
-        if args.level == "full" and len(checkpoints) > 0:
+        if args.level == "full" and checkpoints:
             logging.info("Removing all existant checkpoints before full backup")
             virtClient.removeAllCheckpoints(domObj, checkpoints)
             os.remove(cptFile)
@@ -204,7 +197,7 @@ def main():
             virtClient.removeAllCheckpoints(domObj,None)
             checkpoints = []
 
-        if len(checkpoints) > 0 and args.level == "inc":
+        if checkpoints and args.level == "inc":
             nextCpt = len(checkpoints)+1
             checkpointName = "virtnbdbackup.%s" % nextCpt
             if args.checkpoint != False:
@@ -223,12 +216,7 @@ def main():
 
     logging.info('Temporary scratch file target directory: %s', args.scratchdir)
 
-    if not os.path.exists(args.scratchdir):
-        try:
-            os.mkdir(args.scratchdir)
-        except OSError as e:
-            logging.error('Unable to create directory for scratch file: %s', e)
-            sys.exit(1)
+    lib.createOutputDir(args.scratchdir)
 
     backupSocket = lib.getSocketFile(args.socketfile)
 
@@ -246,7 +234,7 @@ def main():
 
     if args.level != "copy":
         logging.info('Started backup job with checkpoint, saving information.')
-        if len(checkpoints) < 1:
+        if not checkpoints:
             checkpoints = []
         checkpoints.append(checkpointName)
         with open(cptFile,'w') as cFw:
@@ -425,8 +413,16 @@ def backupDisk(diskTarget, args, lib, checkpointName,
     writer.close()
     progressBar.close()
     if targetFilePartial != "-":
-        logging.info('Backup of disk %s finished, renaming file', diskTarget)
-        os.rename(targetFilePartial, targetFile)
+        try:
+            os.rename(targetFilePartial, targetFile)
+            logging.info(
+                'Backup of disk %s finished, file: %s',
+                diskTarget,
+                targetFile
+            )
+        except OSError as e:
+            logging.error('Unable to rename file: %s' %e)
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
