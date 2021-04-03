@@ -8,8 +8,11 @@ class Common(object):
     """ Common functions
     """
     def __init__(self):
+        """ Default values
+        """
         self.logFormat = "%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s"
         self.logDateFormat = "%Y-%m-%d %H:%M:%S"
+        self.checkpointName = "virtnbdbackup"
 
     def argparse(self, parser):
         try:

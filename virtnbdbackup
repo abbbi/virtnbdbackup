@@ -176,12 +176,13 @@ def main():
     )
 
     if args.killonly is True:
-        logging.info("Stopping domain jobs")
+        logging.info("Stopping backup job")
         try:
             virtClient.stopBackup(domObj, disks[0].diskTarget)
+            sys.exit(0)
         except Exception as e:
             logging.warn('%s', e)
-        sys.exit(0)
+            sys.exit(1)
 
     if not os.path.exists(args.output):
         try:
@@ -190,7 +191,7 @@ def main():
             logging.error("%s", e)
             sys.exit(1)
 
-    checkpointName = "virtnbdbackup"
+    checkpointName = lib.checkpointName
     parentCheckpoint = False
     checkpoints = []
     cptFile = '%s/%s.cpt' % (args.output, args.domain)
@@ -211,9 +212,9 @@ def main():
 
         if len(checkpoints) > 0 and args.level == "inc":
             nextCpt = len(checkpoints)+1
-            checkpointName = "virtnbdbackup.%s" % nextCpt
+            checkpointName = "%s.%s" % (checkpointName, nextCpt)
             if args.checkpoint != False:
-                logging.info("Overriding checkpoint: %s", args.checkpoint)
+                logging.info("Overriding parent checkpoint: %s", args.checkpoint)
                 parentCheckpoint = args.checkpoint
             else:
                 parentCheckpoint = checkpoints[-1]
