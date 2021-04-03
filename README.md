@@ -37,8 +37,14 @@ machines.
  * The virtual machine should use qcow verison 3 images to support the full feature set.
 
 # Installation
+## Python package
+```
+python3 setup.py install
+```
 
-To create an RPM package suitable for installation:
+## RPM package
+
+To create an RPM package from source suitable for installation:
 
 ```
 python3 setup.py bdist_rpm
@@ -46,6 +52,15 @@ rpm -i dist/virtnbdbackup-<version>-.noarch.rpm
 ```
 
 Pre Built Packages are also available, see: https://github.com/abbbi/virtnbdbackup/releases
+
+## Debian package
+
+To create an Debian package (Debian Buster required) use:
+
+```
+apt-get install python3-all python3-stdeb
+python3 setup.py --command-packages=stdeb.command bdist_deb
+```
 
 # Backup Format
 
