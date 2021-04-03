@@ -90,9 +90,9 @@ def main():
             logging.error('No data files found in directory: %s', args.input)
             sys.exit(1)
         for dataFile in dataFiles:
-            if args.disk != "all" and not os.path.basename(dataFile).startswith(
-                    args.disk
-            ):
+            if args.disk != "all" and not os.path.basename(
+                    dataFile
+            ).startswith(args.disk):
                 continue
             meta = lib.dumpMetaData(dataFile, sparsestream)
             if meta is False:
