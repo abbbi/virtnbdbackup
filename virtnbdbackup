@@ -60,7 +60,7 @@ def main():
         "-o", "--output", required=True, type=str,
         help="Output target directory")
     parser.add_argument(
-        "-S", "--scratchdir", default="/tmp", required=False, type=str,
+        "-S", "--scratchdir", default="/var/tmp", required=False, type=str,
         help="Target directory for temporary scratch file")
     parser.add_argument(
         "-q", "--qemu", default=False, action="store_true",
