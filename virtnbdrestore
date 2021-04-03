@@ -90,11 +90,15 @@ def main():
             logging.error('No data files found in directory: %s', args.input)
             sys.exit(1)
         for dataFile in dataFiles:
-            if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
+            if args.disk != "all" and not os.path.basename(
+                dataFile
+            ).startswith(args.disk):
                 continue
             meta = lib.dumpMetaData(dataFile, sparsestream)
             if meta is False:
-                logging.error('Unable to dump image contents, image defunct or raw image?')
+                logging.error(
+                    'Unable to dump image contents, image defunct or raw image?'
+                )
                 continue
             pprint.pprint(meta)
 
@@ -156,7 +160,10 @@ def main():
                 logging.error("Unable to start nbd server: %s", e)
                 sys.exit(1)
 
-            logging.info("Waiting until nbd server on socket %s is up", socketFile)
+            logging.info(
+                "Waiting until nbd server on socket %s is up",
+                socketFile
+            )
             sleep(5)
 
             nbdClient = nbdhelper.nbdClient(
@@ -250,7 +257,10 @@ def main():
                     elif kind == sparsestream.SparseStreamTypes().STOP:
                         progressBar.close()
                         if dataSize == meta['dataSize']:
-                            logging.info("End of stream, %s bytes of data processed", dataSize)
+                            logging.info(
+                                "End of stream, %s bytes of data processed",
+                                dataSize
+                            )
                         else:
                             logging.error(
                                 'Error: restored data size %s != %s',
