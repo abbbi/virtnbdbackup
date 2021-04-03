@@ -55,7 +55,7 @@ Pre Built Packages are also available, see: https://github.com/abbbi/virtnbdback
 
 ## Debian package
 
-To create an Debian package (Debian Buster required) use:
+To create an Debian package (Debian bullseye required) use:
 
 ```
 apt-get install python3-all python3-stdeb
