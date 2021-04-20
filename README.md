@@ -290,3 +290,9 @@ virtnbdbackup  -d vm2 -l copy -k  -o -
 [..]
   INFO virtnbdbackup - main: Stopping domain jobs
 ```
+
+## Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"
+
+The issue is most likely an active `apparmor` profile that prevents the qemu
+daemon from creating its socket file for the nbd server. Try to disable
+apparmor. See also #7
