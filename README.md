@@ -48,6 +48,8 @@ To create an RPM package from source suitable for installation:
 
 ```
 python3 setup.py bdist_rpm
+yum install epel-release    # required for tqdm
+yum makecache
 rpm -i dist/virtnbdbackup-<version>-.noarch.rpm
 ```
 
