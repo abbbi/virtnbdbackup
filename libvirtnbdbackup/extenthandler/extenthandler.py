@@ -98,7 +98,7 @@ class ExtentHandler(object):
             extentObj.length = extentSizes[ct]
             extentObj.type = extentTypes[ct]
             extentList.append(extentObj)
-            ct+=1
+            ct += 1
 
         return extentList
 
@@ -124,7 +124,7 @@ class ExtentHandler(object):
         lastExtentLen = len(self._extentEntries)
         while offset < size:
             if size < maxRequestLen:
-                request_length=size
+                request_length = size
             else:
                 request_length = min(size - offset, maxRequestLen)
             logging.debug('Block status request length: %s', request_length)
@@ -133,7 +133,7 @@ class ExtentHandler(object):
                 logging.error("No extents found")
                 return False
 
-            offset+=sum(self._extentEntries[lastExtentLen::2])
+            offset += sum(self._extentEntries[lastExtentLen::2])
             lastExtentLen = len(self._extentEntries)
 
         logging.debug('Extents: %s', self._extentEntries)
@@ -150,7 +150,7 @@ class ExtentHandler(object):
         for extent in self._unifyExtents(self.queryExtentsNbd()):
             extObj = Extent()
             if self._metaContext == "base:allocation":
-                assert extent.type in (0,1,2,3)
+                assert extent.type in (0, 1, 2, 3)
                 if extent.type == 0:
                     extObj.data = True
                 if extent.type == 1:
@@ -160,13 +160,13 @@ class ExtentHandler(object):
                 elif extent.type == 3:
                     extObj.data = False
             else:
-                assert extent.type in (0,1)
+                assert extent.type in (0, 1)
                 extObj.data = bool(extent.type)
 
             extObj.offset = start
             extObj.length = extent.length
             extentList.append(extObj)
-            start+=extent.length
+            start += extent.length
 
         logging.debug('Returning extent list with %s objects', len(extentList))
         return extentList
