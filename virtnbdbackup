@@ -416,9 +416,9 @@ def backupDisk(diskTarget, args, lib, checkpointName,
             0, 0
         )
 
-    writer.close()
     progressBar.close()
     if targetFilePartial != "-":
+        writer.close()
         try:
             os.rename(targetFilePartial, targetFile)
             logging.info(
