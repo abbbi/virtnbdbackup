@@ -387,6 +387,8 @@ def backupDisk(diskTarget, args, lib, checkpointName,
                 logging.debug("Read data from: start %s, length: %s",
                               save.offset, save.length)
             if save.length >= nbdClient.maxRequestSize:
+                logging.debug("Chunked data read from: start %s, length: %s",
+                              save.offset, save.length)
                 lib.writeChunk(
                     writer, save.offset, save.length,
                     nbdClient.maxRequestSize, connection, args.type
