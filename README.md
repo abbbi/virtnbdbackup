@@ -14,7 +14,7 @@ machines.
 
   ```
   yum install centos-release-advanced-virtualization
-  yum update
+  yum makecache
   yum module install virt
   ```
 
