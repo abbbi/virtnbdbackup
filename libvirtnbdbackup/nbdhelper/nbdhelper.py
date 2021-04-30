@@ -1,4 +1,5 @@
 import nbd
+import logging
 
 class nbdClient(object):
     """ Helper functions for NBD
@@ -21,6 +22,8 @@ class nbdClient(object):
         self._connectionHandle = None
 
         self._nbdHandle = nbd.NBD()
+
+        logging.info("libnbd version: {}".format(nbd.__version__))
 
     def connect(self):
         """ Setup connection to NBD server endpoint, return
