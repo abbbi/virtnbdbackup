@@ -46,14 +46,19 @@ python3 setup.py install
 
 To create an RPM package from source suitable for installation:
 
+### Centos 8
+
+To build the rpm package from source:
+
 ```
-python3 setup.py bdist_rpm
-yum install epel-release    # required for tqdm
+yum install epel-release    # required for tqdm on centos 8
 yum makecache
-rpm -i dist/virtnbdbackup-<version>-.noarch.rpm
+yum install rpm-build
+python3 setup.py bdist_rpm
+yum install dist/virtnbdbackup-<version>-.noarch.rpm
 ```
 
-Pre Built Packages are also available, see: https://github.com/abbbi/virtnbdbackup/releases
+Pre Built Packages for centos 8 are also available, see: https://github.com/abbbi/virtnbdbackup/releases
 
 ## Debian package
 
