@@ -23,7 +23,10 @@ class nbdClient(object):
 
         self._nbdHandle = nbd.NBD()
 
-        logging.info("libnbd version: {}".format(nbd.__version__))
+        self.version()
+
+    def version(self):
+        logging.info("{}".format(nbd.__version__))
 
     def connect(self):
         """ Setup connection to NBD server endpoint, return
