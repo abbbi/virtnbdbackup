@@ -12,6 +12,11 @@ VM="vm2"
 VM_IMAGE_URL="https://chuangtzu.ftp.acc.umu.se/cdimage/openstack/archive/10.6.0/debian-10.6.0-openstack-amd64.qcow2"
 VM_IMAGE="${VM}/debian-10.6.0-openstack-amd64.qcow2"
 
+if [ ! -e $VM_IMAGE ]; then
+    echo "downloading test image"
+    curl $VM_IMAGE_URL > $VM_IMAGE
+fi
+
 EXTENT_OUTPUT1="Got 866 extents"
 EXTENT_OUTPUT2="2147483648 bytes disk size"
 EXTENT_OUTPUT3="1394147328 bytes of data extents to backup"
