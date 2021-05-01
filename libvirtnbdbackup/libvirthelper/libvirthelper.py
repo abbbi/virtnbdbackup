@@ -183,6 +183,29 @@ class client(object):
 
         return ElementTree.tostring(top).decode()
 
+    def fsFreeze(self, domObj):
+        """ Attempt to freeze domain filesystems using qemu guest agent
+        """
+        try:
+            domObj.fsFreeze()
+            freezed = True
+            logging.info('Freezed filesystems.')
+            return True
+        except Exception as e:
+            logging.warning(e)
+            return False
+
+    def fsThaw(self, domObj):
+        """ Thaw freezed filesystems
+        """
+        try:
+            domObj.fsThaw()
+            logging.info('Thawed filesystems.')
+            return True
+        except Exception as e:
+            logging.warning(e)
+            return False
+
     def startBackup(self, domObj, diskList, backupLevel, checkpointName,
                     parentCheckpoint, scratchFilePath, socketFilePath):
         """ Attempt to start pull based backup task using  XMl description
@@ -194,6 +217,7 @@ class client(object):
             socketFilePath
         )
         checkpointXml = None
+        freezed = False
         try:
             if backupLevel != "copy":
                 checkpointXml = self._createCheckpointXml(
@@ -201,24 +225,13 @@ class client(object):
                     parentCheckpoint,
                     checkpointName
                 )
-
-            freezed = False
-            try:
-                domObj.fsFreeze()
-                freezed = True
-                logging.info('Freezed filesystems.')
-            except Exception as e:
-                logging.warning(e)
-
+            freezed = self.fsFreeze(domObj)
             domObj.backupBegin(backupXml, checkpointXml)
-
             if freezed is True:
-                try:
-                    domObj.fsThaw()
-                    logging.info('Thawed filesystems.')
-                except Exception as e:
-                    logging.warning(e)
+                self.fsThaw(domObj)
         except:
+            if freezed is True:
+                self.fsThaw(domObj)
             raise
 
     def checkpointExists(self, domObj, checkpointName):
