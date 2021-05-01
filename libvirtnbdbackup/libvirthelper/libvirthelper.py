@@ -188,7 +188,6 @@ class client(object):
         """
         try:
             domObj.fsFreeze()
-            freezed = True
             logging.info('Freezed filesystems.')
             return True
         except Exception as e:
