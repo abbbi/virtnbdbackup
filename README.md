@@ -33,9 +33,9 @@ machines.
  ```
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
- * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= 1.5.5 (yum install python3-libnbd)
+ * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5`* (yum install python3-libnbd)
  * The virtual machine should use qcow verison 3 images to support the full feature set.
-
+ 
 # Installation
 ## Python package
 ```
@@ -302,4 +302,17 @@ virtnbdbackup  -d vm2 -l copy -k  -o -
 
 The issue is most likely an active `apparmor` profile that prevents the qemu
 daemon from creating its socket file for the nbd server. Try to disable
-apparmor. See also #7
+apparmor. See also: https://github.com/abbbi/virtnbdbackup/issues/7
+
+## High memory usage during backup
+
+libnbd python implementation has had various memory leaks in older verisons
+which cause such problems.
+
+For centos 8 based distributions these fixes have been backported to libnbd
+`1.4.0.`
+
+The fix itself was released with libnbd 1.5.2, so be sure to use at least this
+verison if using `virtnbdbackup` on any other distribution.
+
+See also: https://github.com/abbbi/virtnbdbackup/issues/8
