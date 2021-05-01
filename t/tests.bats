@@ -8,7 +8,7 @@ fi
 
 load $TEST/config.bash
 
-@test "Setup / download vm image $VM_IMAGE_URL" {
+@test "Setup / download vm image $VM_IMAGE_URL to $VM_IMAGE" {
     if [ ! ls "$VM_IMAGE" > /dev/null 2>&1 ]; then
         curl -L $VM_IMAGE_URL > ${VM_IMAGE}
     fi
