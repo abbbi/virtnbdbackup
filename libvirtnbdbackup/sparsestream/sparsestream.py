@@ -2,8 +2,7 @@ import json
 import datetime
 
 class SparseStreamTypes:
-    '''
-        Sparse stream format
+    """ Sparse stream format
 
         META:   start of meta information header
         DATA:   data block marker
@@ -13,7 +12,6 @@ class SparseStreamTypes:
         FRAME:  assembled frame
         FRAME_LEN: length of frame
 
-
         Stream format
         =============
 
@@ -21,7 +19,6 @@ class SparseStreamTypes:
 
         Meta frame
         ----------
-
         Stream metadata, must be the first frame.
 
         "meta" space start length "\r\n" <json-payload> \r\n
@@ -34,23 +31,17 @@ class SparseStreamTypes:
 
         Data frame
         ----------
-
         The header is followed by length bytes and terminator.
-
         "data" space start length "\r\n" <length bytes> "\r\n"
 
         Zero frame
         ----------
-
         A zero extent, no payload.
-
         "zero" space start length "\r\n"
 
         Stop frame
         ----------
-
         Marks the end of the stream, no payload.
-
         "stop" space start length "\r\n"
 
         Example
@@ -72,7 +63,7 @@ class SparseStreamTypes:
         data 0000000040100000 00000000000001000\r\n
         <4096 bytes>\r\n
         stop 0000000000000000 00000000000000000\r\n
-    '''
+    """
     def __init__(self):
         self.META = b"meta"
         self.DATA = b"data"
@@ -83,19 +74,16 @@ class SparseStreamTypes:
         self.FRAME_LEN = len(self.FRAME % (self.STOP, 0, 0))
 
 class SparseStream:
-    '''
-        Sparse Stream
-    '''
+    """ Sparse Stream
+    """
     def __init__(self, version=1):
-        '''
-            Stream version set to 1 by default
-        '''
+        """ Stream version set to 1 by default
+        """
         self.version = version
         self.types = SparseStreamTypes()
 
     def dumpMetadata(self, virtualSize, dataSize, diskName, checkpointName, parentCheckpoint, incremental):
-        '''
-            First block in backup stream is Meta data information
+        """ First block in backup stream is Meta data information
             about virtual size of the disk beeing backed up
 
             Dumps Metadata frame to be written at start of stream in
@@ -111,7 +99,7 @@ class SparseStream:
 
                 Returns:
                     json.dumps: (str)   json encoded meta frame
-        '''
+        """
         meta = {
             "virtualSize": virtualSize,
             "dataSize": dataSize,
@@ -125,33 +113,26 @@ class SparseStream:
         return json.dumps(meta, indent=4).encode("utf-8")
 
     def loadMetadata(self, s):
-        '''
-            Load and parse metadata information
-
+        """ Load and parse metadata information
                 Parameters:
                     s:  (str)   Json string as received during data file read
                 Returns:
                     json.loads: (dict)  Decoded json string as python object
-        '''
+        """
         return json.loads(s.decode("utf-8"))
 
     def writeFrame(self, writer, kind, start, length):
-        '''
-            Write backup frame
-
+        """ Write backup frame
                 Parameters:
                     writer: (fh)    Writer object that implements .write()
-
-        '''
+        """
         writer.write(self.types.FRAME % (kind, start, length))
 
     def readFrame(self, reader):
-        '''
-            Read backup frame
-
+        """ Read backup frame
                 Parameters:
                     reader: (fh)    Reader object which implements .read()
-        '''
+        """
         header = reader.read(self.types.FRAME_LEN)
         kind, start, length = header.split(b" ", 2)
         return kind, int(start, 16), int(length, 16)
