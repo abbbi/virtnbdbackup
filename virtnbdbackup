@@ -191,6 +191,8 @@ def main():
     if os.path.exists(cptFile):
         with open(cptFile,'r') as cptFh:
             checkpoints = json.loads(cptFh.read())
+    if checkpoints:
+        virtClient.restoreCheckpoints(domObj, checkpoints, args)
 
     if args.level != "copy":
         logging.info('Looking for checkpoints')
@@ -245,6 +247,8 @@ def main():
         checkpoints.append(checkpointName)
         with open(cptFile,'w') as cFw:
             cFw.write(json.dumps(checkpoints))
+        if args.printonly is False and args.output != "-":
+            virtClient.backupCheckpoint(domObj, args, checkpointName)
 
     if args.startonly is True:
         logging.info("Started backup job for debugging, exiting.")

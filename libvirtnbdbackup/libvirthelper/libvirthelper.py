@@ -260,3 +260,43 @@ class client(object):
         """ Cancel the backup task using block job abort
         """
         return domObj.blockJobAbort(diskTarget)
+
+    def restoreCheckpoints(self, domObj, checkpoints, args):
+        '''recreate checkpoints if necessary'''
+        for checkpointName in checkpoints:
+
+            try:
+                c = domObj.checkpointLookupByName(checkpointName)
+                continue
+            except libvirt.libvirtError as e:
+                if e.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
+                    logging.error('libvirt error: {}' . format(e))
+                    sys.exit(1)
+
+            checkpointFile = '{:s}/checkpoint.{:s}.xml' . format(args.output, checkpointName)
+            logging.info('Loading checkpoint {:s} config from: {:s}' . format(checkpointName, checkpointFile))
+            try:
+                with open(checkpointFile, 'r') as f:
+                    x = f.read()
+            except Exception as e:
+                logging.error('Unable to load checkpoint config: {}' . format(e))
+                sys.exit(1)
+
+            try:
+                domObj.checkpointCreateXML(x, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE)
+            except Exception as e:
+                logging.error('Unable to re-create checkpoint {:s}: {}' . format(checkpointName, e))
+                sys.exit(1)
+
+    def backupCheckpoint(self, domObj, args, checkpointName):
+        '''save checkpoint with given name to backup output directory'''
+
+        checkpointFile = '{:s}/checkpoint.{:s}.xml' . format(args.output, checkpointName)
+        logging.info('Saving checkpoint {:s} config to: {:s}' . format(checkpointName, checkpointFile))
+        try:
+            with open(checkpointFile, 'w') as f:
+                c = domObj.checkpointLookupByName(checkpointName)
+                f.write(c.getXMLDesc())
+        except Exception as e:
+            logging.error('Unable to save checkpoint config: {}' . format(e))
+            sys.exit(1)
