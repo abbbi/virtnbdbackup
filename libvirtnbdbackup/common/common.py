@@ -117,6 +117,15 @@ class Common(object):
             return meta
 
     def writeChunk(self, writer, offset, length, maxRequestSize, nbdCon, btype):
+        """ During extent processing, consecutive blocks with
+        the same type(data or zeroed) are unified into one big chunk.
+        This helps to reduce requests to the NBD Server.
+
+        But in cases where the block to be saved exceeds the maximum
+        recommended request size (nbdClient.maxRequestSize), we
+        need to split one big request into multiple not exceeding
+        the limit
+        """
         blockOffset = offset
         while blockOffset < offset+length:
             blocklen = min(
