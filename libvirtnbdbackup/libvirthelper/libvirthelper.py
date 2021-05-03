@@ -19,6 +19,8 @@ import string
 import random
 import logging
 import libvirt
+import glob
+import os
 from xml.etree import ElementTree
 
 # this is required so libvirt.py does not report errors to stderr
@@ -238,10 +240,21 @@ class client(object):
         """
         return domObj.checkpointLookupByName(checkpointName)
 
-    def removeAllCheckpoints(self, domObj, checkpointList):
+    def removeAllCheckpoints(self, domObj, checkpointList, args):
         """ Remove all existing checkpoints for a virtual machine,
         used during FULL backup to reset checkpoint chain
         """
+
+        # clean persistent storage in args.checkpointdir
+        logging.debug('Cleaning up persistent storage {:s}' . format(args.checkpointdir))
+        try:
+            for checkpointFile in  glob.glob('{:s}/*.xml' . format(args.checkpointdir)):
+                logging.debug('Remove checkpoint file {:s}' . format(checkpointFile))
+                os.remove(checkpointFile)
+        except Exception as e:
+            logging.error('Unable to clean persistent storage {:s}: {}' . format(args.checkpointdir, e))
+            sys.exit(1)
+
         if checkpointList is None:
             cpts = domObj.listAllCheckpoints()
             if cpts:
@@ -261,42 +274,70 @@ class client(object):
         """
         return domObj.blockJobAbort(diskTarget)
 
-    def restoreCheckpoints(self, domObj, checkpoints, args):
-        '''recreate checkpoints if necessary'''
-        for checkpointName in checkpoints:
+    def redefineCheckpoints(self, domObj, args):
+        '''redefine checkpoints from persistent storage'''
 
+        # get list of all .xml files in checkpointdir
+        logging.debug('Loading checkpoint list from: {:s}' . format(args.checkpointdir))
+        try:
+            l = glob.glob('{:s}/*.xml' . format(args.checkpointdir))
+        except Exception as e:
+            logging.error('Unable to get checkpoint list from {:s}: {}' . format(args.checkpointdir, e))
+            sys.exit(1)
+
+        # sort to ensure that parent checkpoint created first
+        for checkpointFile in sorted(l):
+
+            # load checkpoint config and get root element of the tree
+            # config will be used later for checkpoint creation (if necessary)
+            logging.debug('Loading checkpoint config from: {:s}' . format(checkpointFile))
+            try:
+                with open(checkpointFile, 'r') as f:
+                    checkpointConfig = f.read()
+                    root = ElementTree.fromstring(checkpointConfig)
+            except Exception as e:
+                logging.error('Unable to load checkpoint config from {:s}: {}' . format(checkpointFile, e))
+                sys.exit(1)
+
+            # get checkpoint name
+            logging.debug('Get checkpoint name from XML')
+            try:
+                checkpointName = root.find('name').text
+            except Exception as e:
+                logging.error('Unable to find checkpoint name: {}' . format(e))
+                sys.exit(1)
+
+            # try to get checkpoint
+            logging.debug('Checking presense of {:s} checkpoint' . format(checkpointName))
             try:
                 c = domObj.checkpointLookupByName(checkpointName)
+                # process next file if checkpoint already exists
+                logging.debug('Checkpoint {:s} found, skipping to the next file' . format(checkpointName))
                 continue
             except libvirt.libvirtError as e:
+                # ignore VIR_ERR_NO_DOMAIN_CHECKPOINT, report other errors
                 if e.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
                     logging.error('libvirt error: {}' . format(e))
                     sys.exit(1)
 
-            checkpointFile = '{:s}/checkpoint.{:s}.xml' . format(args.output, checkpointName)
-            logging.info('Loading checkpoint {:s} config from: {:s}' . format(checkpointName, checkpointFile))
+            # finally redefine missing checkpoint
+            logging.debug('Redefine missing checkpoint {:s}' . format(checkpointName))
             try:
-                with open(checkpointFile, 'r') as f:
-                    x = f.read()
+                domObj.checkpointCreateXML(checkpointConfig, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE)
             except Exception as e:
-                logging.error('Unable to load checkpoint config: {}' . format(e))
-                sys.exit(1)
-
-            try:
-                domObj.checkpointCreateXML(x, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE)
-            except Exception as e:
-                logging.error('Unable to re-create checkpoint {:s}: {}' . format(checkpointName, e))
+                logging.error('Unable to redefine checkpoint {:s}: {}' . format(checkpointName, e))
                 sys.exit(1)
 
     def backupCheckpoint(self, domObj, args, checkpointName):
-        '''save checkpoint with given name to backup output directory'''
+        '''save checkpoint config to persistent storage'''
 
-        checkpointFile = '{:s}/checkpoint.{:s}.xml' . format(args.output, checkpointName)
-        logging.info('Saving checkpoint {:s} config to: {:s}' . format(checkpointName, checkpointFile))
+        # save checkpoint config to args.checkpointdir
+        checkpointFile = '{:s}/{:s}.xml' . format(args.checkpointdir, checkpointName)
+        logging.debug('Saving checkpoint {:s} config to: {:s}' . format(checkpointName, checkpointFile))
         try:
             with open(checkpointFile, 'w') as f:
                 c = domObj.checkpointLookupByName(checkpointName)
                 f.write(c.getXMLDesc())
         except Exception as e:
-            logging.error('Unable to save checkpoint config: {}' . format(e))
+            logging.error('Unable to save checkpoint config to file {:s}: {}' . format(checkpointFile, e))
             sys.exit(1)

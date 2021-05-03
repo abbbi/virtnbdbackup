@@ -60,6 +60,9 @@ def main():
         "-o", "--output", required=True, type=str,
         help="Output target directory")
     parser.add_argument(
+        '-C', '--checkpointdir', required=True, type=str,
+        help='Persistent libvirt checkpoint storage directory')
+    parser.add_argument(
         "-S", "--scratchdir", default="/var/tmp", required=False, type=str,
         help="Target directory for temporary scratch file")
     parser.add_argument(
@@ -184,30 +187,30 @@ def main():
             logging.warn('%s', e)
             sys.exit(1)
 
-    checkpointName = lib.checkpointName
+    checkpointName = '{:s}.0' . format(lib.checkpointName)
     parentCheckpoint = False
     checkpoints = []
     cptFile = '%s/%s.cpt' % (args.output, args.domain)
     if os.path.exists(cptFile):
         with open(cptFile,'r') as cptFh:
             checkpoints = json.loads(cptFh.read())
-    if checkpoints:
-        virtClient.restoreCheckpoints(domObj, checkpoints, args)
+    # always try to redefine checkpoints
+    virtClient.redefineCheckpoints(domObj, args)
 
     if args.level != "copy":
         logging.info('Looking for checkpoints')
         if args.level == "full" and checkpoints:
             logging.info("Removing all existant checkpoints before full backup")
-            virtClient.removeAllCheckpoints(domObj, checkpoints)
+            virtClient.removeAllCheckpoints(domObj, checkpoints, args)
             os.remove(cptFile)
             checkpoints = []
         elif args.level == "full" and len(checkpoints) < 1:
-            virtClient.removeAllCheckpoints(domObj,None)
+            virtClient.removeAllCheckpoints(domObj, None, args)
             checkpoints = []
 
         if checkpoints and args.level == "inc":
-            nextCpt = len(checkpoints)+1
-            checkpointName = "%s.%s" % (checkpointName, nextCpt)
+            nextCpt = len(checkpoints)
+            checkpointName = "%s.%s" % (lib.checkpointName, nextCpt)
             if args.checkpoint != False:
                 logging.info("Overriding parent checkpoint: %s", args.checkpoint)
                 parentCheckpoint = args.checkpoint
