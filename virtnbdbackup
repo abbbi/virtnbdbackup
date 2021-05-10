@@ -149,12 +149,14 @@ def main():
             sys.exit(1)
 
     if not args.checkpointdir:
+        if args.output == "-":
+            checkpointDir = "."
+        else:
+            checkpointDir = args.output
         args.checkpointdir = "{}/checkpoints".format(
-            args.output,
+            checkpointDir,
         )
-        logging.info("Store checkpoints in: %s",
-            args.checkpointdir
-        )
+        logging.info("Store checkpoints in: %s", args.checkpointdir)
         lib.createOutputDir(args.checkpointdir)
     else:
         lib.createOutputDir(args.checkpointdir)
@@ -201,7 +203,11 @@ def main():
     checkpointName = '{:s}.0' . format(lib.checkpointName)
     parentCheckpoint = False
     checkpoints = []
-    cptFile = '%s/%s.cpt' % (args.output, args.domain)
+    if args.output == "-":
+        cptFilePath = "."
+    else:
+        cptFilePath = args.output
+    cptFile = '%s/%s.cpt' % (cptFilePath, args.domain)
     if os.path.exists(cptFile):
         with open(cptFile,'r') as cptFh:
             checkpoints = json.loads(cptFh.read())
@@ -264,7 +270,7 @@ def main():
         checkpoints.append(checkpointName)
         with open(cptFile,'w') as cFw:
             cFw.write(json.dumps(checkpoints))
-        if args.printonly is False and args.output != "-":
+        if args.printonly is False:
             if not virtClient.backupCheckpoint(domObj, args, checkpointName):
                 virtClient.stopBackup(domObj)
                 sys.exit(1)
