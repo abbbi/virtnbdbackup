@@ -121,7 +121,8 @@ directory to store the data.
 virtnbdbackup -d vm1 -l full -o /tmp/backupset
 ```
 
-* Start incremental backup for domain "cbt":
+* Start incremental backup for domain `vm1`, backup only changed blocks to the
+  last full backup:
 
 ```
 virtnbdbackup -d vm1 -l inc -o /tmp/backupset
