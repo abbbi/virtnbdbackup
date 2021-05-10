@@ -15,7 +15,7 @@ all: | $(bats) vm1.tests vm2.tests vm3.tests vm4.tests
 clean:
 	@rm -rf $(bats)
 	@rm -rf /tmp/testset*
-	for vm in vm1 vm2 vm3; do \
+	for vm in vm1 vm2 vm3 vm4 vm5; do \
 		virsh destroy $$vm ; \
 		virsh undefine $$vm --remove-all-storage --checkpoints-metadata ; \
 	done

@@ -239,6 +239,66 @@ the NBD server. The behavior can be changed by using option `-q` to use common
 qemu tools (qemu-img map ..). By default `virtnbdbackup` uses a custom
 implemented extent handler.
 
+# Transient virtual machines: checkpoint persistency
+
+In case virtual machins are started in transient environments, such as using
+cluster solutions like `pacemaker` situations can appear where the checkpoints
+for the virtual machine defined by libvirt are not in sync with the bitmap
+information in the qcow files.
+
+In case libvirt creates an checkpoint, the checkpoint information is stored
+in two places:
+
+ * var/lib/libvirt/qemu/checkpoint/<domain_name> 
+ * In the bitmap file of the virtual machines qcow image.
+
+Depending on the cluster solution, in case virtual machines are destroyed
+on host A and are re-defined on host B, libvirt loses the information about
+those checkpoints. Unfortunately `libvirtd` scans the checkpoint only once
+during startup.
+
+This can result in an situation, where the bitmap is still defined in the
+qcow image, but libvirt doesnt know about the checkpoint, backup then
+fails with:
+
+`Unable to execute QEMU command 'transaction': Bitmap already exists`
+
+By default `virtnbdbackup` attempts to store the checkpoint information in the
+default backup directory, in situations where it detects an situation here the
+checkpoint is missing, it attempts to redefine them from the prior backups.
+
+In order to store the checkpoint information at some central place the option
+`--checkpointdir` can be used, this allows to have persistent checkpoints
+accross multiple nodes:
+
+As example:
+
+ 1) Create Virtual machine Backup on Host A, store checkpoints in shared
+ directory between hosts `/mnt/shared/vm5`:
+
+`virtnbdbackup -d vm5 -l full -o /tmp/backup --checkpointdir /mnt/shared/vm5`
+
+ 2) After backup the virtual machine is relocated to Host B, and lost its
+ information about checkpoints and bitmaps, thus, the next full backup
+ fails with:
+
+```
+virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb
+[..]
+unable to execute QEMU command 'transaction': Bitmap already exists: virtnbdbackup.0
+```
+
+ 3) One can now pass the checkpoint dir and files written from host A, and
+ virtnbdbackup will redefine missing checkpoints and execute a new full
+ backup:
+
+```
+virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb --checkpointdir /mnt/shared/vm5
+[..]
+redefineCheckpoints: Redefine missing checkpoint virtnbdbackup.0
+[..]
+```
+
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images
 

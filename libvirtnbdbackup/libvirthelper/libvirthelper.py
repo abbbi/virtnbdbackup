@@ -19,6 +19,8 @@ import string
 import random
 import logging
 import libvirt
+import glob
+import os
 from xml.etree import ElementTree
 
 # this is required so libvirt.py does not report errors to stderr
@@ -238,10 +240,21 @@ class client(object):
         """
         return domObj.checkpointLookupByName(checkpointName)
 
-    def removeAllCheckpoints(self, domObj, checkpointList):
+    def removeAllCheckpoints(self, domObj, checkpointList, args):
         """ Remove all existing checkpoints for a virtual machine,
         used during FULL backup to reset checkpoint chain
         """
+
+        # clean persistent storage in args.checkpointdir
+        logging.debug('Cleaning up persistent storage {:s}' . format(args.checkpointdir))
+        try:
+            for checkpointFile in  glob.glob('{:s}/*.xml' . format(args.checkpointdir)):
+                logging.debug('Remove checkpoint file {:s}' . format(checkpointFile))
+                os.remove(checkpointFile)
+        except Exception as e:
+            logging.error('Unable to clean persistent storage {:s}: {}' . format(args.checkpointdir, e))
+            sys.exit(1)
+
         if checkpointList is None:
             cpts = domObj.listAllCheckpoints()
             if cpts:
@@ -260,3 +273,68 @@ class client(object):
         """ Cancel the backup task using job abort
         """
         return domObj.abortJob()
+
+    def redefineCheckpoints(self, domObj, args):
+        """ Redefine checkpoints from persistent storage
+        """
+        # get list of all .xml files in checkpointdir
+        logging.info('Loading checkpoint list from: {:s}' . format(args.checkpointdir))
+        try:
+            l = glob.glob('{:s}/*.xml' . format(args.checkpointdir))
+        except Exception as e:
+            logging.error('Unable to get checkpoint list from {:s}: {}' . format(args.checkpointdir, e))
+            return False
+
+        for checkpointFile in sorted(l):
+            logging.debug('Loading checkpoint config from: {:s}' . format(checkpointFile))
+            try:
+                with open(checkpointFile, 'r') as f:
+                    checkpointConfig = f.read()
+                    root = ElementTree.fromstring(checkpointConfig)
+            except Exception as e:
+                logging.error('Unable to load checkpoint config from {:s}: {}' . format(checkpointFile, e))
+                return False
+
+            try:
+                checkpointName = root.find('name').text
+            except Exception as e:
+                logging.error('Unable to find checkpoint name: {}' . format(e))
+                return False
+
+            try:
+                c = domObj.checkpointLookupByName(checkpointName)
+                logging.debug('Checkpoint {:s} found' . format(checkpointName))
+                continue
+            except libvirt.libvirtError as e:
+                # ignore VIR_ERR_NO_DOMAIN_CHECKPOINT, report other errors
+                if e.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
+                    logging.error('libvirt error: {}' . format(e))
+                    return False
+
+            logging.info('Redefine missing checkpoint {:s}' . format(checkpointName))
+            try:
+                domObj.checkpointCreateXML(checkpointConfig, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE)
+            except Exception as e:
+                logging.error('Unable to redefine checkpoint {:s}: {}' . format(checkpointName, e))
+                return False
+
+        return True
+
+    def backupCheckpoint(self, domObj, args, checkpointName):
+        """save checkpoint config to persistent storage"""
+        checkpointFile = '{:s}/{:s}.xml' . format(
+            args.checkpointdir,
+            checkpointName
+        )
+        logging.info('Saving checkpoint config to {:s}' . format(checkpointFile))
+        try:
+            with open(checkpointFile, 'w') as f:
+                c = domObj.checkpointLookupByName(checkpointName)
+                f.write(c.getXMLDesc())
+                return True
+        except Exception as e:
+            logging.error('Unable to save checkpoint config to file {:s}: {}'.format(
+                checkpointFile,
+                e
+            ))
+            return False

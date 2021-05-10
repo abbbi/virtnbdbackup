@@ -60,6 +60,9 @@ def main():
         "-o", "--output", required=True, type=str,
         help="Output target directory")
     parser.add_argument(
+        '-C', '--checkpointdir', required=False, default=None, type=str,
+        help='Persistent libvirt checkpoint storage directory')
+    parser.add_argument(
         "-S", "--scratchdir", default="/var/tmp", required=False, type=str,
         help="Target directory for temporary scratch file")
     parser.add_argument(
@@ -145,6 +148,17 @@ def main():
             logging.error("Target directory must empty for full or copy backup.")
             sys.exit(1)
 
+    if not args.checkpointdir:
+        args.checkpointdir = "{}/checkpoints".format(
+            args.output,
+        )
+        logging.info("Store checkpoints in: %s",
+            args.checkpointdir
+        )
+        lib.createOutputDir(args.checkpointdir)
+    else:
+        lib.createOutputDir(args.checkpointdir)
+
     virtClient = libvirthelper.client()
     try:
         domObj = virtClient.getDomain(args.domain)
@@ -184,7 +198,7 @@ def main():
             logging.warn('%s', e)
             sys.exit(1)
 
-    checkpointName = lib.checkpointName
+    checkpointName = '{:s}.0' . format(lib.checkpointName)
     parentCheckpoint = False
     checkpoints = []
     cptFile = '%s/%s.cpt' % (args.output, args.domain)
@@ -192,20 +206,25 @@ def main():
         with open(cptFile,'r') as cptFh:
             checkpoints = json.loads(cptFh.read())
 
+    logging.info("Attempting to redefine checkpoints from: %s",
+        args.checkpointdir)
+    if virtClient.redefineCheckpoints(domObj, args) is False:
+        logging.warning("Unable to redefine checkpoints")
+
     if args.level != "copy":
         logging.info('Looking for checkpoints')
         if args.level == "full" and checkpoints:
             logging.info("Removing all existant checkpoints before full backup")
-            virtClient.removeAllCheckpoints(domObj, checkpoints)
+            virtClient.removeAllCheckpoints(domObj, checkpoints, args)
             os.remove(cptFile)
             checkpoints = []
         elif args.level == "full" and len(checkpoints) < 1:
-            virtClient.removeAllCheckpoints(domObj,None)
+            virtClient.removeAllCheckpoints(domObj, None, args)
             checkpoints = []
 
         if checkpoints and args.level == "inc":
-            nextCpt = len(checkpoints)+1
-            checkpointName = "%s.%s" % (checkpointName, nextCpt)
+            nextCpt = len(checkpoints)
+            checkpointName = "%s.%s" % (lib.checkpointName, nextCpt)
             if args.checkpoint != False:
                 logging.info("Overriding parent checkpoint: %s", args.checkpoint)
                 parentCheckpoint = args.checkpoint
@@ -245,6 +264,10 @@ def main():
         checkpoints.append(checkpointName)
         with open(cptFile,'w') as cFw:
             cFw.write(json.dumps(checkpoints))
+        if args.printonly is False and args.output != "-":
+            if not virtClient.backupCheckpoint(domObj, args, checkpointName):
+                virtClient.stopBackup(domObj)
+                sys.exit(1)
 
     if args.startonly is True:
         logging.info("Started backup job for debugging, exiting.")
