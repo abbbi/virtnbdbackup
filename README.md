@@ -165,8 +165,8 @@ default, as they are not supported by the changed block tracking layer.
 ## Estimating backup size
 
 Sometimes it can be useful to estimate the data size prior to executing the
-next `full` or `copy` backup. This can be archived by using option `-p` which
-will query the virtual machine extents and provides an summary about the size
+next `full` or `copy` backup. This can be done by using option `-p` which will
+query the virtual machine extents and provides an summary about the size
 of the changed extents:
 
 ```
