@@ -256,7 +256,7 @@ class client(object):
                 cptObj.delete()
         return True
 
-    def stopBackup(self, domObj, diskTarget):
-        """ Cancel the backup task using block job abort
+    def stopBackup(self, domObj):
+        """ Cancel the backup task using job abort
         """
-        return domObj.blockJobAbort(diskTarget)
+        return domObj.abortJob()

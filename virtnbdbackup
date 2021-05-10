@@ -38,7 +38,7 @@ from libvirtnbdbackup import __version__
 def handleSignal(disks, domObj, virtClient, log, signum, frame):
     log.error('Catched signal: %s' % signum)
     log.error('Cleanup: Stopping backup job')
-    virtClient.stopBackup(domObj, disks[0].diskTarget)
+    virtClient.stopBackup(domObj)
     sys.exit(1)
 
 def main():
@@ -178,7 +178,7 @@ def main():
     if args.killonly is True:
         logging.info("Stopping backup job")
         try:
-            virtClient.stopBackup(domObj, disks[0].diskTarget)
+            virtClient.stopBackup(domObj)
             sys.exit(0)
         except Exception as e:
             logging.warn('%s', e)
@@ -259,12 +259,12 @@ def main():
                        parentCheckpoint, backupSocket)
         except Exception as e:
             logging.error('Unable to backup Disk: %s', e)
-            virtClient.stopBackup(domObj, disk.diskTarget)
+            virtClient.stopBackup(domObj)
             sys.exit(1)
     if args.printonly is False and args.output != "-":
         backupConfig(vmConfig, args, checkpointName)
     logging.info('Stopping backup task')
-    ret = virtClient.stopBackup(domObj, disks[0].diskTarget)
+    ret = virtClient.stopBackup(domObj)
     if ret == 0:
         logging.info('Finished')
     else:
