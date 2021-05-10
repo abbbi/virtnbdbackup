@@ -33,8 +33,8 @@ machines.
  ```
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
- * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5`* (yum install python3-libnbd)
- * The virtual machine should use qcow verison 3 images to support the full feature set.
+ * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5` (yum install python3-libnbd)
+ * The virtual machine should use qcow version 3 images to support the full feature set.
  
 # Installation
 ## Python package
@@ -87,7 +87,8 @@ Following backup modes can be used:
 
 * `copy`: Full, thin provisioned backup of the virtual machine disks, no
   checkpoint is created for further incremental backups, existing checkpoints
-  will be left. This is the default mode.
+  will be left untouched. This is the default mode and works with qcow images
+  not supporting persistent bitmaps.
 
 * `full`: Full, thin provisioned backup of the virtual machine, a new checkpoint
   named `virtnbdbackup` will be created, all existant checkpoints from prior
