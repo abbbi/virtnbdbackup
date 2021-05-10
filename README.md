@@ -271,12 +271,12 @@ fails with:
 `Unable to execute QEMU command 'transaction': Bitmap already exists`
 
 By default `virtnbdbackup` attempts to store the checkpoint information in the
-default backup directory, in situations where it detects an situation here the
-checkpoint is missing, it attempts to redefine them from the prior backups.
+default backup directory, in situations where it detects an checkpoint is
+missing, it attempts to redefine them from the prior backups.
 
 In order to store the checkpoint information at some central place the option
 `--checkpointdir` can be used, this allows to have persistent checkpoints
-accross multiple nodes:
+stored across multiple nodes:
 
 As example:
 
