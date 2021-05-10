@@ -19,6 +19,7 @@ clean:
 		virsh destroy $$vm ; \
 		virsh undefine $$vm --remove-all-storage --checkpoints-metadata ; \
 	done
+	@rm -f /tmp/*vm*.qcow2
 
 $(bats):
 	@git clone https://github.com/bats-core/bats-core
