@@ -280,14 +280,14 @@ stored across multiple nodes:
 
 As example:
 
- 1) Create Virtual machine Backup on Host A, store checkpoints in shared
- directory between hosts `/mnt/shared/vm5`:
+ 1) Create backup on host A, store checkpoints in shared directory between
+ hosts `/mnt/shared/vm5`:
 
-`virtnbdbackup -d vm5 -l full -o /tmp/backup --checkpointdir /mnt/shared/vm5`
+`virtnbdbackup -d vm1 -l full -o /tmp/backup --checkpointdir /mnt/shared/vm5`
 
- 2) After backup the virtual machine is relocated to Host B, and lost its
+ 2) After backup the virtual machine is relocated to bost B and loses its
  information about checkpoints and bitmaps, thus, the next full backup
- fails with:
+ usually fails with:
 
 ```
 virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb
@@ -295,9 +295,10 @@ virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb
 unable to execute QEMU command 'transaction': Bitmap already exists: virtnbdbackup.0
 ```
 
- 3) One can now pass the checkpoint dir and files written from host A, and
+ 3) Now pass the checkpoint dir and files written from host A, and
  virtnbdbackup will redefine missing checkpoints and execute a new full
- backup:
+ backup. As the new full backup removes all prior checkpoints the bitmap
+ information is in sync after this operation and backup succeeds:
 
 ```
 virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb --checkpointdir /mnt/shared/vm5
