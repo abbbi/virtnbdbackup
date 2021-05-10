@@ -131,13 +131,20 @@ machine, including logfiles that can be used for analyzing backup issues:
 
 ```
 /tmp/backupset/
-├── backup.full.03272021122832.log
-├── backup.inc.03272021122906.log
+├── backup.full.05102021161752.log
+├── backup.inc.05102021161813.log
+├── backup.inc.05102021161814.log
+├── checkpoints
+│   ├── virtnbdbackup.0.xml
+│   ├── virtnbdbackup.1.xml
+│   └── virtnbdbackup.2.xml
 ├── sda.full.data
+├── sda.inc.virtnbdbackup.1.data
 ├── sda.inc.virtnbdbackup.2.data
 ├── vm1.cpt
-├── vmconfig.virtnbdbackup.2.xml
-└── vmconfig.virtnbdbackup.xml
+├── vmconfig.virtnbdbackup.0.xml
+├── vmconfig.virtnbdbackup.1.xml
+└── vmconfig.virtnbdbackup.2.xml
 ```
 
 ## Excluding disks
@@ -298,6 +305,8 @@ virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb --checkpointdir /mnt/shared/vm
 redefineCheckpoints: Redefine missing checkpoint virtnbdbackup.0
 [..]
 ```
+
+See also: https://github.com/abbbi/virtnbdbackup/pull/10
 
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images
