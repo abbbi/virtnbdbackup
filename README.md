@@ -283,7 +283,7 @@ As example:
  1) Create backup on host A, store checkpoints in shared directory between
  hosts `/mnt/shared/vm5`:
 
-`virtnbdbackup -d vm1 -l full -o /tmp/backup --checkpointdir /mnt/shared/vm5`
+`virtnbdbackup -d vm1 -l full -o /tmp/backup --checkpointdir /mnt/shared/vm1`
 
  2) After backup the virtual machine is relocated to bost B and loses its
  information about checkpoints and bitmaps, thus, the next full backup
@@ -301,7 +301,7 @@ unable to execute QEMU command 'transaction': Bitmap already exists: virtnbdback
  information is in sync after this operation and backup succeeds:
 
 ```
-virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb --checkpointdir /mnt/shared/vm5
+virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb --checkpointdir /mnt/shared/vm1
 [..]
 redefineCheckpoints: Redefine missing checkpoint virtnbdbackup.0
 [..]
