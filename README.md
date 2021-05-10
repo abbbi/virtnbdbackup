@@ -283,11 +283,11 @@ stored across multiple nodes:
 As example:
 
  1) Create backup on host A, store checkpoints in shared directory between
- hosts `/mnt/shared/vm5`:
+ hosts in `/mnt/shared/vm1`:
 
-`virtnbdbackup -d vm1 -l full -o /tmp/backup --checkpointdir /mnt/shared/vm1`
+`virtnbdbackup -d vm1 -l full -o /tmp/backup_hosta --checkpointdir /mnt/shared/vm1`
 
- 2) After backup the virtual machine is relocated to bost B and loses its
+ 2) After backup, the virtual machine is relocated to bost B and loses its
  information about checkpoints and bitmaps, thus, the next full backup
  usually fails with:
 
