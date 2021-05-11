@@ -48,11 +48,11 @@ class client(object):
         self._domObj = None
 
     def _connect(self):
-        URI='qemu:///system'
+        URI="qemu:///system"
         try:
             return libvirt.open(URI)
         except libvirt.libvirtError as e:
-            logging.error('Cant connect libvirt daemon: %s', e)
+            logging.error("Cant connect libvirt daemon: %s", e)
             sys.exit(1)
 
     def getDomain(self, name):
@@ -66,7 +66,7 @@ class client(object):
         tree=ElementTree.fromstring(domObj.XMLDesc(0))
         for target in tree.findall("{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"):
             for cap in target.findall("{http://libvirt.org/schemas/domain/qemu/1.0}add"):
-                if 'incremental-backup' in cap.items()[0]:
+                if "incremental-backup" in cap.items()[0]:
                     return True
 
         return False
@@ -85,7 +85,7 @@ class client(object):
 
         excludeList = None
         if excludedDisks != None:
-            excludeList = excludedDisks.split(',')
+            excludeList = excludedDisks.split(",")
 
         driver = None
         device = None
@@ -96,38 +96,38 @@ class client(object):
             if excludeList != None:
                 if dev in excludeList:
                     logging.warning(
-                        'Excluding Disks %s from backup as requested',
+                        "Excluding Disks %s from backup as requested",
                         dev
                     )
                     continue
 
             # ignore attached lun or direct access block devices
-            if target.get('type') == "block":
+            if target.get("type") == "block":
                 logging.warning(
-                    'Ignoring device %s does not support changed block tracking.',
+                    "Ignoring device %s does not support changed block tracking.",
                     dev
                 )
                 continue
 
-            device = target.get('device')
+            device = target.get("device")
             if device != None:
                 if device == "lun":
                     logging.warning(
-                        'Ignoring lun disk %s does not support changed block tracking.',
+                        "Ignoring lun disk %s does not support changed block tracking.",
                         dev
                     )
                     continue
 
             # ignore disk which use raw format, they do not support CBT
-            driver = target.find('driver')
+            driver = target.find("driver")
             if driver != None:
-                if driver.get('type') == "raw":
+                if driver.get("type") == "raw":
                     logging.warning(
-                        'Ignoring raw disk %s does not support changed block tracking.',
+                        "Ignoring raw disk %s does not support changed block tracking.",
                         dev
                     )
                     continue
-            if target.get('device') == "cdrom":
+            if target.get("device") == "cdrom":
                 continue
 
             diskObj = DomainDisk()
@@ -140,48 +140,48 @@ class client(object):
                          socketFilePath):
         """ Create XML file for starting an backup task using libvirt API.
         """
-        top = ElementTree.Element('domainbackup', {'mode':'pull'})
+        top = ElementTree.Element("domainbackup", {"mode":"pull"})
         ElementTree.SubElement(
             top,
-            'server', { 'transport':'unix', 'socket':'%s' % socketFilePath }
+            "server", { "transport":"unix", "socket":"%s" % socketFilePath }
         )
-        disks = ElementTree.SubElement(top, 'disks')
+        disks = ElementTree.SubElement(top, "disks")
 
         if parentCheckpoint != False:
-            inc = ElementTree.SubElement(top, 'incremental')
+            inc = ElementTree.SubElement(top, "incremental")
             inc.text=parentCheckpoint
 
         for disk in diskList:
-            scratchId = ''.join(random.choices(
+            scratchId = "".join(random.choices(
                 string.ascii_uppercase + string.digits,
                 k=5
             ))
-            scratchFile = '%s/backup.%s.%s' % (
+            scratchFile = "%s/backup.%s.%s" % (
                 scratchFilePath,
                 scratchId,
                 disk.diskTarget
             )
-            logging.debug('Using scratchfile: %s', scratchFile)
-            dE = ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
-            ElementTree.SubElement(dE, 'scratch', {'file':'%s' % (scratchFile)})
+            logging.debug("Using scratchfile: %s", scratchFile)
+            dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
+            ElementTree.SubElement(dE, "scratch", {"file":"%s" % (scratchFile)})
 
         return ElementTree.tostring(top).decode()
 
     def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
         """ Create valid checkpoint XML file which is passed to libvirt API
         """
-        top = ElementTree.Element('domaincheckpoint')
-        desc = ElementTree.SubElement(top, 'description')
-        desc.text='Backup checkpoint'
-        name = ElementTree.SubElement(top, 'name')
+        top = ElementTree.Element("domaincheckpoint")
+        desc = ElementTree.SubElement(top, "description")
+        desc.text="Backup checkpoint"
+        name = ElementTree.SubElement(top, "name")
         name.text=checkpointName
         if parentCheckpoint != False:
-            pct = ElementTree.SubElement(top, 'parent')
-            cptName = ElementTree.SubElement(pct, 'name')
+            pct = ElementTree.SubElement(top, "parent")
+            cptName = ElementTree.SubElement(pct, "name")
             cptName.text = parentCheckpoint
-        disks = ElementTree.SubElement(top, 'disks')
+        disks = ElementTree.SubElement(top, "disks")
         for disk in diskList:
-            ElementTree.SubElement(disks, 'disk', {'name': disk.diskTarget})
+            ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
 
         return ElementTree.tostring(top).decode()
 
@@ -190,7 +190,7 @@ class client(object):
         """
         try:
             domObj.fsFreeze()
-            logging.info('Freezed filesystems.')
+            logging.info("Freezed filesystems.")
             return True
         except Exception as e:
             logging.warning(e)
@@ -201,7 +201,7 @@ class client(object):
         """
         try:
             domObj.fsThaw()
-            logging.info('Thawed filesystems.')
+            logging.info("Thawed filesystems.")
             return True
         except Exception as e:
             logging.warning(e)
@@ -246,20 +246,20 @@ class client(object):
         """
 
         # clean persistent storage in args.checkpointdir
-        logging.debug('Cleaning up persistent storage {:s}' . format(args.checkpointdir))
+        logging.debug("Cleaning up persistent storage {:s}" . format(args.checkpointdir))
         try:
-            for checkpointFile in  glob.glob('{:s}/*.xml' . format(args.checkpointdir)):
-                logging.debug('Remove checkpoint file {:s}' . format(checkpointFile))
+            for checkpointFile in  glob.glob("{:s}/*.xml" . format(args.checkpointdir)):
+                logging.debug("Remove checkpoint file {:s}" . format(checkpointFile))
                 os.remove(checkpointFile)
         except Exception as e:
-            logging.error('Unable to clean persistent storage {:s}: {}' . format(args.checkpointdir, e))
+            logging.error("Unable to clean persistent storage {:s}: {}" . format(args.checkpointdir, e))
             sys.exit(1)
 
         if checkpointList is None:
             cpts = domObj.listAllCheckpoints()
             if cpts:
                 for cpt in domObj.listAllCheckpoints():
-                    if 'virtnbdbackup' in cpt.getName():
+                    if "virtnbdbackup" in cpt.getName():
                         cpt.delete()
             return True
 
@@ -278,62 +278,62 @@ class client(object):
         """ Redefine checkpoints from persistent storage
         """
         # get list of all .xml files in checkpointdir
-        logging.info('Loading checkpoint list from: {:s}' . format(args.checkpointdir))
+        logging.info("Loading checkpoint list from: {:s}" . format(args.checkpointdir))
         try:
-            l = glob.glob('{:s}/*.xml' . format(args.checkpointdir))
+            l = glob.glob("{:s}/*.xml" . format(args.checkpointdir))
         except Exception as e:
-            logging.error('Unable to get checkpoint list from {:s}: {}' . format(args.checkpointdir, e))
+            logging.error("Unable to get checkpoint list from {:s}: {}" . format(args.checkpointdir, e))
             return False
 
         for checkpointFile in sorted(l):
-            logging.debug('Loading checkpoint config from: {:s}' . format(checkpointFile))
+            logging.debug("Loading checkpoint config from: {:s}" . format(checkpointFile))
             try:
-                with open(checkpointFile, 'r') as f:
+                with open(checkpointFile, "r") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
             except Exception as e:
-                logging.error('Unable to load checkpoint config from {:s}: {}' . format(checkpointFile, e))
+                logging.error("Unable to load checkpoint config from {:s}: {}" . format(checkpointFile, e))
                 return False
 
             try:
-                checkpointName = root.find('name').text
+                checkpointName = root.find("name").text
             except Exception as e:
-                logging.error('Unable to find checkpoint name: {}' . format(e))
+                logging.error("Unable to find checkpoint name: {}" . format(e))
                 return False
 
             try:
                 c = domObj.checkpointLookupByName(checkpointName)
-                logging.debug('Checkpoint {:s} found' . format(checkpointName))
+                logging.debug("Checkpoint {:s} found" . format(checkpointName))
                 continue
             except libvirt.libvirtError as e:
                 # ignore VIR_ERR_NO_DOMAIN_CHECKPOINT, report other errors
                 if e.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
-                    logging.error('libvirt error: {}' . format(e))
+                    logging.error("libvirt error: {}" . format(e))
                     return False
 
-            logging.info('Redefine missing checkpoint {:s}' . format(checkpointName))
+            logging.info("Redefine missing checkpoint {:s}" . format(checkpointName))
             try:
                 domObj.checkpointCreateXML(checkpointConfig, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE)
             except Exception as e:
-                logging.error('Unable to redefine checkpoint {:s}: {}' . format(checkpointName, e))
+                logging.error("Unable to redefine checkpoint {:s}: {}" . format(checkpointName, e))
                 return False
 
         return True
 
     def backupCheckpoint(self, domObj, args, checkpointName):
         """save checkpoint config to persistent storage"""
-        checkpointFile = '{:s}/{:s}.xml' . format(
+        checkpointFile = "{:s}/{:s}.xml" . format(
             args.checkpointdir,
             checkpointName
         )
-        logging.info('Saving checkpoint config to {:s}' . format(checkpointFile))
+        logging.info("Saving checkpoint config to {:s}" . format(checkpointFile))
         try:
-            with open(checkpointFile, 'w') as f:
+            with open(checkpointFile, "w") as f:
                 c = domObj.checkpointLookupByName(checkpointName)
                 f.write(c.getXMLDesc())
                 return True
         except Exception as e:
-            logging.error('Unable to save checkpoint config to file {:s}: {}'.format(
+            logging.error("Unable to save checkpoint config to file {:s}: {}".format(
                 checkpointFile,
                 e
             ))

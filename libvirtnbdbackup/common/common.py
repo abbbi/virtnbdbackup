@@ -21,7 +21,7 @@ class Common(object):
             sys.exit(1)
 
     def printVersion(self, version):
-         logging.info("Version: %s Arguments: %s", version, ' '.join(sys.argv))
+         logging.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
     def createOutputDir(self, targetDir):
         if targetDir == "-":
@@ -51,7 +51,7 @@ class Common(object):
         return socketFile
 
     def partialBackup(self, args):
-        partialFiles = glob.glob('%s/*.partial' % args.output)
+        partialFiles = glob.glob("%s/*.partial" % args.output)
         if len(partialFiles) > 0:
             return True
 
@@ -59,7 +59,7 @@ class Common(object):
 
     def targetIsEmpty(self, args):
         if os.path.exists(args.output) and args.level in ("full","copy"):
-            dirList = [ f for f in glob.glob('%s/*' % args.output) if not os.path.basename(f).endswith('.log') ]
+            dirList = [ f for f in glob.glob("%s/*" % args.output) if not os.path.basename(f).endswith(".log") ]
             if len(dirList) > 0:
                 return False
 
@@ -93,9 +93,9 @@ class Common(object):
         extList = []
         for extent in extents:
             ext = {}
-            ext['start'] = extent.offset
-            ext['length'] = extent.length
-            ext['data'] = extent.data
+            ext["start"] = extent.offset
+            ext["length"] = extent.length
+            ext["data"] = extent.data
             extList.append(ext)
 
         return json.dumps(extList)
@@ -103,7 +103,7 @@ class Common(object):
     def dumpMetaData(self, dataFile, sparsestream):
         """ read metadata header
         """
-        with open(dataFile, 'rb') as reader:
+        with open(dataFile, "rb") as reader:
             try:
                 kind, start, length = sparsestream.SparseStream().readFrame(
                     reader

@@ -78,9 +78,9 @@ class ExtentHandler(object):
         extents = []
         for extent in self._nbdFh.map(self._socket):
             extentObj = Extent()
-            extentObj.data = bool(extent['data'])
-            extentObj.offset = extent['start']
-            extentObj.length = extent['length']
+            extentObj.data = bool(extent["data"])
+            extentObj.offset = extent["start"]
+            extentObj.length = extent["length"]
             extents.append(extentObj)
 
         logging.debug("Got %s extents from qemu command", len(extents))
@@ -127,7 +127,7 @@ class ExtentHandler(object):
                 request_length = size
             else:
                 request_length = min(size - offset, maxRequestLen)
-            logging.debug('Block status request length: %s', request_length)
+            logging.debug("Block status request length: %s", request_length)
             self._nbdFh.block_status(request_length, offset, self._getExtentCallback)
             if len(self._extentEntries) == 0:
                 logging.error("No extents found")
@@ -136,8 +136,8 @@ class ExtentHandler(object):
             offset += sum(self._extentEntries[lastExtentLen::2])
             lastExtentLen = len(self._extentEntries)
 
-        logging.debug('Extents: %s', self._extentEntries)
-        logging.debug('Number Extents: %s', len(self._extentEntries))
+        logging.debug("Extents: %s", self._extentEntries)
+        logging.debug("Number Extents: %s", len(self._extentEntries))
 
         return self._extentsToObj()
 
@@ -168,5 +168,5 @@ class ExtentHandler(object):
             extentList.append(extObj)
             start += extent.length
 
-        logging.debug('Returning extent list with %s objects', len(extentList))
+        logging.debug("Returning extent list with %s objects", len(extentList))
         return extentList

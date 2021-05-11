@@ -36,32 +36,32 @@ import libvirtnbdbackup.libvirthelper as libvirthelper
 from libvirtnbdbackup import __version__
 
 def handleSignal(disks, domObj, virtClient, log, signum, frame):
-    log.error('Catched signal: %s' % signum)
-    log.error('Cleanup: Stopping backup job')
+    log.error("Catched signal: %s" % signum)
+    log.error("Cleanup: Stopping backup job")
     virtClient.stopBackup(domObj)
     sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Backup libvirt/qemu virtual machines'
+        description="Backup libvirt/qemu virtual machines"
     )
     parser.add_argument(
         "-d", "--domain", required=True, type=str,
         help="Domain to backup")
     parser.add_argument(
         "-l", "--level", default="copy",
-        choices=['copy','full','inc'], type=str,
+        choices=["copy","full","inc"], type=str,
         help="Backup level, defaults to copy")
     parser.add_argument(
         "-t", "--type", default="stream", type=str,
-        choices=['stream','raw'],
+        choices=["stream","raw"],
         help="Output type: stream or raw")
     parser.add_argument(
         "-o", "--output", required=True, type=str,
         help="Output target directory")
     parser.add_argument(
-        '-C', '--checkpointdir', required=False, default=None, type=str,
-        help='Persistent libvirt checkpoint storage directory')
+        "-C", "--checkpointdir", required=False, default=None, type=str,
+        help="Persistent libvirt checkpoint storage directory")
     parser.add_argument(
         "-S", "--scratchdir", default="/var/tmp", required=False, type=str,
         help="Target directory for temporary scratch file")
@@ -134,13 +134,13 @@ def main():
         sys.exit(1)
 
     if args.printonly is True:
-        logging.info('Printing only extend information: enforce level copy')
+        logging.info("Printing only extend information: enforce level copy")
         args.level = "copy"
 
-    if args.level == 'inc' and args.output != "-" and lib.partialBackup(args) is True:
-        logging.error('Partial backup found in target directory: %s', args.output)
-        logging.error('One of the last backups seems to have failed.')
-        logging.error('Consider re-executing full backup.')
+    if args.level == "inc" and args.output != "-" and lib.partialBackup(args) is True:
+        logging.error("Partial backup found in target directory: %s", args.output)
+        logging.error("One of the last backups seems to have failed.")
+        logging.error("Consider re-executing full backup.")
         sys.exit(1)
 
     if not args.output == "-" and not args.startonly and not args.killonly:
@@ -165,7 +165,7 @@ def main():
     try:
         domObj = virtClient.getDomain(args.domain)
     except Exception as e:
-        logging.error('Unable to get domain information: %s', e)
+        logging.error("Unable to get domain information: %s", e)
         sys.exit(1)
 
     if virtClient.hasIncrementalEnabled(domObj) is False:
@@ -197,19 +197,19 @@ def main():
             virtClient.stopBackup(domObj)
             sys.exit(0)
         except Exception as e:
-            logging.warn('%s', e)
+            logging.warning("%s", e)
             sys.exit(1)
 
-    checkpointName = '{:s}.0' . format(lib.checkpointName)
+    checkpointName = "{:s}.0" . format(lib.checkpointName)
     parentCheckpoint = False
     checkpoints = []
     if args.output == "-":
         cptFilePath = "."
     else:
         cptFilePath = args.output
-    cptFile = '%s/%s.cpt' % (cptFilePath, args.domain)
+    cptFile = "%s/%s.cpt" % (cptFilePath, args.domain)
     if os.path.exists(cptFile):
-        with open(cptFile,'r') as cptFh:
+        with open(cptFile,"r") as cptFh:
             checkpoints = json.loads(cptFh.read())
 
     logging.info("Attempting to redefine checkpoints from: %s",
@@ -218,7 +218,7 @@ def main():
         logging.warning("Unable to redefine checkpoints")
 
     if args.level != "copy":
-        logging.info('Looking for checkpoints')
+        logging.info("Looking for checkpoints")
         if args.level == "full" and checkpoints:
             logging.info("Removing all existant checkpoints before full backup")
             virtClient.removeAllCheckpoints(domObj, checkpoints, args)
@@ -236,7 +236,7 @@ def main():
                 parentCheckpoint = args.checkpoint
             else:
                 parentCheckpoint = checkpoints[-1]
-            logging.info('Found checkpoints, next checkpoint id: %s', nextCpt)
+            logging.info("Found checkpoints, next checkpoint id: %s", nextCpt)
             logging.info("Parent checkpoint name %s", parentCheckpoint)
 
         if args.level == "inc" and len(checkpoints)<1:
@@ -245,30 +245,30 @@ def main():
 
         logging.info("Using checkpoint name: %s", checkpointName)
 
-    logging.info('Temporary scratch file target directory: %s', args.scratchdir)
+    logging.info("Temporary scratch file target directory: %s", args.scratchdir)
 
     lib.createOutputDir(args.scratchdir)
 
     backupSocket = lib.getSocketFile(args.socketfile)
 
     try:
-        logging.info('Starting backup job.')
+        logging.info("Starting backup job.")
         virtClient.startBackup(
             domObj, disks, args.level,
             checkpointName, parentCheckpoint,
             args.scratchdir, backupSocket
         )
-        logging.debug('Backup job started, using socket: %s', backupSocket)
+        logging.debug("Backup job started, using socket: %s", backupSocket)
     except Exception as e:
-        logging.error('%s', e)
+        logging.error("%s", e)
         sys.exit(1)
 
     if args.level != "copy":
-        logging.info('Started backup job with checkpoint, saving information.')
+        logging.info("Started backup job with checkpoint, saving information.")
         if not checkpoints:
             checkpoints = []
         checkpoints.append(checkpointName)
-        with open(cptFile,'w') as cFw:
+        with open(cptFile,"w") as cFw:
             cFw.write(json.dumps(checkpoints))
         if args.printonly is False:
             if not virtClient.backupCheckpoint(domObj, args, checkpointName):
@@ -287,26 +287,26 @@ def main():
             backupDisk(disk.diskTarget, args, lib, checkpointName,
                        parentCheckpoint, backupSocket)
         except Exception as e:
-            logging.error('Unable to backup Disk: %s', e)
+            logging.error("Unable to backup Disk: %s", e)
             virtClient.stopBackup(domObj)
             sys.exit(1)
     if args.printonly is False and args.output != "-":
         backupConfig(vmConfig, args, checkpointName)
-    logging.info('Stopping backup task')
+    logging.info("Stopping backup task")
     ret = virtClient.stopBackup(domObj)
     if ret == 0:
-        logging.info('Finished')
+        logging.info("Finished")
     else:
-        logging.warning('Unable to stop backup task, return: %s', e)
+        logging.warning("Unable to stop backup task, return: %s", e)
 
 def backupConfig(vmConfig, args, checkpointName):
-    configFile = '%s/vmconfig.%s.xml' % (args.output, checkpointName)
+    configFile = "%s/vmconfig.%s.xml" % (args.output, checkpointName)
     logging.info("Saving VM config to: %s", configFile)
     try:
-        with open(configFile, 'w') as configFh:
+        with open(configFile, "w") as configFh:
             configFh.write(vmConfig)
     except Exception as e:
-        logging.error('Unable to save VM config: %s', e)
+        logging.error("Unable to save VM config: %s", e)
         sys.exit(1)
 
 def backupDisk(diskTarget, args, lib, checkpointName,
@@ -319,7 +319,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
     nbdClient = nbdhelper.nbdClient(
         diskTarget, metaContext, backupSocket
     )
-    logging.info('NDB Endpoint socket: %s', backupSocket)
+    logging.info("NDB Endpoint socket: %s", backupSocket)
     connection = nbdClient.connect()
 
     if args.qemu and args.level != "inc":
@@ -354,33 +354,33 @@ def backupDisk(diskTarget, args, lib, checkpointName,
     if args.level == "inc" and thinBackupSize == 0:
         logging.info("No dirty blocks found")
 
-    if args.level in ('full','copy'):
-        targetFile = '%s/%s.%s.data' % (
+    if args.level in ("full","copy"):
+        targetFile = "%s/%s.%s.data" % (
             args.output,
             diskTarget,
             args.level
         )
     elif args.level == "inc":
-        targetFile = '%s/%s.inc.%s.data' % (
+        targetFile = "%s/%s.inc.%s.data" % (
             args.output,
             diskTarget,
             checkpointName
         )
 
-    if args.output == '-':
+    if args.output == "-":
         targetFilePartial = args.output
-        if args.type == 'stream':
+        if args.type == "stream":
             writer = sys.stdout.buffer
         else:
-            logging.error('Writing to stdout not supported with raw format.')
+            logging.error("Writing to stdout not supported with raw format.")
             return
     else:
-        targetFilePartial = '%s.partial' % targetFile
+        targetFilePartial = "%s.partial" % targetFile
         logging.info("Write data to target file: %s", targetFilePartial)
         try:
-            writer = open(targetFilePartial,'wb')
+            writer = open(targetFilePartial,"wb")
         except Exception as e:
-            logging.error('Unable to open target file: %s', e)
+            logging.error("Unable to open target file: %s", e)
             return
     if args.type == "raw":
         logging.info("Creating full provisioned raw backup image")
@@ -404,7 +404,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
 
     progressBar = tqdm(
         total=thinBackupSize, desc="saving disk %s" % diskTarget,
-        unit='B', unit_scale=True, disable=args.noprogress
+        unit="B", unit_scale=True, disable=args.noprogress
     )
     for save in extents:
         if save.data is True:
@@ -453,12 +453,12 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         try:
             os.rename(targetFilePartial, targetFile)
             logging.info(
-                'Backup of disk %s finished, file: %s',
+                "Backup of disk %s finished, file: %s",
                 diskTarget,
                 targetFile
             )
         except OSError as e:
-            logging.error('Unable to rename file: %s' %e)
+            logging.error("Unable to rename file: %s" %e)
             sys.exit(1)
 
 if __name__ == "__main__":

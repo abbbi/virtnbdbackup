@@ -33,11 +33,11 @@ from libvirtnbdbackup import __version__
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Restore virtual machine disks'
+        description="Restore virtual machine disks"
     )
     parser.add_argument(
         "-a", "--action", required=True, type=str,
-        choices=['dump','restore'],
+        choices=["dump","restore"],
         help="Action to perform")
     parser.add_argument(
         "-i", "--input", required=True, type=str,
@@ -87,7 +87,7 @@ def main():
         logging.info("Dumping saveset meta information")
         dataFiles = lib.getDataFiles(args.input)
         if not dataFiles:
-            logging.error('No data files found in directory: %s', args.input)
+            logging.error("No data files found in directory: %s", args.input)
             sys.exit(1)
         for dataFile in dataFiles:
             if args.disk != "all" and not os.path.basename(
@@ -97,7 +97,7 @@ def main():
             meta = lib.dumpMetaData(dataFile, sparsestream)
             if meta is False:
                 logging.error(
-                    'Unable to dump image contents, image defunct or raw image?'
+                    "Unable to dump image contents, image defunct or raw image?"
                 )
                 continue
             pprint.pprint(meta)
@@ -109,12 +109,12 @@ def main():
             logging.error("No domain config file found")
             sys.exit(1)
 
-        with open(vmConfig,'r') as vmConf:
+        with open(vmConfig,"r") as vmConf:
             vmDisks = virtclient.client().getDomainDisks(vmConf.read(), None)
 
         for disk in vmDisks:
             if args.disk != "all" and args.disk != disk.diskTarget:
-                logging.info('Skipping disk %s for restore', disk.diskTarget)
+                logging.info("Skipping disk %s for restore", disk.diskTarget)
                 continue
 
             restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
@@ -139,13 +139,13 @@ def main():
             logging.info(
                 "Create virtual Disk %s/%s",
                 args.output,
-                meta['diskName']
+                meta["diskName"]
             )
-            logging.info("Virtual Size %s", meta['virtualSize'])
-            qFh = qemuhelper.qemuHelper(meta['diskName'])
+            logging.info("Virtual Size %s", meta["virtualSize"])
+            qFh = qemuhelper.qemuHelper(meta["diskName"])
 
             try:
-                qFh.create(args.output, meta['virtualSize'])
+                qFh.create(args.output, meta["virtualSize"])
             except Exception as e:
                 logging.error("Cant create restore target: %s", e)
                 sys.exit(1)
@@ -155,7 +155,7 @@ def main():
             logging.info("Starting nbd server on socket: %s", socketFile)
             try:
                 nbdSrv = qFh.startNbdServer(args.output, socketFile)
-                logging.info('NBD Server PID: %s', nbdSrv)
+                logging.info("NBD Server PID: %s", nbdSrv)
             except Exception as e:
                 logging.error("Unable to start nbd server: %s", e)
                 sys.exit(1)
@@ -167,19 +167,19 @@ def main():
             sleep(5)
 
             nbdClient = nbdhelper.nbdClient(
-                meta['diskName'], None, socketFile
+                meta["diskName"], None, socketFile
             )
             connection = nbdClient.connect()
 
             for restoreFile in restoreDisk:
-                reader = open(restoreFile,'rb')
+                reader = open(restoreFile,"rb")
                 kind, start, length = sparsestream.SparseStream().readFrame(
                     reader
                 )
                 meta = sparsestream.SparseStream().loadMetadata(reader.read(
                     length
                 ))
-                if meta['dataSize'] == 0:
+                if meta["dataSize"] == 0:
                     logging.info(
                         "Saveset %s contains no dirty blocks, skipping",
                         restoreFile
@@ -189,7 +189,7 @@ def main():
                     "Applying data from file %s to %s/%s",
                     restoreFile,
                     args.output,
-                    meta['diskName']
+                    meta["diskName"]
                 )
                 pprint.pprint(meta)
                 assert reader.read(
@@ -197,9 +197,9 @@ def main():
                 ) == sparsestream.SparseStreamTypes().TERM
 
                 progressBar = tqdm(
-                    total=meta['dataSize'],
-                    desc="restoring disk %s" % meta['diskName'],
-                    unit='B', unit_scale=True, disable=args.noprogress
+                    total=meta["dataSize"],
+                    desc="restoring disk %s" % meta["diskName"],
+                    unit="B", unit_scale=True, disable=args.noprogress
                 )
                 dataSize = 0
                 while True:
@@ -256,20 +256,20 @@ def main():
                         progressBar.update(length)
                     elif kind == sparsestream.SparseStreamTypes().STOP:
                         progressBar.close()
-                        if dataSize == meta['dataSize']:
+                        if dataSize == meta["dataSize"]:
                             logging.info(
                                 "End of stream, %s bytes of data processed",
                                 dataSize
                             )
                         else:
                             logging.error(
-                                'Error: restored data size %s != %s',
+                                "Error: restored data size %s != %s",
                                 dataSize,
-                                meta['dataSize']
+                                meta["dataSize"]
                             )
                             sys.exit(1)
                         break
-                if meta['checkpointName'] == args.until:
+                if meta["checkpointName"] == args.until:
                     logging.info("Reached checkpoint %s, stopping", args.until)
                     progressBar.close()
                     break
