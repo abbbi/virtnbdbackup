@@ -35,7 +35,7 @@ import libvirtnbdbackup.libvirthelper as libvirthelper
 
 from libvirtnbdbackup import __version__
 
-def handleSignal(disks, domObj, virtClient, log, signum, frame):
+def handleSignal(domObj, virtClient, log, signum, frame):
     log.error("Catched signal: %s" % signum)
     log.error("Cleanup: Stopping backup job")
     virtClient.stopBackup(domObj)
@@ -177,7 +177,7 @@ def main():
 
     signal.signal(
         signal.SIGINT,
-        partial(handleSignal, disks, domObj, virtClient, logging)
+        partial(handleSignal, domObj, virtClient, logging)
     )
 
     if not disks:
@@ -231,7 +231,7 @@ def main():
         if checkpoints and args.level == "inc":
             nextCpt = len(checkpoints)
             checkpointName = "%s.%s" % (lib.checkpointName, nextCpt)
-            if args.checkpoint != False:
+            if args.checkpoint is not False:
                 logging.info("Overriding parent checkpoint: %s", args.checkpoint)
                 parentCheckpoint = args.checkpoint
             else:
@@ -458,7 +458,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
                 targetFile
             )
         except OSError as e:
-            logging.error("Unable to rename file: %s" %e)
+            logging.error("Unable to rename file: %s", e)
             sys.exit(1)
 
 if __name__ == "__main__":
