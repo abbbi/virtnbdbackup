@@ -65,7 +65,7 @@ Pre Built Packages for centos 8 are also available, see: https://github.com/abbb
 To create an Debian package (Debian bullseye required) use:
 
 ```
-apt-get install python3-all python3-stdeb
+sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-tqdm
 python3 setup.py --command-packages=stdeb.command bdist_deb
 ```
 
