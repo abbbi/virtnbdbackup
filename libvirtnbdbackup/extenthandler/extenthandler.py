@@ -54,6 +54,9 @@ class ExtentHandler(object):
         self._align = 512
 
     def _getExtentCallback(self, metacontext, offset, entries, status):
+        """ Callback function called by libnbd for each extent
+        that is returned
+        """
         logging.debug("Metacontext is: %s", metacontext)
         if metacontext != self._metaContext:
             logging.error("Meta context does not match")
@@ -69,12 +72,18 @@ class ExtentHandler(object):
         return self._maxRequestBlock - align + 1
 
     def queryExtents(self):
+        """ Query extents either via qemu or custom extent
+        handler
+        """
         if self.useQemu:
             return self.queryExtentsQemu()
 
         return self.queryExtentsNbd()
 
     def queryExtentsQemu(self):
+        """ Use qemu-img map to query extents from nbd
+        server
+        """
         extents = []
         for extent in self._nbdFh.map(self._socket):
             extentObj = Extent()
@@ -88,6 +97,9 @@ class ExtentHandler(object):
         return extents
 
     def _extentsToObj(self):
+        """ Go through extents and create a list of extent
+        objects
+        """
         extentSizes = self._extentEntries[0::2]
         extentTypes = self._extentEntries[1::2]
         assert len(extentSizes) == len(extentTypes)
@@ -103,6 +115,11 @@ class ExtentHandler(object):
         return extentList
 
     def _unifyExtents(self, extentObjects):
+        """ Unify extents. If a sequence of extents has the
+        same type (data or zero) it is better to unify them
+        into a bigger block, so during backup, less requests
+        to the nbd server have to be sent
+        """
         logging.debug("unify %s extents", len(extentObjects))
         cur = None
         for myExtent in extentObjects:
@@ -117,6 +134,8 @@ class ExtentHandler(object):
         yield cur
 
     def queryExtentsNbd(self):
+        """ Request used blocks/extents from the nbd service
+        """
         maxRequestLen = self._setRequestAligment()
         offset = 0
         size = self._nbdFh.get_size()
@@ -142,6 +161,9 @@ class ExtentHandler(object):
         return self._extentsToObj()
 
     def queryBlockStatus(self, extentList=None):
+        """ Check the status for each extent, wether if it is
+        real data or zeroes, return a list of extent objects
+        """
         if self.useQemu is True:
             return self.queryExtentsQemu()
 
