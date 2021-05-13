@@ -184,6 +184,11 @@ class client(object):
             cptName.text = parentCheckpoint
         disks = ElementTree.SubElement(top, "disks")
         for disk in diskList:
+            """ No checkpoint will be created for raw disks, because it is not
+            supported. Backup will only be crash consistent. If we would like
+            to create a consisent backup, we would have to create an snapshot
+            for these kind of disks.
+            """
             if disk.diskFormat != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
 

@@ -124,6 +124,8 @@ course means that no thin provisioned backup is created.
 During restore, these files can be copied "as is" from the backup folder and
 must not be processed using `virtnbdrestore`.
 
+**Note: no checkpoint is created for raw images, backup is only crash consistent.**
+
 # Backup Examples
 
 * Start full backup of domain `vm1`, save data to `/tmp/backupset`:

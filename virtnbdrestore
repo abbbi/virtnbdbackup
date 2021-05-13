@@ -17,6 +17,7 @@
 """
 import os
 import sys
+import shutil
 import logging
 import argparse
 import pprint
@@ -63,6 +64,9 @@ def main():
     parser.add_argument(
         "-f", "--socketfile", default=None, type=str,
         help="Use specified file for NBD Server socket instead of random file")
+    parser.add_argument(
+        "-r", "--raw", default=False, action="store_true",
+        help="Include full provisioned disk images in backup")
 
     lib = common.Common()
     args = lib.argparse(parser)
@@ -113,7 +117,7 @@ def main():
             vmDisks = virtclient.client().getDomainDisks(
                 vmConf.read(),
                 None,
-                False
+                args.raw
             )
 
         for disk in vmDisks:
@@ -129,6 +133,16 @@ def main():
                     disk.diskTarget
                 )
                 continue
+
+            if args.raw and disk.diskFormat == "raw":
+                targetFile = "%s/%s" % (args.output, disk.diskTarget)
+                logging.info("Copy raw image to %s", targetFile)
+                try:
+                    shutil.copy(restoreDisk[0], targetFile)
+                    continue
+                except Exception as e:
+                    logging.error("Unable to copy raw image: %s", e)
+
             if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
                 logging.error("%s Unable to locate base full or copy backup.", restoreDisk[0])
                 sys.exit(1)
@@ -141,10 +155,12 @@ def main():
                     e
                 )
                 sys.exit(1)
+
             logging.info(
-                "Create virtual Disk %s/%s",
+                "Create virtual Disk %s/%s, format: %s",
                 args.output,
-                meta["diskName"]
+                meta["diskName"],
+                disk.diskFormat
             )
             logging.info("Virtual Size %s", meta["virtualSize"])
             qFh = qemuhelper.qemuHelper(meta["diskName"])
