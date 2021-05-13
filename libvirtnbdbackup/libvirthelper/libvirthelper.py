@@ -184,10 +184,10 @@ class client(object):
             cptName.text = parentCheckpoint
         disks = ElementTree.SubElement(top, "disks")
         for disk in diskList:
-            """ No checkpoint will be created for raw disks, because it is not
-            supported. Backup will only be crash consistent. If we would like
-            to create a consisent backup, we would have to create an snapshot
-            for these kind of disks.
+            """ No persistent checkpoint will be created for raw disks, because
+            it is not supported. Backup will only be crash consistent. If we
+            would like to create a consisent backup, we would have to create an
+            snapshot for these kind of disks.
             """
             if disk.diskFormat != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
@@ -262,7 +262,7 @@ class client(object):
                 os.remove(checkpointFile)
         except Exception as e:
             logging.error("Unable to clean persistent storage {:s}: {}" . format(args.checkpointdir, e))
-            sys.exit(1)
+            return False
 
         if checkpointList is None:
             cpts = domObj.listAllCheckpoints()
