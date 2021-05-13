@@ -110,7 +110,11 @@ def main():
             sys.exit(1)
 
         with open(vmConfig,"r") as vmConf:
-            vmDisks = virtclient.client().getDomainDisks(vmConf.read(), None)
+            vmDisks = virtclient.client().getDomainDisks(
+                vmConf.read(),
+                None,
+                False
+            )
 
         for disk in vmDisks:
             if args.disk != "all" and args.disk != disk.diskTarget:
@@ -118,6 +122,7 @@ def main():
                 continue
 
             restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
+            logging.debug(restoreDisk)
             if len(restoreDisk) < 1:
                 logging.warning(
                     "Did not find any backups for disk image %s",
@@ -125,7 +130,7 @@ def main():
                 )
                 continue
             if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
-                logging.error("Unable to locate base full or copy backup.")
+                logging.error("%s Unable to locate base full or copy backup.", restoreDisk[0])
                 sys.exit(1)
             try:
                 meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
@@ -145,7 +150,7 @@ def main():
             qFh = qemuhelper.qemuHelper(meta["diskName"])
 
             try:
-                qFh.create(args.output, meta["virtualSize"])
+                qFh.create(args.output, meta["virtualSize"], disk.diskFormat)
             except Exception as e:
                 logging.error("Cant create restore target: %s", e)
                 sys.exit(1)

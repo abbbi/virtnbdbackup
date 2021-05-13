@@ -77,7 +77,9 @@ class Common(object):
             from backupset directory
         """
         sStr = "%s/%s*.data" % (targetDir, targetDisk)
-        return glob.glob(sStr)
+        files =  glob.glob(sStr)
+        files.sort(key=os.path.getmtime)
+        return files
 
     def getLastConfigFile(self, targetDir):
         """ get the last backed up configuration file

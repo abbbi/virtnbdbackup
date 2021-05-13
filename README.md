@@ -113,6 +113,17 @@ It is possible to backup multiple virtual machines on the same host system at
 the same time, using seperate calls to the application with a different target
 directory to store the data.
 
+# Supported disk formats / raw disks
+
+`libvirt/qemu` supports thin provisioned or incremental backups only with
+qcow(v3) based disk images.  By default `virtnbdbackup` will exclude all disks
+with format `raw`. This behavior can be changed if option  `--raw` is
+specified, raw disks will then be included during a `full` backup. This of
+course means that no thin provisioned backup is created.
+
+During restore, these files can be copied "as is" from the backup folder and
+must not be processed using `virtnbdrestore`.
+
 # Backup Examples
 
 * Start full backup of domain `vm1`, save data to `/tmp/backupset`:

@@ -15,10 +15,11 @@ class qemuHelper(object):
         ), shell=True, check=1, stdout=subprocess.PIPE)
         return json.loads(extentMap.stdout)
 
-    def create(self, targetDir, fileSize):
+    def create(self, targetDir, fileSize, diskFormat):
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)
-        subprocess.run("qemu-img create -f qcow2 '%s/%s' %s" % (
+        subprocess.run("qemu-img create -f %s '%s/%s' %s" % (
+            diskFormat,
             targetDir,
             self.exportName,
             fileSize

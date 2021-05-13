@@ -39,6 +39,7 @@ class DomainDisk(object):
     """
     def __init__(self):
         self.diskTarget = None
+        self.diskFormat = None
 
 class client(object):
     """ Libvirt related functions
@@ -76,7 +77,7 @@ class client(object):
         """
         return domObj.XMLDesc(0)
 
-    def getDomainDisks(self, vmConfig, excludedDisks):
+    def getDomainDisks(self, vmConfig, excludedDisks, includeRaw):
         """ Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
@@ -121,9 +122,10 @@ class client(object):
             # ignore disk which use raw format, they do not support CBT
             driver = target.find("driver")
             if driver != None:
-                if driver.get("type") == "raw":
+                diskFormat = driver.get("type")
+                if diskFormat == "raw" and includeRaw is False:
                     logging.warning(
-                        "Ignoring raw disk %s does not support changed block tracking.",
+                        "Raw disk %s excluded by default, use option --raw to include.",
                         dev
                     )
                     continue
@@ -132,6 +134,7 @@ class client(object):
 
             diskObj = DomainDisk()
             diskObj.diskTarget = dev
+            diskObj.diskFormat = diskFormat
             devices.append(diskObj)
 
         return devices
@@ -181,7 +184,8 @@ class client(object):
             cptName.text = parentCheckpoint
         disks = ElementTree.SubElement(top, "disks")
         for disk in diskList:
-            ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
+            if disk.diskFormat != "raw":
+                ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
 
         return ElementTree.tostring(top).decode()
 

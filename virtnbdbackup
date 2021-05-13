@@ -57,6 +57,9 @@ def main():
         choices=["stream","raw"],
         help="Output type: stream or raw")
     parser.add_argument(
+        "-r", "--raw", default=False, action="store_true",
+        help="Include full provisioned disk images in backup")
+    parser.add_argument(
         "-o", "--output", required=True, type=str,
         help="Output target directory")
     parser.add_argument(
@@ -129,6 +132,10 @@ def main():
 
     lib.printVersion(__version__)
 
+    if args.raw and args.level == "inc":
+        logging.error("Raw disks cant be included during incremental backup.")
+        sys.exit(1)
+
     if args.type == "raw" and args.level == "inc":
         logging.error("Backup format raw does not support incremental backup")
         sys.exit(1)
@@ -173,7 +180,7 @@ def main():
         sys.exit(1)
 
     vmConfig = virtClient.getDomainConfig(domObj)
-    disks = virtClient.getDomainDisks(vmConfig, args.exclude)
+    disks = virtClient.getDomainDisks(vmConfig, args.exclude, args.raw)
 
     signal.signal(
         signal.SIGINT,
@@ -284,7 +291,7 @@ def main():
             logging.info("Skipping disk: %s", disk.diskTarget)
             continue
         try:
-            backupDisk(disk.diskTarget, args, lib, checkpointName,
+            backupDisk(disk, args, lib, checkpointName,
                        parentCheckpoint, backupSocket)
         except Exception as e:
             logging.error("Unable to backup Disk: %s", e)
@@ -309,15 +316,21 @@ def backupConfig(vmConfig, args, checkpointName):
         logging.error("Unable to save VM config: %s", e)
         sys.exit(1)
 
-def backupDisk(diskTarget, args, lib, checkpointName,
+def backupDisk(disk, args, lib, checkpointName,
                parentCheckpoint, backupSocket):
+
+    if disk.diskFormat != "raw":
+        streamType = args.type
+    else:
+        streamType = "raw"
+
     metaContext = None
     if args.level == "inc":
-        metaContext = "qemu:dirty-bitmap:backup-%s" % diskTarget
+        metaContext = "qemu:dirty-bitmap:backup-%s" % disk.diskTarget
         logging.info("INC backup: set context to %s", metaContext)
 
     nbdClient = nbdhelper.nbdClient(
-        diskTarget, metaContext, backupSocket
+        disk.diskTarget, metaContext, backupSocket
     )
     logging.info("NDB Endpoint socket: %s", backupSocket)
     connection = nbdClient.connect()
@@ -325,7 +338,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
     if args.qemu and args.level != "inc":
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(diskTarget), metaContext, backupSocket
+            qemuhelper.qemuHelper(disk.diskTarget), metaContext, backupSocket
         )
     else:
         logging.info("Using nbd to query extents")
@@ -355,21 +368,25 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         logging.info("No dirty blocks found")
 
     if args.level in ("full","copy"):
+        if disk.diskFormat == "raw":
+            level = "copy"
+        else:
+            level = args.level
         targetFile = "%s/%s.%s.data" % (
             args.output,
-            diskTarget,
-            args.level
+            disk.diskTarget,
+            level
         )
     elif args.level == "inc":
         targetFile = "%s/%s.inc.%s.data" % (
             args.output,
-            diskTarget,
+            disk.diskTarget,
             checkpointName
         )
 
     if args.output == "-":
         targetFilePartial = args.output
-        if args.type == "stream":
+        if streamType == "stream":
             writer = sys.stdout.buffer
         else:
             logging.error("Writing to stdout not supported with raw format.")
@@ -382,7 +399,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         except Exception as e:
             logging.error("Unable to open target file: %s", e)
             return
-    if args.type == "raw":
+    if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
         writer.truncate(diskSize)
         writer.seek(0)
@@ -392,7 +409,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         if args.level == "inc":
             inc = True
         metadata = sparsestream.SparseStream().dumpMetadata(
-            diskSize, thinBackupSize, diskTarget, checkpointName,
+            diskSize, thinBackupSize, disk.diskTarget, checkpointName,
             parentCheckpoint, inc
         )
         sparsestream.SparseStream().writeFrame(
@@ -403,12 +420,12 @@ def backupDisk(diskTarget, args, lib, checkpointName,
         writer.write(sparsestream.SparseStreamTypes().TERM)
 
     progressBar = tqdm(
-        total=thinBackupSize, desc="saving disk %s" % diskTarget,
+        total=thinBackupSize, desc="saving disk %s" % disk.diskTarget,
         unit="B", unit_scale=True, disable=args.noprogress
     )
     for save in extents:
         if save.data is True:
-            if args.type == "stream":
+            if streamType == "stream":
                 sparsestream.SparseStream().writeFrame(
                     writer, sparsestream.SparseStreamTypes().DATA,
                     save.offset, save.length
@@ -420,28 +437,28 @@ def backupDisk(diskTarget, args, lib, checkpointName,
                               save.offset, save.length)
                 lib.writeChunk(
                     writer, save.offset, save.length,
-                    nbdClient.maxRequestSize, connection, args.type
+                    nbdClient.maxRequestSize, connection, streamType
                 )
             else:
-                if args.type == "raw":
+                if streamType == "raw":
                     writer.seek(save.offset)
                 writer.write(connection.pread(
                     save.length,
                     save.offset
                 ))
-            if args.type == "stream":
+            if streamType == "stream":
                 writer.write(sparsestream.SparseStreamTypes().TERM)
 
             progressBar.update(save.length)
         else:
-            if args.type == "raw":
+            if streamType == "raw":
                 writer.seek(save.offset)
-            elif args.type == "stream" and args.level != "inc":
+            elif streamType == "stream" and args.level != "inc":
                 sparsestream.SparseStream().writeFrame(
                     writer, sparsestream.SparseStreamTypes().ZERO,
                     save.offset, save.length
                 )
-    if args.type == "stream":
+    if streamType == "stream":
         sparsestream.SparseStream().writeFrame(
             writer, sparsestream.SparseStreamTypes().STOP,
             0, 0
@@ -454,7 +471,7 @@ def backupDisk(diskTarget, args, lib, checkpointName,
             os.rename(targetFilePartial, targetFile)
             logging.info(
                 "Backup of disk %s finished, file: %s",
-                diskTarget,
+                disk.diskTarget,
                 targetFile
             )
         except OSError as e:
