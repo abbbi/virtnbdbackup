@@ -9,8 +9,10 @@ machines.
 # Prerequisites
 
 * Obviously an libvirt/qemu version that supports the incremental backup
-  features. (libvirt 6.x from the centos8 advanced virtualization stream does
-  come with required features). To install libvirt from the stream use:
+  features.
+
+  On Centos8, libvirt packages from the advanced virtualization stream support
+  all required features. To install libvirt from the stream use:
 
   ```
   yum install centos-release-advanced-virtualization
@@ -18,7 +20,10 @@ machines.
   yum module install virt
   ```
 
-* Virtual machine must enable incremental backup feature by
+  Debian bullseye or Ubuntu 20.x include libvirt versions supporting this
+  feature already.
+
+* Virtual machines **must enable incremental backup feature** by
   including the capabilitys statement and using the extended schema 
   in its configuration as shown below:
  
