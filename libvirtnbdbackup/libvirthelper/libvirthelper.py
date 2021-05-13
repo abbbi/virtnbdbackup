@@ -269,7 +269,11 @@ class client(object):
             if cpts:
                 for cpt in domObj.listAllCheckpoints():
                     if "virtnbdbackup" in cpt.getName():
-                        cpt.delete()
+                        try:
+                            cpt.delete()
+                        except libvirt.libvirtError as e:
+                            logging.error(e)
+                            return False
             return True
 
         for checkpoint in checkpointList:
