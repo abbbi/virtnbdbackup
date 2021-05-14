@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from nbd import CONTEXT_BASE_ALLOCATION
 import logging
 
 class Extent(object):
@@ -45,7 +46,7 @@ class ExtentHandler(object):
         self._nbdFh = nbdFh
         self._extentEntries = []
         if metaContext is None:
-            self._metaContext = "base:allocation"
+            self._metaContext = CONTEXT_BASE_ALLOCATION
         else:
             self._metaContext = metaContext
 
@@ -58,6 +59,8 @@ class ExtentHandler(object):
         that is returned
         """
         logging.debug("Metacontext is: %s", metacontext)
+        logging.debug("Offset is: %s", offset)
+        logging.debug("Status is: %s", status)
         if metacontext != self._metaContext:
             logging.error("Meta context does not match")
             return
@@ -120,7 +123,7 @@ class ExtentHandler(object):
         into a bigger block, so during backup, less requests
         to the nbd server have to be sent
         """
-        logging.debug("unify %s extents", len(extentObjects))
+        logging.debug("Attempting to unify %s extents", len(extentObjects))
         cur = None
         for myExtent in extentObjects:
             if cur is None:
@@ -156,7 +159,7 @@ class ExtentHandler(object):
             lastExtentLen = len(self._extentEntries)
 
         logging.debug("Extents: %s", self._extentEntries)
-        logging.debug("Number Extents: %s", len(self._extentEntries))
+        logging.debug("Got %s extents", len(self._extentEntries[::2]))
 
         return self._extentsToObj()
 
@@ -171,7 +174,7 @@ class ExtentHandler(object):
         start = 0
         for extent in self._unifyExtents(self.queryExtentsNbd()):
             extObj = Extent()
-            if self._metaContext == "base:allocation":
+            if self._metaContext == CONTEXT_BASE_ALLOCATION:
                 assert extent.type in (0, 1, 2, 3)
                 if extent.type == 0:
                     extObj.data = True
