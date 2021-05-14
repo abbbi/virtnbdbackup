@@ -166,6 +166,17 @@ class ExtentHandler(object):
     def queryBlockStatus(self, extentList=None):
         """ Check the status for each extent, wether if it is
         real data or zeroes, return a list of extent objects
+
+        The extent types are as follows:
+
+        For full backup:
+            case 0  ("allocated")
+            case 1: ("hole")
+            case 2: ("zero")
+            case 3: ("hole,zero")
+        For checkpoint based inc/diff:
+            case 0: ("clean")
+            case 1: ("dirty")
         """
         if self.useQemu is True:
             return self.queryExtentsQemu()
