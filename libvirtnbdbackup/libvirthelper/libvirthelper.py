@@ -168,7 +168,11 @@ class client(object):
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
             ElementTree.SubElement(dE, "scratch", {"file":"%s" % (scratchFile)})
 
-        return ElementTree.tostring(top).decode()
+        ElementTree.indent(top)
+        xml = ElementTree.tostring(top).decode()
+        logging.debug("\n%s", xml)
+
+        return xml
 
     def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
         """ Create valid checkpoint XML file which is passed to libvirt API
@@ -192,7 +196,11 @@ class client(object):
             if disk.diskFormat != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
 
-        return ElementTree.tostring(top).decode()
+        ElementTree.indent(top)
+        xml = ElementTree.tostring(top).decode()
+        logging.debug("\n%s", xml)
+
+        return xml
 
     def fsFreeze(self, domObj):
         """ Attempt to freeze domain filesystems using qemu guest agent
