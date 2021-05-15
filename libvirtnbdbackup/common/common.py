@@ -70,7 +70,10 @@ class Common(object):
             directory
         """
         sStr = "%s/*.data" % targetDir
-        return glob.glob(sStr)
+        files = glob.glob(sStr)
+        files.sort(key=os.path.getmtime)
+
+        return files
 
     def getDataFilesByDisk(self, targetDir, targetDisk):
         """ return data files subject to one disk
