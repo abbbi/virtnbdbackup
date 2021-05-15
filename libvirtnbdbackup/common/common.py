@@ -118,6 +118,16 @@ class Common(object):
             ))
             return meta
 
+    def blockStep(self, offset, length, maxRequestSize):
+        blockOffset = offset
+        while blockOffset < offset+length:
+            blocklen = min(
+                offset+length - blockOffset,
+                maxRequestSize
+            )
+            yield blocklen, blockOffset
+            blockOffset+=blocklen
+
     def writeChunk(self, writer, offset, length, maxRequestSize, nbdCon, btype):
         """ During extent processing, consecutive blocks with
         the same type(data or zeroed) are unified into one big chunk.
@@ -128,34 +138,16 @@ class Common(object):
         need to split one big request into multiple not exceeding
         the limit
         """
-        blockOffset = offset
-        while blockOffset < offset+length:
-            blocklen = min(
-                offset+length - blockOffset,
-                maxRequestSize
-            )
+        for blocklen, blockOffset in self.blockStep(offset, length, maxRequestSize):
             if btype == "raw":
                 writer.seek(blockOffset)
             writer.write(nbdCon.pread(blocklen, blockOffset))
-            blockOffset+=blocklen
 
     def zeroChunk(self, offset, length, maxRequestSize, nbdCon):
-        zeroOffset = offset
-        while zeroOffset < offset+length:
-            zeroLen = min(
-                offset+length - zeroOffset,
-                maxRequestSize
-            )
+        for zeroLen, zeroOffset in self.blockStep(offset, length, maxRequestSize):
             nbdCon.zero(zeroLen, zeroOffset)
-            zeroOffset+=zeroLen
 
     def readChunk(self, reader, offset, length, maxRequestSize, nbdCon):
-        blockOffset = offset
-        while blockOffset < offset+length:
-            blocklen = min(
-                offset+length - blockOffset,
-                maxRequestSize
-            )
+        for blocklen, blockOffset in self.blockStep(offset, length, maxRequestSize):
             data = reader.read(blocklen)
             nbdCon.pwrite(data, blockOffset)
-            blockOffset+=blocklen
