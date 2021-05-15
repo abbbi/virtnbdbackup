@@ -119,6 +119,9 @@ class Common(object):
             return meta
 
     def blockStep(self, offset, length, maxRequestSize):
+        """ Process block and ensure to not exceed the maximum request size
+        from NBD server.
+        """
         blockOffset = offset
         while blockOffset < offset+length:
             blocklen = min(
@@ -144,10 +147,14 @@ class Common(object):
             writer.write(nbdCon.pread(blocklen, blockOffset))
 
     def zeroChunk(self, offset, length, maxRequestSize, nbdCon):
+        """ Write zeroes using libnbd zero function
+        """
         for zeroLen, zeroOffset in self.blockStep(offset, length, maxRequestSize):
             nbdCon.zero(zeroLen, zeroOffset)
 
     def readChunk(self, reader, offset, length, maxRequestSize, nbdCon):
+        """ Read data from reader and write to nbd connection
+        """
         for blocklen, blockOffset in self.blockStep(offset, length, maxRequestSize):
             data = reader.read(blocklen)
             nbdCon.pwrite(data, blockOffset)
