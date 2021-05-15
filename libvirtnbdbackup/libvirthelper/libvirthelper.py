@@ -168,7 +168,10 @@ class client(object):
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
             ElementTree.SubElement(dE, "scratch", {"file":"%s" % (scratchFile)})
 
-        ElementTree.indent(top)
+        try:
+            ElementTree.indent(top)
+        except:
+            pass
         xml = ElementTree.tostring(top).decode()
         logging.debug("\n%s", xml)
 
@@ -196,7 +199,10 @@ class client(object):
             if disk.diskFormat != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
 
-        ElementTree.indent(top)
+        try:
+            ElementTree.indent(top)
+        except:
+            pass
         xml = ElementTree.tostring(top).decode()
         logging.debug("\n%s", xml)
 
