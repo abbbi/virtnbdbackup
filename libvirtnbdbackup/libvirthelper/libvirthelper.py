@@ -139,6 +139,17 @@ class client(object):
 
         return devices
 
+    def _indentXml(self, top):
+        try:
+            ElementTree.indent(top)
+        except:
+            pass
+
+        xml = ElementTree.tostring(top).decode()
+        logging.debug("\n%s", xml)
+
+        return xml
+
     def _createBackupXml(self, diskList, parentCheckpoint, scratchFilePath,
                          socketFilePath):
         """ Create XML file for starting an backup task using libvirt API.
@@ -168,12 +179,7 @@ class client(object):
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
             ElementTree.SubElement(dE, "scratch", {"file":"%s" % (scratchFile)})
 
-        try:
-            ElementTree.indent(top)
-        except:
-            pass
-        xml = ElementTree.tostring(top).decode()
-        logging.debug("\n%s", xml)
+        xml = self._indentXml(top)
 
         return xml
 
@@ -199,12 +205,7 @@ class client(object):
             if disk.diskFormat != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
 
-        try:
-            ElementTree.indent(top)
-        except:
-            pass
-        xml = ElementTree.tostring(top).decode()
-        logging.debug("\n%s", xml)
+        xml = self._indentXml(top)
 
         return xml
 
