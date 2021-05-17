@@ -144,10 +144,13 @@ class Common(object):
         need to split one big request into multiple not exceeding
         the limit
         """
+        size = 0
         for blocklen, blockOffset in self.blockStep(offset, length, maxRequestSize):
             if btype == "raw":
                 writer.seek(blockOffset)
-            writer.write(nbdCon.pread(blocklen, blockOffset))
+            size += writer.write(nbdCon.pread(blocklen, blockOffset))
+
+        return size
 
     def zeroChunk(self, offset, length, maxRequestSize, nbdCon):
         """ Write zeroes using libnbd zero function
