@@ -103,7 +103,7 @@ class Common(object):
             ext["data"] = extent.data
             extList.append(ext)
 
-        return json.dumps(extList)
+        return json.dumps(extList, indent=4, sort_keys=True)
 
     def dumpMetaData(self, dataFile, sparsestream):
         """ read metadata header

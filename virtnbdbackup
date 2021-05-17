@@ -19,7 +19,6 @@ import os
 import sys
 import json
 import signal
-import pprint
 import logging
 import argparse
 from datetime import datetime
@@ -357,7 +356,7 @@ def backupDisk(disk, args, lib, checkpointName,
     )
     logging.info("Got %s extents", len(extents))
     if args.verbose is True:
-        pprint.pprint(lib.dumpExtentJson(extents))
+        logging.debug("%s", lib.dumpExtentJson(extents))
     logging.info("%s bytes disk size", diskSize)
     logging.info("%s bytes of data extents to backup", thinBackupSize)
     if args.printonly is True:
