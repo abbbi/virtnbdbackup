@@ -105,21 +105,16 @@ class Common(object):
 
         return json.dumps(extList, indent=4, sort_keys=True)
 
-    def dumpMetaData(self, dataFile, sparsestream):
+    def dumpMetaData(self, dataFile, stream):
         """ read metadata header
         """
         with open(dataFile, "rb") as reader:
             try:
-                kind, start, length = sparsestream.SparseStream().readFrame(
-                    reader
-                )
+                kind, start, length = stream.readFrame(reader)
             except ValueError:
                 return False
 
-            meta = sparsestream.SparseStream().loadMetadata(reader.read(
-                length
-            ))
-            return meta
+            return stream.loadMetadata(reader.read(length))
 
     def blockStep(self, offset, length, maxRequestSize):
         """ Process block and ensure to not exceed the maximum request size

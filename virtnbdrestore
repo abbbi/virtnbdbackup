@@ -71,6 +71,9 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
+    stream = sparsestream.SparseStream()
+    sTypes = sparsestream.SparseStreamTypes()
+
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
         handlers=[
@@ -98,7 +101,7 @@ def main():
                     dataFile
             ).startswith(args.disk):
                 continue
-            meta = lib.dumpMetaData(dataFile, sparsestream)
+            meta = lib.dumpMetaData(dataFile, stream)
             if meta is False:
                 logging.error(
                     "Unable to dump image contents, image defunct or raw image?"
@@ -147,7 +150,7 @@ def main():
                 logging.error("%s Unable to locate base full or copy backup.", restoreDisk[0])
                 sys.exit(1)
             try:
-                meta = lib.dumpMetaData(restoreDisk[0], sparsestream)
+                meta = lib.dumpMetaData(restoreDisk[0], stream)
             except Exception as e:
                 logging.error(
                     "Reading metadata from %s failed: %s",
@@ -194,12 +197,8 @@ def main():
 
             for restoreFile in restoreDisk:
                 reader = open(restoreFile,"rb")
-                kind, start, length = sparsestream.SparseStream().readFrame(
-                    reader
-                )
-                meta = sparsestream.SparseStream().loadMetadata(reader.read(
-                    length
-                ))
+                kind, start, length = stream.readFrame(reader)
+                meta = stream.loadMetadata(reader.read(length))
                 if meta["dataSize"] == 0:
                     logging.info(
                         "Saveset %s contains no dirty blocks, skipping",
@@ -213,9 +212,7 @@ def main():
                     meta["diskName"]
                 )
                 pprint.pprint(meta)
-                assert reader.read(
-                    len(sparsestream.SparseStreamTypes().TERM)
-                ) == sparsestream.SparseStreamTypes().TERM
+                assert reader.read( len(sTypes.TERM)) == sTypes.TERM
 
                 progressBar = tqdm(
                     total=meta["dataSize"],
@@ -225,26 +222,20 @@ def main():
                 dataSize = 0
                 while True:
                     try:
-                        kind, start, length = sparsestream.SparseStream().readFrame(
-                            reader
-                        )
+                        kind, start, length = stream.readFrame(reader)
                     except Exception as e:
-                        logging.error(
-                            "Unknown header at stream postition %s",
-                            reader.tell()
-                        )
+                        logging.error("Wrong stream at pos: %s", reader.tell())
+                        logging.exception(e)
                         sys.exit(1)
-                    if kind == sparsestream.SparseStreamTypes().ZERO:
+                    if kind == sTypes.ZERO:
                         logging.debug(
                             "Write zero segment from %s length: %s",
-                            start,
-                            length
+                            start, length
                         )
                         if length >= nbdClient.maxRequestSize:
                             logging.debug(
                                 "Chunked zero, start: %s, len: %s",
-                                start,
-                                length
+                                start, length
                             )
                             lib.zeroChunk(
                                 start, length,
@@ -252,11 +243,10 @@ def main():
                             )
                         else:
                             connection.zero(length, start)
-                    elif kind == sparsestream.SparseStreamTypes().DATA:
+                    elif kind == sTypes.DATA:
                         logging.debug(
                             "Write data segment from %s length: %s",
-                            start,
-                            length
+                            start, length
                         )
                         if length >= nbdClient.maxRequestSize:
                             logging.debug(
@@ -270,12 +260,10 @@ def main():
                         else:
                             data = reader.read(length)
                             connection.pwrite(data, start)
-                        assert reader.read(
-                            len(sparsestream.SparseStreamTypes().TERM)
-                        ) == sparsestream.SparseStreamTypes().TERM
+                        assert reader.read(len(sTypes.TERM)) == sTypes.TERM
                         dataSize += length
                         progressBar.update(length)
-                    elif kind == sparsestream.SparseStreamTypes().STOP:
+                    elif kind == sTypes.STOP:
                         progressBar.close()
                         if dataSize == meta["dataSize"]:
                             logging.info(
@@ -285,8 +273,7 @@ def main():
                         else:
                             logging.error(
                                 "Error: restored data size %s != %s",
-                                dataSize,
-                                meta["dataSize"]
+                                dataSize, meta["dataSize"]
                             )
                             sys.exit(1)
                         break

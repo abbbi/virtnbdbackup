@@ -108,6 +108,9 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
+    stream = sparsestream.SparseStream()
+    sTypes = sparsestream.SparseStreamTypes()
+
     if args.output == "-":
         logPath = "./backup.log"
     else:
@@ -290,10 +293,11 @@ def main():
             logging.info("Skipping disk: %s", disk.diskTarget)
             continue
         try:
-            backupDisk(disk, args, lib, checkpointName,
-                       parentCheckpoint, backupSocket)
+            backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
+                       backupSocket, stream, sTypes)
         except Exception as e:
             logging.error("Unable to backup Disk: %s", e)
+            logging.exception(e)
             virtClient.stopBackup(domObj)
             sys.exit(1)
     if args.printonly is False and args.output != "-":
@@ -315,8 +319,8 @@ def backupConfig(vmConfig, args, checkpointName):
         logging.error("Unable to save VM config: %s", e)
         sys.exit(1)
 
-def backupDisk(disk, args, lib, checkpointName,
-               parentCheckpoint, backupSocket):
+def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
+               backupSocket, stream, sTypes):
 
     if disk.diskFormat != "raw":
         streamType = args.type
@@ -407,16 +411,13 @@ def backupDisk(disk, args, lib, checkpointName,
         inc = False
         if args.level == "inc":
             inc = True
-        metadata = sparsestream.SparseStream().dumpMetadata(
+        metadata = stream.dumpMetadata(
             diskSize, thinBackupSize, disk.diskTarget, checkpointName,
             parentCheckpoint, inc
         )
-        sparsestream.SparseStream().writeFrame(
-            writer, sparsestream.SparseStreamTypes().META,
-            0, len(metadata)
-        )
+        stream.writeFrame(writer, sTypes.META, 0, len(metadata))
         writer.write(metadata)
-        writer.write(sparsestream.SparseStreamTypes().TERM)
+        writer.write(sTypes.TERM)
 
     progressBar = tqdm(
         total=thinBackupSize, desc="saving disk %s" % disk.diskTarget,
@@ -425,10 +426,8 @@ def backupDisk(disk, args, lib, checkpointName,
     for save in extents:
         if save.data is True:
             if streamType == "stream":
-                sparsestream.SparseStream().writeFrame(
-                    writer, sparsestream.SparseStreamTypes().DATA,
-                    save.offset, save.length
-                )
+                stream.writeFrame(writer, sTypes.DATA, save.offset,
+                                    save.length)
                 logging.debug("Read data from: start %s, length: %s",
                               save.offset, save.length)
             if save.length >= nbdClient.maxRequestSize:
@@ -448,22 +447,16 @@ def backupDisk(disk, args, lib, checkpointName,
                 ))
                 assert size == save.length
             if streamType == "stream":
-                writer.write(sparsestream.SparseStreamTypes().TERM)
+                writer.write(sTypes.TERM)
 
             progressBar.update(save.length)
         else:
             if streamType == "raw":
                 writer.seek(save.offset)
             elif streamType == "stream" and args.level != "inc":
-                sparsestream.SparseStream().writeFrame(
-                    writer, sparsestream.SparseStreamTypes().ZERO,
-                    save.offset, save.length
-                )
+                stream.writeFrame(writer, sTypes.ZERO, save.offset, save.length)
     if streamType == "stream":
-        sparsestream.SparseStream().writeFrame(
-            writer, sparsestream.SparseStreamTypes().STOP,
-            0, 0
-        )
+        stream.writeFrame(writer, sTypes.STOP, 0, 0)
 
     progressBar.close()
     if targetFilePartial != "-":
