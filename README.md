@@ -219,7 +219,7 @@ INFO:root:Dumping saveset meta information
  'diskName': 'sda',
  'incremental': False,
  'parentCheckpoint': False,
- 'stream-version': 1,
+ 'streamVersion': 1,
  'virtualSize': 32212254720}
 [..]
 ```

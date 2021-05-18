@@ -108,7 +108,7 @@ class SparseStream:
             "checkpointName": checkpointName,
             "parentCheckpoint": parentCheckpoint,
             "incremental": incremental,
-            "stream-version": self.version
+            "streamVersion": self.version
         }
         return json.dumps(meta, indent=4).encode("utf-8")
 
