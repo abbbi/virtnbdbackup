@@ -193,6 +193,19 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
 2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 1394147328 bytes of data extents to backup
 ```
 
+## Compression
+
+It is possible to enable compression for the `stream` format via `lz4`
+algorithm by using the `--compress` option. The saved data is compressed inline
+and the saveset file is appended with compression trailer including information
+about the compressed block offsets.
+
+During restore, `virtnbdrestore` will automatically detect such compressed
+backup streams and attempts to decompress saved blocks accordingly.
+
+Using compression will come with some CPU overhead, both lz4 checksums for
+block and original data is enabled.
+
 # Restore examples
 
 For restoring, `virtnbdrestore` can be used. It reconstructs the streamed

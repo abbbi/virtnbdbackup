@@ -104,6 +104,10 @@ def main():
         "-n", "--noprogress", default=False,
         help="Disable progress bar",
         action="store_true")
+    parser.add_argument(
+        "-z", "--compress", default=False,
+        help="Compress with lz4",
+        action="store_true")
 
     lib = common.Common()
     args = lib.argparse(parser)
@@ -337,6 +341,9 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
     )
     logging.info("NDB Endpoint socket: %s", backupSocket)
     connection = nbdClient.connect()
+    if not connection:
+        logging.error("Error connecting nbd endpoint")
+        sys.exit(1)
 
     if args.qemu and args.level != "inc":
         logging.info("Using qemu tools to query extents")
@@ -408,12 +415,14 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
+        if args.compress:
+            logging.info("Compression enabled")
         inc = False
         if args.level == "inc":
             inc = True
         metadata = stream.dumpMetadata(
             diskSize, thinBackupSize, disk.diskTarget, checkpointName,
-            parentCheckpoint, inc
+            parentCheckpoint, inc, args.compress
         )
         stream.writeFrame(writer, sTypes.META, 0, len(metadata))
         writer.write(metadata)
@@ -423,6 +432,7 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         total=thinBackupSize, desc="saving disk %s" % disk.diskTarget,
         unit="B", unit_scale=True, disable=args.noprogress
     )
+    compressedSizes = []
     for save in extents:
         if save.data is True:
             if streamType == "stream":
@@ -430,24 +440,35 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
                                     save.length)
                 logging.debug("Read data from: start %s, length: %s",
                               save.offset, save.length)
+
+            cSizes = None
+
             if save.length >= nbdClient.maxRequestSize:
                 logging.debug("Chunked data read from: start %s, length: %s",
                               save.offset, save.length)
-                size = lib.writeChunk(
+                size, cSizes = lib.writeChunk(
                     writer, save.offset, save.length,
-                    nbdClient.maxRequestSize, connection, streamType
+                    nbdClient.maxRequestSize, connection, streamType,
+                    args.compress
                 )
-                assert size == save.length
             else:
+                size = lib.writeBlock(writer, save.offset, save.length,
+                    connection, streamType, args.compress)
                 if streamType == "raw":
-                    writer.seek(save.offset)
-                size = writer.write(connection.pread(
-                    save.length,
-                    save.offset
-                ))
-                assert size == save.length
+                    size = writer.seek(save.offset)
+
             if streamType == "stream":
                 writer.write(sTypes.TERM)
+                if args.compress is True:
+                    logging.debug("Compressed size: %s", size)
+                    if cSizes:
+                        blockList = {}
+                        blockList[size] = cSizes
+                        compressedSizes.append(blockList)
+                    else:
+                        compressedSizes.append(size)
+                else:
+                    assert size == save.length
 
             progressBar.update(save.length)
         else:
@@ -457,6 +478,8 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
                 stream.writeFrame(writer, sTypes.ZERO, save.offset, save.length)
     if streamType == "stream":
         stream.writeFrame(writer, sTypes.STOP, 0, 0)
+        if args.compress:
+            stream.writeCompressionTrailer(writer, compressedSizes)
 
     progressBar.close()
     if targetFilePartial != "-":

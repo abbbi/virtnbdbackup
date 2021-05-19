@@ -99,6 +99,33 @@ toOut() {
     [ "$status" -eq 0 ]
 }
 
+# compression
+@test "Backup in stream format: with and without compression, restore both and compare results"  {
+    BACKUPSET_COMPRESSED="/tmp/testset_compressed"
+
+    RESTOREDIR="/tmp/restore_uncompressed"
+    RESTOREDIR_COMPRESSED="/tmp/restore_compressed"
+
+    rm -rf $BACKUPSET $BACKUPSET_COMPRESSED
+
+    run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET
+    [ "$status" -eq 0 ]
+
+    run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET_COMPRESSED --compress
+    [ "$status" -eq 0 ]
+
+    run ../virtnbdrestore -a restore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR -n -v
+    [ "$status" -eq 0 ]
+
+    run ../virtnbdrestore -a restore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR_COMPRESSED -n -v
+    [ "$status" -eq 0 ]
+
+    run cmp /tmp/restore_uncompressed/sda /tmp/restore_compressed/sda
+    [ "$status" -eq 0 ]
+
+    rm -rf $RESTOREDIR $RESTOREDIR_COMPRESSED
+}
+
 # test for incremental backup
 
 @test "Setup: Prepare test for incremental backup" {

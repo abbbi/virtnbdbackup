@@ -28,13 +28,30 @@ class nbdClient(object):
     def version(self):
         logging.info("{}".format(nbd.__version__))
 
+    def getBlockInfo(self):
+        """ Read maximum request/block size as advertised by the nbd
+        server. This is the value which will then be used by default
+        """
+        maxSize = self._nbdHandle.get_block_size(nbd.SIZE_MAXIMUM)
+        if maxSize != 0:
+            self.maxRequestSize = maxSize
+
+        logging.info('Using Maximum Block size supported by nbd server: %s', maxSize)
+
     def connect(self):
         """ Setup connection to NBD server endpoint, return
         connection handle
         """
-        self._nbdHandle.add_meta_context(self._metaContext)
-        self._nbdHandle.set_export_name(self._exportName)
-        self._nbdHandle.connect_unix(self._socket)
+        try:
+            self._nbdHandle.add_meta_context(self._metaContext)
+            self._nbdHandle.set_export_name(self._exportName)
+            self._nbdHandle.connect_unix(self._socket)
+        except Exception as e:
+            logging.error("Unable to connect ndb server")
+            logging.exception(e)
+            return False
+
+        self.getBlockInfo()
 
         return self._nbdHandle
 

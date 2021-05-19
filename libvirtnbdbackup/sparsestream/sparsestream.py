@@ -1,4 +1,5 @@
 import json
+import os
 import datetime
 
 class SparseStreamTypes:
@@ -44,29 +45,31 @@ class SparseStreamTypes:
         Marks the end of the stream, no payload.
         "stop" space start length "\r\n"
 
-        Example
+        Regular stream Example
         -------
-
         meta 0000000000000000 0000000000000083\r\n
         {
-            "virtual-size": 6442450944,
-            "data-size": 1288486912,
-            "date": "2020-07-09T20:33:34.349705",
-            "disk_uuid": "sldf-aldflasfa-llalsdfla-la",
-            "incremental": false,
-            "stream_version": 1
+            [.]]
         }\r\n
         data 0000000000000000 00000000000100000\r\n
         <1 MiB bytes>\r\n
         zero 0000000000100000 00000000040000000\r\n
-        ...
         data 0000000040100000 00000000000001000\r\n
         <4096 bytes>\r\n
         stop 0000000000000000 00000000000000000\r\n
+
+
+        Compressed stream:
+        -------
+        Ends with compression marker:
+        stop 0000000000000000 00000000000000000\r\n
+        <json payload with compressed block sizes>\r\n
+        comp 0000000000000000 00000000000000010\r\n
     """
     def __init__(self):
         self.META = b"meta"
         self.DATA = b"data"
+        self.COMP = b"comp"
         self.ZERO = b"zero"
         self.STOP = b"stop"
         self.TERM = b"\r\n"
@@ -76,13 +79,18 @@ class SparseStreamTypes:
 class SparseStream:
     """ Sparse Stream
     """
-    def __init__(self, version=1):
-        """ Stream version set to 1 by default
+    def __init__(self, version=2):
+        """ Stream version:
+
+            1: base version
+            2: stream version with compression support
         """
         self.version = version
+        self.compressionMethod = "lz4"
         self.types = SparseStreamTypes()
 
-    def dumpMetadata(self, virtualSize, dataSize, diskName, checkpointName, parentCheckpoint, incremental):
+    def dumpMetadata(self, virtualSize, dataSize, diskName, checkpointName,
+                     parentCheckpoint, incremental, compressed):
         """ First block in backup stream is Meta data information
             about virtual size of the disk beeing backed up
 
@@ -94,6 +102,8 @@ class SparseStream:
                     dataSize:   (int)       used space of disk
                     diskName:   (str)       name of the disk backed up
                     checkpointName:   (str)  checkpoint name
+                    compressionmethod:(str)  used compression method
+                    compressed:   (boolean)  flag wether if data is compressed
                     parentCheckpoint: (str)  parent checkpoint
                     incremental: (boolean)   wether if backup is incremental
 
@@ -106,11 +116,40 @@ class SparseStream:
             "date": datetime.datetime.now().isoformat(),
             "diskName": diskName,
             "checkpointName": checkpointName,
+            "compressed": compressed,
+            "compressionMethod": self.compressionMethod,
             "parentCheckpoint": parentCheckpoint,
             "incremental": incremental,
             "streamVersion": self.version
         }
         return json.dumps(meta, indent=4).encode("utf-8")
+
+    def writeCompressionTrailer(self, writer, trailer):
+        """ Dump compression trailer to end of stream
+        """
+        size = writer.write(
+            json.dumps(trailer).encode()
+        )
+        writer.write(self.types.TERM)
+        self.writeFrame(writer, self.types.COMP, 0, size)
+
+    def readCompressionTrailer(self, reader):
+        """ If compressed stream is found, information about compressed
+        blocksizes is appended as last json payload.
+
+        Function seeks to end of file and reads trailer information.
+        """
+        pos = reader.tell()
+        reader.seek(0, os.SEEK_END)
+        reader.seek(-(self.types.FRAME_LEN + len(self.types.TERM)), os.SEEK_CUR)
+        header = reader.read(self.types.FRAME_LEN)
+        kind, start, length = header.split(b" ", 2)
+        reader.seek(-(self.types.FRAME_LEN + int(length, 16)), os.SEEK_CUR)
+        trailer = json.loads(
+            reader.read(int(length, 16))
+        )
+        reader.seek(pos)
+        return trailer
 
     def loadMetadata(self, s):
         """ Load and parse metadata information

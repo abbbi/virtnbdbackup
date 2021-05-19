@@ -102,12 +102,18 @@ def main():
             ).startswith(args.disk):
                 continue
             meta = lib.dumpMetaData(dataFile, stream)
+
             if meta is False:
                 logging.error(
                     "Unable to dump image contents, image defunct or raw image?"
                 )
                 continue
             pprint.pprint(meta)
+
+            if lib.isCompressed(meta):
+                logging.info('Compressed stream found: %s',
+                    meta['compressionMethod']
+                )
 
     if args.action == "restore":
         logging.info("Read latest config file")
@@ -147,7 +153,9 @@ def main():
                     logging.error("Unable to copy raw image: %s", e)
 
             if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
-                logging.error("%s Unable to locate base full or copy backup.", restoreDisk[0])
+                logging.error("%s Unable to locate base full or copy backup.",
+                    restoreDisk[0]
+                )
                 sys.exit(1)
             try:
                 meta = lib.dumpMetaData(restoreDisk[0], stream)
@@ -194,11 +202,21 @@ def main():
                 meta["diskName"], None, socketFile
             )
             connection = nbdClient.connect()
+            if not connection:
+                logging.error("NBD server connection failed")
+                sys.exit(1)
 
             for restoreFile in restoreDisk:
                 reader = open(restoreFile,"rb")
                 kind, start, length = stream.readFrame(reader)
                 meta = stream.loadMetadata(reader.read(length))
+                if  lib.isCompressed(meta) is True:
+                    trailer = stream.readCompressionTrailer(reader)
+                    logging.info("Found compression trailer")
+                    logging.debug("%s", trailer)
+                else:
+                    trailer = None
+
                 if meta["dataSize"] == 0:
                     logging.info(
                         "Saveset %s contains no dirty blocks, skipping",
@@ -212,7 +230,7 @@ def main():
                     meta["diskName"]
                 )
                 pprint.pprint(meta)
-                assert reader.read( len(sTypes.TERM)) == sTypes.TERM
+                assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
                 progressBar = tqdm(
                     total=meta["dataSize"],
@@ -220,6 +238,7 @@ def main():
                     unit="B", unit_scale=True, disable=args.noprogress
                 )
                 dataSize = 0
+                dataBlockCnt = 0
                 while True:
                     try:
                         kind, start, length = stream.readFrame(reader)
@@ -237,32 +256,56 @@ def main():
                                 "Chunked zero, start: %s, len: %s",
                                 start, length
                             )
-                            lib.zeroChunk(
-                                start, length,
+                            lib.zeroChunk(start, length,
                                 nbdClient.maxRequestSize, connection
                             )
                         else:
                             connection.zero(length, start)
                     elif kind == sTypes.DATA:
                         logging.debug(
-                            "Write data segment from %s length: %s",
+                            "Process data segment from %s length: %s",
                             start, length
                         )
-                        if length >= nbdClient.maxRequestSize:
+
+                        originalSize = length
+                        if trailer:
+                            logging.debug("Block: %s", dataBlockCnt)
+                            logging.debug("Original block size: %s", length)
+                            length = trailer[dataBlockCnt]
+                            logging.debug("Compressed block size: %s", length)
+                        else:
+                            length = length
+
+                        if originalSize >= nbdClient.maxRequestSize:
                             logging.debug(
                                 "Chunked read/write, start: %s, len: %s",
                                 start, length
                             )
-                            lib.readChunk(
-                                reader, start, length,
-                                nbdClient.maxRequestSize, connection
-                            )
+                            try:
+                                written = lib.readChunk(
+                                    reader, start, length,
+                                    nbdClient.maxRequestSize, connection,
+                                    lib.isCompressed(meta)
+                                )
+                            except Exception as e:
+                                logging.exception(e)
+                                sys.exit(1)
+                            logging.debug("Wrote: %s" % written)
                         else:
-                            data = reader.read(length)
-                            connection.pwrite(data, start)
-                        assert reader.read(len(sTypes.TERM)) == sTypes.TERM
-                        dataSize += length
-                        progressBar.update(length)
+                            try:
+                                data = reader.read(length)
+                                if lib.isCompressed(meta):
+                                    data = lib.lz4DecompressFrame(data)
+                                connection.pwrite(data, start)
+                                written = len(data)
+                            except Exception as e:
+                                logging.exception(e)
+                                sys.exit(1)
+
+                        assert reader.read( len(sTypes.TERM)) == sTypes.TERM
+                        dataSize += originalSize
+                        progressBar.update(written)
+                        dataBlockCnt+=1
                     elif kind == sTypes.STOP:
                         progressBar.close()
                         if dataSize == meta["dataSize"]:
