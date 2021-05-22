@@ -1,0 +1,55 @@
+#!/usr/bin/python3
+"""
+    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+import os
+import sys
+import json
+import pprint
+import libvirtnbdbackup.sparsestream  as sparsestream
+
+if __name__ == "__main__":
+    reader = open(sys.argv[1], "rb")
+    stream = sparsestream.SparseStream()
+    sTypes = sparsestream.SparseStreamTypes()
+    kind, start, length = stream.readFrame(reader)
+    meta = stream.loadMetadata(reader.read(length))
+    assert reader.read(len(sTypes.TERM)) == sTypes.TERM
+
+    dataRanges = []
+    while True:
+        kind, start, length = stream.readFrame(reader)
+        if kind == sTypes.DATA:
+            blockInfo = {}
+            blockInfo['offset'] = reader.tell()
+            blockInfo['originalOffset'] = start
+            blockInfo['length'] = length
+            blockInfo['data'] = True
+            dataRanges.append(blockInfo)
+            reader.seek(length, os.SEEK_CUR)
+        elif kind == sTypes.ZERO:
+            blockInfo = {}
+            blockInfo['offset'] = reader.tell()
+            blockInfo['originalOffset'] = start
+            blockInfo['length'] = length
+            blockInfo['data'] = False
+            dataRanges.append(blockInfo)
+            continue
+        elif kind == sTypes.STOP:
+            break
+        assert reader.read(len(sTypes.TERM)) == sTypes.TERM
+
+    print(json.dumps(dataRanges, indent=4))
