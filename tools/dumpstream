@@ -17,6 +17,7 @@
 """
 import os
 import sys
+sys.path.append('.')
 import json
 import pprint
 import libvirtnbdbackup.sparsestream  as sparsestream
@@ -32,24 +33,19 @@ if __name__ == "__main__":
     dataRanges = []
     while True:
         kind, start, length = stream.readFrame(reader)
-        if kind == sTypes.DATA:
-            blockInfo = {}
-            blockInfo['offset'] = reader.tell()
-            blockInfo['originalOffset'] = start
-            blockInfo['length'] = length
-            blockInfo['data'] = True
-            dataRanges.append(blockInfo)
-            reader.seek(length, os.SEEK_CUR)
-        elif kind == sTypes.ZERO:
-            blockInfo = {}
-            blockInfo['offset'] = reader.tell()
-            blockInfo['originalOffset'] = start
-            blockInfo['length'] = length
-            blockInfo['data'] = False
-            dataRanges.append(blockInfo)
-            continue
-        elif kind == sTypes.STOP:
+        if kind == sTypes.STOP:
             break
-        assert reader.read(len(sTypes.TERM)) == sTypes.TERM
+
+        blockInfo = {}
+        blockInfo['offset'] = reader.tell()
+        blockInfo['originalOffset'] = start
+        blockInfo['length'] = length
+        blockInfo['data'] = (kind == sTypes.DATA)
+        dataRanges.append(blockInfo)
+        print(dataRanges)
+
+        if kind == sTypes.DATA:
+            reader.seek(length, os.SEEK_CUR)
+            assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
     print(json.dumps(dataRanges, indent=4))
