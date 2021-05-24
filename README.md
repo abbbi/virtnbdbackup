@@ -32,7 +32,7 @@ machines.
   [..]
   <qemu:capabilities>
     <qemu:add capability='incremental-backup'/>
-  </qemu:capabilities
+  </qemu:capabilities>
   [..]
   </domain>
  ```
