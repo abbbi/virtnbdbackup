@@ -69,7 +69,7 @@ load $TEST/config.bash
 }
 toOut() {
     # for some reason bats likes to hijack stdout which results
-    # in data beeing read into memory  ... helper function works
+    # in data being read into memory  ... helper function works
     # around this issue.
     ../virtnbdbackup -l copy -d $VM -i sda -o - > /tmp/stdout.sda
 }

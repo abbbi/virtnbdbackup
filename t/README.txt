@@ -1,6 +1,6 @@
-Test cases, use BATS. Each VM directory contains a special craftet virtual
+Test cases, use BATS. Each VM directory contains a special crafted virtual
 machine with a given set of disks to be backed up. The virtual machines are
-started but do not alter their filesytems while running, to ensure the same
+started but do not alter their filesystems while running, to ensure the same
 data-sizes are reported for each test.
 
 If files within virtual machine should be changed, vm is destroyed and disks
