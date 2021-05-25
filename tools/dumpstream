@@ -42,7 +42,6 @@ if __name__ == "__main__":
         blockInfo['length'] = length
         blockInfo['data'] = (kind == sTypes.DATA)
         dataRanges.append(blockInfo)
-        print(dataRanges)
 
         if kind == sTypes.DATA:
             reader.seek(length, os.SEEK_CUR)
