@@ -1,6 +1,6 @@
 # virtnbdbackup
 
-Backup utility for `libvirt`, using latest changed block tracking features.
+Backup utility for `libvirt`, using the latest changed block tracking features.
 Create thin provisioned full and incremental backups of your `kvm/qemu` virtual
 machines.
 
@@ -8,7 +8,7 @@ machines.
 
 # Prerequisites
 
-* Obviously an libvirt/qemu version that supports the incremental backup
+* Obviously a libvirt/qemu version that supports the incremental backup
   features.
 
   On Centos8, libvirt packages from the advanced virtualization stream support
@@ -24,7 +24,7 @@ machines.
   feature already.
 
 * Virtual machines **must enable incremental backup feature** by
-  including the capabilitys statement and using the extended schema 
+  including the capability statement and using the extended schema 
   in its configuration as shown below:
  
  ```
@@ -67,7 +67,7 @@ Pre Built Packages for centos 8 are also available, see: https://github.com/abbb
 
 ## Debian package
 
-To create an Debian package (Debian bullseye required) use:
+To create a Debian package (Debian bullseye required) use:
 
 ```
 sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-tqdm
@@ -76,15 +76,15 @@ python3 setup.py --command-packages=stdeb.command bdist_deb
 
 # Backup Format
 
-Currently there are two output formats implemented:
+Currently, there are two output formats implemented:
 
  * `stream`: the resulting backup image is saved in a streamlined format,
-   where the backup file consists of meta data about offsets and lengths
+   where the backup file consists of metadata about offsets and lengths
    of zeroed or allocated contents of the virtual machines disk. This is
    the default.
  * `raw`: The resulting backup image will be a full provisioned raw image,
    this should mostly be used for debugging any problems with the extent
-   handler, it wont work with incremental backups.
+   handler, it won't work with incremental backups.
 
 # Backup Operation
 
@@ -96,13 +96,13 @@ Following backup modes can be used:
   not supporting persistent bitmaps.
 
 * `full`: Full, thin provisioned backup of the virtual machine, a new checkpoint
-  named `virtnbdbackup` will be created, all existant checkpoints from prior
+  named `virtnbdbackup` will be created, all existent checkpoints from prior
   backups matching this name will be removed: a new backup chain is created.
 
 * `inc`: Perform incremental backup, based on the last full or incremental
-  backup. An checkpoint for each incremental backup is created and saved.
+  backup. A checkpoint for each incremental backup is created and saved.
 
-All required informations for restore are stored to the same directory,
+All required information for restore is stored to the same directory,
 including the latest virtual machine configuration, checkpoint information,
 disk data and logfiles.
 
@@ -110,12 +110,12 @@ The target directory must be rotated if a new backup set is created.
 
 Using the available `libvirt` api calls, a backup job operation is started,
 which in turn initializes a new nbd server backend listening on a local unix
-socket. This nbd backend provides consistent access to the virtual machines
+socket. This nbd backend provides consistent access to the virtual machines,
 disk data and dirty blocks. After the backup process finishes, the job is
 stopped and the nbd server quits operation.
 
 It is possible to backup multiple virtual machines on the same host system at
-the same time, using seperate calls to the application with a different target
+the same time, using separate calls to the application with a different target
 directory to store the data.
 
 # Supported disk formats / raw disks
@@ -181,8 +181,8 @@ default, as they are not supported by the changed block tracking layer.
 ## Estimating backup size
 
 Sometimes it can be useful to estimate the data size prior to executing the
-next `full` or `copy` backup. This can be done by using option `-p` which will
-query the virtual machine extents and provides an summary about the size
+next `full` or `copy` backup. This can be done by using the option `-p` which will
+query the virtual machine extents and provides a summary about the size
 of the changed extents:
 
 ```
@@ -200,18 +200,18 @@ algorithm by using the `--compress` option. The saved data is compressed inline
 and the saveset file is appended with compression trailer including information
 about the compressed block offsets.
 
-During restore, `virtnbdrestore` will automatically detect such compressed
+During the restore, `virtnbdrestore` will automatically detect such compressed
 backup streams and attempts to decompress saved blocks accordingly.
 
 Using compression will come with some CPU overhead, both lz4 checksums for
-block and original data is enabled.
+block and original data are enabled.
 
 # Restore examples
 
 For restoring, `virtnbdrestore` can be used. It reconstructs the streamed
 backup format back into a usable qemu qcow image.
 
-The restore process will create an qcow image with the original virtual size.
+The restore process will create a qcow image with the original virtual size.
 
 In a second step, the qcow image is then mapped to a ndb server instance where
 all exiting blocks are sent to and are applied accordingly. The resulting image
@@ -236,12 +236,12 @@ INFO:root:Dumping saveset meta information
  'virtualSize': 32212254720}
 [..]
 ```
-The output includes informations about the thick and thin provisioned disk
+The output includes information about the thick and thin provisioned disk
 space that is required for recovery, date of the backup and checkpoint chain.
 
 ## Complete restore
 
-To restore all disks within the backupset into an usable qcow image use
+To restore all disks within the backupset into a usable qcow image use
 command:
 
 ```
@@ -253,8 +253,8 @@ in the output directory `/tmp/restore`
 
 ## Process only specific disks during restore
 
-A single disk can be restored by using option `-d`, the disk name has
-to match the virtual disks target name, example:
+A single disk can be restored by using the option `-d`, the disk name has
+to match the virtual disks target name, for example:
 
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore -d sda
@@ -262,9 +262,9 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore -d sda
 
 ## Point in time recovery
 
-Option `--until` allows to perform a point in time restore up to a desired
+Option `--until` allows to perform a point in time restore up to the desired
 checkpoint. The checkpoint name has to be specified as reported by the
-dump option (`checkpointName`), example:
+dump option (`checkpointName`), for example:
 
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdbackup.2
@@ -273,18 +273,18 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdback
 # Extents
 
 In order to save only used data from the images, dirty blocks are queried from
-the NBD server. The behavior can be changed by using option `-q` to use common
+the NBD server. The behavior can be changed by using the option `-q` to use common
 qemu tools (qemu-img map ..). By default `virtnbdbackup` uses a custom
 implemented extent handler.
 
 # Transient virtual machines: checkpoint persistency
 
-In case virtual machins are started in transient environments, such as using
+In case virtual machines are started in transient environments, such as using
 cluster solutions like `pacemaker` situations can appear where the checkpoints
 for the virtual machine defined by libvirt are not in sync with the bitmap
 information in the qcow files.
 
-In case libvirt creates an checkpoint, the checkpoint information is stored
+In case libvirt creates a checkpoint, the checkpoint information is stored
 in two places:
 
  * var/lib/libvirt/qemu/checkpoint/<domain_name> 
@@ -295,28 +295,28 @@ on host A and are re-defined on host B, libvirt loses the information about
 those checkpoints. Unfortunately `libvirtd` scans the checkpoint only once
 during startup.
 
-This can result in an situation, where the bitmap is still defined in the
-qcow image, but libvirt doesnt know about the checkpoint, backup then
+This can result in a situation, where the bitmap is still defined in the
+qcow image, but libvirt doesn't know about the checkpoint, backup then
 fails with:
 
 `Unable to execute QEMU command 'transaction': Bitmap already exists`
 
 By default `virtnbdbackup` attempts to store the checkpoint information in the
-default backup directory, in situations where it detects an checkpoint is
+default backup directory, in situations where it detects a checkpoint is
 missing, it attempts to redefine them from the prior backups.
 
 In order to store the checkpoint information at some central place the option
-`--checkpointdir` can be used, this allows to have persistent checkpoints
+`--checkpointdir` can be used, this allows having persistent checkpoints
 stored across multiple nodes:
 
 As example:
 
- 1) Create backup on host A, store checkpoints in shared directory between
+ 1) Create backup on host A, store checkpoints in a shared directory between
  hosts in `/mnt/shared/vm1`:
 
 `virtnbdbackup -d vm1 -l full -o /tmp/backup_hosta --checkpointdir /mnt/shared/vm1`
 
- 2) After backup, the virtual machine is relocated to bost B and loses its
+ 2) After backup, the virtual machine is relocated to boost B and loses its
  information about checkpoints and bitmaps, thus, the next full backup
  usually fails with:
 
@@ -354,7 +354,7 @@ storage space or consider using a deduplication capable target file system.
 
 During backup `virtnbdbackup` attempts to freeze the file systems within the
 domain using the qemu guest agent filesystem freeze and thaw functions.  In
-case no qemu agent is installed or filesytem freeze fails, an warning is issued
+case no qemu agent is installed or filesystem freeze fails, a warning is issued
 during backup:
 
 ```
@@ -373,7 +373,7 @@ ERROR [..] internal error: unable to execute QEMU command dirty bitmaps in qcow2
 ```
 
 consider migrating your qcow files to version 3 format. QEMU qcow image version
-2 does not support storing advanced bitmap informations, as such only backup
+2 does not support storing advanced bitmap information, as such only backup
 mode `copy` is supported.
 
 ## Backup fails with "Timed out during operation: cannot acquire state change lock"
@@ -384,8 +384,8 @@ If backups fail with error:
 ERROR [..] Timed out during operation: cannot acquire state change lock (held by monitor=remoteDispatchDomainBackupBegin)
 ```
 
-there is still some block job operation active on the running domain, for
-example an live migration or another backup job. It may also happen that
+there is still some block jobs operation active on the running domain, for
+example a live migration or another backup job. It may also happen that
 `virtnbdbackup` crashes abnormally or is forcibly killed during backup
 operation, unable to stop its own backup job.
 
@@ -411,13 +411,13 @@ See also: https://github.com/abbbi/virtnbdbackup/issues/7
 
 ## High memory usage during backup
 
-libnbd python implementation has had various memory leaks in older verisons
+libnbd python implementation has had various memory leaks in older versions
 which cause such problems.
 
 For centos 8 based distributions these fixes have been backported to libnbd
 `1.4.0.`
 
 The fix itself was released with libnbd 1.5.2, so be sure to use at least this
-verison if using `virtnbdbackup` on any other distribution.
+version if using `virtnbdbackup` on any other distribution.
 
 See also: https://github.com/abbbi/virtnbdbackup/issues/8

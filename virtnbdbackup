@@ -35,7 +35,7 @@ import libvirtnbdbackup.libvirthelper as libvirthelper
 from libvirtnbdbackup import __version__
 
 def handleSignal(domObj, virtClient, log, signum, frame):
-    log.error("Catched signal: %s" % signum)
+    log.error("Caught signal: %s" % signum)
     log.error("Cleanup: Stopping backup job")
     virtClient.stopBackup(domObj)
     sys.exit(1)
@@ -233,7 +233,7 @@ def main():
     if args.level != "copy":
         logging.info("Looking for checkpoints")
         if args.level == "full" and checkpoints:
-            logging.info("Removing all existant checkpoints before full backup")
+            logging.info("Removing all existent checkpoints before full backup")
             virtClient.removeAllCheckpoints(domObj, checkpoints, args)
             os.remove(cptFile)
             checkpoints = []

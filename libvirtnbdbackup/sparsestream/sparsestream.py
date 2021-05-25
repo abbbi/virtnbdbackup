@@ -92,7 +92,7 @@ class SparseStream:
     def dumpMetadata(self, virtualSize, dataSize, diskName, checkpointName,
                      parentCheckpoint, incremental, compressed):
         """ First block in backup stream is Meta data information
-            about virtual size of the disk beeing backed up
+            about virtual size of the disk being backed up
 
             Dumps Metadata frame to be written at start of stream in
             json format.
@@ -103,9 +103,9 @@ class SparseStream:
                     diskName:   (str)       name of the disk backed up
                     checkpointName:   (str)  checkpoint name
                     compressionmethod:(str)  used compression method
-                    compressed:   (boolean)  flag wether if data is compressed
+                    compressed:   (boolean)  flag whether if data is compressed
                     parentCheckpoint: (str)  parent checkpoint
-                    incremental: (boolean)   wether if backup is incremental
+                    incremental: (boolean)   whether if backup is incremental
 
                 Returns:
                     json.dumps: (str)   json encoded meta frame
@@ -135,7 +135,7 @@ class SparseStream:
 
     def readCompressionTrailer(self, reader):
         """ If compressed stream is found, information about compressed
-        blocksizes is appended as last json payload.
+        block sizes is appended as last json payload.
 
         Function seeks to end of file and reads trailer information.
         """

@@ -164,7 +164,7 @@ class ExtentHandler(object):
         return self._extentsToObj()
 
     def queryBlockStatus(self, extentList=None):
-        """ Check the status for each extent, wether if it is
+        """ Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
 
         The extent types are as follows:

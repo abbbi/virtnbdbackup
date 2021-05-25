@@ -175,7 +175,7 @@ class client(object):
                 scratchId,
                 disk.diskTarget
             )
-            logging.debug("Using scratchfile: %s", scratchFile)
+            logging.debug("Using scratch file: %s", scratchFile)
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
             ElementTree.SubElement(dE, "scratch", {"file":"%s" % (scratchFile)})
 
@@ -199,7 +199,7 @@ class client(object):
         for disk in diskList:
             """ No persistent checkpoint will be created for raw disks, because
             it is not supported. Backup will only be crash consistent. If we
-            would like to create a consisent backup, we would have to create an
+            would like to create a consistent backup, we would have to create an
             snapshot for these kind of disks.
             """
             if disk.diskFormat != "raw":
@@ -214,14 +214,14 @@ class client(object):
         """
         try:
             domObj.fsFreeze()
-            logging.info("Freezed filesystems.")
+            logging.info("Freeze filesystems.")
             return True
         except Exception as e:
             logging.warning(e)
             return False
 
     def fsThaw(self, domObj):
-        """ Thaw freezed filesystems
+        """ Thaw freeze filesystems
         """
         try:
             domObj.fsThaw()
