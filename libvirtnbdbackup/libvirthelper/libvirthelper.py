@@ -77,7 +77,7 @@ class client(object):
         """
         return domObj.XMLDesc(0)
 
-    def getDomainDisks(self, vmConfig, excludedDisks, includeRaw):
+    def getDomainDisks(self, vmConfig, excludedDisks, includeDisk, includeRaw):
         """ Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
@@ -132,6 +132,12 @@ class client(object):
             if target.get("device") == "cdrom":
                 continue
 
+            if includeDisk is not None and dev != includeDisk:
+                logging.info(
+                    "Skipping disk: %s as requested: does not match disk %s",
+                    dev, includeDisk
+                )
+                continue
             diskObj = DomainDisk()
             diskObj.diskTarget = dev
             diskObj.diskFormat = diskFormat

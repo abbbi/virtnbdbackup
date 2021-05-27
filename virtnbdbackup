@@ -186,7 +186,9 @@ def main():
         sys.exit(1)
 
     vmConfig = virtClient.getDomainConfig(domObj)
-    disks = virtClient.getDomainDisks(vmConfig, args.exclude, args.raw)
+    disks = virtClient.getDomainDisks(
+        vmConfig, args.exclude, args.include, args.raw
+    )
 
     signal.signal(
         signal.SIGINT,
@@ -295,9 +297,6 @@ def main():
         sys.exit(0)
 
     for disk in disks:
-        if args.include is not None and disk.diskTarget != args.include:
-            logging.info("Skipping disk: %s", disk.diskTarget)
-            continue
         try:
             backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
                        backupSocket, stream, sTypes)
