@@ -212,7 +212,6 @@ def main():
             virtClient.stopBackup(domObj)
             sys.exit(0)
         except Exception as e:
-            logging.warning("%s", e)
             logging.exception(e)
             sys.exit(1)
 
@@ -276,7 +275,6 @@ def main():
         )
         logging.debug("Backup job started, using socket: %s", backupSocket)
     except Exception as e:
-        logging.error("%s", e)
         logging.exception(e)
         sys.exit(1)
 
