@@ -399,16 +399,15 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         if streamType == "stream":
             writer = sys.stdout.buffer
         else:
-            logging.error("Writing to stdout not supported with raw format.")
-            return
+            raise RuntimeError("Writing to stdout not supported with raw format.")
     else:
         targetFilePartial = "%s.partial" % targetFile
         logging.info("Write data to target file: %s", targetFilePartial)
         try:
             writer = open(targetFilePartial,"wb")
         except Exception as e:
-            logging.error("Unable to open target file: %s", e)
-            return
+            raise RuntimeError("Unable to open target file: %s", e)
+
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
         writer.truncate(diskSize)
