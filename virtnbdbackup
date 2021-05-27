@@ -321,6 +321,7 @@ def backupConfig(vmConfig, args, checkpointName):
             configFh.write(vmConfig)
     except Exception as e:
         logging.error("Unable to save VM config: %s", e)
+        logging.exception(e)
         sys.exit(1)
 
 def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
