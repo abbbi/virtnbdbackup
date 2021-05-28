@@ -303,7 +303,7 @@ def main():
             logging.exception(e)
             virtClient.stopBackup(domObj)
             sys.exit(1)
-    if args.printonly is False and args.output != "-":
+    if args.printonly is False:
         backupConfig(vmConfig, args, checkpointName)
     logging.info("Stopping backup task")
     ret = virtClient.stopBackup(domObj)
@@ -313,7 +313,12 @@ def main():
         logging.warning("Unable to stop backup task, return: %s", e)
 
 def backupConfig(vmConfig, args, checkpointName):
-    configFile = "%s/vmconfig.%s.xml" % (args.output, checkpointName)
+    if args.output == '-':
+        outputFolder = "."
+    else:
+        outputFolder = args.output
+
+    configFile = "%s/vmconfig.%s.xml" % (outputFolder, checkpointName)
     logging.info("Saving VM config to: %s", configFile)
     try:
         with open(configFile, "w") as configFh:
