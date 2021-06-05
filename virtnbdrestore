@@ -126,8 +126,8 @@ def main():
             vmDisks = virtclient.client().getDomainDisks(
                 vmConf.read(),
                 None,
-                args.raw,
-                None
+                None,
+                args.raw
             )
 
         for disk in vmDisks:
