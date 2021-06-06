@@ -33,6 +33,7 @@ if __name__ == "__main__":
     while True:
         kind, start, length = stream.readFrame(reader)
         if kind == sTypes.STOP:
+            dataRanges[-1]['nextBlockOffset'] = None
             break
 
         blockInfo = {}
