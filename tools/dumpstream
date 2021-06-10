@@ -18,11 +18,31 @@
 import os
 import sys
 sys.path.append('.')
+sys.path.append('..')
 import json
+import argparse
+import libvirtnbdbackup.common as common
 import libvirtnbdbackup.sparsestream  as sparsestream
 
 if __name__ == "__main__":
-    reader = open(sys.argv[1], "rb")
+    """ Open stream image and dump block offsets
+    """
+    parser = argparse.ArgumentParser(
+        description="Dump backup image block information"
+    )
+    parser.add_argument(
+        "-d", "--dump", required=True, type=str,
+        help="Backup file")
+
+    lib = common.Common()
+    args = lib.argparse(parser)
+
+    try:
+        reader = open(args.dump, "rb")
+    except Exception as e:
+        print("Unable to open backup file: %s" % e)
+        sys.exit(1)
+
     stream = sparsestream.SparseStream()
     sTypes = sparsestream.SparseStreamTypes()
     kind, start, length = stream.readFrame(reader)
