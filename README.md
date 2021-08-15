@@ -408,9 +408,16 @@ executing a backup or restore. You can also add the following line:
 
 ```
 /var/tmp/virtnbdbackup.* rw
+/var/tmp/backup.* rw,
 ```
 
-to the end of `/etc/apparmor.d/usr.lib.libvirt.virt-aa-helper`.
+to the configuration files (might be not existing):
+
+```
+/etc/apparmor.d/usr.lib.libvirt.virt-aa-helper
+/etc/apparmor.d/local/abstractions/libvirt-qemu
+/etc/apparmor.d/local/usr.sbin.libvirtd
+```
 
 See also: https://github.com/abbbi/virtnbdbackup/issues/7
 
