@@ -404,14 +404,14 @@ virtnbdbackup  -d vm2 -l copy -k  -o -
 The issue is most likely an active `apparmor` profile that prevents the qemu
 daemon from creating its socket file for the nbd server. Try to disable
 apparmor using the **aa-teardown** command for the current session you are
-executing a backup or restore. You can also add the following line:
+executing a backup or restore. You can also add the following lines:
 
 ```
 /var/tmp/virtnbdbackup.* rw
 /var/tmp/backup.* rw,
 ```
 
-to the configuration files (might be not existing):
+to the configuration files (might not exist by default):
 
 ```
 /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper
