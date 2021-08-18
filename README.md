@@ -1,3 +1,5 @@
+![ci](https://github.com/abbbi/virtnbdbackup/actions/workflows/ci-ubuntu-latest.yml/badge.svg)
+
 # virtnbdbackup
 
 Backup utility for `libvirt`, using the latest changed block tracking features.
