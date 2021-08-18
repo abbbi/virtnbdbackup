@@ -15,11 +15,11 @@ all: | $(bats) vm1.tests vm2.tests vm3.tests vm4.tests
 clean:
 	@rm -rf $(bats)
 	@rm -rf /tmp/testset*
+	@rm -f /tmp/*vm*.qcow2
 	for vm in vm1 vm2 vm3 vm4 vm5; do \
 		virsh destroy $$vm ; \
-		virsh undefine $$vm --remove-all-storage --checkpoints-metadata ; \
+		virsh undefine $$vm --checkpoints-metadata ; \
 	done
-	@rm -f /tmp/*vm*.qcow2
 
 $(bats):
 	@git clone https://github.com/bats-core/bats-core

@@ -1,0 +1,49 @@
+name: Virtnbdbackup CI on ubuntu-latest
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Disable initramfs update
+      run: sudo sed -i 's/yes/no/g' /etc/initramfs-tools/update-initramfs.conf
+    - name: Disable man-db update
+      run: sudo rm -f /var/lib/man-db/auto-update
+    - name: Set up libvirt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          apparmor-profiles \
+          bridge-utils \
+          dnsmasq-base \
+          ebtables \
+          libarchive-tools \
+          libguestfs-tools \
+          libvirt-clients \
+          libvirt-daemon \
+          libvirt-daemon-system \
+          qemu-kvm \
+          qemu-utils \
+          python3-libnbd \
+          python3-tqdm \
+          python3-lz4 \
+          python3-libvirt \
+        ;
+        # start daemon
+        echo 'security_driver = "none"' | sudo tee -a /etc/libvirt/qemu.conf
+        sudo aa-teardown
+        sudo rm -f /etc/apparmor.d/libvirt/libvirt*
+        sudo systemctl start libvirtd
+        sudo systemctl restart libvirtd
+    - name: Update libnbd and python3-libnbd
+      run: |
+        wget https://abbbi.github.io/files/libnbd0_1.6.2-1_amd64.deb
+        wget https://abbbi.github.io/files/python3-libnbd_1.6.2-1_amd64.deb
+        sudo dpkg -i libnbd0_1.6.2-1_amd64.deb
+        sudo dpkg -i python3-libnbd_1.6.2-1_amd64.deb
+    - name: Execute tests
+      run: cd t && sudo make vm1.tests
