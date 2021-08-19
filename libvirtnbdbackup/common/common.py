@@ -16,10 +16,7 @@ class Common(object):
         self.checkpointName = "virtnbdbackup"
 
     def argparse(self, parser):
-        try:
-            return parser.parse_args()
-        except:
-            sys.exit(1)
+        return parser.parse_args()
 
     def printVersion(self, version):
          logging.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
