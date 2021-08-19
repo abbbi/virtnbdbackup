@@ -49,4 +49,4 @@ jobs:
     - name: Perform installation
       run: sudo python3 setup.py install
     - name: Execute commands
-      run: virtnbdbackup && virtnbdrestore
+      run: virtnbdbackup -h && virtnbdrestore -h
