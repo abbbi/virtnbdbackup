@@ -14,6 +14,8 @@ jobs:
       run: |
         sudo pip3 install black
         black --check .
+        black --check virtnbdbackup
+        black --check virtnbdrestore
     - name: Set up libvirt
       run: |
         sudo apt-get update

@@ -28,11 +28,12 @@ from tqdm import tqdm
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
 import libvirtnbdbackup.extenthandler as extenthandler
-import libvirtnbdbackup.sparsestream  as sparsestream
+import libvirtnbdbackup.sparsestream as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 import libvirtnbdbackup.libvirthelper as libvirthelper
 
 from libvirtnbdbackup import __version__
+
 
 def handleSignal(domObj, virtClient, log, signum, frame):
     log.error("Caught signal: %s" % signum)
@@ -40,74 +41,127 @@ def handleSignal(domObj, virtClient, log, signum, frame):
     virtClient.stopBackup(domObj)
     sys.exit(1)
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Backup libvirt/qemu virtual machines"
+    parser = argparse.ArgumentParser(description="Backup libvirt/qemu virtual machines")
+    parser.add_argument(
+        "-d", "--domain", required=True, type=str, help="Domain to backup"
     )
     parser.add_argument(
-        "-d", "--domain", required=True, type=str,
-        help="Domain to backup")
-    parser.add_argument(
-        "-l", "--level", default="copy",
-        choices=["copy","full","inc"], type=str,
-        help="Backup level, defaults to copy")
-    parser.add_argument(
-        "-t", "--type", default="stream", type=str,
-        choices=["stream","raw"],
-        help="Output type: stream or raw")
-    parser.add_argument(
-        "-r", "--raw", default=False, action="store_true",
-        help="Include full provisioned disk images in backup")
-    parser.add_argument(
-        "-o", "--output", required=True, type=str,
-        help="Output target directory")
-    parser.add_argument(
-        "-C", "--checkpointdir", required=False, default=None, type=str,
-        help="Persistent libvirt checkpoint storage directory")
-    parser.add_argument(
-        "-S", "--scratchdir", default="/var/tmp", required=False, type=str,
-        help="Target directory for temporary scratch file")
-    parser.add_argument(
-        "-q", "--qemu", default=False, action="store_true",
-        help="Use Qemu tools to query extents")
-    parser.add_argument(
-        "-i", "--include", default=None, type=str,
-        help="Backup only disk with target dev name (-i vda)")
-    parser.add_argument(
-        "-x", "--exclude", default=None, type=str,
-        help="Exclude disk(s) with target dev name (-x vda,vdb)")
-    parser.add_argument(
-        "-c", "--checkpoint", default=False,
-        help="During incremental backup, use specified checkpoint as parent",
-        type=str)
-    parser.add_argument(
-        "-s", "--startonly", default=False,
-        help="Only initialize backup job via libvirt, do not backup any data",
-        action="store_true")
-    parser.add_argument(
-        "-k", "--killonly", default=False,
-        help="Kill any running block job",
-        action="store_true")
-    parser.add_argument(
-        "-p", "--printonly", default=False,
-        help="Quit after printing extent information",
-        action="store_true")
-    parser.add_argument(
-        "-f", "--socketfile", default=None,
+        "-l",
+        "--level",
+        default="copy",
+        choices=["copy", "full", "inc"],
         type=str,
-        help="Use specified file for NBD Server socket instead of random file")
+        help="Backup level, defaults to copy",
+    )
     parser.add_argument(
-        "-v", "--verbose", default=False,
+        "-t",
+        "--type",
+        default="stream",
+        type=str,
+        choices=["stream", "raw"],
+        help="Output type: stream or raw",
+    )
+    parser.add_argument(
+        "-r",
+        "--raw",
+        default=False,
+        action="store_true",
+        help="Include full provisioned disk images in backup",
+    )
+    parser.add_argument(
+        "-o", "--output", required=True, type=str, help="Output target directory"
+    )
+    parser.add_argument(
+        "-C",
+        "--checkpointdir",
+        required=False,
+        default=None,
+        type=str,
+        help="Persistent libvirt checkpoint storage directory",
+    )
+    parser.add_argument(
+        "-S",
+        "--scratchdir",
+        default="/var/tmp",
+        required=False,
+        type=str,
+        help="Target directory for temporary scratch file",
+    )
+    parser.add_argument(
+        "-q",
+        "--qemu",
+        default=False,
+        action="store_true",
+        help="Use Qemu tools to query extents",
+    )
+    parser.add_argument(
+        "-i",
+        "--include",
+        default=None,
+        type=str,
+        help="Backup only disk with target dev name (-i vda)",
+    )
+    parser.add_argument(
+        "-x",
+        "--exclude",
+        default=None,
+        type=str,
+        help="Exclude disk(s) with target dev name (-x vda,vdb)",
+    )
+    parser.add_argument(
+        "-c",
+        "--checkpoint",
+        default=False,
+        help="During incremental backup, use specified checkpoint as parent",
+        type=str,
+    )
+    parser.add_argument(
+        "-s",
+        "--startonly",
+        default=False,
+        help="Only initialize backup job via libvirt, do not backup any data",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-k",
+        "--killonly",
+        default=False,
+        help="Kill any running block job",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-p",
+        "--printonly",
+        default=False,
+        help="Quit after printing extent information",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-f",
+        "--socketfile",
+        default=None,
+        type=str,
+        help="Use specified file for NBD Server socket instead of random file",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        default=False,
         help="Enable debug output",
-        action="store_true")
+        action="store_true",
+    )
     parser.add_argument(
-        "-n", "--noprogress", default=False,
+        "-n",
+        "--noprogress",
+        default=False,
         help="Disable progress bar",
-        action="store_true")
+        action="store_true",
+    )
     parser.add_argument(
-        "-z", "--compress", default=False,
-        help="Compress with lz4",
-        action="store_true")
+        "-z", "--compress", default=False, help="Compress with lz4", action="store_true"
+    )
 
     lib = common.Common()
     args = lib.argparse(parser)
@@ -121,19 +175,16 @@ def main():
         logPath = "%s/backup.%s.%s.log" % (
             args.output,
             args.level,
-            datetime.now().strftime("%m%d%Y%H%M%S")
+            datetime.now().strftime("%m%d%Y%H%M%S"),
         )
 
     lib.createOutputDir(args.output)
 
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
-        handlers=[
-            logging.FileHandler(logPath),
-            logging.StreamHandler()
-        ],
+        handlers=[logging.FileHandler(logPath), logging.StreamHandler()],
         format=lib.logFormat,
-        datefmt=lib.logDateFormat
+        datefmt=lib.logDateFormat,
     )
 
     lib.printVersion(__version__)
@@ -186,14 +237,9 @@ def main():
         sys.exit(1)
 
     vmConfig = virtClient.getDomainConfig(domObj)
-    disks = virtClient.getDomainDisks(
-        vmConfig, args.exclude, args.include, args.raw
-    )
+    disks = virtClient.getDomainDisks(vmConfig, args.exclude, args.include, args.raw)
 
-    signal.signal(
-        signal.SIGINT,
-        partial(handleSignal, domObj, virtClient, logging)
-    )
+    signal.signal(signal.SIGINT, partial(handleSignal, domObj, virtClient, logging))
 
     if not disks:
         logging.error(
@@ -202,8 +248,7 @@ def main():
         sys.exit(1)
 
     logging.info(
-        "Domain has %s disks attached which support changed block tracking.",
-        len(disks)
+        "Domain has %s disks attached which support changed block tracking.", len(disks)
     )
 
     if args.killonly is True:
@@ -215,7 +260,7 @@ def main():
             logging.exception(e)
             sys.exit(1)
 
-    checkpointName = "{:s}.0" . format(lib.checkpointName)
+    checkpointName = "{:s}.0".format(lib.checkpointName)
     parentCheckpoint = False
     checkpoints = []
     if args.output == "-":
@@ -224,11 +269,10 @@ def main():
         cptFilePath = args.output
     cptFile = "%s/%s.cpt" % (cptFilePath, args.domain)
     if os.path.exists(cptFile):
-        with open(cptFile,"r") as cptFh:
+        with open(cptFile, "r") as cptFh:
             checkpoints = json.loads(cptFh.read())
 
-    logging.info("Attempting to redefine checkpoints from: %s",
-        args.checkpointdir)
+    logging.info("Attempting to redefine checkpoints from: %s", args.checkpointdir)
     if virtClient.redefineCheckpoints(domObj, args) is False:
         logging.warning("Unable to redefine checkpoints")
 
@@ -254,7 +298,7 @@ def main():
             logging.info("Found checkpoints, next checkpoint id: %s", nextCpt)
             logging.info("Parent checkpoint name %s", parentCheckpoint)
 
-        if args.level == "inc" and len(checkpoints)<1:
+        if args.level == "inc" and len(checkpoints) < 1:
             logging.error("No prior checkpoints found, execute full backup first")
             sys.exit(1)
 
@@ -269,9 +313,13 @@ def main():
     try:
         logging.info("Starting backup job.")
         virtClient.startBackup(
-            domObj, disks, args.level,
-            checkpointName, parentCheckpoint,
-            args.scratchdir, backupSocket
+            domObj,
+            disks,
+            args.level,
+            checkpointName,
+            parentCheckpoint,
+            args.scratchdir,
+            backupSocket,
         )
         logging.debug("Backup job started, using socket: %s", backupSocket)
     except Exception as e:
@@ -283,7 +331,7 @@ def main():
         if not checkpoints:
             checkpoints = []
         checkpoints.append(checkpointName)
-        with open(cptFile,"w") as cFw:
+        with open(cptFile, "w") as cFw:
             cFw.write(json.dumps(checkpoints))
         if args.printonly is False:
             if not virtClient.backupCheckpoint(domObj, args, checkpointName):
@@ -296,8 +344,16 @@ def main():
 
     for disk in disks:
         try:
-            backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
-                       backupSocket, stream, sTypes)
+            backupDisk(
+                disk,
+                args,
+                lib,
+                checkpointName,
+                parentCheckpoint,
+                backupSocket,
+                stream,
+                sTypes,
+            )
         except Exception as e:
             logging.error("Unable to backup Disk: %s", e)
             logging.exception(e)
@@ -312,8 +368,9 @@ def main():
     else:
         logging.warning("Unable to stop backup task, return: %s", e)
 
+
 def backupConfig(vmConfig, args, checkpointName):
-    if args.output == '-':
+    if args.output == "-":
         outputFolder = "."
     else:
         outputFolder = args.output
@@ -328,8 +385,10 @@ def backupConfig(vmConfig, args, checkpointName):
         logging.exception(e)
         sys.exit(1)
 
-def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
-               backupSocket, stream, sTypes):
+
+def backupDisk(
+    disk, args, lib, checkpointName, parentCheckpoint, backupSocket, stream, sTypes
+):
 
     if disk.diskFormat != "raw":
         streamType = args.type
@@ -341,9 +400,7 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         metaContext = "qemu:dirty-bitmap:backup-%s" % disk.diskTarget
         logging.info("INC backup: set context to %s", metaContext)
 
-    nbdClient = nbdhelper.nbdClient(
-        disk.diskTarget, metaContext, backupSocket
-    )
+    nbdClient = nbdhelper.nbdClient(disk.diskTarget, metaContext, backupSocket)
     logging.info("NDB Endpoint socket: %s", backupSocket)
     connection = nbdClient.connect()
     if not connection:
@@ -367,9 +424,7 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         logging.error("No extents found")
         return
 
-    thinBackupSize = sum(
-        [extent.length for extent in extents if extent.data is True]
-    )
+    thinBackupSize = sum([extent.length for extent in extents if extent.data is True])
     logging.info("Got %s extents", len(extents))
     if args.verbose is True:
         logging.debug("%s", lib.dumpExtentJson(extents))
@@ -382,21 +437,17 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
     if args.level == "inc" and thinBackupSize == 0:
         logging.info("No dirty blocks found")
 
-    if args.level in ("full","copy"):
+    if args.level in ("full", "copy"):
         if disk.diskFormat == "raw":
             level = "copy"
         else:
             level = args.level
-        targetFile = "%s/%s.%s.data" % (
-            args.output,
-            disk.diskTarget,
-            level
-        )
+        targetFile = "%s/%s.%s.data" % (args.output, disk.diskTarget, level)
     elif args.level == "inc":
         targetFile = "%s/%s.inc.%s.data" % (
             args.output,
             disk.diskTarget,
-            checkpointName
+            checkpointName,
         )
 
     if args.output == "-":
@@ -409,7 +460,7 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         targetFilePartial = "%s.partial" % targetFile
         logging.info("Write data to target file: %s", targetFilePartial)
         try:
-            writer = open(targetFilePartial,"wb")
+            writer = open(targetFilePartial, "wb")
         except Exception as e:
             raise RuntimeError("Unable to open target file: %s", e)
 
@@ -425,39 +476,60 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         if args.level == "inc":
             inc = True
         metadata = stream.dumpMetadata(
-            diskSize, thinBackupSize, disk.diskTarget, checkpointName,
-            parentCheckpoint, inc, args.compress
+            diskSize,
+            thinBackupSize,
+            disk.diskTarget,
+            checkpointName,
+            parentCheckpoint,
+            inc,
+            args.compress,
         )
         stream.writeFrame(writer, sTypes.META, 0, len(metadata))
         writer.write(metadata)
         writer.write(sTypes.TERM)
 
     progressBar = tqdm(
-        total=thinBackupSize, desc="saving disk %s" % disk.diskTarget,
-        unit="B", unit_scale=True, disable=args.noprogress
+        total=thinBackupSize,
+        desc="saving disk %s" % disk.diskTarget,
+        unit="B",
+        unit_scale=True,
+        disable=args.noprogress,
     )
     compressedSizes = []
     for save in extents:
         if save.data is True:
             if streamType == "stream":
-                stream.writeFrame(writer, sTypes.DATA, save.offset,
-                                    save.length)
-                logging.debug("Read data from: start %s, length: %s",
-                              save.offset, save.length)
+                stream.writeFrame(writer, sTypes.DATA, save.offset, save.length)
+                logging.debug(
+                    "Read data from: start %s, length: %s", save.offset, save.length
+                )
 
             cSizes = None
 
             if save.length >= nbdClient.maxRequestSize:
-                logging.debug("Chunked data read from: start %s, length: %s",
-                              save.offset, save.length)
+                logging.debug(
+                    "Chunked data read from: start %s, length: %s",
+                    save.offset,
+                    save.length,
+                )
                 size, cSizes = lib.writeChunk(
-                    writer, save.offset, save.length,
-                    nbdClient.maxRequestSize, connection, streamType,
-                    args.compress
+                    writer,
+                    save.offset,
+                    save.length,
+                    nbdClient.maxRequestSize,
+                    connection,
+                    streamType,
+                    args.compress,
                 )
             else:
-                size = lib.writeBlock(writer, save.offset, save.length,
-                    connection, streamType, args.compress)
+                size = lib.writeBlock(
+                    writer,
+                    save.offset,
+                    save.length,
+                    connection,
+                    streamType,
+                    args.compress,
+                )
                 if streamType == "raw":
                     size = writer.seek(save.offset)
 
@@ -491,13 +563,12 @@ def backupDisk(disk, args, lib, checkpointName, parentCheckpoint,
         try:
             os.rename(targetFilePartial, targetFile)
             logging.info(
-                "Backup of disk %s finished, file: %s",
-                disk.diskTarget,
-                targetFile
+                "Backup of disk %s finished, file: %s", disk.diskTarget, targetFile
             )
         except OSError as e:
             logging.error("Unable to rename file: %s", e)
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

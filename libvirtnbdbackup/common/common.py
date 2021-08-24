@@ -14,7 +14,7 @@ class Common(object):
         self.logFormat = (
             "%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s"
         )
-        self.logDateFormat = "%Y-%m-%d %H:%M:%S"
+        self.logDateFormat = "[%Y-%m-%d %H:%M:%S]"
         self.checkpointName = "virtnbdbackup"
 
     def argparse(self, parser):
