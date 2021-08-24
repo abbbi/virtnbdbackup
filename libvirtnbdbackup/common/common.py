@@ -5,13 +5,15 @@ import json
 import logging
 import lz4.frame
 
+
 class Common(object):
-    """ Common functions
-    """
+    """Common functions"""
+
     def __init__(self):
-        """ Default values
-        """
-        self.logFormat = "%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s"
+        """Default values"""
+        self.logFormat = (
+            "%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s"
+        )
         self.logDateFormat = "%Y-%m-%d %H:%M:%S"
         self.checkpointName = "virtnbdbackup"
 
@@ -19,7 +21,7 @@ class Common(object):
         return parser.parse_args()
 
     def printVersion(self, version):
-         logging.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
+        logging.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
     def createOutputDir(self, targetDir):
         if targetDir == "-":
@@ -56,16 +58,20 @@ class Common(object):
         return False
 
     def targetIsEmpty(self, args):
-        if os.path.exists(args.output) and args.level in ("full","copy"):
-            dirList = [ f for f in glob.glob("%s/*" % args.output) if not os.path.basename(f).endswith(".log") ]
+        if os.path.exists(args.output) and args.level in ("full", "copy"):
+            dirList = [
+                f
+                for f in glob.glob("%s/*" % args.output)
+                if not os.path.basename(f).endswith(".log")
+            ]
             if len(dirList) > 0:
                 return False
 
         return True
 
     def getDataFiles(self, targetDir):
-        """ return data files within backupset
-            directory
+        """return data files within backupset
+        directory
         """
         sStr = "%s/*.data" % targetDir
         files = glob.glob(sStr)
@@ -74,17 +80,17 @@ class Common(object):
         return files
 
     def getDataFilesByDisk(self, targetDir, targetDisk):
-        """ return data files subject to one disk
-            from backupset directory
+        """return data files subject to one disk
+        from backupset directory
         """
         sStr = "%s/%s*.data" % (targetDir, targetDisk)
-        files =  glob.glob(sStr)
+        files = glob.glob(sStr)
         files.sort(key=os.path.getmtime)
         return files
 
     def getLastConfigFile(self, targetDir):
-        """ get the last backed up configuration file
-            from the backupset
+        """get the last backed up configuration file
+        from the backupset
         """
         sStr = "%s/vmconfig*.xml" % targetDir
         try:
@@ -104,8 +110,7 @@ class Common(object):
         return json.dumps(extList, indent=4, sort_keys=True)
 
     def dumpMetaData(self, dataFile, stream):
-        """ read metadata header
-        """
+        """read metadata header"""
         with open(dataFile, "rb") as reader:
             try:
                 kind, start, length = stream.readFrame(reader)
@@ -115,7 +120,7 @@ class Common(object):
             return stream.loadMetadata(reader.read(length))
 
     def blockStep(self, offset, length, maxRequestSize):
-        """ Process block and ensure to not exceed the maximum request size
+        """Process block and ensure to not exceed the maximum request size
         from NBD server.
 
         If length parameter is dict, compression was enabled during
@@ -132,46 +137,40 @@ class Common(object):
                 yield step, blockOffset
         else:
             blockOffset = offset
-            while blockOffset < offset+length:
-                blocklen = min(
-                    offset+length - blockOffset,
-                    maxRequestSize
-                )
+            while blockOffset < offset + length:
+                blocklen = min(offset + length - blockOffset, maxRequestSize)
                 yield blocklen, blockOffset
-                blockOffset+=blocklen
+                blockOffset += blocklen
 
     def isCompressed(self, meta):
-        """ Return true if stream is compressed
-        """
+        """Return true if stream is compressed"""
         try:
-            version =  meta['stream-version'] == 2
+            version = meta["stream-version"] == 2
         except:
-            version =  meta['streamVersion'] == 2
+            version = meta["streamVersion"] == 2
 
         if version:
-            if meta['compressed'] is True:
+            if meta["compressed"] is True:
                 return True
 
         return False
 
     def lz4DecompressFrame(self, data):
-        """ Decompress lz4 frame, print frame information
-        """
-        frameInfo  = lz4.frame.get_frame_info(data)
+        """Decompress lz4 frame, print frame information"""
+        frameInfo = lz4.frame.get_frame_info(data)
         logging.debug("Compressed Frame: %s", frameInfo)
         return lz4.frame.decompress(data)
 
     def lz4CompressFrame(self, data):
-        """ Compress block with to lz4 frame, checksums
+        """Compress block with to lz4 frame, checksums
         enabled for safety
         """
-        return lz4.frame.compress(
-            data, content_checksum=True, block_checksum=True
-        )
+        return lz4.frame.compress(data, content_checksum=True, block_checksum=True)
 
-    def writeChunk(self, writer, offset, length, maxRequestSize,
-                   nbdCon, btype, compress):
-        """ During extent processing, consecutive blocks with
+    def writeChunk(
+        self, writer, offset, length, maxRequestSize, nbdCon, btype, compress
+    ):
+        """During extent processing, consecutive blocks with
         the same type(data or zeroed) are unified into one big chunk.
         This helps to reduce requests to the NBD Server.
 
@@ -202,7 +201,7 @@ class Common(object):
         return wSize, cSizes
 
     def writeBlock(self, writer, offset, length, nbdCon, btype, compress):
-        """ Write single block that does not exceed nbd maxRequestSize
+        """Write single block that does not exceed nbd maxRequestSize
         setting. In case compression is enabled, single blocks are
         compressed using lz4.block.
         """
@@ -216,13 +215,12 @@ class Common(object):
         return writer.write(data)
 
     def zeroChunk(self, offset, length, maxRequestSize, nbdCon):
-        """ Write zeroes using libnbd zero function
-        """
+        """Write zeroes using libnbd zero function"""
         for zeroLen, zeroOffset in self.blockStep(offset, length, maxRequestSize):
             nbdCon.zero(zeroLen, zeroOffset)
 
     def readChunk(self, reader, offset, length, maxRequestSize, nbdCon, compression):
-        """ Read data from reader and write to nbd connection
+        """Read data from reader and write to nbd connection
 
         If Compression is enabled function receives length information
         as dict, which contains the stream offsets for the compressed
@@ -241,11 +239,9 @@ class Common(object):
         wSize = 0
         for blocklen, blockOffset in self.blockStep(offset, length, maxRequestSize):
             if compression is True:
-                data = self.lz4DecompressFrame(
-                    reader.read(blocklen)
-                )
+                data = self.lz4DecompressFrame(reader.read(blocklen))
                 nbdCon.pwrite(data, offset)
-                offset+=len(data)
+                offset += len(data)
                 wSize += len(data)
             else:
                 data = reader.read(blocklen)

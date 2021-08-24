@@ -17,22 +17,18 @@
 """
 import os
 import sys
-sys.path.append('.')
-sys.path.append('..')
+
+sys.path.append(".")
+sys.path.append("..")
 import json
 import argparse
 import libvirtnbdbackup.common as common
-import libvirtnbdbackup.sparsestream  as sparsestream
+import libvirtnbdbackup.sparsestream as sparsestream
 
 if __name__ == "__main__":
-    """ Open stream image and dump block offsets
-    """
-    parser = argparse.ArgumentParser(
-        description="Dump backup image block information"
-    )
-    parser.add_argument(
-        "-d", "--dump", required=True, type=str,
-        help="Backup file")
+    """Open stream image and dump block offsets"""
+    parser = argparse.ArgumentParser(description="Dump backup image block information")
+    parser.add_argument("-d", "--dump", required=True, type=str, help="Backup file")
 
     lib = common.Common()
     args = lib.argparse(parser)
@@ -53,22 +49,22 @@ if __name__ == "__main__":
     while True:
         kind, start, length = stream.readFrame(reader)
         if kind == sTypes.STOP:
-            dataRanges[-1]['nextBlockOffset'] = None
+            dataRanges[-1]["nextBlockOffset"] = None
             break
 
         blockInfo = {}
-        blockInfo['offset'] = reader.tell()
-        blockInfo['originalOffset'] = start
-        blockInfo['nextOriginalOffset'] = start+length
-        blockInfo['length'] = length
-        blockInfo['data'] = (kind == sTypes.DATA)
+        blockInfo["offset"] = reader.tell()
+        blockInfo["originalOffset"] = start
+        blockInfo["nextOriginalOffset"] = start + length
+        blockInfo["length"] = length
+        blockInfo["data"] = kind == sTypes.DATA
 
         if kind == sTypes.DATA:
             reader.seek(length, os.SEEK_CUR)
             assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
-        nextBlockOffset = reader.tell()+sTypes.FRAME_LEN
-        blockInfo['nextBlockOffset'] = nextBlockOffset
+        nextBlockOffset = reader.tell() + sTypes.FRAME_LEN
+        blockInfo["nextBlockOffset"] = nextBlockOffset
         dataRanges.append(blockInfo)
 
     print(json.dumps(dataRanges, indent=4))

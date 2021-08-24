@@ -17,6 +17,7 @@
 from nbd import CONTEXT_BASE_ALLOCATION
 import logging
 
+
 class Extent(object):
     def __init__(self):
         self.data = False
@@ -24,21 +25,24 @@ class Extent(object):
         self.length = 0
         self.offset = 0
 
+
 class _ExtentObj(object):
     def __init__(self):
         self.length = None
         self.type = None
 
-class ExtentHandler(object):
-    """ Query extent information about allocated and
-        zeroed regions from the NBD server started by
-        libvirt/qemu
 
-        This implementation should return the same
-        extent information as nbdinfo or qemu-img map
+class ExtentHandler(object):
+    """Query extent information about allocated and
+    zeroed regions from the NBD server started by
+    libvirt/qemu
+
+    This implementation should return the same
+    extent information as nbdinfo or qemu-img map
     """
+
     def __init__(self, nbdFh, metaContext, backupSocket):
-        self. useQemu = False
+        self.useQemu = False
         if nbdFh.__class__.__name__ == "qemuHelper":
             self.useQemu = True
 
@@ -55,7 +59,7 @@ class ExtentHandler(object):
         self._align = 512
 
     def _getExtentCallback(self, metacontext, offset, entries, status):
-        """ Callback function called by libnbd for each extent
+        """Callback function called by libnbd for each extent
         that is returned
         """
         logging.debug("Metacontext is: %s", metacontext)
@@ -75,7 +79,7 @@ class ExtentHandler(object):
         return self._maxRequestBlock - align + 1
 
     def queryExtents(self):
-        """ Query extents either via qemu or custom extent
+        """Query extents either via qemu or custom extent
         handler
         """
         if self.useQemu:
@@ -84,7 +88,7 @@ class ExtentHandler(object):
         return self.queryExtentsNbd()
 
     def queryExtentsQemu(self):
-        """ Use qemu-img map to query extents from nbd
+        """Use qemu-img map to query extents from nbd
         server
         """
         extents = []
@@ -100,7 +104,7 @@ class ExtentHandler(object):
         return extents
 
     def _extentsToObj(self):
-        """ Go through extents and create a list of extent
+        """Go through extents and create a list of extent
         objects
         """
         extentSizes = self._extentEntries[0::2]
@@ -118,7 +122,7 @@ class ExtentHandler(object):
         return extentList
 
     def _unifyExtents(self, extentObjects):
-        """ Unify extents. If a sequence of extents has the
+        """Unify extents. If a sequence of extents has the
         same type (data or zero) it is better to unify them
         into a bigger block, so during backup, less requests
         to the nbd server have to be sent
@@ -137,8 +141,7 @@ class ExtentHandler(object):
         yield cur
 
     def queryExtentsNbd(self):
-        """ Request used blocks/extents from the nbd service
-        """
+        """Request used blocks/extents from the nbd service"""
         maxRequestLen = self._setRequestAligment()
         offset = 0
         size = self._nbdFh.get_size()
@@ -164,7 +167,7 @@ class ExtentHandler(object):
         return self._extentsToObj()
 
     def queryBlockStatus(self, extentList=None):
-        """ Check the status for each extent, whether if it is
+        """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
 
         The extent types are as follows:

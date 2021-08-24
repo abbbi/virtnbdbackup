@@ -10,6 +10,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: abbbi/github-actions-tune@v1
+    - name: Python code format test
+      run: |
+        sudo pip3 install black
+        black --check .
     - name: Set up libvirt
       run: |
         sudo apt-get update
