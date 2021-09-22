@@ -317,7 +317,8 @@ class client(object):
         # get list of all .xml files in checkpointdir
         logging.info("Loading checkpoint list from: {:s}".format(args.checkpointdir))
         try:
-            l = glob.glob("{:s}/*.xml".format(args.checkpointdir))
+            checkpointList = glob.glob("{:s}/*.xml".format(args.checkpointdir))
+            checkpointList.sort(key=os.path.getmtime)
         except Exception as e:
             logging.error(
                 "Unable to get checkpoint list from {:s}: {}".format(
@@ -326,7 +327,7 @@ class client(object):
             )
             return False
 
-        for checkpointFile in sorted(l):
+        for checkpointFile in checkpointList:
             logging.debug("Loading checkpoint config from: {:s}".format(checkpointFile))
             try:
                 with open(checkpointFile, "r") as f:
