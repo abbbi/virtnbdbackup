@@ -8,6 +8,36 @@ machines.
 
 ![Alt text](screenshot.jpg?raw=true "Title")
 
+
+* [Prerequisites/Requirements](#prerequisites)
+* [Installation](#installation)
+   * [Python package](#python-package)
+   * [RPM package](#rpm-package)
+      * [Centos 8](#centos-8)
+   * [Debian package](#debian-package)
+* [Backup Format](#backup-format)
+* [Backup Operation](#backup-operation)
+* [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
+* [Backup Examples](#backup-examples)
+   * [Excluding disks](#excluding-disks)
+   * [Estimating backup size](#estimating-backup-size)
+   * [Compression](#compression)
+* [Restore examples](#restore-examples)
+   * [Dumping backup information](#dumping-backup-information)
+   * [Complete restore](#complete-restore)
+   * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
+   * [Point in time recovery](#point-in-time-recovery)
+* [Extents](#extents)
+* [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
+* [FAQ](#faq)
+   * [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
+   * [Is the backup application consistent?](#is-the-backup-application-consistent)
+   * [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
+   * [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
+   * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
+   * [High memory usage during backup](#high-memory-usage-during-backup)
+
+
 # Prerequisites
 
 * Obviously a libvirt/qemu version that supports the incremental backup
