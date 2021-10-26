@@ -268,7 +268,8 @@ Here is an example:
  # [..]
 ```
 
-Any following incremental backup, must be called from the same directory:
+Any subsequent incremental backup operations, must be called from within this
+directory:
 
 ```
  # cd backup-weekly
