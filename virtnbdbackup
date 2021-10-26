@@ -200,6 +200,10 @@ def main():
 
     lib.printVersion(__version__)
 
+    if toStdout is True and args.type == "raw":
+        logging.error("Output type raw not supported to stdout")
+        sys.exit(1)
+
     if not toStdout and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
             logging.error("Target directory must empty for full or copy backup.")
@@ -494,8 +498,6 @@ def backupDisk(
             writer = zipStream.open(targetFile)
             if writer is False:
                 raise RuntimeError("Unable to open zip file in stream")
-        else:
-            raise RuntimeError("Writing to stdout not supported with raw format.")
     else:
         targetFilePartial = "%s.partial" % targetFile
         logging.info("Write data to target file: %s", targetFilePartial)
