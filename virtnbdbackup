@@ -21,6 +21,7 @@ import json
 import signal
 import logging
 import argparse
+import zipfile
 from datetime import datetime
 from functools import partial
 from tqdm import tqdm
@@ -31,6 +32,7 @@ import libvirtnbdbackup.extenthandler as extenthandler
 import libvirtnbdbackup.sparsestream as sparsestream
 import libvirtnbdbackup.qemuhelper as qemuhelper
 import libvirtnbdbackup.libvirthelper as libvirthelper
+import libvirtnbdbackup.outputhelper as outputhelper
 
 from libvirtnbdbackup import __version__
 
@@ -163,13 +165,21 @@ def main():
         "-z", "--compress", default=False, help="Compress with lz4", action="store_true"
     )
 
+    outHelper = outputhelper.outputHelper()
     lib = common.Common()
     args = lib.argparse(parser)
 
     stream = sparsestream.SparseStream()
     sTypes = sparsestream.SparseStreamTypes()
+    toStdout = lib.toStdout(args.output)
 
-    if args.output == "-":
+    zipStream = None
+    if toStdout is False:
+        outHelper.Directory(args.output)
+    else:
+        zipStream = outHelper.Zip()
+
+    if toStdout is True:
         logPath = "./backup.log"
     else:
         logPath = "%s/backup.%s.%s.log" % (
@@ -178,16 +188,22 @@ def main():
             datetime.now().strftime("%m%d%Y%H%M%S"),
         )
 
-    lib.createOutputDir(args.output)
-
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
-        handlers=[logging.FileHandler(logPath), logging.StreamHandler()],
         format=lib.logFormat,
         datefmt=lib.logDateFormat,
+        handlers=[
+            logging.FileHandler(logPath),
+            logging.StreamHandler(stream=sys.stderr),
+        ],
     )
 
     lib.printVersion(__version__)
+
+    if not toStdout and not args.startonly and not args.killonly:
+        if not lib.targetIsEmpty(args):
+            logging.error("Target directory must empty for full or copy backup.")
+            sys.exit(1)
 
     if args.raw and args.level == "inc":
         logging.error("Raw disks cant be included during incremental backup.")
@@ -207,11 +223,6 @@ def main():
         logging.error("Consider re-executing full backup.")
         sys.exit(1)
 
-    if not args.output == "-" and not args.startonly and not args.killonly:
-        if not lib.targetIsEmpty(args):
-            logging.error("Target directory must empty for full or copy backup.")
-            sys.exit(1)
-
     if not args.checkpointdir:
         if args.output == "-":
             checkpointDir = "."
@@ -221,9 +232,9 @@ def main():
             checkpointDir,
         )
         logging.info("Store checkpoints in: %s", args.checkpointdir)
-        lib.createOutputDir(args.checkpointdir)
+        outHelper.Directory(args.checkpointdir)
     else:
-        lib.createOutputDir(args.checkpointdir)
+        outHelper.Directory(args.checkpointdir)
 
     virtClient = libvirthelper.client()
     try:
@@ -306,7 +317,7 @@ def main():
 
     logging.info("Temporary scratch file target directory: %s", args.scratchdir)
 
-    lib.createOutputDir(args.scratchdir)
+    outHelper.Directory(args.scratchdir)
 
     backupSocket = lib.getSocketFile(args.socketfile)
 
@@ -353,20 +364,37 @@ def main():
                 backupSocket,
                 stream,
                 sTypes,
+                zipStream,
+                toStdout,
             )
         except Exception as e:
             logging.error("Unable to backup Disk: %s", e)
             logging.exception(e)
             virtClient.stopBackup(domObj)
             sys.exit(1)
+    configFile = None
     if args.printonly is False:
-        backupConfig(vmConfig, args, checkpointName)
+        configFile = backupConfig(vmConfig, args, checkpointName)
     logging.info("Stopping backup task")
     ret = virtClient.stopBackup(domObj)
     if ret == 0:
         logging.info("Finished")
     else:
         logging.warning("Unable to stop backup task, return: %s", e)
+
+    if toStdout is True:
+        if configFile is not None:
+            logging.info("Adding vm config to zipfile")
+            zipStream.zipStream.write(configFile, configFile)
+        if args.level in ("full", "inc"):
+            logging.info("Adding checkpoint info to zipfile")
+            zipStream.zipStream.write(cptFile, cptFile)
+            for dirname, subdirs, files in os.walk(args.checkpointdir):
+                zipStream.zipStream.write(dirname)
+                for filename in files:
+                    zipStream.zipStream.write(os.path.join(dirname, filename))
+        logging.info("Adding backup log to zipfile")
+        zipStream.zipStream.write(logPath, logPath)
 
 
 def backupConfig(vmConfig, args, checkpointName):
@@ -380,6 +408,7 @@ def backupConfig(vmConfig, args, checkpointName):
     try:
         with open(configFile, "w") as configFh:
             configFh.write(vmConfig)
+        return configFile
     except Exception as e:
         logging.error("Unable to save VM config: %s", e)
         logging.exception(e)
@@ -387,7 +416,16 @@ def backupConfig(vmConfig, args, checkpointName):
 
 
 def backupDisk(
-    disk, args, lib, checkpointName, parentCheckpoint, backupSocket, stream, sTypes
+    disk,
+    args,
+    lib,
+    checkpointName,
+    parentCheckpoint,
+    backupSocket,
+    stream,
+    sTypes,
+    zipStream,
+    toStdout,
 ):
 
     if disk.diskFormat != "raw":
@@ -450,10 +488,12 @@ def backupDisk(
             checkpointName,
         )
 
-    if args.output == "-":
-        targetFilePartial = args.output
+    if toStdout is True:
+        targetFile = os.path.basename(targetFile)
         if streamType == "stream":
-            writer = sys.stdout.buffer
+            writer = zipStream.open(targetFile)
+            if writer is False:
+                raise RuntimeError("Unable to open zip file in stream")
         else:
             raise RuntimeError("Writing to stdout not supported with raw format.")
     else:
@@ -558,8 +598,10 @@ def backupDisk(
             stream.writeCompressionTrailer(writer, compressedSizes)
 
     progressBar.close()
-    if targetFilePartial != "-":
+    if toStdout is True:
+        logging.debug("Closing write handle")
         writer.close()
+    if toStdout is False:
         try:
             os.rename(targetFilePartial, targetFile)
             logging.info(

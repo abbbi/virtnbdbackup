@@ -3,3 +3,4 @@ libvirt>=6.0.0
 logging
 tqdm
 lz4>=2.1.2
+zipfile

@@ -23,6 +23,7 @@ machines.
    * [Excluding disks](#excluding-disks)
    * [Estimating backup size](#estimating-backup-size)
    * [Compression](#compression)
+   * [Pipe data to other hosts](#pipe-data-to-other-hosts)
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
    * [Complete restore](#complete-restore)
@@ -238,6 +239,50 @@ backup streams and attempts to decompress saved blocks accordingly.
 
 Using compression will come with some CPU overhead, both lz4 checksums for
 block and original data are enabled.
+
+## Pipe data to other hosts
+
+If the output target points to standard out, `virtnbdbackup` puts the resulting
+backup data into an uncompessed zip archive.
+
+A such, it is possible to transfer the backup data to different hosts, or pipe
+it to other programs.
+
+However, keep in mind that in case you want to perform incremental backups, you
+must keep the checkpoint files on the host you are executing the backup utility
+from, until you create another full backup.
+
+If output is set to standard out, `virtnbdbackup` will create the required
+checkpoint files in the directory it is executed from.
+
+Here is an example:
+
+```
+ # mkdir backup-weekly; cd backup-weekly
+ # virtnbdbackup -d vm1 -l full -o - | ssh root@remotehost 'cat > backup-full.zip'
+ # [..]
+ # INFO outputhelper - __init__: Writing zip file stream to stdout
+ # [..]
+ # INFO virtnbdbackup - main: Finished
+ # INFO virtnbdbackup - main: Adding vm config to zipfile
+ # [..]
+```
+
+Any following incremental backup, must be called from the same directory:
+
+```
+ # cd backup-weekly
+ # virtnbdbackup -d vm1 -l inc -o - | ssh root@remotehost 'cat > backup-inc1.zip'
+ [..]
+```
+
+During restore, you must unzip the data from both zip files into a single
+directory.
+
+```
+ # unzip -o -d restoredata backup-full.zip
+ # unzip -o -d restoredata backup-inc1.zip
+```
 
 # Restore examples
 

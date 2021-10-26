@@ -5,6 +5,8 @@ import json
 import logging
 import lz4.frame
 
+log = logging.getLogger(__name__)
+
 
 class Common(object):
     """Common functions"""
@@ -20,19 +22,11 @@ class Common(object):
     def argparse(self, parser):
         return parser.parse_args()
 
+    def toStdout(self, target):
+        return target == "-"
+
     def printVersion(self, version):
-        logging.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
-
-    def createOutputDir(self, targetDir):
-        if targetDir == "-":
-            return
-
-        if not os.path.exists(targetDir):
-            try:
-                os.makedirs(targetDir)
-            except OSError as e:
-                logging.error("Unable to create target directory: %s", e)
-                sys.exit(1)
+        log.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
     def setLogLevel(self, verbose):
         if verbose is True:
@@ -158,7 +152,7 @@ class Common(object):
     def lz4DecompressFrame(self, data):
         """Decompress lz4 frame, print frame information"""
         frameInfo = lz4.frame.get_frame_info(data)
-        logging.debug("Compressed Frame: %s", frameInfo)
+        log.debug("Compressed Frame: %s", frameInfo)
         return lz4.frame.decompress(data)
 
     def lz4CompressFrame(self, data):

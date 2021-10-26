@@ -1,6 +1,8 @@
 import nbd
 import logging
 
+log = logging.getLogger(__name__)
+
 
 class nbdClient(object):
     """Helper functions for NBD"""
@@ -27,7 +29,7 @@ class nbdClient(object):
         self.version()
 
     def version(self):
-        logging.info("{}".format(nbd.__version__))
+        log.info("{}".format(nbd.__version__))
 
     def getBlockInfo(self):
         """Read maximum request/block size as advertised by the nbd
@@ -37,7 +39,7 @@ class nbdClient(object):
         if maxSize != 0:
             self.maxRequestSize = maxSize
 
-        logging.info("Using Maximum Block size supported by nbd server: %s", maxSize)
+        log.info("Using Maximum Block size supported by nbd server: %s", maxSize)
 
     def connect(self):
         """Setup connection to NBD server endpoint, return
@@ -48,8 +50,8 @@ class nbdClient(object):
             self._nbdHandle.set_export_name(self._exportName)
             self._nbdHandle.connect_unix(self._socket)
         except Exception as e:
-            logging.error("Unable to connect ndb server")
-            logging.exception(e)
+            log.error("Unable to connect ndb server")
+            log.exception(e)
             return False
 
         self.getBlockInfo()

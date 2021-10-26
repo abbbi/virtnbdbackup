@@ -35,6 +35,7 @@ jobs:
           python3-tqdm \
           python3-lz4 \
           python3-libvirt \
+          unzip \
         ;
         # start daemon
         echo 'security_driver = "none"' | sudo tee -a /etc/libvirt/qemu.conf

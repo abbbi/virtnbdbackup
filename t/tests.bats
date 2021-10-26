@@ -90,7 +90,7 @@ toOut() {
     # for some reason bats likes to hijack stdout which results
     # in data being read into memory  ... helper function works
     # around this issue.
-    ../virtnbdbackup -l copy -d $VM -i sda -o - > /tmp/stdout.sda
+    ../virtnbdbackup -l copy -d $VM -i sda -o - > /tmp/backup.zip
 }
 @test "Backup in stream format,single disk write to stdout"  {
     rm -f /tmp/stdout.sda
@@ -98,7 +98,12 @@ toOut() {
     run toOut
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    [ -e /tmp/stdout.sda ]
+    [ -e /tmp/backup.zip ]
+    unzip -l /tmp/backup.zip | grep sda.copy.data
+    [ "$status" -eq 0 ]
+    unzip -l /tmp/backup.zip | grep vmconfig.virtnbdbackup
+    [ "$status" -eq 0 ]
+    echo "output = ${output}"
 }
 @test "Dump metadata information" {
     run ../virtnbdrestore -i $BACKUPSET -a dump -o /dev/null
