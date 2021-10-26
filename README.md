@@ -268,7 +268,7 @@ Here is an example:
  # [..]
 ```
 
-Any subsequent incremental backup operations, must be called from within this
+Any subsequent incremental backup operations must be called from within this
 directory:
 
 ```
