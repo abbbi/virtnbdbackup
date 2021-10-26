@@ -277,13 +277,14 @@ directory:
  [..]
 ```
 
-During restore, you must unzip the data from both zip files into a single
-directory.
+During restore unzip the data from both zip files into a single directory:
+(use `virtnbdrestore` to reconstruct the virtual machine images):
 
 ```
  # unzip -o -d restoredata backup-full.zip
  # unzip -o -d restoredata backup-inc1.zip
 ```
+
 
 # Restore examples
 
