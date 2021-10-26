@@ -427,8 +427,9 @@ Virtual machines using the qcow format do compress data. During backup, the
 image contents are exposed as NDB device which is a RAW device. The backup data
 will be at least as big as the used data within the virtual machine. 
 
-You can use xz or other tools to compress the backup images in order to save
-storage space or consider using a deduplication capable target file system.
+You can use the `--compress` option or other tools to compress the backup
+images in order to save storage space or consider using a deduplication capable
+target file system.
 
 ## Is the backup application consistent?
 
