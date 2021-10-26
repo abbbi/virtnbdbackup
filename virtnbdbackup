@@ -200,6 +200,8 @@ def main():
 
     lib.printVersion(__version__)
 
+    logging.info("Backup level: [%s]", args.level)
+
     if toStdout is True and args.type == "raw":
         logging.error("Output type raw not supported to stdout")
         sys.exit(1)
@@ -287,12 +289,13 @@ def main():
         with open(cptFile, "r") as cptFh:
             checkpoints = json.loads(cptFh.read())
 
-    logging.info("Attempting to redefine checkpoints from: %s", args.checkpointdir)
-    if virtClient.redefineCheckpoints(domObj, args) is False:
-        logging.warning("Unable to redefine checkpoints")
-
     if args.level != "copy":
-        logging.info("Looking for checkpoints")
+        logging.info("Check for missing checkpoints from: %s", args.checkpointdir)
+        if virtClient.redefineCheckpoints(domObj, args) is False:
+            logging.error("Unable to redefine checkpoints.")
+            sys.exit(1)
+
+        logging.info("Checkpoint handling")
         if args.level == "full" and checkpoints:
             logging.info("Removing all existent checkpoints before full backup")
             virtClient.removeAllCheckpoints(domObj, checkpoints, args)
@@ -310,7 +313,7 @@ def main():
                 parentCheckpoint = args.checkpoint
             else:
                 parentCheckpoint = checkpoints[-1]
-            logging.info("Found checkpoints, next checkpoint id: %s", nextCpt)
+            logging.info("Next checkpoint id: %s", nextCpt)
             logging.info("Parent checkpoint name %s", parentCheckpoint)
 
         if args.level == "inc" and len(checkpoints) < 1:
@@ -338,7 +341,7 @@ def main():
         )
         logging.debug("Backup job started, using socket: %s", backupSocket)
     except Exception as e:
-        logging.exception(e)
+        logging.error(e)
         sys.exit(1)
 
     if args.level != "copy":
