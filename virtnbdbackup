@@ -171,7 +171,7 @@ def main():
 
     stream = sparsestream.SparseStream()
     sTypes = sparsestream.SparseStreamTypes()
-    toStdout = lib.toStdout(args.output)
+    toStdout = (args.output == "-")
 
     zipStream = None
     if toStdout is False:
@@ -497,10 +497,9 @@ def backupDisk(
 
     if toStdout is True:
         targetFile = os.path.basename(targetFile)
-        if streamType == "stream":
-            writer = zipStream.open(targetFile)
-            if writer is False:
-                raise RuntimeError("Unable to open zip file in stream")
+        writer = zipStream.open(targetFile)
+        if writer is False:
+            raise RuntimeError("Unable to open zip file in stream")
     else:
         targetFilePartial = "%s.partial" % targetFile
         logging.info("Write data to target file: %s", targetFilePartial)
@@ -511,15 +510,16 @@ def backupDisk(
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
-        writer.truncate(diskSize)
+        try:
+            writer.truncate(diskSize)
+        except Exception as e:
+            raise RuntimeError("Unable to truncate target file: %s", e)
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
         if args.compress:
             logging.info("Compression enabled")
-        inc = False
-        if args.level == "inc":
-            inc = True
+        inc = (args.level == "inc")
         metadata = stream.dumpMetadata(
             diskSize,
             thinBackupSize,

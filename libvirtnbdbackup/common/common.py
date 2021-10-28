@@ -22,9 +22,6 @@ class Common(object):
     def argparse(self, parser):
         return parser.parse_args()
 
-    def toStdout(self, target):
-        return target == "-"
-
     def printVersion(self, version):
         log.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
