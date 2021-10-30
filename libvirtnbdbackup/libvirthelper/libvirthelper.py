@@ -317,57 +317,51 @@ class client(object):
     def redefineCheckpoints(self, domObj, args):
         """Redefine checkpoints from persistent storage"""
         # get list of all .xml files in checkpointdir
-        log.info("Loading checkpoint list from: {:s}".format(args.checkpointdir))
+        log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
         try:
             checkpointList = glob.glob("{:s}/*.xml".format(args.checkpointdir))
             checkpointList.sort(key=os.path.getmtime)
         except Exception as e:
             log.error(
-                "Unable to get checkpoint list from {:s}: {}".format(
-                    args.checkpointdir, e
-                )
+                "Unable to get checkpoint list from [%s]: %s", args.checkpointdir, e
             )
             return False
 
         for checkpointFile in checkpointList:
-            log.debug("Loading checkpoint config from: {:s}".format(checkpointFile))
+            log.debug("Loading checkpoint config from: [%s]", checkpointFile)
             try:
                 with open(checkpointFile, "r") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
             except Exception as e:
                 log.error(
-                    "Unable to load checkpoint config from {:s}: {}".format(
-                        checkpointFile, e
-                    )
+                    "Unable to load checkpoint config from [%s]: %s", checkpointFile, e
                 )
                 return False
 
             try:
                 checkpointName = root.find("name").text
             except Exception as e:
-                log.error("Unable to find checkpoint name: {}".format(e))
+                log.error("Unable to find checkpoint name: [%s]", e)
                 return False
 
             try:
                 c = domObj.checkpointLookupByName(checkpointName)
-                log.debug("Checkpoint {:s} found".format(checkpointName))
+                log.debug("Checkpoint [%s] found", checkpointName)
                 continue
             except libvirt.libvirtError as e:
                 # ignore VIR_ERR_NO_DOMAIN_CHECKPOINT, report other errors
                 if e.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
-                    log.error("libvirt error: {}".format(e))
+                    log.error("libvirt error: %s", e)
                     return False
 
-            log.info("Redefine missing checkpoint {:s}".format(checkpointName))
+            log.info("Redefine missing checkpoint: [%s]", checkpointName)
             try:
                 domObj.checkpointCreateXML(
                     checkpointConfig, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
                 )
             except Exception as e:
-                log.error(
-                    "Unable to redefine checkpoint {:s}: {}".format(checkpointName, e)
-                )
+                log.error("Unable to redefine checkpoint: [%s]: %s", checkpointName, e)
                 return False
 
         return True
@@ -375,7 +369,7 @@ class client(object):
     def backupCheckpoint(self, domObj, args, checkpointName):
         """save checkpoint config to persistent storage"""
         checkpointFile = "{:s}/{:s}.xml".format(args.checkpointdir, checkpointName)
-        log.info("Saving checkpoint config to {:s}".format(checkpointFile))
+        log.info("Saving checkpoint config to: %s", checkpointFile)
         try:
             with open(checkpointFile, "w") as f:
                 c = domObj.checkpointLookupByName(checkpointName)
@@ -383,8 +377,6 @@ class client(object):
                 return True
         except Exception as e:
             log.error(
-                "Unable to save checkpoint config to file {:s}: {}".format(
-                    checkpointFile, e
-                )
+                "Unable to save checkpoint config to file: [%s]: %s", checkpointFile, e
             )
             return False
