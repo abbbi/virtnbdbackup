@@ -21,7 +21,6 @@ import json
 import signal
 import logging
 import argparse
-import zipfile
 from datetime import datetime
 from functools import partial
 from tqdm import tqdm
