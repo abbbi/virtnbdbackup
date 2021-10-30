@@ -178,22 +178,20 @@ def main():
         outHelper.Directory(args.output)
     else:
         zipStream = outHelper.Zip()
+        args.output = "./"
 
-    if toStdout is True:
-        logPath = "./backup.log"
-    else:
-        logPath = "%s/backup.%s.%s.log" % (
-            args.output,
-            args.level,
-            datetime.now().strftime("%m%d%Y%H%M%S"),
-        )
+    logFile = "%s/backup.%s.%s.log" % (
+        args.output,
+        args.level,
+        datetime.now().strftime("%m%d%Y%H%M%S"),
+    )
 
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
         format=lib.logFormat,
         datefmt=lib.logDateFormat,
         handlers=[
-            logging.FileHandler(logPath),
+            logging.FileHandler(logFile),
             logging.StreamHandler(stream=sys.stderr),
         ],
     )
@@ -229,15 +227,11 @@ def main():
         logging.error("Consider re-executing full backup.")
         sys.exit(1)
 
+    logging.info("Store checkpoints in: %s", args.checkpointdir)
     if not args.checkpointdir:
-        if args.output == "-":
-            checkpointDir = "."
-        else:
-            checkpointDir = args.output
         args.checkpointdir = "{}/checkpoints".format(
-            checkpointDir,
+            args.output,
         )
-        logging.info("Store checkpoints in: %s", args.checkpointdir)
         outHelper.Directory(args.checkpointdir)
     else:
         outHelper.Directory(args.checkpointdir)
@@ -280,11 +274,7 @@ def main():
     checkpointName = "{:s}.0".format(lib.checkpointName)
     parentCheckpoint = False
     checkpoints = []
-    if args.output == "-":
-        cptFilePath = "."
-    else:
-        cptFilePath = args.output
-    cptFile = "%s/%s.cpt" % (cptFilePath, args.domain)
+    cptFile = "%s/%s.cpt" % (args.output, args.domain)
     if os.path.exists(cptFile):
         with open(cptFile, "r") as cptFh:
             checkpoints = json.loads(cptFh.read())
@@ -401,16 +391,11 @@ def main():
                 for filename in files:
                     zipStream.zipStream.write(os.path.join(dirname, filename))
         logging.info("Adding backup log to zipfile")
-        zipStream.zipStream.write(logPath, logPath)
+        zipStream.zipStream.write(logFile, logFile)
 
 
 def backupConfig(vmConfig, args, checkpointName):
-    if args.output == "-":
-        outputFolder = "."
-    else:
-        outputFolder = args.output
-
-    configFile = "%s/vmconfig.%s.xml" % (outputFolder, checkpointName)
+    configFile = "%s/vmconfig.%s.xml" % (args.output, checkpointName)
     logging.info("Saving VM config to: %s", configFile)
     try:
         with open(configFile, "w") as configFh:
