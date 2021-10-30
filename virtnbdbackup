@@ -221,7 +221,7 @@ def main():
         logging.info("Printing only extend information: enforce level copy")
         args.level = "copy"
 
-    if args.level == "inc" and args.output != "-" and lib.partialBackup(args) is True:
+    if args.level == "inc" and toStdout is False and lib.partialBackup(args) is True:
         logging.error("Partial backup found in target directory: %s", args.output)
         logging.error("One of the last backups seems to have failed.")
         logging.error("Consider re-executing full backup.")
@@ -232,9 +232,8 @@ def main():
         args.checkpointdir = "{}/checkpoints".format(
             args.output,
         )
-        outHelper.Directory(args.checkpointdir)
-    else:
-        outHelper.Directory(args.checkpointdir)
+
+    outHelper.Directory(args.checkpointdir)
 
     virtClient = libvirthelper.client()
     try:
