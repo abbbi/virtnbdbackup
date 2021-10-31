@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 import libvirtnbdbackup
 
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -19,7 +20,7 @@ setup(
     keywords="libnbd backup libvirt",
     packages=find_packages(exclude=("docs", "tests", "env")),
     include_package_data=True,
-    install_requires=open('requirements.txt').read().splitlines(),
+    install_requires=open("requirements.txt").read().splitlines(),
     scripts=["virtnbdbackup", "virtnbdrestore"],
     extras_require={
         "dev": [],
