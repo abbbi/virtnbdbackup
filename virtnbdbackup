@@ -37,6 +37,8 @@ from libvirtnbdbackup import __version__
 
 
 def handleSignal(domObj, virtClient, log, signum, frame):
+    """Catch signal, attempt to stop running backup job.
+    """
     log.error("Caught signal: %s" % signum)
     log.error("Cleanup: Stopping backup job")
     virtClient.stopBackup(domObj)
@@ -44,6 +46,8 @@ def handleSignal(domObj, virtClient, log, signum, frame):
 
 
 def main():
+    """Handle backup operation
+    """
     parser = argparse.ArgumentParser(description="Backup libvirt/qemu virtual machines")
     parser.add_argument(
         "-d", "--domain", required=True, type=str, help="Domain to backup"
@@ -393,6 +397,8 @@ def main():
 
 
 def backupConfig(vmConfig, args, checkpointName):
+    """Save domain config file
+    """
     configFile = "%s/vmconfig.%s.xml" % (args.output, checkpointName)
     logging.info("Saving VM config to: %s", configFile)
     try:
@@ -417,7 +423,9 @@ def backupDisk(
     zipStream,
     toStdout,
 ):
-
+    """Backup domain disk data. Disks are currently processed
+    sequentially.
+    """
     if disk.diskFormat != "raw":
         streamType = args.type
     else:
