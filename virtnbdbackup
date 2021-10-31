@@ -432,8 +432,7 @@ def backupDisk(
     logging.info("NDB Endpoint socket: %s", backupSocket)
     connection = nbdClient.connect()
     if not connection:
-        logging.error("Error connecting nbd endpoint")
-        sys.exit(1)
+        raise RuntimeError("Error connecting to nbd endpoint.")
 
     if args.qemu and args.level != "inc":
         logging.info("Using qemu tools to query extents")
