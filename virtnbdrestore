@@ -172,6 +172,7 @@ def restore(lib, args, stream, sTypes):
             vmConf.read(), None, None, args.raw
         )
 
+    diskState = False
     for disk in vmDisks:
         if args.disk != "all" and args.disk != disk.diskTarget:
             logging.info("Skipping disk %s for restore", disk.diskTarget)
@@ -231,33 +232,34 @@ def restore(lib, args, stream, sTypes):
             return False
 
         nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)
-        logging.info("Waiting until nbd server on socket %s is up", socketFile)
+        logging.info("Waiting until nbd server on socket %s is up.", socketFile)
         retry = 0
         maxRetry = 20
         while True:
             if os.path.exists(socketFile):
                 connection = nbdClient.connect()
                 if connection:
-                    logging.info("Connection to nbd backend succeeded")
+                    logging.info("Connection to nbd backend succeeded.")
                     break
             else:
                 if retry >= maxRetry:
-                    logging.info("NBD server connection failed")
+                    logging.error("NBD server connection failed.")
                     return False
                 else:
-                    logging.error("Waiting for NBD Server, Retry: %s", retry)
+                    logging.info("Waiting for NBD Server, Retry: %s", retry)
                     sleep(1)
                     retry = retry + 1
 
         for dataFile in restoreDisk:
-            if (
-                restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection)
-                is None
-            ):
+            diskState = restoreData(
+                lib, args, stream, sTypes, dataFile, nbdClient, connection
+            )
+            if diskState is None:
+                diskState = True
                 break
 
         nbdClient.disconnect()
-        return True
+    return diskState
 
 
 def main():
