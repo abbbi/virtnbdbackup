@@ -105,7 +105,7 @@ toOut() {
     [ "$status" -eq 0 ]
     unzip -l /tmp/backup.zip | grep backup.full..*.log
     [ "$status" -eq 0 ]
-    unzip -l /tmp/backup.zip | grep vm1.cpt
+    unzip -l /tmp/backup.zip | grep "${VM}.cpt"
     [ "$status" -eq 0 ]
     unzip -l /tmp/backup.zip | grep checkpoints
     [ "$status" -eq 0 ]

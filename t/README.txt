@@ -6,10 +6,6 @@ data-sizes are reported for each test.
 If files within virtual machine should be changed, vm is destroyed and disks
 are mounted via guestfs tools.
 
-Tests will only correctly run on centos 8 with libvirt from the advanced
-virtualization stream, because virtual machine xml definition includes
-some specific settings.
-
 To execute test for certain virtual machine use:
 
     make vm1.test

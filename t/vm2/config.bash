@@ -17,6 +17,13 @@ if [ ! -e $VM_IMAGE ]; then
     curl $VM_IMAGE_URL > $VM_IMAGE
 fi
 
+# convert downloaded image toqcow format supporting persistent
+# bitmaps, to allow full backup
+if qemu-img info $VM_IMAGE | grep "compat: 0.10" >/dev/null; then
+    qemu-img convert -O qcow2 $VM_IMAGE "${VM_IMAGE}.new"
+    mv "${VM_IMAGE}.new" "${VM_IMAGE}"
+fi
+
 EXTENT_OUTPUT1="Got 866 extents"
 EXTENT_OUTPUT2="2147483648 bytes disk size"
 EXTENT_OUTPUT3="1394147328 bytes of data extents to backup"
