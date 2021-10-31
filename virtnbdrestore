@@ -238,7 +238,7 @@ def restore(lib, args, stream, sTypes):
             if os.path.exists(socketFile):
                 connection = nbdClient.connect()
                 if connection:
-                    logging.info("Connection to nbd backend succeded")
+                    logging.info("Connection to nbd backend succeeded")
                     break
             else:
                 if retry >= maxRetry:
