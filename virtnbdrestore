@@ -230,14 +230,24 @@ def restore(lib, args, stream, sTypes):
             logging.error("Unable to start nbd server: %s", e)
             return False
 
-        logging.info("Waiting until nbd server on socket %s is up", socketFile)
-        sleep(5)
-
         nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)
-        connection = nbdClient.connect()
-        if not connection:
-            logging.error("NBD server connection failed")
-            return False
+        logging.info("Waiting until nbd server on socket %s is up", socketFile)
+        retry = 0
+        maxRetry = 20
+        while True:
+            if os.path.exists(socketFile):
+                connection = nbdClient.connect()
+                if connection:
+                    logging.info("Connection to nbd backend succeded")
+                    break
+            else:
+                if retry >= maxRetry:
+                    logging.info("NBD server connection failed")
+                    return False
+                else:
+                    logging.error("Waiting for NBD Server, Retry: %s", retry)
+                    sleep(1)
+                    retry = retry + 1
 
         for dataFile in restoreDisk:
             if (
