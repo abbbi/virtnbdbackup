@@ -1,6 +1,6 @@
 bats = ./bats-core
 
-vm1.tests: $(bats)
+vm1.tests: $(bats) 
 	export TEST=vm1 ; ./bats-core/bin/bats tests.bats
 vm2.tests: $(bats)
 	export TEST=vm2 ; ./bats-core/bin/bats tests.bats

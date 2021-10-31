@@ -33,6 +33,223 @@ import libvirtnbdbackup.qemuhelper as qemuhelper
 from libvirtnbdbackup import __version__
 
 
+def dump(lib, args, stream, dataFiles):
+    """Dump stream contents to json output"""
+    logging.info("Dumping saveset meta information")
+    for dataFile in dataFiles:
+        if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
+            continue
+        meta = lib.dumpMetaData(dataFile, stream)
+
+        if meta is False:
+            logging.error("Unable to dump image contents, image defunct or raw image?")
+            continue
+        pprint.pprint(meta)
+
+        if lib.isCompressed(meta):
+            logging.info("Compressed stream found: %s", meta["compressionMethod"])
+
+    return True
+
+
+def restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection):
+    """Restore data for disk"""
+    reader = open(dataFile, "rb")
+    kind, start, length = stream.readFrame(reader)
+    meta = stream.loadMetadata(reader.read(length))
+    if lib.isCompressed(meta) is True:
+        trailer = stream.readCompressionTrailer(reader)
+        logging.info("Found compression trailer")
+        logging.debug("%s", trailer)
+    else:
+        trailer = None
+
+    if meta["checkpointName"] == args.until:
+        logging.info("Reached checkpoint %s, stopping", args.until)
+        return None
+
+    if meta["dataSize"] == 0:
+        logging.info("Saveset %s contains no dirty blocks, skipping", dataFile)
+        return True
+    logging.info(
+        "Applying data from file %s to %s/%s",
+        dataFile,
+        args.output,
+        meta["diskName"],
+    )
+    pprint.pprint(meta)
+    assert reader.read(len(sTypes.TERM)) == sTypes.TERM
+
+    progressBar = tqdm(
+        total=meta["dataSize"],
+        desc="restoring disk %s" % meta["diskName"],
+        unit="B",
+        unit_scale=True,
+        disable=args.noprogress,
+    )
+    dataSize = 0
+    dataBlockCnt = 0
+    while True:
+        try:
+            kind, start, length = stream.readFrame(reader)
+        except Exception as e:
+            logging.error("Wrong stream at pos: %s", reader.tell())
+            logging.exception(e)
+            return False
+        if kind == sTypes.ZERO:
+            logging.debug("Write zero segment from %s length: %s", start, length)
+            if length >= nbdClient.maxRequestSize:
+                logging.debug("Chunked zero, start: %s, len: %s", start, length)
+                lib.zeroChunk(start, length, nbdClient.maxRequestSize, connection)
+            else:
+                connection.zero(length, start)
+        elif kind == sTypes.DATA:
+            logging.debug("Process data segment from %s length: %s", start, length)
+
+            originalSize = length
+            if trailer:
+                logging.debug("Block: %s", dataBlockCnt)
+                logging.debug("Original block size: %s", length)
+                length = trailer[dataBlockCnt]
+                logging.debug("Compressed block size: %s", length)
+            else:
+                length = length
+
+            if originalSize >= nbdClient.maxRequestSize:
+                logging.debug("Chunked read/write, start: %s, len: %s", start, length)
+                try:
+                    written = lib.readChunk(
+                        reader,
+                        start,
+                        length,
+                        nbdClient.maxRequestSize,
+                        connection,
+                        lib.isCompressed(meta),
+                    )
+                except Exception as e:
+                    logging.exception(e)
+                    return False
+                logging.debug("Wrote: %s", written)
+            else:
+                try:
+                    data = reader.read(length)
+                    if lib.isCompressed(meta):
+                        data = lib.lz4DecompressFrame(data)
+                    connection.pwrite(data, start)
+                    written = len(data)
+                except Exception as e:
+                    logging.exception(e)
+                    return False
+
+            assert reader.read(len(sTypes.TERM)) == sTypes.TERM
+            dataSize += originalSize
+            progressBar.update(written)
+            dataBlockCnt += 1
+        elif kind == sTypes.STOP:
+            progressBar.close()
+            if dataSize == meta["dataSize"]:
+                logging.info("End of stream, %s bytes of data processed", dataSize)
+                return True
+            else:
+                logging.error(
+                    "Error: restored data size %s != %s",
+                    dataSize,
+                    meta["dataSize"],
+                )
+                return False
+
+
+def restore(lib, args, stream, sTypes):
+    """Handle restore operation"""
+    logging.info("Read latest config file")
+    vmConfig = lib.getLastConfigFile(args.input)
+    if not vmConfig:
+        logging.error("No domain config file found")
+        sys.exit(1)
+
+    with open(vmConfig, "r") as vmConf:
+        vmDisks = virtclient.client().getDomainDisks(
+            vmConf.read(), None, None, args.raw
+        )
+
+    for disk in vmDisks:
+        if args.disk != "all" and args.disk != disk.diskTarget:
+            logging.info("Skipping disk %s for restore", disk.diskTarget)
+            continue
+
+        restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
+        logging.debug(restoreDisk)
+        if len(restoreDisk) < 1:
+            logging.warning(
+                "Did not find any backups for disk image %s", disk.diskTarget
+            )
+            continue
+
+        if args.raw and disk.diskFormat == "raw":
+            targetFile = "%s/%s" % (args.output, disk.diskTarget)
+            logging.info("Copy raw image to %s", targetFile)
+            try:
+                shutil.copy(restoreDisk[0], targetFile)
+                continue
+            except Exception as e:
+                logging.error("Unable to copy raw image: %s", e)
+
+        if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
+            logging.error(
+                "%s Unable to locate base full or copy backup.", restoreDisk[0]
+            )
+            return False
+        try:
+            meta = lib.dumpMetaData(restoreDisk[0], stream)
+        except Exception as e:
+            logging.error("Reading metadata from %s failed: %s", restoreDisk[0], e)
+            return False
+
+        logging.info(
+            "Create virtual Disk %s/%s, format: %s",
+            args.output,
+            meta["diskName"],
+            disk.diskFormat,
+        )
+        logging.info("Virtual Size %s", meta["virtualSize"])
+        qFh = qemuhelper.qemuHelper(meta["diskName"])
+
+        try:
+            qFh.create(args.output, meta["virtualSize"], disk.diskFormat)
+        except Exception as e:
+            logging.error("Cant create restore target: %s", e)
+            return False
+
+        socketFile = lib.getSocketFile(args.socketfile)
+
+        logging.info("Starting nbd server on socket: %s", socketFile)
+        try:
+            nbdSrv = qFh.startNbdServer(args.output, socketFile)
+            logging.info("NBD Server PID: %s", nbdSrv)
+        except Exception as e:
+            logging.error("Unable to start nbd server: %s", e)
+            return False
+
+        logging.info("Waiting until nbd server on socket %s is up", socketFile)
+        sleep(5)
+
+        nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)
+        connection = nbdClient.connect()
+        if not connection:
+            logging.error("NBD server connection failed")
+            return False
+
+        for dataFile in restoreDisk:
+            if (
+                restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection)
+                is None
+            ):
+                break
+
+        nbdClient.disconnect()
+        return True
+
+
 def main():
     parser = argparse.ArgumentParser(description="Restore virtual machine disks")
     parser.add_argument(
@@ -118,229 +335,19 @@ def main():
         logging.error("Backup set directory does not exist")
         sys.exit(1)
 
+    dataFiles = lib.getDataFiles(args.input)
+    if not dataFiles:
+        logging.error("No data files found in directory: %s", args.input)
+        sys.exit(1)
+
     if args.action == "dump":
-        logging.info("Dumping saveset meta information")
-        dataFiles = lib.getDataFiles(args.input)
-        if not dataFiles:
-            logging.error("No data files found in directory: %s", args.input)
-            sys.exit(1)
-        for dataFile in dataFiles:
-            if args.disk != "all" and not os.path.basename(dataFile).startswith(
-                args.disk
-            ):
-                continue
-            meta = lib.dumpMetaData(dataFile, stream)
-
-            if meta is False:
-                logging.error(
-                    "Unable to dump image contents, image defunct or raw image?"
-                )
-                continue
-            pprint.pprint(meta)
-
-            if lib.isCompressed(meta):
-                logging.info("Compressed stream found: %s", meta["compressionMethod"])
+        dump(lib, args, stream, dataFiles)
 
     if args.action == "restore":
-        logging.info("Read latest config file")
-        vmConfig = lib.getLastConfigFile(args.input)
-        if not vmConfig:
-            logging.error("No domain config file found")
+        if restore(lib, args, stream, sTypes) is True:
+            sys.exit(0)
+        else:
             sys.exit(1)
-
-        with open(vmConfig, "r") as vmConf:
-            vmDisks = virtclient.client().getDomainDisks(
-                vmConf.read(), None, None, args.raw
-            )
-
-        for disk in vmDisks:
-            if args.disk != "all" and args.disk != disk.diskTarget:
-                logging.info("Skipping disk %s for restore", disk.diskTarget)
-                continue
-
-            restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
-            logging.debug(restoreDisk)
-            if len(restoreDisk) < 1:
-                logging.warning(
-                    "Did not find any backups for disk image %s", disk.diskTarget
-                )
-                continue
-
-            if args.raw and disk.diskFormat == "raw":
-                targetFile = "%s/%s" % (args.output, disk.diskTarget)
-                logging.info("Copy raw image to %s", targetFile)
-                try:
-                    shutil.copy(restoreDisk[0], targetFile)
-                    continue
-                except Exception as e:
-                    logging.error("Unable to copy raw image: %s", e)
-
-            if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
-                logging.error(
-                    "%s Unable to locate base full or copy backup.", restoreDisk[0]
-                )
-                sys.exit(1)
-            try:
-                meta = lib.dumpMetaData(restoreDisk[0], stream)
-            except Exception as e:
-                logging.error("Reading metadata from %s failed: %s", restoreDisk[0], e)
-                sys.exit(1)
-
-            logging.info(
-                "Create virtual Disk %s/%s, format: %s",
-                args.output,
-                meta["diskName"],
-                disk.diskFormat,
-            )
-            logging.info("Virtual Size %s", meta["virtualSize"])
-            qFh = qemuhelper.qemuHelper(meta["diskName"])
-
-            try:
-                qFh.create(args.output, meta["virtualSize"], disk.diskFormat)
-            except Exception as e:
-                logging.error("Cant create restore target: %s", e)
-                sys.exit(1)
-
-            socketFile = lib.getSocketFile(args.socketfile)
-
-            logging.info("Starting nbd server on socket: %s", socketFile)
-            try:
-                nbdSrv = qFh.startNbdServer(args.output, socketFile)
-                logging.info("NBD Server PID: %s", nbdSrv)
-            except Exception as e:
-                logging.error("Unable to start nbd server: %s", e)
-                sys.exit(1)
-
-            logging.info("Waiting until nbd server on socket %s is up", socketFile)
-            sleep(5)
-
-            nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)
-            connection = nbdClient.connect()
-            if not connection:
-                logging.error("NBD server connection failed")
-                sys.exit(1)
-
-            for restoreFile in restoreDisk:
-                reader = open(restoreFile, "rb")
-                kind, start, length = stream.readFrame(reader)
-                meta = stream.loadMetadata(reader.read(length))
-                if lib.isCompressed(meta) is True:
-                    trailer = stream.readCompressionTrailer(reader)
-                    logging.info("Found compression trailer")
-                    logging.debug("%s", trailer)
-                else:
-                    trailer = None
-
-                if meta["dataSize"] == 0:
-                    logging.info(
-                        "Saveset %s contains no dirty blocks, skipping", restoreFile
-                    )
-                    continue
-                logging.info(
-                    "Applying data from file %s to %s/%s",
-                    restoreFile,
-                    args.output,
-                    meta["diskName"],
-                )
-                pprint.pprint(meta)
-                assert reader.read(len(sTypes.TERM)) == sTypes.TERM
-
-                progressBar = tqdm(
-                    total=meta["dataSize"],
-                    desc="restoring disk %s" % meta["diskName"],
-                    unit="B",
-                    unit_scale=True,
-                    disable=args.noprogress,
-                )
-                dataSize = 0
-                dataBlockCnt = 0
-                while True:
-                    try:
-                        kind, start, length = stream.readFrame(reader)
-                    except Exception as e:
-                        logging.error("Wrong stream at pos: %s", reader.tell())
-                        logging.exception(e)
-                        sys.exit(1)
-                    if kind == sTypes.ZERO:
-                        logging.debug(
-                            "Write zero segment from %s length: %s", start, length
-                        )
-                        if length >= nbdClient.maxRequestSize:
-                            logging.debug(
-                                "Chunked zero, start: %s, len: %s", start, length
-                            )
-                            lib.zeroChunk(
-                                start, length, nbdClient.maxRequestSize, connection
-                            )
-                        else:
-                            connection.zero(length, start)
-                    elif kind == sTypes.DATA:
-                        logging.debug(
-                            "Process data segment from %s length: %s", start, length
-                        )
-
-                        originalSize = length
-                        if trailer:
-                            logging.debug("Block: %s", dataBlockCnt)
-                            logging.debug("Original block size: %s", length)
-                            length = trailer[dataBlockCnt]
-                            logging.debug("Compressed block size: %s", length)
-                        else:
-                            length = length
-
-                        if originalSize >= nbdClient.maxRequestSize:
-                            logging.debug(
-                                "Chunked read/write, start: %s, len: %s", start, length
-                            )
-                            try:
-                                written = lib.readChunk(
-                                    reader,
-                                    start,
-                                    length,
-                                    nbdClient.maxRequestSize,
-                                    connection,
-                                    lib.isCompressed(meta),
-                                )
-                            except Exception as e:
-                                logging.exception(e)
-                                sys.exit(1)
-                            logging.debug("Wrote: %s", written)
-                        else:
-                            try:
-                                data = reader.read(length)
-                                if lib.isCompressed(meta):
-                                    data = lib.lz4DecompressFrame(data)
-                                connection.pwrite(data, start)
-                                written = len(data)
-                            except Exception as e:
-                                logging.exception(e)
-                                sys.exit(1)
-
-                        assert reader.read(len(sTypes.TERM)) == sTypes.TERM
-                        dataSize += originalSize
-                        progressBar.update(written)
-                        dataBlockCnt += 1
-                    elif kind == sTypes.STOP:
-                        progressBar.close()
-                        if dataSize == meta["dataSize"]:
-                            logging.info(
-                                "End of stream, %s bytes of data processed", dataSize
-                            )
-                        else:
-                            logging.error(
-                                "Error: restored data size %s != %s",
-                                dataSize,
-                                meta["dataSize"],
-                            )
-                            sys.exit(1)
-                        break
-                if meta["checkpointName"] == args.until:
-                    logging.info("Reached checkpoint %s, stopping", args.until)
-                    progressBar.close()
-                    break
-
-            nbdClient.disconnect()
-            progressBar.close()
 
 
 if __name__ == "__main__":
