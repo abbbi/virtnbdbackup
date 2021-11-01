@@ -203,7 +203,13 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Backup: create incremental backup" {
+@test "Backup: create first incremental backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l inc -o /tmp/inctest
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create second incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o /tmp/inctest
     echo "output = ${output}"
@@ -222,4 +228,11 @@ toOut() {
     run umount /empty
     echo "output = ${output}"
     [ "$status" -eq 0 ]
+}
+@test "Restore: restore data until first incremental backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    rm -rf /tmp/RESTOREINC/
+    run ../virtnbdrestore -a restore -i /tmp/inctest/ --until virtnbdbackup.1 -o /tmp/RESTOREINC/
+    [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
+    echo "output = ${output}"
 }

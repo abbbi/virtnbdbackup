@@ -369,6 +369,7 @@ def main():
             logging.exception(e)
             virtClient.stopBackup(domObj)
             sys.exit(1)
+
     configFile = None
     if args.printonly is False:
         configFile = backupConfig(vmConfig, args, checkpointName)
@@ -380,18 +381,23 @@ def main():
         logging.warning("Unable to stop backup task, return: %s", e)
 
     if toStdout is True:
-        if configFile is not None:
-            logging.info("Adding vm config to zipfile")
-            zipStream.zipStream.write(configFile, configFile)
-        if args.level in ("full", "inc"):
-            logging.info("Adding checkpoint info to zipfile")
-            zipStream.zipStream.write(cptFile, cptFile)
-            for dirname, subdirs, files in os.walk(args.checkpointdir):
-                zipStream.zipStream.write(dirname)
-                for filename in files:
-                    zipStream.zipStream.write(os.path.join(dirname, filename))
-        logging.info("Adding backup log to zipfile")
-        zipStream.zipStream.write(logFile, logFile)
+        addFiles(configFile, zipStream, cptFile, logFile, args)
+
+
+def addFiles(configFile, zipStream, cptFile, logFile, args):
+    """Add backup log and other files to zip archive"""
+    if configFile is not None:
+        logging.info("Adding vm config to zipfile")
+        zipStream.zipStream.write(configFile, configFile)
+    if args.level in ("full", "inc"):
+        logging.info("Adding checkpoint info to zipfile")
+        zipStream.zipStream.write(cptFile, cptFile)
+        for dirname, subdirs, files in os.walk(args.checkpointdir):
+            zipStream.zipStream.write(dirname)
+            for filename in files:
+                zipStream.zipStream.write(os.path.join(dirname, filename))
+    logging.info("Adding backup log to zipfile")
+    zipStream.zipStream.write(logFile, logFile)
 
 
 def backupConfig(vmConfig, args, checkpointName):
