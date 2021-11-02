@@ -409,7 +409,7 @@ def main():
     else:
         logging.warning("Unable to stop backup task, return: %s", e)
 
-    if toStdout is True:
+    if toStdout is True and args.printonly is False:
         addFiles(configFile, zipStream, cptFile, logFile, args)
 
 
