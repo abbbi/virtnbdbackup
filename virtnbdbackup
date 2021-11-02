@@ -24,6 +24,8 @@ import argparse
 from datetime import datetime
 from functools import partial
 from tqdm import tqdm
+from threading import current_thread
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -165,6 +167,13 @@ def main():
     parser.add_argument(
         "-z", "--compress", default=False, help="Compress with lz4", action="store_true"
     )
+    parser.add_argument(
+        "-w",
+        "--worker",
+        type=int,
+        default=None,
+        help="Amount of concurrent workers used to backup multiple disks: by default matches amount of disks",
+    )
 
     outHelper = outputhelper.outputHelper()
     lib = common.Common()
@@ -180,6 +189,10 @@ def main():
     else:
         zipStream = outHelper.Zip()
         args.output = "./"
+        args.worker = 1
+
+    if args.worker is not None and args.worker < 1:
+        args.worker = 1
 
     logFile = "%s/backup.%s.%s.log" % (
         args.output,
@@ -200,6 +213,8 @@ def main():
     lib.printVersion(__version__)
 
     logging.info("Backup level: [%s]", args.level)
+    if args.compress:
+        logging.info("Compression enabled")
 
     if toStdout is True and args.type == "raw":
         logging.error("Output type raw not supported to stdout")
@@ -228,11 +243,12 @@ def main():
         logging.error("Consider re-executing full backup.")
         sys.exit(1)
 
-    logging.info("Store checkpoints in: %s", args.checkpointdir)
     if not args.checkpointdir:
         args.checkpointdir = "{}/checkpoints".format(
             args.output,
         )
+    else:
+        logging.info("Store checkpoints in: %s", args.checkpointdir)
 
     outHelper.Directory(args.checkpointdir)
 
@@ -247,10 +263,10 @@ def main():
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
+    signal.signal(signal.SIGINT, partial(handleSignal, domObj, virtClient, logging))
+
     vmConfig = virtClient.getDomainConfig(domObj)
     disks = virtClient.getDomainDisks(vmConfig, args.exclude, args.include, args.raw)
-
-    signal.signal(signal.SIGINT, partial(handleSignal, domObj, virtClient, logging))
 
     if not disks:
         logging.error(
@@ -261,6 +277,9 @@ def main():
     logging.info(
         "Domain has %s disks attached which support changed block tracking.", len(disks)
     )
+    if args.worker is None:
+        args.worker = int(len(disks))
+    logging.info("Concurrent backup processes: [%s]", args.worker)
 
     if args.killonly is True:
         logging.info("Stopping backup job")
@@ -317,6 +336,7 @@ def main():
     outHelper.Directory(args.scratchdir)
 
     backupSocket = lib.getSocketFile(args.socketfile)
+    logging.info("NDB Endpoint socket: %s", backupSocket)
 
     try:
         logging.info("Starting backup job.")
@@ -350,30 +370,39 @@ def main():
         logging.info("Started backup job for debugging, exiting.")
         sys.exit(0)
 
-    for disk in disks:
-        try:
-            backupDisk(
-                disk,
-                args,
-                lib,
-                checkpointName,
-                parentCheckpoint,
-                backupSocket,
-                stream,
-                sTypes,
-                zipStream,
-                toStdout,
-            )
-        except Exception as e:
-            logging.error("Unable to backup Disk: %s", e)
-            logging.exception(e)
-            virtClient.stopBackup(domObj)
-            sys.exit(1)
+    try:
+        with ThreadPoolExecutor(max_workers=args.worker) as executor:
+            futures = {
+                executor.submit(
+                    backupDisk,
+                    disk,
+                    count,
+                    args,
+                    lib,
+                    checkpointName,
+                    parentCheckpoint,
+                    backupSocket,
+                    stream,
+                    sTypes,
+                    zipStream,
+                    toStdout,
+                ): disk
+                for count, disk in enumerate(disks)
+            }
+            results = {}
+            for future in as_completed(futures):
+                if future.result() is not True:
+                    raise RuntimeError("Backup of one disk failed")
+    except Exception as e:
+        logging.error("Unable to backup Disk: %s", e)
+        logging.exception(e)
+        virtClient.stopBackup(domObj)
+        sys.exit(1)
 
     configFile = None
     if args.printonly is False:
         configFile = backupConfig(vmConfig, args, checkpointName)
-    logging.info("Stopping backup task")
+    logging.info("Backup jobs finished, stopping backup task.")
     ret = virtClient.stopBackup(domObj)
     if ret == 0:
         logging.info("Finished")
@@ -416,6 +445,7 @@ def backupConfig(vmConfig, args, checkpointName):
 
 def backupDisk(
     disk,
+    count,
     args,
     lib,
     checkpointName,
@@ -426,9 +456,8 @@ def backupDisk(
     zipStream,
     toStdout,
 ):
-    """Backup domain disk data. Disks are currently processed
-    sequentially.
-    """
+    """Backup domain disk data."""
+    current_thread().name = disk.diskTarget
     if disk.diskFormat != "raw":
         streamType = args.type
     else:
@@ -440,7 +469,6 @@ def backupDisk(
         logging.info("INC backup: set context to %s", metaContext)
 
     nbdClient = nbdhelper.nbdClient(disk.diskTarget, metaContext, backupSocket)
-    logging.info("NDB Endpoint socket: %s", backupSocket)
     connection = nbdClient.connect()
     if not connection:
         raise RuntimeError("Error connecting to nbd endpoint.")
@@ -451,7 +479,6 @@ def backupDisk(
             qemuhelper.qemuHelper(disk.diskTarget), metaContext, backupSocket
         )
     else:
-        logging.info("Using nbd to query extents")
         extentHandler = extenthandler.ExtentHandler(
             connection, metaContext, backupSocket
         )
@@ -460,19 +487,20 @@ def backupDisk(
 
     if extents is None:
         logging.error("No extents found")
-        return
+        return True
 
     thinBackupSize = sum([extent.length for extent in extents if extent.data is True])
-    logging.info("Got %s extents", len(extents))
+    logging.info("Got %s extents to backup.", len(extents))
     logging.debug("%s", lib.dumpExtentJson(extents))
     logging.info("%s bytes disk size", diskSize)
     logging.info("%s bytes of data extents to backup", thinBackupSize)
     if args.printonly is True:
         nbdClient.disconnect()
-        return
+        return True
 
     if args.level == "inc" and thinBackupSize == 0:
         logging.info("No dirty blocks found")
+        args.noprogress = True
 
     if args.level in ("full", "copy"):
         if disk.diskFormat == "raw":
@@ -509,8 +537,6 @@ def backupDisk(
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
-        if args.compress:
-            logging.info("Compression enabled")
         inc = args.level == "inc"
         metadata = stream.dumpMetadata(
             diskSize,
@@ -531,6 +557,8 @@ def backupDisk(
         unit="B",
         unit_scale=True,
         disable=args.noprogress,
+        position=count,
+        leave=False,
     )
     compressedSizes = []
     for save in extents:
@@ -601,12 +629,15 @@ def backupDisk(
     if toStdout is False:
         try:
             os.rename(targetFilePartial, targetFile)
-            logging.info(
-                "Backup of disk %s finished, file: %s", disk.diskTarget, targetFile
-            )
+            if args.noprogress is True:
+                logging.info(
+                    "Backup of disk %s finished, file: %s", disk.diskTarget, targetFile
+                )
         except OSError as e:
             logging.error("Unable to rename file: %s", e)
             sys.exit(1)
+
+    return True
 
 
 if __name__ == "__main__":

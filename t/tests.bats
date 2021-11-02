@@ -6,14 +6,18 @@ if [ -z "$TEST" ]; then
     exit
 fi
 
+if [ -z "$TMPDIR" ]; then
+    export TMPDIR=$(mktemp -d)
+    chmod go+rwx $TMPDIR
+fi
 load $TEST/config.bash
 
 setup() {
  aa-teardown >/dev/null
 }
 
-@test "Setup / download vm image $VM_IMAGE to /tmp/" {
-    cp ${VM_IMAGE} /tmp/
+@test "Setup / download vm image $VM_IMAGE to ${TMPDIR}/" {
+    cp ${VM_IMAGE} ${TMPDIR}
 }
 
 @test "Setup: Define and start test VM ${VM}" {
@@ -21,8 +25,9 @@ setup() {
     echo "output = ${output}"
     virsh undefine ${VM} --remove-all-storage --checkpoints-metadata || true
     echo "output = ${output}"
-    cp ${VM}/${VM}.xml /tmp/
-    run virsh define /tmp/${VM}.xml
+    cp ${VM}/${VM}.xml ${TMPDIR}/
+    sed -i "s|__TMPDIR__|${TMPDIR}|g" ${TMPDIR}/${VM}.xml
+    run virsh define ${TMPDIR}/${VM}.xml
     echo "output = ${output}"
     run virsh start ${VM}
     echo "output = ${output}"
@@ -31,27 +36,29 @@ setup() {
 }
 @test "Create reference backup image using qemu-img convert to $BACKUPSET" {
     rm -rf $BACKUPSET
-    run ../virtnbdbackup -t raw -d $VM -s -o $BACKUPSET --socketfile /tmp/sock
+    run ../virtnbdbackup -t raw -d $VM -s -o $BACKUPSET --socketfile ${TMPDIR}/sock
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    run qemu-img convert -f raw nbd+unix:///sda?socket=/tmp/sock -O raw $QEMU_FILE
-    echo "output = ${output}"
-    [ "$status" -eq 0 ]
+    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+        run qemu-img convert -f raw nbd+unix:///${disk}?socket=${TMPDIR}/sock -O raw $QEMU_FILE.${disk}
+        [ "$status" -eq 0 ]
+        echo "output = ${output}"
+    done
     run ../virtnbdbackup -t raw -d $VM -k -o $BACKUPSET
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
 @test "Extent: Query extents using qemu tools" {
-    rm -rf /tmp/extentquery
-    run ../virtnbdbackup -q -l copy -d $VM -o /tmp/extentquery -p
+    rm -rf ${TMPDIR}/extentquery
+    run ../virtnbdbackup -q -l copy -d $VM -o ${TMPDIR}/extentquery -p
     echo "output = ${output}"
     [[ "$output" =~ "$EXTENT_OUTPUT1" ]]
     [[ "$output" =~ "$EXTENT_OUTPUT2" ]]
     [[ "$output" =~ "$EXTENT_OUTPUT3" ]]
 }
 @test "Extent: Query extents using extent handler" {
-    rm -rf /tmp/extentquery
-    run ../virtnbdbackup -l copy -d $VM -o /tmp/extentquery -p
+    rm -rf ${TMPDIR}/extentquery
+    run ../virtnbdbackup -l copy -d $VM -o ${TMPDIR}/extentquery -p
     echo "output = ${output}"
     [[ "$output" =~ "$EXTENT_OUTPUT1" ]]
     [[ "$output" =~ "$EXTENT_OUTPUT2" ]]
@@ -65,9 +72,12 @@ setup() {
     [[ "$output" =~ "Creating full provisioned" ]]
 }
 @test "Compare backup image contents against reference image" {
-    run cmp -b $QEMU_FILE "${BACKUPSET}/sda.copy.data"
-    echo "output = ${output}"
-    [ "$status" -eq 0 ]
+    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+        echo "Disk:${disk}" >&3
+        run cmp -b $QEMU_FILE.${disk} "${BACKUPSET}/${disk}.copy.data"
+        [ "$status" -eq 0 ]
+        echo "output = ${output}"
+    done
 }
 @test "Backup raw using virtnbdbackup, query extents with qemu-img" {
     rm -rf $BACKUPSET
@@ -76,9 +86,11 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Compare backup image, extents queried via qemu tools" {
-    run cmp -b $QEMU_FILE "${BACKUPSET}/sda.copy.data"
-    echo "output = ${output}"
-    [ "$status" -eq 0 ]
+    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+        run cmp -b $QEMU_FILE.${disk} "${BACKUPSET}/${disk}.copy.data"
+        [ "$status" -eq 0 ]
+        echo "output = ${output}"
+    done
 }
 @test "Backup in stream format"  {
     rm -rf $BACKUPSET
@@ -86,28 +98,50 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Backup in stream format, check if multiple writers are used"  {
+    DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
+    if [ $DISK_COUNT == 2 ]; then
+        rm -rf $BACKUPSET
+        run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET
+        [ "$status" -eq 0 ]
+        [[ "$output" =~ "Concurrent backup processes: [2]" ]]
+    else
+        skip "vm has only one disk"
+    fi
+}
+@test "Backup in stream format, limit writer to 1"  {
+    DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
+    if [ $DISK_COUNT == 2 ]; then
+        rm -rf $BACKUPSET
+        run ../virtnbdbackup -l copy -d $VM -w 1 -o $BACKUPSET
+        [ "$status" -eq 0 ]
+        [[ "$output" =~ "Concurrent backup processes: [1]" ]]
+    else
+        skip "vm has only one disk"
+    fi
+}
 toOut() {
     # for some reason bats likes to hijack stdout which results
     # in data being read into memory  ... helper function works
     # around this issue.
-    ../virtnbdbackup -l full -d $VM -i sda -o - > /tmp/backup.zip
+    ../virtnbdbackup -l full -d $VM -i sda -o - > ${TMPDIR}/backup.zip
 }
 @test "Full Backup in stream format, single disk write to stdout, check zip contents"  {
-    rm -f /tmp/backup.zip
+    rm -f ${TMPDIR}/backup.zip
     export PYTHONUNBUFFERED=True
     run toOut
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    [ -e /tmp/backup.zip ]
-    unzip -l /tmp/backup.zip | grep sda.full.data
+    [ -e ${TMPDIR}/backup.zip ]
+    unzip -l ${TMPDIR}/backup.zip | grep sda.full.data
     [ "$status" -eq 0 ]
-    unzip -l /tmp/backup.zip | grep vmconfig.virtnbdbackup
+    unzip -l ${TMPDIR}/backup.zip | grep vmconfig.virtnbdbackup
     [ "$status" -eq 0 ]
-    unzip -l /tmp/backup.zip | grep backup.full..*.log
+    unzip -l ${TMPDIR}/backup.zip | grep backup.full..*.log
     [ "$status" -eq 0 ]
-    unzip -l /tmp/backup.zip | grep "${VM}.cpt"
+    unzip -l ${TMPDIR}/backup.zip | grep "${VM}.cpt"
     [ "$status" -eq 0 ]
-    unzip -l /tmp/backup.zip | grep checkpoints
+    unzip -l ${TMPDIR}/backup.zip | grep checkpoints
     [ "$status" -eq 0 ]
     echo "output = ${output}"
 }
@@ -123,23 +157,22 @@ toOut() {
     [[ "$output" =~ "End of stream" ]]
     [ "$status" -eq 0 ]
 }
-@test "Convert restored qcow2 image to RAW image"  {
-    run qemu-img convert -f qcow2 -O raw $RESTORESET/sda $CONVERT_FILE
-    echo "output = ${output}"
-    [ "$status" -eq 0 ]
-}
-@test "Compare image contents between converted image and reference image"  {
-    run cmp $QEMU_FILE $CONVERT_FILE
-    echo "output = ${output}"
-    [ "$status" -eq 0 ]
+@test "Convert restored qcow2 image to RAW image, compare with reference image"  {
+    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+        run qemu-img convert -f qcow2 -O raw $RESTORESET/${disk} $RESTORESET/${disk}.raw
+        [ "$status" -eq 0 ]
+        run cmp $QEMU_FILE.${disk} $RESTORESET/${disk}.raw
+        [ "$status" -eq 0 ]
+        echo "output = ${output}"
+    done
 }
 
 # compression
 @test "Backup in stream format: with and without compression, restore both and compare results"  {
-    BACKUPSET_COMPRESSED="/tmp/testset_compressed"
+    BACKUPSET_COMPRESSED="${TMPDIR}/testset_compressed"
 
-    RESTOREDIR="/tmp/restore_uncompressed"
-    RESTOREDIR_COMPRESSED="/tmp/restore_compressed"
+    RESTOREDIR="${TMPDIR}/restore_uncompressed"
+    RESTOREDIR_COMPRESSED="${TMPDIR}/restore_compressed"
 
     rm -rf $BACKUPSET $BACKUPSET_COMPRESSED
 
@@ -159,7 +192,7 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 
-    run cmp /tmp/restore_uncompressed/sda /tmp/restore_compressed/sda
+    run cmp ${TMPDIR}/restore_uncompressed/sda ${TMPDIR}/restore_compressed/sda
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 
@@ -171,11 +204,11 @@ toOut() {
 @test "Setup: Prepare test for incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     command -v guestmount || exit 1
-    rm -rf /tmp/inctest
+    rm -rf ${TMPDIR}/inctest
 }
 @test "Backup: create full backup" {
     [ -z $INCTEST ] && skip "skipping"
-    run ../virtnbdbackup -d $VM -l full -o /tmp/inctest
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/inctest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
@@ -205,23 +238,23 @@ toOut() {
 }
 @test "Backup: create first incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
-    run ../virtnbdbackup -d $VM -l inc -o /tmp/inctest
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
 @test "Backup: create second incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
-    run ../virtnbdbackup -d $VM -l inc -o /tmp/inctest
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
 @test "Restore: restore data and check if file from incremental backup exists" {
     [ -z $INCTEST ] && skip "skipping"
-    rm -rf /tmp/RESTOREINC/
-    run ../virtnbdrestore -a restore -i /tmp/inctest/ -o /tmp/RESTOREINC/
+    rm -rf ${TMPDIR}/RESTOREINC/
+    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    run guestmount -a /tmp/RESTOREINC/sda -m /dev/sda1  /empty
+    run guestmount -a ${TMPDIR}/RESTOREINC/sda -m /dev/sda1  /empty
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     [ -e /empty/incfile ]
@@ -231,8 +264,8 @@ toOut() {
 }
 @test "Restore: restore data until first incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
-    rm -rf /tmp/RESTOREINC/
-    run ../virtnbdrestore -a restore -i /tmp/inctest/ --until virtnbdbackup.1 -o /tmp/RESTOREINC/
+    rm -rf ${TMPDIR}/RESTOREINC/
+    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --until virtnbdbackup.1 -o ${TMPDIR}/RESTOREINC/
     [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
     echo "output = ${output}"
 }

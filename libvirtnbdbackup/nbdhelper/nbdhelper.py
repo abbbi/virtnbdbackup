@@ -29,7 +29,7 @@ class nbdClient(object):
         self.version()
 
     def version(self):
-        log.info("%s", nbd.__version__)
+        log.info("libnbd version: %s", nbd.__version__)
 
     def getBlockInfo(self):
         """Read maximum request/block size as advertised by the nbd

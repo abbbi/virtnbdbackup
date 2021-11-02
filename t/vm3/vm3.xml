@@ -1,4 +1,4 @@
-<domain type='kvm' id='4' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+<domain type='qemu' id='4' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
   <name>vm3</name>
   <metadata>
     <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
@@ -35,7 +35,7 @@
   <devices>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/tmp/vm3-sda.qcow2' index='2'/>
+      <source file='__TMPDIR__/vm3-sda.qcow2' index='2'/>
       <backingStore/>
       <target dev='sda' bus='sata'/>
       <alias name='sata0-0-0'/>
@@ -43,7 +43,7 @@
     </disk>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/tmp/vm3-sdb.qcow2' index='1'/>
+      <source file='__TMPDIR__/vm3-sdb.qcow2' index='1'/>
       <backingStore/>
       <target dev='sdb' bus='scsi'/>
       <alias name='scsi0-0-0-1'/>

@@ -18,6 +18,7 @@ machines.
    * [Debian package](#debian-package)
 * [Backup Format](#backup-format)
 * [Backup Operation](#backup-operation)
+* [Backup concurrency](#backup-concurrency)
 * [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
 * [Backup Examples](#backup-examples)
    * [Excluding disks](#excluding-disks)
@@ -226,6 +227,19 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
 2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 2147483648 bytes disk size
 2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 1394147328 bytes of data extents to backup
 ```
+
+# Backup concurrency
+
+If `virtnbdbackup` saves data to a regular target directory, it starts one
+thread for each disk it detects to speed up the backup operation.
+
+This behavior can be changed using the `--worker` option to define an amount of
+threads to be used for backup. Depending on how many disks your virtual machine
+has attached, it might make sense to try a different amount of workers to see
+which amount your hardware can handle best.
+
+If standard output is defined as backup target, the amount of workers is
+allways limited to 1, to ensure a valid Zip file format.
 
 ## Compression
 

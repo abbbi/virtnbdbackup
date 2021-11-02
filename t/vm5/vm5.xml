@@ -36,7 +36,7 @@
     <emulator>/usr/libexec/qemu-kvm</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/tmp/vm5-sda.qcow2' index='2'/>
+      <source file='__TMPDIR__/vm5-sda.qcow2' index='2'/>
       <backingStore/>
       <target dev='sda' bus='sata'/>
       <alias name='sata0-0-0'/>

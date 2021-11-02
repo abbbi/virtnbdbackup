@@ -1,7 +1,7 @@
-QEMU_FILE=/tmp/convert.full.raw
-CONVERT_FILE=/tmp/restored.full.raw
-BACKUPSET=/tmp/testset2
-RESTORESET=/tmp/restoreset2
+QEMU_FILE=${TMPDIR}/convert.full.raw
+CONVERT_FILE=${TMPDIR}/restored.full.raw
+BACKUPSET=${TMPDIR}/testset
+RESTORESET=${TMPDIR}/restoreset
 VM="vm2"
 # lets use an openstack image for testing,
 # as the defined virtual machine has way
@@ -24,7 +24,7 @@ if qemu-img info $VM_IMAGE | grep "compat: 0.10" >/dev/null; then
     mv "${VM_IMAGE}.new" "${VM_IMAGE}"
 fi
 
-EXTENT_OUTPUT1="Got 866 extents"
+EXTENT_OUTPUT1="Got 866 extents to backup."
 EXTENT_OUTPUT2="2147483648 bytes disk size"
 EXTENT_OUTPUT3="1394147328 bytes of data extents to backup"
 
