@@ -190,6 +190,7 @@ def main():
         zipStream = outHelper.Zip()
         args.output = "./"
         args.worker = 1
+        args.raw = False
 
     if args.worker is not None and args.worker < 1:
         args.worker = 1
