@@ -10,7 +10,13 @@ if [ -z "$TMPDIR" ]; then
     export TMPDIR=$(mktemp -d)
     chmod go+rwx $TMPDIR
 fi
+
 load $TEST/config.bash
+
+if [ ! -z $HAS_RAW ] && [ -z $OPT ]; then
+    export OPT="--raw"
+    echo "Raw disk attached Additional options: $OPT" >&3
+fi
 
 setup() {
  aa-teardown >/dev/null
@@ -36,10 +42,6 @@ setup() {
 }
 
 @test "Start backup job and nbd endpoint to create reference image" {
-    if [ ! -z $HAS_RAW ]; then
-        OPT="--raw"
-        echo "Raw disk attached Additional options: $OPT" >&3
-    fi
     rm -rf $BACKUPSET
     run ../virtnbdbackup -t raw $OPT -d $VM -s -o $BACKUPSET --socketfile ${TMPDIR}/sock
     echo "output = ${output}"
@@ -75,9 +77,6 @@ setup() {
 }
 @test "Backup raw using virtnbdbackup, query extents with extenthandler" {
     rm -rf $BACKUPSET
-    if [ ! -z $HAS_RAW ]; then
-        OPT="--raw"
-    fi
     run ../virtnbdbackup -l copy $OPT -t raw -d $VM -o $BACKUPSET
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -117,11 +116,6 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Backup in stream format, check if multiple writers are used"  {
-    if [ ! -z $HAS_RAW ]; then
-        OPT="--raw"
-        echo "Raw disk attached Additional options: $OPT" >&3
-    fi
-
     DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
     if [ $DISK_COUNT == 2 ]; then
         rm -rf $BACKUPSET
@@ -137,11 +131,6 @@ setup() {
     fi
 }
 @test "Backup in stream format, limit writer to 1"  {
-    if [ ! -z $HAS_RAW ]; then
-        OPT="--raw"
-        echo "Raw disk attached Additional options: $OPT" >&3
-    fi
-
     DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
     if [ $DISK_COUNT == 2 ]; then
         rm -rf $BACKUPSET
@@ -184,10 +173,6 @@ toOut() {
     [[ "$output" =~ "$VIRTUAL_SIZE" ]]
 }
 @test "Restore stream format"  {
-    if [ ! -z $HAS_RAW ]; then
-        OPT="--raw"
-        echo "Raw disk attached Additional restore options: $OPT" >&3
-    fi
     run ../virtnbdrestore -a restore $OPT -i $BACKUPSET -o $RESTORESET
     echo "output = ${output}"
     [[ "$output" =~ "End of stream" ]]
