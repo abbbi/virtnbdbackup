@@ -34,16 +34,25 @@ setup() {
     [ "$status" -eq 0 ]
     echo "output = ${output}"
 }
-@test "Create reference backup image using qemu-img convert to $BACKUPSET" {
+
+@test "Start backup job and nbd endpoint to create reference image" {
+    if [ ! -z $HAS_RAW ]; then
+        OPT="--raw"
+        echo "Raw disk attached Additional options: $OPT" >&3
+    fi
     rm -rf $BACKUPSET
-    run ../virtnbdbackup -t raw -d $VM -s -o $BACKUPSET --socketfile ${TMPDIR}/sock
+    run ../virtnbdbackup -t raw $OPT -d $VM -s -o $BACKUPSET --socketfile ${TMPDIR}/sock
     echo "output = ${output}"
     [ "$status" -eq 0 ]
+}
+@test "Create reference backup image using qemu-img convert to $BACKUPSET" {
     for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
         run qemu-img convert -f raw nbd+unix:///${disk}?socket=${TMPDIR}/sock -O raw $QEMU_FILE.${disk}
-        [ "$status" -eq 0 ]
         echo "output = ${output}"
+        [ "$status" -eq 0 ]
     done
+}
+@test "Stop backup job and nbd endpoint" {
     run ../virtnbdbackup -t raw -d $VM -k -o $BACKUPSET
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -66,7 +75,10 @@ setup() {
 }
 @test "Backup raw using virtnbdbackup, query extents with extenthandler" {
     rm -rf $BACKUPSET
-    run ../virtnbdbackup -l copy -t raw -d $VM -o $BACKUPSET
+    if [ ! -z $HAS_RAW ]; then
+        OPT="--raw"
+    fi
+    run ../virtnbdbackup -l copy $OPT -t raw -d $VM -o $BACKUPSET
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Creating full provisioned" ]]
@@ -75,8 +87,8 @@ setup() {
     for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
         echo "Disk:${disk}" >&3
         run cmp -b $QEMU_FILE.${disk} "${BACKUPSET}/${disk}.copy.data"
-        [ "$status" -eq 0 ]
         echo "output = ${output}"
+        [ "$status" -eq 0 ]
     done
 }
 @test "Backup raw using virtnbdbackup, query extents with qemu-img" {
@@ -86,11 +98,17 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Compare backup image, extents queried via qemu tools" {
-    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
-        run cmp -b $QEMU_FILE.${disk} "${BACKUPSET}/${disk}.copy.data"
-        [ "$status" -eq 0 ]
+    if [ -z $HAS_RAW ]; then
+        for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+            run cmp -b $QEMU_FILE.${disk} "${BACKUPSET}/${disk}.copy.data"
+            echo "output = ${output}"
+            [ "$status" -eq 0 ]
+        done
+    else
+        run cmp -b $QEMU_FILE.sda "${BACKUPSET}/sda.copy.data"
         echo "output = ${output}"
-    done
+        [ "$status" -eq 0 ]
+    fi
 }
 @test "Backup in stream format"  {
     rm -rf $BACKUPSET
@@ -99,21 +117,35 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Backup in stream format, check if multiple writers are used"  {
+    if [ ! -z $HAS_RAW ]; then
+        OPT="--raw"
+        echo "Raw disk attached Additional options: $OPT" >&3
+    fi
+
     DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
     if [ $DISK_COUNT == 2 ]; then
         rm -rf $BACKUPSET
-        run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET
+        run ../virtnbdbackup -l copy -d $VM $OPT -o $BACKUPSET
         [ "$status" -eq 0 ]
         [[ "$output" =~ "Concurrent backup processes: [2]" ]]
+
+        if [ ! -z $HAS_RAW ]; then
+            [[ "$output" =~ "Creating full provisioned raw back" ]]
+        fi
     else
         skip "vm has only one disk"
     fi
 }
 @test "Backup in stream format, limit writer to 1"  {
+    if [ ! -z $HAS_RAW ]; then
+        OPT="--raw"
+        echo "Raw disk attached Additional options: $OPT" >&3
+    fi
+
     DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
     if [ $DISK_COUNT == 2 ]; then
         rm -rf $BACKUPSET
-        run ../virtnbdbackup -l copy -d $VM -w 1 -o $BACKUPSET
+        run ../virtnbdbackup -l copy $OPT -d $VM -w 1 -o $BACKUPSET
         [ "$status" -eq 0 ]
         [[ "$output" =~ "Concurrent backup processes: [1]" ]]
     else
@@ -152,22 +184,40 @@ toOut() {
     [[ "$output" =~ "$VIRTUAL_SIZE" ]]
 }
 @test "Restore stream format"  {
-    run ../virtnbdrestore -a restore -i $BACKUPSET -o $RESTORESET
+    if [ ! -z $HAS_RAW ]; then
+        OPT="--raw"
+        echo "Raw disk attached Additional restore options: $OPT" >&3
+    fi
+    run ../virtnbdrestore -a restore $OPT -i $BACKUPSET -o $RESTORESET
     echo "output = ${output}"
     [[ "$output" =~ "End of stream" ]]
     [ "$status" -eq 0 ]
 }
 @test "Convert restored qcow2 image to RAW image, compare with reference image"  {
-    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
-        FILENAME="${VM}-${disk}.qcow2"
+    if [ -z $HAS_RAW ]; then
+        for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+            FILENAME="${VM}-${disk}.qcow2"
+            echo $FILENAME >&3
+            run qemu-img convert -f qcow2 -O raw $RESTORESET/${FILENAME} $RESTORESET/${disk}.raw
+            echo "output = ${output}"
+            [ "$status" -eq 0 ]
+            run cmp $QEMU_FILE.${disk} $RESTORESET/${disk}.raw
+            echo "output = ${output}"
+            [ "$status" -eq 0 ]
+        done
+    else
+        # restore includes raw files, must not be converted
+        FILENAME="${VM}-sda.qcow2"
         echo $FILENAME >&3
-        run qemu-img convert -f qcow2 -O raw $RESTORESET/${FILENAME} $RESTORESET/${disk}.raw
-        [ "$status" -eq 0 ]
+        run qemu-img convert -f qcow2 -O raw $RESTORESET/${FILENAME} $RESTORESET/sda.raw
         echo "output = ${output}"
-        run cmp $QEMU_FILE.${disk} $RESTORESET/${disk}.raw
         [ "$status" -eq 0 ]
+        run cmp $QEMU_FILE.sda $RESTORESET/sda.raw
         echo "output = ${output}"
-    done
+        [ "$status" -eq 0 ]
+        run cmp $QEMU_FILE.sdb $RESTORESET/${VM}-sdb.qcow2
+        [ "$status" -eq 0 ]
+    fi
 }
 
 # compression

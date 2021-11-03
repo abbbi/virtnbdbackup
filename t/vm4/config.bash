@@ -3,7 +3,7 @@ CONVERT_FILE=${TMPDIR}/restored.full.raw
 BACKUPSET=${TMPDIR}/testset
 RESTORESET=${TMPDIR}/restoreset
 VM="vm4"
-VM_IMAGE="${VM}/vm4-sda.qcow2"
+VM_IMAGE="${VM}/vm4-*.qcow2"
 
 
 # following outputs are expected for this vm image
@@ -13,3 +13,5 @@ EXTENT_OUTPUT3="327680 bytes of data extents to backup"
 
 DATA_SIZE="327680"
 VIRTUAL_SIZE="1048576"
+
+HAS_RAW=1

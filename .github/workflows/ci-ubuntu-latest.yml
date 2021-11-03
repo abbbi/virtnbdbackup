@@ -55,6 +55,8 @@ jobs:
       run: cd t && sudo make vm1.tests && cd -
     - name: Execute tests (vm3)
       run: cd t && sudo make vm3.tests && cd -
+    - name: Execute tests (vm4)
+      run: cd t && sudo make vm4.tests && cd -
     - name: Perform installation
       run: sudo python3 setup.py install
     - name: Execute commands
