@@ -27,8 +27,10 @@ define clean
 	@rm -rf checkpoints
 	@rm -f vmconfig*.xml
 	for vm in vm1 vm2 vm3 vm4 vm5; do \
-		virsh destroy $$vm || true; \
-		virsh undefine $$vm --checkpoints-metadata || true ; \
+		if virsh list | grep $$vm; then \
+			virsh destroy $$vm; \
+			virsh undefine $$vm --checkpoints-metadata; \
+		fi \
 	done
 endef
 
