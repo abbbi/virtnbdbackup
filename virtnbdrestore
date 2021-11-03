@@ -46,6 +46,7 @@ def dump(lib, args, stream, dataFiles):
                 "Unable to dump image contents: [%s] defunct or raw image?",
                 dataFile,
             )
+            continue
         pprint.pprint(meta)
 
         if lib.isCompressed(meta):
@@ -317,7 +318,7 @@ def main():
         "--raw",
         default=False,
         action="store_true",
-        help="Include full provisioned disk images in backup",
+        help="Copy raw images as is during restore.",
     )
 
     lib = common.Common()
