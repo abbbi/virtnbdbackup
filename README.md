@@ -238,7 +238,7 @@ threads to be used for backup. Depending on how many disks your virtual machine
 has attached, it might make sense to try a different amount of workers to see
 which amount your hardware can handle best.
 
-If standard output is defined as backup target, the amount of workers is
+If standard output (`-`) is defined as backup target, the amount of workers is
 allways limited to 1, to ensure a valid Zip file format.
 
 ## Compression
@@ -256,8 +256,8 @@ block and original data are enabled.
 
 ## Pipe data to other hosts
 
-If the output target points to standard out, `virtnbdbackup` puts the resulting
-backup data into an uncompessed zip archive.
+If the output target points to standard out (`-`), `virtnbdbackup` puts the
+resulting backup data into an uncompessed zip archive.
 
 A such, it is possible to transfer the backup data to different hosts, or pipe
 it to other programs.
@@ -290,6 +290,9 @@ directory:
  # virtnbdbackup -d vm1 -l inc -o - | ssh root@remotehost 'cat > backup-inc1.zip'
  [..]
 ```
+
+You may consider adding the created checkpoint files to some VCS system,
+like git, to have some kind of central backup history tracking.
 
 During restore unzip the data from both zip files into a single directory:
 (use `virtnbdrestore` to reconstruct the virtual machine images):
