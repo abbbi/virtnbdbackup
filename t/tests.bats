@@ -18,8 +18,12 @@ if [ ! -z $HAS_RAW ] && [ -z $OPT ]; then
     echo "Raw disk attached Additional options: $OPT" >&3
 fi
 
+
 setup() {
  aa-teardown >/dev/null
+ DISKS=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
+ export DISK_COUNT=$DISKS
+
 }
 
 @test "Setup / download vm image $VM_IMAGE to ${TMPDIR}/" {
@@ -109,6 +113,13 @@ setup() {
         [ "$status" -eq 0 ]
     fi
 }
+@test "Backup in stream format, exclude one disk"  {
+    [ $DISK_COUNT -lt 2 ] && skip "vm has only one disk"
+    run ../virtnbdbackup -l copy -x sdb -d $VM -o "${BACKUPSET}_exclude"
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Excluding Disks sdb" ]]
+}
 @test "Backup in stream format"  {
     rm -rf $BACKUPSET
     run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET
@@ -116,30 +127,22 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Backup in stream format, check if multiple writers are used"  {
-    DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
-    if [ $DISK_COUNT == 2 ]; then
-        rm -rf $BACKUPSET
-        run ../virtnbdbackup -l copy -d $VM $OPT -o $BACKUPSET
-        [ "$status" -eq 0 ]
-        [[ "$output" =~ "Concurrent backup processes: [2]" ]]
+    [ $DISK_COUNT -lt 2 ] && skip "vm has only one disk"
+    rm -rf $BACKUPSET
+    run ../virtnbdbackup -l copy -d $VM $OPT -o $BACKUPSET
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Concurrent backup processes: [2]" ]]
 
-        if [ ! -z $HAS_RAW ]; then
-            [[ "$output" =~ "Creating full provisioned raw back" ]]
-        fi
-    else
-        skip "vm has only one disk"
+    if [ ! -z $HAS_RAW ]; then
+        [[ "$output" =~ "Creating full provisioned raw back" ]]
     fi
 }
 @test "Backup in stream format, limit writer to 1"  {
-    DISK_COUNT=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
-    if [ $DISK_COUNT == 2 ]; then
-        rm -rf $BACKUPSET
-        run ../virtnbdbackup -l copy $OPT -d $VM -w 1 -o $BACKUPSET
-        [ "$status" -eq 0 ]
-        [[ "$output" =~ "Concurrent backup processes: [1]" ]]
-    else
-        skip "vm has only one disk"
-    fi
+    [ $DISK_COUNT -lt 2 ] && skip "vm has only one disk"
+    rm -rf $BACKUPSET
+    run ../virtnbdbackup -l copy $OPT -d $VM -w 1 -o $BACKUPSET
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Concurrent backup processes: [1]" ]]
 }
 toOut() {
     # for some reason bats likes to hijack stdout which results
