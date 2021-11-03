@@ -119,6 +119,7 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Excluding Disks sdb" ]]
+    [ ! -e "${BACKUPSET}_exclude/sdb.copy.data" ]
 }
 @test "Backup in stream format"  {
     rm -rf $BACKUPSET
