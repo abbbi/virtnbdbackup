@@ -39,6 +39,7 @@ machines.
    * [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
    * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
    * [High memory usage during backup](#high-memory-usage-during-backup)
+   * [Docker images](#docker)
 
 
 # Prerequisites
@@ -535,3 +536,7 @@ The fix itself was released with libnbd 1.5.2, so be sure to use at least this
 version if using `virtnbdbackup` on any other distribution.
 
 See also: https://github.com/abbbi/virtnbdbackup/issues/8
+
+## Docker images
+
+See: https://github.com/adrianparilli/virtnbdbackup-docker
