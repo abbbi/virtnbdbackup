@@ -33,10 +33,10 @@ class qemuHelper:
                 "--discard=unmap",
                 "--format=qcow2",
                 "-x",
-                "%s" % self.exportName,
-                "%s" % targetFile,
+                f"{self.exportName}",
+                f"{targetFile}",
                 "-k",
-                "%s" % socketFile,
+                f"{socketFile}",
             ],
             close_fds=True,
         )
