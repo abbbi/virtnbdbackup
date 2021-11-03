@@ -1,10 +1,10 @@
-import nbd
 import logging
+import nbd
 
 log = logging.getLogger(__name__)
 
 
-class nbdClient(object):
+class nbdClient:
     """Helper functions for NBD"""
 
     def __init__(self, exportName, metaContext, backupSocket):

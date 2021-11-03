@@ -150,13 +150,12 @@ def restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection):
             if dataSize == meta["dataSize"]:
                 logging.info("End of stream, %s bytes of data processed", dataSize)
                 return True
-            else:
-                logging.error(
-                    "Error: restored data size %s != %s",
-                    dataSize,
-                    meta["dataSize"],
-                )
-                return False
+            logging.error(
+                "Error: restored data size %s != %s",
+                dataSize,
+                meta["dataSize"],
+            )
+            return False
 
 
 def restore(lib, args, stream, sTypes):
@@ -245,10 +244,9 @@ def restore(lib, args, stream, sTypes):
                 if retry >= maxRetry:
                     logging.error("NBD server connection failed.")
                     return False
-                else:
-                    logging.info("Waiting for NBD Server, Retry: %s", retry)
-                    sleep(1)
-                    retry = retry + 1
+                logging.info("Waiting for NBD Server, Retry: %s", retry)
+                sleep(1)
+                retry = retry + 1
 
         for dataFile in restoreDisk:
             diskState = restoreData(

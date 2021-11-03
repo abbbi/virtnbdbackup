@@ -17,11 +17,11 @@
 import sys
 import string
 import random
-import logging
-import libvirt
 import glob
 import os
 from xml.etree import ElementTree
+import logging
+import libvirt
 
 # this is required so libvirt.py does not report errors to stderr
 # which it does by default. Error messages are fetched accordingly
@@ -35,7 +35,7 @@ libvirt.registerErrorHandler(f=libvirt_ignore, ctx=None)
 log = logging.getLogger(__name__)
 
 
-class DomainDisk(object):
+class DomainDisk:
     """Virtual machine Disk Object
 
     @diskTarget: target name for virtual disk as defined
@@ -48,7 +48,7 @@ class DomainDisk(object):
         self.diskFormat = None
 
 
-class client(object):
+class client:
     """Libvirt related functions"""
 
     def __init__(self):
@@ -95,7 +95,7 @@ class client(object):
         devices = []
 
         excludeList = None
-        if excludedDisks != None:
+        if excludedDisks is not None:
             excludeList = excludedDisks.split(",")
 
         driver = None
@@ -104,7 +104,7 @@ class client(object):
             for src in target.findall("target"):
                 dev = src.get("dev")
 
-            if excludeList != None:
+            if excludeList is not None:
                 if dev in excludeList:
                     log.warning("Excluding Disks %s from backup as requested", dev)
                     continue
@@ -117,7 +117,7 @@ class client(object):
                 continue
 
             device = target.get("device")
-            if device != None:
+            if device is not None:
                 if device == "lun":
                     log.warning(
                         "Ignoring lun disk %s does not support changed block tracking.",
@@ -127,7 +127,7 @@ class client(object):
 
             # ignore disk which use raw format, they do not support CBT
             driver = target.find("driver")
-            if driver != None:
+            if driver is not None:
                 diskFormat = driver.get("type")
                 if diskFormat == "raw" and includeRaw is False:
                     log.warning(
@@ -173,7 +173,7 @@ class client(object):
         )
         disks = ElementTree.SubElement(top, "disks")
 
-        if parentCheckpoint != False:
+        if parentCheckpoint is not False:
             inc = ElementTree.SubElement(top, "incremental")
             inc.text = parentCheckpoint
 
@@ -201,7 +201,7 @@ class client(object):
         desc.text = "Backup checkpoint"
         name = ElementTree.SubElement(top, "name")
         name.text = checkpointName
-        if parentCheckpoint != False:
+        if parentCheckpoint is not False:
             pct = ElementTree.SubElement(top, "parent")
             cptName = ElementTree.SubElement(pct, "name")
             cptName.text = parentCheckpoint
@@ -279,16 +279,14 @@ class client(object):
         """
 
         # clean persistent storage in args.checkpointdir
-        log.debug("Cleaning up persistent storage {:s}".format(args.checkpointdir))
+        log.debug("Cleaning up persistent storage %s", args.checkpointdir)
         try:
-            for checkpointFile in glob.glob("{:s}/*.xml".format(args.checkpointdir)):
-                log.debug("Remove checkpoint file {:s}".format(checkpointFile))
+            for checkpointFile in glob.glob(f"{args.checkpointdir}/*.xml"):
+                log.debug("Remove checkpoint file: %s", checkpointFile)
                 os.remove(checkpointFile)
         except Exception as e:
             log.error(
-                "Unable to clean persistent storage {:s}: {}".format(
-                    args.checkpointdir, e
-                )
+                "Unable to clean persistent storage %s: %s", args.checkpointdir, e
             )
             return False
 
@@ -319,7 +317,7 @@ class client(object):
         # get list of all .xml files in checkpointdir
         log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
         try:
-            checkpointList = glob.glob("{:s}/*.xml".format(args.checkpointdir))
+            checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
             checkpointList.sort(key=os.path.getmtime)
         except Exception as e:
             log.error(
@@ -368,7 +366,7 @@ class client(object):
 
     def backupCheckpoint(self, domObj, args, checkpointName):
         """save checkpoint config to persistent storage"""
-        checkpointFile = "{:s}/{:s}.xml".format(args.checkpointdir, checkpointName)
+        checkpointFile = f"{args.checkpointdir}/{checkpointName}.xml"
         log.info("Saving checkpoint config to: %s", checkpointFile)
         try:
             with open(checkpointFile, "w") as f:

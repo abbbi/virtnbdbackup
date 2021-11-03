@@ -8,7 +8,7 @@ import lz4.frame
 log = logging.getLogger(__name__)
 
 
-class Common(object):
+class Common:
     """Common functions"""
 
     def __init__(self):

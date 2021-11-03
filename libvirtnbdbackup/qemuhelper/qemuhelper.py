@@ -3,7 +3,7 @@ import json
 import subprocess
 
 
-class qemuHelper(object):
+class qemuHelper:
     """Wrapper for qemu executables"""
 
     def __init__(self, exportName):

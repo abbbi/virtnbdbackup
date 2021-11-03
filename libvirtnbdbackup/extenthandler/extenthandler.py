@@ -14,13 +14,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from nbd import CONTEXT_BASE_ALLOCATION
 import logging
+from nbd import CONTEXT_BASE_ALLOCATION
 
 log = logging.getLogger(__name__)
 
 
-class Extent(object):
+class Extent:
     def __init__(self):
         self.data = False
         self.zero = False
@@ -28,13 +28,13 @@ class Extent(object):
         self.offset = 0
 
 
-class _ExtentObj(object):
+class _ExtentObj:
     def __init__(self):
         self.length = None
         self.type = None
 
 
-class ExtentHandler(object):
+class ExtentHandler:
     """Query extent information about allocated and
     zeroed regions from the NBD server started by
     libvirt/qemu

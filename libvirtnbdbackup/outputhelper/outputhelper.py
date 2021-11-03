@@ -8,7 +8,7 @@ from datetime import datetime
 log = logging.getLogger(__name__)
 
 
-class dirFunc(object):
+class dirFunc:
     def _makeDir(self):
         if os.path.exists(self.targetDir):
             if not os.path.isdir(self.targetDir):
@@ -19,10 +19,10 @@ class dirFunc(object):
                 os.makedirs(self.targetDir)
             except OSError as e:
                 log.error("Unable to create target directory: %s", e)
-                raise SystemExit(1)
+                raise SystemExit(1) from e
 
 
-class outputHelper(object):
+class outputHelper:
     class Directory(dirFunc):
         def __init__(self, targetDir):
             self.targetDir = targetDir
@@ -31,7 +31,7 @@ class outputHelper(object):
             self._makeDir()
 
         def open(self, fileName, mode="w+"):
-            targetFile = "{}/{}".format(self.targetDir, fileName)
+            targetFile = f"{self.targetDir}/{fileName}"
             try:
                 self.fileHandle = open(targetFile, mode)
                 return self.fileHandle

@@ -23,9 +23,9 @@ import logging
 import argparse
 from datetime import datetime
 from functools import partial
-from tqdm import tqdm
 from threading import current_thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -244,9 +244,7 @@ def main():
         sys.exit(1)
 
     if not args.checkpointdir:
-        args.checkpointdir = "{}/checkpoints".format(
-            args.output,
-        )
+        args.checkpointdir = f"{args.output}/checkpoints"
     else:
         logging.info("Store checkpoints in: %s", args.checkpointdir)
 
@@ -290,7 +288,7 @@ def main():
             logging.exception(e)
             sys.exit(1)
 
-    checkpointName = "{:s}.0".format(lib.checkpointName)
+    checkpointName = f"{lib.checkpointName}.0"
     parentCheckpoint = False
     checkpoints = []
     cptFile = "%s/%s.cpt" % (args.output, args.domain)
@@ -526,14 +524,14 @@ def backupDisk(
         try:
             writer = open(targetFilePartial, "wb")
         except Exception as e:
-            raise RuntimeError("Unable to open target file: %s", e)
+            raise RuntimeError(f"Unable to open target file: {e}") from e
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
         try:
             writer.truncate(diskSize)
         except Exception as e:
-            raise RuntimeError("Unable to truncate target file: %s", e)
+            raise RuntimeError(f"Unable to truncate target file: {e}") from e
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
