@@ -42,8 +42,10 @@ def dump(lib, args, stream, dataFiles):
         meta = lib.dumpMetaData(dataFile, stream)
 
         if meta is False:
-            logging.error("Unable to dump image contents, image defunct or raw image?")
-            continue
+            logging.warning(
+                "Unable to dump image contents: [%s] defunct or raw image?",
+                dataFile,
+            )
         pprint.pprint(meta)
 
         if lib.isCompressed(meta):
@@ -52,7 +54,7 @@ def dump(lib, args, stream, dataFiles):
     return True
 
 
-def restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection):
+def restoreData(lib, args, stream, sTypes, dataFile, targetFile, nbdClient, connection):
     """Restore data for disk"""
     reader = open(dataFile, "rb")
     kind, start, length = stream.readFrame(reader)
@@ -72,10 +74,7 @@ def restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection):
         logging.info("Saveset %s contains no dirty blocks, skipping", dataFile)
         return True
     logging.info(
-        "Applying data from file %s to %s/%s",
-        dataFile,
-        args.output,
-        meta["diskName"],
+        "Applying data from backup file [%s] to target file [%s]", dataFile, targetFile
     )
     pprint.pprint(meta)
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
@@ -112,8 +111,6 @@ def restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection):
                 logging.debug("Original block size: %s", length)
                 length = trailer[dataBlockCnt]
                 logging.debug("Compressed block size: %s", length)
-            else:
-                length = length
 
             if originalSize >= nbdClient.maxRequestSize:
                 logging.debug("Chunked read/write, start: %s, len: %s", start, length)
@@ -158,14 +155,8 @@ def restoreData(lib, args, stream, sTypes, dataFile, nbdClient, connection):
             return False
 
 
-def restore(lib, args, stream, sTypes):
+def restore(lib, args, stream, sTypes, vmConfig):
     """Handle restore operation"""
-    logging.info("Read latest config file")
-    vmConfig = lib.getLastConfigFile(args.input)
-    if not vmConfig:
-        logging.error("No domain config file found")
-        sys.exit(1)
-
     with open(vmConfig, "r") as vmConf:
         vmDisks = virtclient.client().getDomainDisks(
             vmConf.read(), None, None, args.raw
@@ -178,15 +169,19 @@ def restore(lib, args, stream, sTypes):
             continue
 
         restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
-        logging.debug(restoreDisk)
+        logging.debug("Restoring disk: %s", restoreDisk)
         if len(restoreDisk) < 1:
             logging.warning(
                 "Did not find any backups for disk image %s", disk.diskTarget
             )
             continue
 
+        if disk.diskFileName is not None:
+            targetFile = f"{args.output}/{disk.diskFileName}"
+        else:
+            targetFile = f"{args.output}/{disk.diskTarget}"
+
         if args.raw and disk.diskFormat == "raw":
-            targetFile = "%s/%s" % (args.output, disk.diskTarget)
             logging.info("Copy raw image to %s", targetFile)
             try:
                 shutil.copy(restoreDisk[0], targetFile)
@@ -206,16 +201,15 @@ def restore(lib, args, stream, sTypes):
             return False
 
         logging.info(
-            "Create virtual Disk %s/%s, format: %s",
-            args.output,
-            meta["diskName"],
+            "Create virtual Disk [%s] format: [%s]",
+            targetFile,
             disk.diskFormat,
         )
         logging.info("Virtual Size %s", meta["virtualSize"])
         qFh = qemuhelper.qemuHelper(meta["diskName"])
 
         try:
-            qFh.create(args.output, meta["virtualSize"], disk.diskFormat)
+            qFh.create(targetFile, meta["virtualSize"], disk.diskFormat)
         except Exception as e:
             logging.error("Cant create restore target: %s", e)
             return False
@@ -224,7 +218,7 @@ def restore(lib, args, stream, sTypes):
 
         logging.info("Starting nbd server on socket: %s", socketFile)
         try:
-            nbdSrv = qFh.startNbdServer(args.output, socketFile)
+            nbdSrv = qFh.startNbdServer(targetFile, socketFile)
             logging.info("NBD Server PID: %s", nbdSrv)
         except Exception as e:
             logging.error("Unable to start nbd server: %s", e)
@@ -250,7 +244,7 @@ def restore(lib, args, stream, sTypes):
 
         for dataFile in restoreDisk:
             diskState = restoreData(
-                lib, args, stream, sTypes, dataFile, nbdClient, connection
+                lib, args, stream, sTypes, dataFile, targetFile, nbdClient, connection
             )
             if diskState is None:
                 diskState = True
@@ -354,7 +348,27 @@ def main():
         dump(lib, args, stream, dataFiles)
 
     if args.action == "restore":
-        if restore(lib, args, stream, sTypes) is True:
+        vmConfig = lib.getLastConfigFile(args.input)
+        if not vmConfig:
+            logging.error("No domain config file found")
+            sys.exit(1)
+
+        logging.info("Using latest config file: [%s]", vmConfig)
+
+        args.level = "full"
+        if not lib.targetIsEmpty(args):
+            logging.error("Target directory is not empty.")
+            sys.exit(1)
+
+        if not os.path.exists(args.output):
+            os.makedirs(args.output)
+
+        if restore(lib, args, stream, sTypes, vmConfig) is True:
+            shutil.copy(vmConfig, args.output)
+            logging.info(
+                "Copied vm config to %s/%s", args.output, os.path.basename(vmConfig)
+            )
+            logging.info("Note: virtual machine config must be adjusted manually.")
             sys.exit(0)
         else:
             sys.exit(1)

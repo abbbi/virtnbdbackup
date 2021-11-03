@@ -11,26 +11,22 @@ class qemuHelper:
 
     def map(self, backupSocket):
         extentMap = subprocess.run(
-            "qemu-img map --output json 'nbd+unix:///%s?socket=%s'"
-            % (self.exportName, backupSocket),
+            f"qemu-img map --output json 'nbd+unix:///{self.exportName}?socket={backupSocket}'",
             shell=True,
             check=1,
             stdout=subprocess.PIPE,
         )
         return json.loads(extentMap.stdout)
 
-    def create(self, targetDir, fileSize, diskFormat):
-        if not os.path.exists(targetDir):
-            os.mkdir(targetDir)
+    def create(self, targetFile, fileSize, diskFormat):
         subprocess.run(
-            "qemu-img create -f %s '%s/%s' %s"
-            % (diskFormat, targetDir, self.exportName, fileSize),
+            f"qemu-img create -f {diskFormat} '{targetFile}' {fileSize}",
             shell=True,
             check=1,
             stdout=subprocess.PIPE,
         )
 
-    def startNbdServer(self, targetDir, socketFile):
+    def startNbdServer(self, targetFile, socketFile):
         p = subprocess.Popen(
             [
                 "qemu-nbd",
@@ -38,7 +34,7 @@ class qemuHelper:
                 "--format=qcow2",
                 "-x",
                 "%s" % self.exportName,
-                "%s/%s" % (targetDir, self.exportName),
+                "%s" % targetFile,
                 "-k",
                 "%s" % socketFile,
             ],

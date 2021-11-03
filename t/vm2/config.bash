@@ -10,7 +10,7 @@ VM="vm2"
 # VM image is qcow2 so no persistent bitmaps
 # are supported, create only copy backups
 VM_IMAGE_URL="https://chuangtzu.ftp.acc.umu.se/cdimage/openstack/archive/10.6.0/debian-10.6.0-openstack-amd64.qcow2"
-VM_IMAGE="${VM}/debian-10.6.0-openstack-amd64.qcow2"
+VM_IMAGE="${VM}/vm2-sda.qcow2"
 
 if [ ! -e $VM_IMAGE ]; then
     echo "downloading test image"

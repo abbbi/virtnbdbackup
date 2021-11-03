@@ -46,6 +46,7 @@ class DomainDisk:
     def __init__(self):
         self.diskTarget = None
         self.diskFormat = None
+        self.diskFileName = None
 
 
 class client:
@@ -100,6 +101,7 @@ class client:
 
         driver = None
         device = None
+        diskFileName = None
         for target in tree.findall("devices/disk"):
             for src in target.findall("target"):
                 dev = src.get("dev")
@@ -135,6 +137,14 @@ class client:
                         dev,
                     )
                     continue
+
+            # attempt to get original disk file name
+            source = target.find("source")
+            if source is not None:
+                diskSrc = source.get("file")
+                if diskSrc:
+                    diskFileName = os.path.basename(diskSrc)
+
             if target.get("device") == "cdrom":
                 continue
 
@@ -148,6 +158,7 @@ class client:
             diskObj = DomainDisk()
             diskObj.diskTarget = dev
             diskObj.diskFormat = diskFormat
+            diskObj.diskFileName = diskFileName
             devices.append(diskObj)
 
         return devices

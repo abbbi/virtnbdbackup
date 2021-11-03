@@ -345,6 +345,10 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 All incremental backups found will be applied to the target images
 in the output directory `/tmp/restore`
 
+`Note`: the restore utility will copy the latest virtual machine config to the
+target directory, but wont alter its contents. You have to adjust the config
+file for the new pathes and/or excluded disks to be able to define and run it.
+
 ## Process only specific disks during restore
 
 A single disk can be restored by using the option `-d`, the disk name has

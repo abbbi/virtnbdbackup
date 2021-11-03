@@ -159,8 +159,11 @@ toOut() {
 }
 @test "Convert restored qcow2 image to RAW image, compare with reference image"  {
     for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
-        run qemu-img convert -f qcow2 -O raw $RESTORESET/${disk} $RESTORESET/${disk}.raw
+        FILENAME="${VM}-${disk}.qcow2"
+        echo $FILENAME >&3
+        run qemu-img convert -f qcow2 -O raw $RESTORESET/${FILENAME} $RESTORESET/${disk}.raw
         [ "$status" -eq 0 ]
+        echo "output = ${output}"
         run cmp $QEMU_FILE.${disk} $RESTORESET/${disk}.raw
         [ "$status" -eq 0 ]
         echo "output = ${output}"
@@ -192,7 +195,9 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 
-    run cmp ${TMPDIR}/restore_uncompressed/sda ${TMPDIR}/restore_compressed/sda
+    FILENAME=$(basename ${VM_IMAGE})
+
+    run cmp ${TMPDIR}/restore_uncompressed/${FILENAME} ${TMPDIR}/restore_compressed/${FILENAME}
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 
@@ -254,9 +259,10 @@ toOut() {
     run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    run guestmount -a ${TMPDIR}/RESTOREINC/sda -m /dev/sda1  /empty
-    echo "output = ${output}"
+    FILENAME=$(basename ${VM_IMAGE})
+    run guestmount -a ${TMPDIR}/RESTOREINC/${FILENAME} -m /dev/sda1  /empty
     [ "$status" -eq 0 ]
+    echo "output = ${output}"
     [ -e /empty/incfile ]
     run umount /empty
     echo "output = ${output}"
