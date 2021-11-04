@@ -74,7 +74,7 @@ incremental backups.
   Debian bullseye or Ubuntu 20.x include libvirt versions supporting this
   feature already.
 
-* Virtual machines you want ot backup **must enable incremental backup
+* Virtual machines you want to backup **must enable incremental backup
   feature** by including the capability statement and using the extended schema
   in its configuration as shown below:
  
