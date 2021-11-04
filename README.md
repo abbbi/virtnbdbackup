@@ -373,7 +373,7 @@ dump option (`checkpointName`), for example:
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdbackup.2
 ```
 
-## Instant recovery
+## Single file restore
 
 See: https://github.com/abbbi/virtnbdbackup/blob/master/tools/README.md
 
