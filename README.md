@@ -375,7 +375,7 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdback
 
 ## Instant recovery
 
-See: https://github.com/abbbi/virtnbdbackup/tree/nbdkit/tools#readme
+See: https://github.com/abbbi/virtnbdbackup/blob/master/tools/README.md
 
 # Extents
 
