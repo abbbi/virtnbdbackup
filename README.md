@@ -332,7 +332,7 @@ backup format back into a usable qemu qcow image.
 The restore process will create a qcow image with the original virtual size.
 
 In a second step, the qcow image is then mapped to a ndb server instance where
-all exiting blocks are sent to and are applied accordingly. The resulting image
+all data blocks are sent to and are applied accordingly. The resulting image
 can be mounted (using `guestmount`) or attached to a running virtual machine in
 order to recover required files.
 
