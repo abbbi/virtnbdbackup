@@ -1,18 +1,35 @@
-# dump disk block mapping to json:
-#
-# ./tools/dumpstream -d <data_file> > blocks.json
-#
-# use nbdkit with filter plugin and set max block size 4096
-# The maximum blocksize is crucial, because currently the code
-# doesnt handle if a block is read that spans multiple frames
-# within the backup file format.
-#
-# nbdkit --filter=blocksize  -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/nbd/sda.full.data -t 1 maxlen=4096
+"""
+    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
 
-# connect nbd backend to device:
-#
-# qemu-nbd -c /dev/nbd0 nbd://127.0.0.1:10809/sda -r
-# mount first partition: mount /dev/nbd0p1 /mnt
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    dump disk block mapping to json:
+
+    ./tools/dumpstream -d <data_file> > blocks.json
+
+    use nbdkit with filter plugin and set max block size 4096
+    The maximum blocksize is crucial, because currently the code
+    doesnt handle if a block is read that spans multiple frames
+    within the backup file format.
+
+    nbdkit --filter=blocksize  -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/nbd/sda.full.data -t 1 maxlen=4096
+
+    connect nbd backend to device:
+
+    qemu-nbd -c /dev/nbd0 nbd://127.0.0.1:10809/sda -r
+    mount first partition: mount /dev/nbd0p1 /mnt
+ """
 import os
 import builtins
 import nbdkit
