@@ -1,0 +1,120 @@
+# dump disk block mapping to json:
+#
+# ./tools/dumpstream -d <data_file> > blocks.json
+#
+# use nbdkit with filter plugin and set max block size 65536
+#
+# nbdkit --filter=blocksize  -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/nbd/sda.full.data -t 1 maxlen=65536
+#
+# connect nbd backend to device:
+#
+# qemu-nbd -c /dev/nbd0 nbd://127.0.0.1:10809/sda -r
+#
+# mount first partition: mount /dev/nbd0p1 /mnt
+import os
+import builtins
+import nbdkit
+import json
+import pprint
+
+API_VERSION = 2
+
+map = None
+image = None
+
+
+def config(key, value):
+    global map
+    global image
+    if key == "blockmap":
+        map = json.loads(builtins.open(value, "r").read())
+        return
+    if key == "disk":
+        image = value
+        return
+
+    raise RuntimeError("unknown parameter: " + key)
+
+
+def config_complete():
+    global image
+    global map
+    if image is None or map is None:
+        raise RuntimeError("file and disk parameter is required")
+
+    pprint.pprint(map)
+
+
+def thread_model():
+    return nbdkit.THREAD_MODEL_PARALLEL
+
+
+def open(readonly):
+    if readonly:
+        flags = os.O_RDONLY
+    else:
+        flags = os.O_RDWR
+    fd = os.open(image, flags)
+    return {"fd": fd}
+
+
+def close(foo):
+    return 1
+
+
+def get_size(h):
+    global map
+    size = 0
+    for m in map:
+        size += m["length"]
+    nbdkit.debug("SIZE: %s" % size)
+    return size
+
+
+def pread(h, buf, offset, flags):
+    global map
+    # get block where offset sort of matches
+    #  list(filter(lambda x:x["originalOffset"]<=65536,blocks))[-1]
+    data = bytearray()
+    blockList = list(filter(lambda x: x["originalOffset"] <= offset, map))
+    if len(blockList) == 1:
+        block = blockList[0]
+    else:
+        block = blockList[-1]
+
+    nbdkit.debug("%s" % block)
+
+    fileOffset = block["offset"] - block["originalOffset"] + offset
+
+    dataRange = fileOffset + len(buf)
+    blockRange = fileOffset + block["length"]
+    isData = block["data"]
+    nbdkit.debug("READ AT: %s" % fileOffset)
+    nbdkit.debug("READ: %s" % len(buf))
+    nbdkit.debug("DATA-RANGE: %s" % dataRange)
+    nbdkit.debug("BLOCK-RANGE: %s" % blockRange)
+
+    if block["nextBlockOffset"] is None:
+        if isData is False:
+            data += b"\0" * len(buf)
+        else:
+            # TODO
+            nbdkit.debug("READ FROM END OF FILE")
+            fileOffset = block["offset"]
+    else:
+
+        if dataRange < blockRange:
+            if isData is False:
+                nbdkit.debug("handle zero")
+                data += b"\0" * len(buf)
+            else:
+                nbdkit.debug("can read everything")
+                data += os.pread(h["fd"], len(buf), fileOffset)
+                nbdkit.debug("readed: %s" % len(data))
+        else:
+            raise RuntimeError("Unabled situation")
+
+    if len(data) != len(buf):
+        raise RuntimeError("unexpected short read from file")
+
+    buf[:] = data

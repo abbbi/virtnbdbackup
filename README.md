@@ -30,6 +30,7 @@ machines.
    * [Complete restore](#complete-restore)
    * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
    * [Point in time recovery](#point-in-time-recovery)
+   * [Instant recovery](#instant-recovery)
 * [Extents](#extents)
 * [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
 * [FAQ](#faq)
@@ -371,6 +372,10 @@ dump option (`checkpointName`), for example:
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdbackup.2
 ```
+
+## Instant recovery
+
+See: https://github.com/abbbi/virtnbdbackup/tree/nbdkit/tools#readme
 
 # Extents
 
