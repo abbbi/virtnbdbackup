@@ -87,6 +87,9 @@ incremental backups.
   [..]
   </domain>
  ```
+
+ `Note:` It is mandatory to restart the virtual machine once you have altered
+ its configuration to make the featureset available.
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
  * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5` (yum install python3-libnbd)
