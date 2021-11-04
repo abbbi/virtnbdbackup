@@ -117,8 +117,6 @@ python3 setup.py bdist_rpm
 yum install dist/virtnbdbackup-<version>-.noarch.rpm
 ```
 
-Pre Built Packages for centos 8 are also available, see: https://github.com/abbbi/virtnbdbackup/releases
-
 ## Debian package
 
 To create a Debian package (Debian bullseye required) use:
