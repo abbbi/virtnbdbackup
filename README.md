@@ -133,7 +133,7 @@ Currently, there are two output formats implemented:
  * `stream`: the resulting backup image is saved in a streamlined format,
    where the backup file consists of metadata about offsets and lengths
    of zeroed or allocated contents of the virtual machines disk. This is
-   the default.
+   the default. The resulting backup image is thin provisioned.
  * `raw`: The resulting backup image will be a full provisioned raw image,
    this should mostly be used for debugging any problems with the extent
    handler, it won't work with incremental backups.
