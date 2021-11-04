@@ -47,9 +47,10 @@ As a next step, we need to create an NBD Server backend which we can
 connect to a block device. This is done via nbdkit, which needs the
 following mandatory parameters:
 
+ * the path to the sparsestream plugin
  * the blockmap (`block.json`) we just created
  * the path to the full backup file
- * a blocksize limit
+ * a block size limit (4096 is known to work)
  
 ```
 # nbdkit --filter=blocksize -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/BACKUP/vda.full.data -t 1 maxlen=4096
