@@ -172,11 +172,14 @@ directory to store the data.
 
 # Supported disk formats / raw disks
 
-`libvirt/qemu` supports thin provisioned or incremental backups only with
-qcow(v3) based disk images.  By default `virtnbdbackup` will exclude all disks
-with format `raw`. This behavior can be changed if option  `--raw` is
-specified, raw disks will then be included during a `full` backup. This of
-course means that no thin provisioned backup is created.
+`libvirt/qemu` supports dirty bitmaps, required for incremental backups only
+with qcow(v3) based disk images. If you are using older image versions, you can
+only create `copy` backups.
+
+By default `virtnbdbackup` will exclude all disks with format `raw`. This
+behavior can be changed if option  `--raw` is specified, raw disks will then be
+included during a `full` backup. This of course means that no thin provisioned
+backup is created for these particular disks.
 
 During restore, these files can be copied "as is" from the backup folder and
 must not be processed using `virtnbdrestore`.
