@@ -75,7 +75,7 @@ The contents of the virtual disk image are now exposed as `/dev/nbd0`
 You can now access the device `/dev/nbd0` like any regular disk device:
 
 ```
-# fdisk -l /dev/nbd5
+# fdisk -l /dev/nbd0
 Disk /dev/nbd5: 37 GiB, 39728447488 bytes, 77594624 sectors
 [..]
 Device      Boot   Start      End  Sectors  Size Id Type
