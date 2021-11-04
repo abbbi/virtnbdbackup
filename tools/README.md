@@ -47,9 +47,10 @@ As a next step, we need to create an NBD Server backend which we can
 connect to a block device. This is done via nbdkit, which needs the
 following mandatory parameters:
 
+ * the path to the sparsestream plugin
  * the blockmap (`block.json`) we just created
  * the path to the full backup file
- * a blocksize limit
+ * a block size limit (4096 is known to work)
  
 ```
 # nbdkit --filter=blocksize -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/BACKUP/vda.full.data -t 1 maxlen=4096
@@ -74,7 +75,7 @@ The contents of the virtual disk image are now exposed as `/dev/nbd0`
 You can now access the device `/dev/nbd0` like any regular disk device:
 
 ```
-# fdisk -l /dev/nbd5
+# fdisk -l /dev/nbd0
 Disk /dev/nbd5: 37 GiB, 39728447488 bytes, 77594624 sectors
 [..]
 Device      Boot   Start      End  Sectors  Size Id Type
@@ -95,9 +96,9 @@ the XFS file system like so:
 ```
 
 The fileystem can then be mounted (here, norecovery,ro and nouuid
-re mandatory because the vm backed up was not running qemu agent
-to have a consistent backup and recovery wont work with a read
-only device).
+are mandatory because the vm backed up was not running qemu agent
+to have a consistent XFS file system within the backup and recovery 
+wont work with a read only device).
 
 ```
   # mount /dev/vg_main/lv_root /mnt -o norecovery,ro,nouuid
