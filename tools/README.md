@@ -96,7 +96,7 @@ the XFS file system like so:
 ```
 
 The fileystem can then be mounted (here, norecovery,ro and nouuid
-re mandatory because the vm backed up was not running qemu agent
+are mandatory because the vm backed up was not running qemu agent
 to have a consistent XFS file system within the backup and recovery 
 wont work with a read only device).
 
