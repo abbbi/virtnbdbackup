@@ -2,14 +2,16 @@
 #
 # ./tools/dumpstream -d <data_file> > blocks.json
 #
-# use nbdkit with filter plugin and set max block size 65536
+# use nbdkit with filter plugin and set max block size 4096
+# The maximum blocksize is crucial, because currently the code
+# doesnt handle if a block is read that spans multiple frames
+# within the backup file format.
 #
-# nbdkit --filter=blocksize  -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/nbd/sda.full.data -t 1 maxlen=65536
-#
+# nbdkit --filter=blocksize  -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/nbd/sda.full.data -t 1 maxlen=4096
+
 # connect nbd backend to device:
 #
 # qemu-nbd -c /dev/nbd0 nbd://127.0.0.1:10809/sda -r
-#
 # mount first partition: mount /dev/nbd0p1 /mnt
 import os
 import builtins
@@ -19,15 +21,20 @@ import pprint
 
 API_VERSION = 2
 
-map = None
+blockMap = None
+blockMapFile = None
 image = None
 
 
 def config(key, value):
-    global map
+    """Read parameter values, needs to use open function via
+    builtins as the python plugin itself defines it again"""
+    global blockMap
+    global blockMapFile
     global image
     if key == "blockmap":
-        map = json.loads(builtins.open(value, "r").read())
+        blockMapFile = value
+        blockMap = json.loads(builtins.open(blockMapFile, "r").read())
         return
     if key == "disk":
         image = value
@@ -37,12 +44,19 @@ def config(key, value):
 
 
 def config_complete():
+    """Check if we have all required parameters"""
     global image
-    global map
-    if image is None or map is None:
+    global blockMap
+    global blockMapFile
+    if image is None or blockMap is None:
         raise RuntimeError("file and disk parameter is required")
 
-    pprint.pprint(map)
+    if not os.path.exists(image):
+        raise RuntimeError(f"Cant find image file: {image}")
+    if not os.path.exists(blockMapFile):
+        raise RuntimeError(f"Cant find image file: {blockMapFile}")
+
+    pprint.pprint(blockMap)
 
 
 def thread_model():
@@ -50,6 +64,7 @@ def thread_model():
 
 
 def open(readonly):
+    """Open backup file and return FD"""
     if readonly:
         flags = os.O_RDONLY
     else:
@@ -63,20 +78,36 @@ def close(foo):
 
 
 def get_size(h):
-    global map
+    """Loop through the metadata and calculate the complete
+    virtual disk size"""
+    global blockMap
     size = 0
-    for m in map:
+    for m in blockMap:
         size += m["length"]
-    nbdkit.debug("SIZE: %s" % size)
+    nbdkit.debug(f"DISK SIZE: {size}")
     return size
 
 
 def pread(h, buf, offset, flags):
-    global map
+    """Return the right data during read operation.
+
+    Function uses the generated block map to check where
+    in the stream format the required block offset is to
+    be found and maps it accordingly and returns requested
+    data.
+
+    There might be situations where this goes really wrong
+    and usually this results in an non-readable disk image.
+    By using the blockfilter plugin, it "should" work most
+    of the time, because the requested block size does
+    not span amongst multiple frames within the sparse
+    backup format.. hopefully
+    """
+    global blockMap
+
     # get block where offset sort of matches
-    #  list(filter(lambda x:x["originalOffset"]<=65536,blocks))[-1]
     data = bytearray()
-    blockList = list(filter(lambda x: x["originalOffset"] <= offset, map))
+    blockList = list(filter(lambda x: x["originalOffset"] <= offset, blockMap))
     if len(blockList) == 1:
         block = blockList[0]
     else:
@@ -95,14 +126,12 @@ def pread(h, buf, offset, flags):
     nbdkit.debug("BLOCK-RANGE: %s" % blockRange)
 
     if block["nextBlockOffset"] is None:
+        nbdkit.debug("Data is within last block")
         if isData is False:
             data += b"\0" * len(buf)
         else:
-            # TODO
-            nbdkit.debug("READ FROM END OF FILE")
-            fileOffset = block["offset"]
+            data += os.pread(h["fd"], len(buf), fileOffset)
     else:
-
         if dataRange < blockRange:
             if isData is False:
                 nbdkit.debug("handle zero")
@@ -115,6 +144,6 @@ def pread(h, buf, offset, flags):
             raise RuntimeError("Unabled situation")
 
     if len(data) != len(buf):
-        raise RuntimeError("unexpected short read from file")
+        raise RuntimeError("Unexpected short read from file")
 
     buf[:] = data
