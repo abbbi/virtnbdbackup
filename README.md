@@ -491,6 +491,9 @@ WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
 In case you receive this warning, check if the qemu agent is installed and
 running with in the domain.
 
+`Note:` It is highly recommended to have an qemu agent running to get a
+consistent file system during backup!
+
 ## Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"
 
 If the backup fails with error:
