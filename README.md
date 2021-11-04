@@ -3,13 +3,14 @@
 # virtnbdbackup
 
 Backup utility for `libvirt`, using the latest changed block tracking features.
-Create thin provisioned full and incremental backups of your `kvm/qemu` virtual
-machines.
+Create online, thin provisioned full and incremental backups of your `kvm/qemu`
+virtual machines.
 
 ![Alt text](screenshot.jpg?raw=true "Title")
 
 # 
 
+* [About](#about)
 * [Prerequisites/Requirements](#prerequisites)
 * [Installation](#installation)
    * [Python package](#python-package)
@@ -42,6 +43,19 @@ machines.
    * [High memory usage during backup](#high-memory-usage-during-backup)
    * [Docker images](#docker-images)
 
+# About
+
+Existing backup solutions or scripts for `libvirt/kvm` usually depend on the
+external snapshot feature to create backups or in the worst case require to
+shutdown or pause the virtual machine.
+
+While this was the only way to create online backups in the past, recent
+additions to both the `libvirt` and `qemu` projects have introduced new
+capabilities that allow to create online (full and incremental) backups,
+by using so called `dirty bitmaps` (or changed block tracking).
+
+`virtnbdbackup` uses these new features to create online full and
+incremental backups.
 
 # Prerequisites
 
