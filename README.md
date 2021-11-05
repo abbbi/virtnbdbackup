@@ -46,16 +46,15 @@ virtual machines.
 # About
 
 Existing backup solutions or scripts for `libvirt/kvm` usually depend on the
-external snapshot feature to create backups or in the worst case require to
+external snapshot feature to create backups, sometimes even require to
 shutdown or pause the virtual machine.
 
-While this was the only way to create online backups in the past, recent
-additions to both the `libvirt` and `qemu` projects have introduced new
-capabilities that allow to create online (full and incremental) backups,
-by using so called `dirty bitmaps` (or changed block tracking).
+Recent additions to both the `libvirt` and `qemu` projects have introduced new
+capabilities that allow to create online (full and incremental) backups, by
+using so called `dirty bitmaps` (or changed block tracking).
 
-`virtnbdbackup` uses these new features to create online full and
-incremental backups.
+`virtnbdbackup` uses these features to create online full and incremental
+backups.
 
 # Prerequisites
 
