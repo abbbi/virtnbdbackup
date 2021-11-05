@@ -20,7 +20,7 @@ NBD enpoint and directly boot the virtual machine from the backup
     * [Start the NBD backend using nbdkit](#start-the-nbd-backend-using-nbdkit)
     * [Map the NBD endpoint to a device](#map-the-nbd-endpoint-to-a-device)
     * [Accessing the data](#accessing-the-data)
-    * [Booting the virtual machine of the backup image](#booting)
+    * [Booting the virtual machine of the backup image](#booting-the-virtual-machine-of-the-backup-image)
 
 # Prerequisites
 
@@ -114,9 +114,9 @@ wont work with a read only device).
 
 # Booting the virtual machine of the backup image
 
-Instead of attaching the nbd endpoint to a device, you can
-ceate a qcow image and supply the nbd service as backing
-image, like so:
+Instead of attaching the nbd endpoint to a device, you can ceate an writable
+overlay qcow image by specifiying the the nbd service as backing image, like
+so:
 
 ```
 # qemu-img create -f qcow2 nbd://127.0.0.1:10809 bootme.img
