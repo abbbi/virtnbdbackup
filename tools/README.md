@@ -1,4 +1,4 @@
-# Instant recovery
+# Single file restore / instant recovery
 
 These tools can be used to map thin provisioned full backups (stream format)
 into usable block devices. This enables users to restore single files without
@@ -10,12 +10,17 @@ use the utilities to extract a single file from a existing full backup.
 The backup used for this example is a full backup with a running Linux
 instance, having its root file system on XFS/LVM.
 
+You can also use `qemu-img` to create an writable overlay image for the
+NBD enpoint and directly boot the virtual machine from the backup
+(but beware, its not quite fast ;))
+
 * [Howto](#howto)
     * [Prerequisites](#prerequisites)
     * [Create the block map](#create-the-block-map)
     * [Start the NBD backend using nbdkit](#start-the-nbd-backend-using-nbdkit)
     * [Map the NBD endpoint to a device](#map-the-nbd-endpoint-to-a-device)
     * [Accessing the data](#accessing-the-data)
+    * [Booting the virtual machine of the backup image](#booting)
 
 # Prerequisites
 
@@ -105,6 +110,22 @@ wont work with a read only device).
   # tail /mnt/etc/passwd
   systemd-coredump:x:999:997:systemd Core Dumper:/:/sbin/nologin
   systemd-resolve:x:193:193:systemd Resolver:/:/sbin/nologin
+```
+
+# Booting the virtual machine of the backup image
+
+Instead of attaching the nbd endpoint to a device, you can
+ceate a qcow image and supply the nbd service as backing
+image, like so:
+
+```
+# qemu-img create -f qcow2 nbd://127.0.0.1:10809 bootme.img
+```
+
+Now use `Qemu` to boot of the backing file:
+
+```
+# qemu-system-x86_64 -hda bootme.img
 ```
 
 
