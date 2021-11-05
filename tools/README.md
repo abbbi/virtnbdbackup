@@ -125,7 +125,7 @@ so:
 Now use `Qemu` to boot of the backing file:
 
 ```
-# qemu-system-x86_64 -hda bootme.img
+# qemu-system-x86_64 -enable-kvm -m <memory> -hda bootme.img
 ```
 
 
