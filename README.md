@@ -392,7 +392,7 @@ dump option (`checkpointName`), for example:
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdbackup.2
 ```
 
-## Single file restore and instant recovery
+# Single file restore and instant recovery
 
 A proof of concept implementation of single file restore and instant recovery
 can be found in the tools directory, for detailed instructions, see:
