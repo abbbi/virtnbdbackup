@@ -31,7 +31,7 @@ virtual machines.
    * [Complete restore](#complete-restore)
    * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
    * [Point in time recovery](#point-in-time-recovery)
-   * [Single file restore and instant recovery](#single-file-restore-and-instant-recovey)
+   * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
 * [Extents](#extents)
 * [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
 * [FAQ](#faq)
