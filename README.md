@@ -55,8 +55,10 @@ using so called `dirty bitmaps` (or changed block tracking).
 
 `virtnbdbackup` uses these features to create online full and incremental
 backups.
+
 `virtnbdrestore` can be used to re-construct the complete image from the
 thin provisioned backups.
+
 `virtnbdmap` can be used to map an thin provisioned backup image into a
 block device on-the-fly, for easy single file restore or even instant
 boot from an backup image.
