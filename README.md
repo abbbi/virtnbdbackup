@@ -55,6 +55,11 @@ using so called `dirty bitmaps` (or changed block tracking).
 
 `virtnbdbackup` uses these features to create online full and incremental
 backups.
+`virtnbdrestore` can be used to re-construct the complete image from the
+thin provisioned backups.
+`virtnbdmap` can be used to map an thin provisioned backup image into a
+block device on-the-fly, for easy single file restore or even instant
+boot from an backup image.
 
 # Prerequisites
 
@@ -393,10 +398,41 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdback
 
 # Single file restore and instant recovery
 
-A proof of concept implementation of single file restore and instant recovery
-can be found in the tools directory, for detailed instructions, see:
+The `virtnbdmap` utility can be used to map full or copy type images from the
+stream format back into an accessible block device. This way, you can restore
+single files or even boot from an existing backup image without having to
+restore the complete dataset. 
 
-See: https://github.com/abbbi/virtnbdbackup/blob/master/tools/README.md
+The utility requires `nbdkit` to be installed on the system along with required
+qemu tools (`qemu-nbd`) and an loaded nbd kernel module. It must be executed
+with superuser (root) rights or via sudo.
+
+The following example maps an existing backup image to the network block
+device `/dev/nbd0`:
+
+```
+ # ./virtnbdmap -f /tmp/BACKUP/sda.full.data -d /dev/nbd1
+ [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd1]
+ [..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
+```
+
+While the process is running, you can access the backup image like a regular
+block device:
+
+```
+fdisk -l /dev/nbd1
+Disk /dev/nbd1: 2 GiB, 2147483648 bytes, 4194304 sectors
+```
+
+As alternative, you might also create an overlay image via `qemu-img` and 
+boot from it right away:
+
+```
+qemu-img create -b /dev/nbd0 -f qcow2 bootme.qcow2
+qemu-system-x86_64 -enable-kvm -m 2000 -hda bootme.qcow2
+```
+
+To remove the mappings, stop the utility via "CTRL-C"
 
 # Extents
 

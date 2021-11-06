@@ -20,7 +20,7 @@ setup(
     keywords="libnbd backup libvirt",
     packages=find_packages(exclude=("docs", "tests", "env")),
     include_package_data=True,
-    scripts=["virtnbdbackup", "virtnbdrestore"],
+    scripts=["virtnbdbackup", "virtnbdrestore", "virtnbdmap", "virtnbd-nbdkit-plugin"],
     extras_require={
         "dev": [],
         "docs": [],
