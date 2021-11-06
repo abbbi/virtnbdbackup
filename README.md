@@ -400,10 +400,10 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdback
 
 # Single file restore and instant recovery
 
-The `virtnbdmap` utility can be used to map full or copy type images from the
-stream format back into an accessible block device. This way, you can restore
-single files or even boot from an existing backup image without having to
-restore the complete dataset. 
+The `virtnbdmap` utility can be used to map full or copy type backup images
+from the stream format into an accessible block device on the fly. This way,
+you can restore single files or even boot from an existing backup image without
+having to restore the complete dataset.
 
 The utility requires `nbdkit` to be installed on the system along with required
 qemu tools (`qemu-nbd`) and an loaded nbd kernel module. It must be executed
