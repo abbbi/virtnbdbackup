@@ -413,7 +413,7 @@ The following example maps an existing backup image to the network block
 device `/dev/nbd0`:
 
 ```
- # ./virtnbdmap -f /tmp/BACKUP/sda.full.data -d /dev/nbd1
+ # virtnbdmap -f /tmp/BACKUP/sda.full.data -d /dev/nbd1
  [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd1]
  [..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
 ```
