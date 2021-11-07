@@ -227,7 +227,9 @@ def main():
 
     try:
         deviceProcess = subprocess.run(
-            shlex.split(f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809/{args.export_name} -r"),
+            shlex.split(
+                f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809/{args.export_name} -r"
+            ),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
