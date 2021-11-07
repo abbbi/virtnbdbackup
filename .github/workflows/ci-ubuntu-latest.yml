@@ -16,6 +16,8 @@ jobs:
         black --check .
         black --check virtnbdbackup
         black --check virtnbdrestore
+        black --check virtnbdmap
+        black --check virtnbd-nbdkit-plugin
     - name: Set up libvirt
       run: |
         sudo apt-get update
