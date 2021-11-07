@@ -318,7 +318,7 @@ def main():
         "--raw",
         default=False,
         action="store_true",
-        help="Copy raw images as is during restore.",
+        help="Copy raw images as is during restore. (default: %(default)s)",
     )
 
     lib = common.Common()

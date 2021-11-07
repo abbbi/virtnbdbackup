@@ -93,14 +93,25 @@ def main():
         help="Enable debug output",
     )
     parser.add_argument(
-        "-d", "--device", default="/dev/nbd0", type=str, help="Target device."
+        "-d",
+        "--device",
+        default="/dev/nbd0",
+        type=str,
+        help="Target device. (default: %(default)s)",
     )
     parser.add_argument(
         "-t",
         "--threads",
         default=1,
         type=str,
-        help="Amount of threads passed to nbdkit process.",
+        help="Amount of threads passed to nbdkit process. (default: %(default)s)",
+    )
+    parser.add_argument(
+        "-l",
+        "--listen-address",
+        default="127.0.0.1",
+        type=str,
+        help="IP Address for nbdkit process to listen on. (default: %(default)s)",
     )
 
     lib = common.Common()
@@ -180,7 +191,7 @@ def main():
     logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
     nbdkitProcess = subprocess.Popen(
         shlex.split(
-            f"nbdkit --filter=blocksize  -f -v python {nbdkitModule} blockmap={blockMap.name} disk={args.file} -t {args.threads} maxlen=4096"
+            f"nbdkit -i {args.listen_address} --filter=blocksize  -f -v python {nbdkitModule} blockmap={blockMap.name} disk={args.file} -t {args.threads} maxlen=4096"
         ),
         close_fds=True,
         stdout=nbdkitLog,

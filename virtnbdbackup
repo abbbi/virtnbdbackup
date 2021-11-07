@@ -58,7 +58,7 @@ def main():
         default="copy",
         choices=["copy", "full", "inc"],
         type=str,
-        help="Backup level, defaults to copy",
+        help="Backup level. (default: %(default)s)",
     )
     parser.add_argument(
         "-t",
@@ -66,14 +66,14 @@ def main():
         default="stream",
         type=str,
         choices=["stream", "raw"],
-        help="Output type: stream or raw",
+        help="Output type: stream or raw. (default: %(default)s)",
     )
     parser.add_argument(
         "-r",
         "--raw",
         default=False,
         action="store_true",
-        help="Include full provisioned disk images in backup",
+        help="Include full provisioned disk images in backup. (default: %(default)s)",
     )
     parser.add_argument(
         "-o", "--output", required=True, type=str, help="Output target directory"
@@ -92,7 +92,7 @@ def main():
         default="/var/tmp",
         required=False,
         type=str,
-        help="Target directory for temporary scratch file",
+        help="Target directory for temporary scratch file. (default: %(default)s)",
     )
     parser.add_argument(
         "-q",
