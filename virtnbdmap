@@ -100,6 +100,13 @@ def main():
         help="Target device. (default: %(default)s)",
     )
     parser.add_argument(
+        "-e",
+        "--export-name",
+        default="sda",
+        type=str,
+        help="Export name passed to nbdkit. (default: %(default)s)",
+    )
+    parser.add_argument(
         "-t",
         "--threads",
         default=1,
@@ -191,7 +198,7 @@ def main():
     logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
     nbdkitProcess = subprocess.Popen(
         shlex.split(
-            f"nbdkit -i {args.listen_address} --filter=blocksize  -f -v python {nbdkitModule} blockmap={blockMap.name} disk={args.file} -t {args.threads} maxlen=4096"
+            f"nbdkit -i {args.listen_address} -e {args.export_name} --filter=blocksize  -f -v python {nbdkitModule} blockmap={blockMap.name} disk={args.file} -t {args.threads} maxlen=4096"
         ),
         close_fds=True,
         stdout=nbdkitLog,
@@ -220,7 +227,7 @@ def main():
 
     try:
         deviceProcess = subprocess.run(
-            shlex.split(f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809 -r"),
+            shlex.split(f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809/{args.export_name} -r"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
