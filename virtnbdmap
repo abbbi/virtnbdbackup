@@ -207,12 +207,18 @@ def main():
         logging.error("Stdout: [%s]", nbdkitProcess.stdout)
         sys.exit(1)
 
-    deviceProcess = subprocess.run(
-        shlex.split(f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809 -r"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=True,
-    )
+    try:
+        deviceProcess = subprocess.run(
+            shlex.split(f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809 -r"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        logging.error("Unable to map device:")
+        logging.error("Stderr: [%s]", e.stderr.decode())
+        sys.exit(1)
+
     if deviceProcess.returncode == 0:
         logging.info("Done mapping backup image to [%s]", args.device)
         logging.info("Press CTRL+C to disconnect")
