@@ -199,22 +199,29 @@ def main():
         # a few times and error out if it fails repeately.
         logging.info("Giving sevice a few seconds to startup")
         time.sleep(5)
-
-        deviceProcess = subprocess.run(
-            shlex.split(f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809 -r"),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
+    else:
+        logging.error(
+            "Error starting nbdkit process, error code: [%s]", nbdkitProcess.returncode
         )
-        if deviceProcess.returncode == 0:
-            logging.info("Done mapping backup image to [%s]", args.device)
-            logging.info("Press CTRL+C to disconnect")
-            while True:
-                time.sleep(60)
-        else:
-            logging.error("Unable to map device: %s", deviceProcess.stderr)
-            nbdkitProcess.kill()
-            sys.exit(1)
+        logging.error("Stderr: [%s]", nbdkitProcess.stderr)
+        logging.error("Stdout: [%s]", nbdkitProcess.stdout)
+        sys.exit(1)
+
+    deviceProcess = subprocess.run(
+        shlex.split(f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809 -r"),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=True,
+    )
+    if deviceProcess.returncode == 0:
+        logging.info("Done mapping backup image to [%s]", args.device)
+        logging.info("Press CTRL+C to disconnect")
+        while True:
+            time.sleep(60)
+    else:
+        logging.error("Unable to map device: %s", deviceProcess.stderr)
+        nbdkitProcess.kill()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
