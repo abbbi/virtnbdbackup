@@ -83,7 +83,7 @@ def getDataRanges(stream, sTypes, reader):
 def main():
     """Map full backup file to nbd device for single file or
     instant recovery"""
-    parser = argparse.ArgumentParser(description="Map virtual disk to block device")
+    parser = argparse.ArgumentParser(description="Map backup image to block device")
     parser.add_argument("-f", "--file", required=True, type=str, help="Backup file")
     parser.add_argument(
         "-v",
