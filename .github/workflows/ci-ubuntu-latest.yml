@@ -37,6 +37,8 @@ jobs:
           python3-tqdm \
           python3-lz4 \
           python3-libvirt \
+          nbdkit \
+          nbdkit-plugin-python \
           unzip \
         ;
         # start daemon
@@ -45,6 +47,7 @@ jobs:
         sudo rm -f /etc/apparmor.d/libvirt/libvirt*
         sudo systemctl start libvirtd
         sudo systemctl restart libvirtd
+        sudo modprobe nbd max_partitions=10
     - name: Update libnbd and python3-libnbd
       run: |
         # ubuntu 20.x does only include libnbd 1.2.2 which is too old
@@ -54,11 +57,11 @@ jobs:
         sudo dpkg -i libnbd0_1.6.2-1_amd64.deb
         sudo dpkg -i python3-libnbd_1.6.2-1_amd64.deb
     - name: Execute tests (vm1)
-      run: cd t && sudo make vm1.tests && cd -
+      run: cd t && sudo -E make vm1.tests && cd -
     - name: Execute tests (vm3)
-      run: cd t && sudo make vm3.tests && cd -
+      run: cd t && sudo -E make vm3.tests && cd -
     - name: Execute tests (vm4)
-      run: cd t && sudo make vm4.tests && cd -
+      run: cd t && sudo -E make vm4.tests && cd -
     - name: Perform installation
       run: sudo python3 setup.py install
     - name: Execute commands

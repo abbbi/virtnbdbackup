@@ -1,4 +1,4 @@
-<domain type='kvm' id='4' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+<domain type='qemu' id='4' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
   <name>vm2</name>
   <metadata>
     <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">

@@ -314,3 +314,17 @@ toOut() {
     [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
     echo "output = ${output}"
 }
+@test "Map: Map full backup to nbd block device, check device size and partitions" {
+    [ -f /.dockerenv ] && skip "wont work inside docker image"
+    [ -z $MAPTEST ] && skip "skipping"
+    [ ! -z $GITHUB_JOB ] && skip "on github ci"
+    ../virtnbdmap -f ${TMPDIR}/inctest/sda.full.data 3>- &
+    PID=$!
+    sleep 10
+    echo $PID >&3
+    run fdisk -l /dev/nbd0
+    echo "output = ${output}"
+    [[ "${output}" =~  "Disk /dev/nbd0: 1 MiB, 1048576 bytes, 2048 sectors" ]]
+    [[ "${output}" =~  "nbd0p1" ]]
+    kill -2 $PID
+}
