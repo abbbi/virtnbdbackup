@@ -80,7 +80,7 @@ def getDataRanges(stream, sTypes, reader):
     return dataRanges, meta
 
 
-if __name__ == "__main__":
+def main():
     """Map full backup file to nbd device for single file or
     instant recovery"""
     parser = argparse.ArgumentParser(description="Map virtual disk to block device")
@@ -215,3 +215,7 @@ if __name__ == "__main__":
             logging.error("Unable to map device: %s", deviceProcess.stderr)
             nbdkitProcess.kill()
             sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
