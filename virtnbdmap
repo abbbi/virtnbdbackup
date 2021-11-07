@@ -152,7 +152,11 @@ if __name__ == "__main__":
         logging.error("Unable to read meta header from backup file.")
         sys.exit(1)
     if meta["incremental"] is True:
-        logging.error("Only supported with full backups currently")
+        logging.error("Only supported with full backups currently.")
+        sys.exit(1)
+
+    if meta["compressed"] is True:
+        logging.error("Mapping compressed images currently not supported.")
         sys.exit(1)
 
     logging.info("Source file: %s", args.file)
