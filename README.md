@@ -413,8 +413,8 @@ The following example maps an existing backup image to the network block
 device `/dev/nbd0`:
 
 ```
- # virtnbdmap -f /tmp/BACKUP/sda.full.data -d /dev/nbd1
- [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd1]
+ # virtnbdmap -f /tmp/BACKUP/sda.full.data
+ [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd0]
  [..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
 ```
 
@@ -422,8 +422,8 @@ While the process is running, you can access the backup image like a regular
 block device:
 
 ```
-fdisk -l /dev/nbd1
-Disk /dev/nbd1: 2 GiB, 2147483648 bytes, 4194304 sectors
+fdisk -l /dev/nbd0
+Disk /dev/nbd0: 2 GiB, 2147483648 bytes, 4194304 sectors
 ```
 
 As alternative, you might also create an overlay image via `qemu-img` and 
