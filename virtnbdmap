@@ -93,6 +93,14 @@ def main():
         help="Enable debug output",
     )
     parser.add_argument(
+        "-b",
+        "--blocksize",
+        required=False,
+        type=str,
+        default="4096",
+        help="Maximum blocksize passed to nbdkit. (default: %(default)s)",
+    )
+    parser.add_argument(
         "-d",
         "--device",
         default="/dev/nbd0",
@@ -198,7 +206,7 @@ def main():
     logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
     nbdkitProcess = subprocess.Popen(
         shlex.split(
-            f"nbdkit -i {args.listen_address} -e {args.export_name} --filter=blocksize  -f -v python {nbdkitModule} blockmap={blockMap.name} disk={args.file} -t {args.threads} maxlen=4096"
+            f"nbdkit -i {args.listen_address} -e {args.export_name} --filter=blocksize  -f -v python {nbdkitModule} blockmap={blockMap.name} disk={args.file} -t {args.threads} maxlen={args.blocksize}"
         ),
         close_fds=True,
         stdout=nbdkitLog,
