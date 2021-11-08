@@ -206,7 +206,15 @@ def main():
     logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
     nbdkitProcess = subprocess.Popen(
         shlex.split(
-            f"nbdkit -i {args.listen_address} -e {args.export_name} --filter=blocksize  -f -v python {nbdkitModule} blockmap={blockMap.name} disk={args.file} -t {args.threads} maxlen={args.blocksize}"
+            f"""nbdkit
+            -i {args.listen_address}
+            -e {args.export_name}
+            --filter=blocksize
+            -f -v python {nbdkitModule}
+            blockmap={blockMap.name}
+            disk={args.file}
+            -t {args.threads}
+            maxlen={args.blocksize}"""
         ),
         close_fds=True,
         stdout=nbdkitLog,
