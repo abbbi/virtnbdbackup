@@ -176,7 +176,7 @@ def main():
         "--worker",
         type=int,
         default=None,
-        help="Amount of concurrent workers used to backup multiple disks: by default matches amount of disks",
+        help="Amount of concurrent workers used to backup multiple disks. (default: amount of disks)",
     )
 
     outHelper = outputhelper.outputHelper()
