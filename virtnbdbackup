@@ -165,7 +165,11 @@ def main():
         action="store_true",
     )
     parser.add_argument(
-        "-z", "--compress", default=False, help="Compress with lz4", action="store_true"
+        "-z",
+        "--compress",
+        default=False,
+        help="Compress with lz4. (default: %(default)s)",
+        action="store_true",
     )
     parser.add_argument(
         "-w",

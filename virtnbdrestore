@@ -288,7 +288,7 @@ def main():
         required=False,
         type=str,
         default="all",
-        help="Process only disk matching target dev name",
+        help="Process only disk matching target dev name. (default: %(default)s)",
     )
     parser.add_argument(
         "-v",
