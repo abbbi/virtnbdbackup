@@ -13,22 +13,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-    dump disk block mapping to json:
-
-    ./tools/dumpstream -d <data_file> > blocks.json
-
-    use nbdkit with filter plugin and set max block size 4096
-    The maximum blocksize is crucial, because currently the code
-    doesnt handle if a block is read that spans multiple frames
-    within the backup file format.
-
-    nbdkit --filter=blocksize  -f -v python ./sparsestream blockmap=blocks.json disk=/tmp/nbd/sda.full.data -t 1 maxlen=4096
-
-    connect nbd backend to device:
-
-    qemu-nbd -c /dev/nbd0 nbd://127.0.0.1:10809/sda -r
-    mount first partition: mount /dev/nbd0p1 /mnt
  """
 import os
 import builtins
@@ -118,7 +102,8 @@ def pread(h, buf, offset, flags):
     By using the blockfilter plugin, it "should" work most
     of the time, because the requested block size does
     not span amongst multiple frames within the sparse
-    backup format.. hopefully
+    backup format.. as it should match the physical
+    sector size .. hopefully
     """
     global blockMap
 
