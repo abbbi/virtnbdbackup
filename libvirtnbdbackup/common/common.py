@@ -33,14 +33,14 @@ class Common:
 
     def getSocketFile(self, arg):
         if not arg:
-            socketFile = "/var/tmp/virtnbdbackup.%s" % os.getpid()
+            socketFile = f"/var/tmp/virtnbdbackup.{os.getpid()}"
         else:
             socketFile = arg
 
         return socketFile
 
     def partialBackup(self, args):
-        partialFiles = glob.glob("%s/*.partial" % args.output)
+        partialFiles = glob.glob(f"{args.output}/*.partial")
         if len(partialFiles) > 0:
             return True
 
@@ -62,8 +62,7 @@ class Common:
         """return data files within backupset
         directory
         """
-        sStr = "%s/*.data" % targetDir
-        files = glob.glob(sStr)
+        files = glob.glob(f"{targetDir}/*.data")
         files.sort(key=os.path.getmtime)
 
         return files
@@ -72,8 +71,7 @@ class Common:
         """return data files subject to one disk
         from backupset directory
         """
-        sStr = "%s/%s*.data" % (targetDir, targetDisk)
-        files = glob.glob(sStr)
+        files = glob.glob(f"{targetDir}/{targetDisk}*.data")
         files.sort(key=os.path.getmtime)
         return files
 
@@ -81,9 +79,8 @@ class Common:
         """get the last backed up configuration file
         from the backupset
         """
-        sStr = "%s/vmconfig*.xml" % targetDir
         try:
-            return glob.glob(sStr)[-1]
+            return glob.glob(f"{targetDir}/vmconfig*.xml")[-1]
         except IndexError:
             return None
 
