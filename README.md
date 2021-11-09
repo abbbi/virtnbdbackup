@@ -405,9 +405,9 @@ backup images from the stream format into an accessible block device on the
 fly. This way, you can restore single files or even boot from an existing
 backup image without having to restore the complete dataset.
 
-The utility requires `nbdkit` to be installed on the system along with required
-qemu tools (`qemu-nbd`) and an loaded nbd kernel module. It must be executed
-with superuser (root) rights or via sudo.
+The utility requires `nbdkit with the python plugin` to be installed on the
+system along with required qemu tools (`qemu-nbd`) and an loaded nbd kernel
+module. It must be executed with superuser (root) rights or via sudo.
 
 The following example maps an existing backup image to the network block
 device `/dev/nbd0`:
