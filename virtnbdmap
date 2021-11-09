@@ -227,12 +227,6 @@ def main():
             signal.SIGINT,
             partial(handleSignal, nbdkitProcess, args.device, blockMap.name, logging),
         )
-
-        # ugly, but service isnt up "right away", might be better
-        # check connectivity by other means or retry connection
-        # a few times and error out if it fails repeately.
-        logging.info("Giving sevice a few seconds to startup")
-        time.sleep(5)
     else:
         logging.error(
             "Error starting nbdkit process, error code: [%s]", nbdkitProcess.returncode
@@ -241,29 +235,43 @@ def main():
         logging.error("Stdout: [%s]", nbdkitProcess.stdout)
         sys.exit(1)
 
-    try:
-        deviceProcess = subprocess.run(
-            shlex.split(
-                f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809/{args.export_name} -r"
-            ),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-        )
-    except subprocess.CalledProcessError as e:
-        logging.error("Unable to map device:")
-        logging.error("Stderr: [%s]", e.stderr.decode())
-        sys.exit(1)
+    maxRetry = 10
+    retryCnt = 0
+    deviceProcess = None
+    while True:
+        try:
+            deviceProcess = subprocess.run(
+                shlex.split(
+                    f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809/{args.export_name} -r"
+                ),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+            )
+            break
+        except subprocess.CalledProcessError as e:
+            if retryCnt >= maxRetry:
+                logging.info(
+                    "Unable to connect device after service start: %s", e.stderr
+                )
+                nbdkitProcess.kill()
+                sys.exit(1)
+            errMsg = e.stderr.decode()
+            if "Connection refused" in errMsg:
+                logging.info("Nbd server refused connection, retry [%s]", retryCnt)
+                time.sleep(1)
+                retryCnt += 1
+                continue
+            else:
+                logging.error("Unable to map device:")
+                logging.error("Stderr: [%s]", errMsg)
+                nbdkitProcess.kill()
+                sys.exit(1)
 
-    if deviceProcess.returncode == 0:
-        logging.info("Done mapping backup image to [%s]", args.device)
-        logging.info("Press CTRL+C to disconnect")
-        while True:
-            time.sleep(60)
-    else:
-        logging.error("Unable to map device: %s", deviceProcess.stderr)
-        nbdkitProcess.kill()
-        sys.exit(1)
+    logging.info("Done mapping backup image to [%s]", args.device)
+    logging.info("Press CTRL+C to disconnect")
+    while True:
+        time.sleep(60)
 
 
 if __name__ == "__main__":
