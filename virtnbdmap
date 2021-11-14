@@ -194,14 +194,18 @@ def main():
         logging.info("Parsed [%s] block offsets", len(dataRanges))
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, prefix="blockmap.") as blockMap:
+        with tempfile.NamedTemporaryFile(
+            delete=False, prefix="block.", suffix=".map"
+        ) as blockMap:
             blockMap.write(json.dumps(dataRanges, indent=4).encode())
             logging.info("Wrote blockmap to temporary file: [%s]", blockMap.name)
     except Exception as e:
         logging.error("Unable to create temporary blockmap file: %s", e)
         sys.exit(1)
 
-    nbdkitLog = tempfile.NamedTemporaryFile(delete=False, prefix="nbdkit.log.")
+    nbdkitLog = tempfile.NamedTemporaryFile(
+        delete=False, prefix="nbdkit.", suffix=".log"
+    )
     logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
     nbdkitProcess = subprocess.Popen(
         shlex.split(
