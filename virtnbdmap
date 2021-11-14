@@ -29,6 +29,7 @@ import logging
 import subprocess
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.sparsestream as sparsestream
+from libvirtnbdbackup import __version__
 
 
 def handleSignal(nbdkitProcess, device, blockMap, log, signum, frame):
@@ -139,6 +140,7 @@ def main():
         datefmt=lib.logDateFormat,
     )
 
+    lib.printVersion(__version__)
     pluginFileName = "virtnbd-nbdkit-plugin"
 
     installDir = os.path.dirname(sys.argv[0])
