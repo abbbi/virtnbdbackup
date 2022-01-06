@@ -183,8 +183,6 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
-    stream = sparsestream.SparseStream()
-    sTypes = sparsestream.SparseStreamTypes()
     toStdout = args.output == "-"
 
     zipStream = None
@@ -385,8 +383,6 @@ def main():
                     checkpointName,
                     parentCheckpoint,
                     backupSocket,
-                    stream,
-                    sTypes,
                     zipStream,
                     toStdout,
                 ): disk
@@ -454,12 +450,14 @@ def backupDisk(
     checkpointName,
     parentCheckpoint,
     backupSocket,
-    stream,
-    sTypes,
     zipStream,
     toStdout,
 ):
     """Backup domain disk data."""
+
+    stream = sparsestream.SparseStream()
+    sTypes = sparsestream.SparseStreamTypes()
+
     current_thread().name = disk.diskTarget
     if disk.diskFormat != "raw":
         streamType = args.type
