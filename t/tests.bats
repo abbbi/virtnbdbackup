@@ -318,6 +318,7 @@ toOut() {
     [ -f /.dockerenv ] && skip "wont work inside docker image"
     [ -z $MAPTEST ] && skip "skipping"
     [ ! -z $GITHUB_JOB ] && skip "on github ci"
+    modprobe nbd max_partitions=1 || true
     ../virtnbdmap -f ${TMPDIR}/inctest/sda.full.data 3>- &
     PID=$!
     sleep 10
