@@ -41,7 +41,7 @@ def config(key, value):
         image = value
         return
 
-    raise RuntimeError("unknown parameter: " + key)
+    raise RuntimeError(f"Unsupported parameter: {key}")
 
 
 def config_complete():
@@ -50,7 +50,9 @@ def config_complete():
     global blockMap
     global blockMapFile
     if image is None or blockMap is None:
-        raise RuntimeError("file and disk parameter is required")
+        raise RuntimeError(
+            "Missing parameter: path to block list file and disk required."
+        )
 
     if not os.path.exists(image):
         raise RuntimeError(f"Cant find image file: {image}")
@@ -143,9 +145,9 @@ def pread(h, buf, offset, flags):
                 data += os.pread(h["fd"], len(buf), fileOffset)
                 nbdkit.debug("readed: %s" % len(data))
         else:
-            raise RuntimeError("Unabled situation")
+            raise RuntimeError("Unexpected block range size.")
 
     if len(data) != len(buf):
-        raise RuntimeError("Unexpected short read from file")
+        raise RuntimeError("Unexpected short read from file.")
 
     buf[:] = data

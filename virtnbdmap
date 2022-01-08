@@ -153,11 +153,11 @@ def main():
     logging.info("Using %s as nbdkit plugin", nbdkitModule)
 
     if shutil.which("nbdkit") is None:
-        logging.error("Please install nbdkit utility with python plugin")
+        logging.error("Please install nbdkit utility with python plugin.")
         sys.exit(1)
 
     if shutil.which("qemu-nbd") is None:
-        logging.error("qemu-nbd executable is required but not found on system")
+        logging.error("qemu-nbd executable is required.")
         sys.exit(1)
 
     try:
