@@ -626,6 +626,7 @@ def backupDisk(
     progressBar.close()
     logging.debug("Closing write handle.")
     writer.close()
+    nbdClient.disconnect()
     if toStdout is False:
         try:
             os.rename(targetFilePartial, targetFile)
