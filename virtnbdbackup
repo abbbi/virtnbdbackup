@@ -624,9 +624,8 @@ def backupDisk(
             stream.writeCompressionTrailer(writer, compressedSizes)
 
     progressBar.close()
-    if toStdout is True:
-        logging.debug("Closing write handle")
-        writer.close()
+    logging.debug("Closing write handle.")
+    writer.close()
     if toStdout is False:
         try:
             os.rename(targetFilePartial, targetFile)
