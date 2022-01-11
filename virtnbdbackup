@@ -25,7 +25,6 @@ from datetime import datetime
 from functools import partial
 from threading import current_thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -552,14 +551,8 @@ def backupDisk(
         writer.write(metadata)
         writer.write(sTypes.TERM)
 
-    progressBar = tqdm(
-        total=thinBackupSize,
-        desc="saving disk %s" % disk.diskTarget,
-        unit="B",
-        unit_scale=True,
-        disable=args.noprogress,
-        position=count,
-        leave=False,
+    progressBar = lib.progressBar(
+        thinBackupSize, f"saving disk {disk.diskTarget}", args, count=count
     )
     compressedSizes = []
     for save in extents:

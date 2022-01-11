@@ -4,6 +4,7 @@ import glob
 import json
 import logging
 import lz4.frame
+from tqdm import tqdm
 
 log = logging.getLogger(__name__)
 
@@ -83,6 +84,18 @@ class Common:
             return glob.glob(f"{targetDir}/vmconfig*.xml")[-1]
         except IndexError:
             return None
+
+    def progressBar(self, total, desc, args, count=0):
+        """Return tqdm object"""
+        return tqdm(
+            total=total,
+            desc=desc,
+            unit="B",
+            unit_scale=True,
+            disable=args.noprogress,
+            position=count,
+            leave=False,
+        )
 
     def dumpExtentJson(self, extents):
         extList = []

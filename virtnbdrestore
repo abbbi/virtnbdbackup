@@ -22,7 +22,6 @@ import logging
 import argparse
 import pprint
 from time import sleep
-from tqdm import tqdm
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -80,12 +79,8 @@ def restoreData(lib, args, stream, sTypes, dataFile, targetFile, nbdClient, conn
     pprint.pprint(meta)
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
-    progressBar = tqdm(
-        total=meta["dataSize"],
-        desc="restoring disk %s" % meta["diskName"],
-        unit="B",
-        unit_scale=True,
-        disable=args.noprogress,
+    progressBar = lib.progressBar(
+        meta["dataSize"], f"restoring disk {meta['diskName']}", args
     )
     dataSize = 0
     dataBlockCnt = 0
