@@ -54,11 +54,18 @@ def dump(lib, args, stream, dataFiles):
     return True
 
 
-def restoreData(lib, args, stream, sTypes, dataFile, targetFile, nbdClient, connection):
+def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     """Restore data for disk"""
-    reader = open(dataFile, "rb")
+    try:
+        reader = open(dataFile, "rb")
+    except Exception as e:
+        logging.critical("Unable to backup file for reading: %s", e)
+        return False
+
+    sTypes = sparsestream.SparseStreamTypes()
     kind, start, length = stream.readFrame(reader)
     meta = stream.loadMetadata(reader.read(length))
+
     if lib.isCompressed(meta) is True:
         trailer = stream.readCompressionTrailer(reader)
         logging.info("Found compression trailer")
@@ -149,10 +156,14 @@ def restoreData(lib, args, stream, sTypes, dataFile, targetFile, nbdClient, conn
                 meta["dataSize"],
             )
             return False
+    return False
 
 
-def restore(lib, args, stream, sTypes, vmConfig):
+def restore(lib, args, vmConfig):
     """Handle restore operation"""
+
+    stream = sparsestream.SparseStream()
+
     with open(vmConfig, "r") as vmConf:
         vmDisks = virtclient.client().getDomainDisks(
             vmConf.read(), None, None, args.raw
@@ -240,7 +251,7 @@ def restore(lib, args, stream, sTypes, vmConfig):
 
         for dataFile in restoreDisk:
             diskState = restoreData(
-                lib, args, stream, sTypes, dataFile, targetFile, nbdClient, connection
+                lib, args, stream, dataFile, targetFile, nbdClient, connection
             )
             if diskState is None:
                 diskState = True
@@ -359,7 +370,7 @@ def main():
         if not os.path.exists(args.output):
             os.makedirs(args.output)
 
-        if restore(lib, args, stream, sTypes, vmConfig) is True:
+        if restore(lib, args, vmConfig) is True:
             shutil.copy(vmConfig, args.output)
             logging.info(
                 "Copied vm config to %s/%s", args.output, os.path.basename(vmConfig)
