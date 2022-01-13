@@ -59,7 +59,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     try:
         reader = open(dataFile, "rb")
     except Exception as e:
-        logging.critical("Unable to backup file for reading: %s", e)
+        logging.critical("Unable to open backup file for reading: %s", e)
         return False
 
     sTypes = sparsestream.SparseStreamTypes()
