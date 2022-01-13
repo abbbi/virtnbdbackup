@@ -20,6 +20,7 @@ import random
 import glob
 import os
 from xml.etree import ElementTree
+from collections import namedtuple
 import logging
 import libvirt
 
@@ -33,20 +34,6 @@ def libvirt_ignore(ignore, err):
 libvirt.registerErrorHandler(f=libvirt_ignore, ctx=None)
 
 log = logging.getLogger(__name__)
-
-
-class DomainDisk:
-    """Virtual machine Disk Object
-
-    @diskTarget: target name for virtual disk as defined
-    in the configuration. NBD server will use this target
-    name as export name
-    """
-
-    def __init__(self):
-        self.diskTarget = None
-        self.diskFormat = None
-        self.diskFileName = None
 
 
 class client:
@@ -92,6 +79,9 @@ class client:
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
+        DomainDisk = namedtuple(
+            "DomainDisk", ["diskTarget", "diskFormat", "diskFileName"]
+        )
         tree = ElementTree.fromstring(vmConfig)
         devices = []
 
@@ -155,11 +145,7 @@ class client:
                     includeDisk,
                 )
                 continue
-            diskObj = DomainDisk()
-            diskObj.diskTarget = dev
-            diskObj.diskFormat = diskFormat
-            diskObj.diskFileName = diskFileName
-            devices.append(diskObj)
+            devices.append(DomainDisk(dev, diskFormat, diskFileName))
 
         return devices
 
