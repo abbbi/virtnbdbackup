@@ -264,6 +264,7 @@ def main():
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
+    args.offline = False
     if virtClient.domainOffline(domObj) is True:
         logging.warning("Domain is offline, resetting backup options")
         args.level = "copy"
@@ -349,14 +350,7 @@ def main():
     backupSocket = lib.getSocketFile(args.socketfile)
     logging.info("NDB Endpoint socket: %s", backupSocket)
 
-    args.offline = False
-    if virtClient.domainOffline(domObj) is True:
-        logging.info("Domain is offline, resetting backup options")
-        args.level = "copy"
-        args.qemu = True
-        args.worker = 1
-        args.offline = True
-    else:
+    if virtClient.domainOffline(domObj) is not True:
         try:
             logging.info("Starting backup job.")
             virtClient.startBackup(
