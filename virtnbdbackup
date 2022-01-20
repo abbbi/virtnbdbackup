@@ -270,7 +270,6 @@ def main():
         args.level = "copy"
         logging.info("Backup level: [%s]", args.level)
         args.qemu = True
-        args.worker = 1
         args.offline = True
 
     signal.signal(
@@ -484,6 +483,7 @@ def backupDisk(
         logging.info("INC backup: set context to %s", metaContext)
 
     if args.offline is True:
+        backupSocket = f"{backupSocket}.{disk.diskTarget}"
         logging.info("Offline backup, starting NDB Service")
         pid = qemuhelper.qemuHelper(disk.diskTarget).startBackupNbdServer(
             disk.diskFormat, disk.diskPath, backupSocket
