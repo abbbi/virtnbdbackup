@@ -314,6 +314,12 @@ toOut() {
     [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
     echo "output = ${output}"
 }
+@test "Backup: create full backup for offline VM" {
+    run virsh destroy $VM
+    run ../virtnbdbackup -d $VM -o ${TMPDIR}/offlinebackup
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
 @test "Map: Map full backup to nbd block device, check device size and partitions" {
     [ -f /.dockerenv ] && skip "wont work inside docker image"
     [ -z $MAPTEST ] && skip "skipping"

@@ -1,5 +1,7 @@
+import os
 import logging
 import nbd
+from time import sleep
 
 log = logging.getLogger(__name__)
 
@@ -49,14 +51,39 @@ class nbdClient:
             self._nbdHandle.add_meta_context(self._metaContext)
             self._nbdHandle.set_export_name(self._exportName)
             self._nbdHandle.connect_unix(self._socket)
-        except Exception as e:
-            log.error("Unable to connect ndb server")
-            log.exception(e)
+        except nbd.Error as e:
+            log.error("Unable to connect ndb server: %s", e)
             return False
 
         self.getBlockInfo()
 
         return self._nbdHandle
+
+    def waitForServer(self):
+        """Wait until NBD endpoint connection can be established"""
+        logging.info("Waiting until nbd server on socket %s is up.", self._socket)
+        retry = 0
+        maxRetry = 20
+        sleepTime = 1
+        while True:
+            sleep(sleepTime)
+            if retry >= maxRetry:
+                logging.error("NBD server connection failed.")
+                return False
+
+            if not os.path.exists(self._socket):
+                logging.info("Waiting for NBD Server, Retry: %s", retry)
+                retry = retry + 1
+
+            connection = self.connect()
+            if connection:
+                logging.info("Connection to nbd backend succeeded.")
+                return connection
+
+            logging.info("Waiting for NBD Server, Retry: %s", retry)
+            retry = retry + 1
+
+        return False
 
     def disconnect(self):
         self._nbdHandle.shutdown()

@@ -94,8 +94,9 @@ boot from an backup image.
   </domain>
  ```
 
- `Note:` It is mandatory to restart the virtual machine once you have altered
- its configuration to make the featureset available.
+`Note`:
+> It is mandatory to restart the virtual machine once you have altered
+> its configuration to make the featureset available.
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
  * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5` (yum install python3-libnbd)
@@ -166,11 +167,16 @@ disk data and logfiles.
 
 The target directory must be rotated if a new backup set is created.
 
-Using the available `libvirt` api calls, a backup job operation is started,
-which in turn initializes a new nbd server backend listening on a local unix
-socket. This nbd backend provides consistent access to the virtual machines,
-disk data and dirty blocks. After the backup process finishes, the job is
-stopped and the nbd server quits operation.
+If the virtual domain is active and running, a backup job operation via
+`libvirt api` is started, which in turn initializes a new nbd server backend
+listening on a local unix socket. This nbd backend provides consistent access
+to the virtual machines, disk data and dirty blocks. After the backup process
+finishes, the job is stopped and the nbd server quits operation.
+
+`Note`:
+> If the virtual domain is not in running state (powered off) `virtnbdbackup` 
+> forces the backup mode to `copy` and creates a complete VM backup, the 
+> required NBD Services are started automatically.
 
 It is possible to backup multiple virtual machines on the same host system at
 the same time, using separate calls to the application with a different target
@@ -375,9 +381,10 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
 All incremental backups found will be applied to the target images
 in the output directory `/tmp/restore`
 
-`Note`: the restore utility will copy the latest virtual machine config to the
-target directory, but wont alter its contents. You have to adjust the config
-file for the new pathes and/or excluded disks to be able to define and run it.
+`Note`:
+> The restore utility will copy the latest virtual machine config to the
+> target directory, but wont alter its contents. You have to adjust the config
+> file for the new pathes and/or excluded disks to be able to define and run it.
 
 ## Process only specific disks during restore
 
@@ -531,8 +538,9 @@ WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
 In case you receive this warning, check if the qemu agent is installed and
 running with in the domain.
 
-`Note:` It is highly recommended to have an qemu agent running to get a
-consistent file system during backup!
+`Note:`
+> It is highly recommended to have an qemu agent running within the virtual
+> domain to have a consistent file system during backup!
 
 ## Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"
 

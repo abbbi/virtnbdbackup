@@ -4,6 +4,7 @@ import glob
 import json
 import logging
 import lz4.frame
+import signal
 from tqdm import tqdm
 
 log = logging.getLogger(__name__)
@@ -96,6 +97,15 @@ class Common:
             position=count,
             leave=False,
         )
+
+    def killPid(self, pid):
+        """Attempt kill PID"""
+        while True:
+            try:
+                os.kill(pid, signal.SIGTERM)
+                return True
+            except ProcessLookupError:
+                return True
 
     def dumpExtentJson(self, extents):
         extList = []

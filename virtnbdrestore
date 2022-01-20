@@ -225,29 +225,14 @@ def restore(lib, args, vmConfig):
 
         logging.info("Starting nbd server on socket: %s", socketFile)
         try:
-            nbdSrv = qFh.startNbdServer(targetFile, socketFile)
+            nbdSrv = qFh.startRestoreNbdServer(targetFile, socketFile)
             logging.info("NBD Server PID: %s", nbdSrv)
         except Exception as e:
             logging.error("Unable to start nbd server: %s", e)
             return False
 
         nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)
-        logging.info("Waiting until nbd server on socket %s is up.", socketFile)
-        retry = 0
-        maxRetry = 20
-        while True:
-            if os.path.exists(socketFile):
-                connection = nbdClient.connect()
-                if connection:
-                    logging.info("Connection to nbd backend succeeded.")
-                    break
-            else:
-                if retry >= maxRetry:
-                    logging.error("NBD server connection failed.")
-                    return False
-                logging.info("Waiting for NBD Server, Retry: %s", retry)
-                sleep(1)
-                retry = retry + 1
+        connection = nbdClient.waitForServer()
 
         for dataFile in restoreDisk:
             diskState = restoreData(

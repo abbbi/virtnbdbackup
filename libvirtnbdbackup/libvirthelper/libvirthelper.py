@@ -55,6 +55,11 @@ class client:
         """Lookup domain"""
         return self._conn.lookupByName(name)
 
+    def domainOffline(self, domObj):
+        """Returns true if domain is not in running state"""
+        state, reason = domObj.state()
+        return state != libvirt.VIR_DOMAIN_RUNNING
+
     def hasIncrementalEnabled(self, domObj):
         """Check if virtual machine has enabled required capabilities
         for incremental backup
@@ -80,7 +85,8 @@ class client:
         all non supported devices
         """
         DomainDisk = namedtuple(
-            "DomainDisk", ["diskTarget", "diskFormat", "diskFileName"]
+            "DomainDisk",
+            ["diskTarget", "diskFormat", "diskFileName", "diskPath", "backingStores"],
         )
         tree = ElementTree.fromstring(vmConfig)
         devices = []
@@ -92,6 +98,7 @@ class client:
         driver = None
         device = None
         diskFileName = None
+        diskPath = None
         for target in tree.findall("devices/disk"):
             for src in target.findall("target"):
                 dev = src.get("dev")
@@ -134,6 +141,7 @@ class client:
                 diskSrc = source.get("file")
                 if diskSrc:
                     diskFileName = os.path.basename(diskSrc)
+                    diskPath = diskSrc
 
             if target.get("device") == "cdrom":
                 continue
@@ -145,7 +153,23 @@ class client:
                     includeDisk,
                 )
                 continue
-            devices.append(DomainDisk(dev, diskFormat, diskFileName))
+
+            backingStoreFiles = []
+            backingStore = target.find("backingStore")
+            while backingStore != None:
+                backingStoreSource = backingStore.find("source")
+
+                if backingStoreSource is not None:
+                    backingStoreFiles.append(backingStoreSource.get("file"))
+
+                if backingStore.find("backingStore"):
+                    backingStore = backingStore.find("backingStore")
+                else:
+                    backingStore = None
+
+            devices.append(
+                DomainDisk(dev, diskFormat, diskFileName, diskPath, backingStoreFiles)
+            )
 
         return devices
 

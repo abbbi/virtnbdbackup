@@ -37,11 +37,12 @@ import libvirtnbdbackup.outputhelper as outputhelper
 from libvirtnbdbackup import __version__
 
 
-def handleSignal(domObj, virtClient, log, signum, frame):
+def handleSignal(args, domObj, virtClient, log, signum, frame):
     """Catch signal, attempt to stop running backup job."""
     log.error("Caught signal: %s", signum)
     log.error("Cleanup: Stopping backup job")
-    virtClient.stopBackup(domObj)
+    if args.offline is not True:
+        virtClient.stopBackup(domObj)
     sys.exit(1)
 
 
@@ -263,7 +264,17 @@ def main():
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
-    signal.signal(signal.SIGINT, partial(handleSignal, domObj, virtClient, logging))
+    if virtClient.domainOffline(domObj) is True:
+        logging.warning("Domain is offline, resetting backup options")
+        args.level = "copy"
+        logging.info("Backup level: [%s]", args.level)
+        args.qemu = True
+        args.worker = 1
+        args.offline = True
+
+    signal.signal(
+        signal.SIGINT, partial(handleSignal, args, domObj, virtClient, logging)
+    )
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks = virtClient.getDomainDisks(vmConfig, args.exclude, args.include, args.raw)
@@ -338,21 +349,29 @@ def main():
     backupSocket = lib.getSocketFile(args.socketfile)
     logging.info("NDB Endpoint socket: %s", backupSocket)
 
-    try:
-        logging.info("Starting backup job.")
-        virtClient.startBackup(
-            domObj,
-            disks,
-            args.level,
-            checkpointName,
-            parentCheckpoint,
-            args.scratchdir,
-            backupSocket,
-        )
-        logging.debug("Backup job started, using socket: %s", backupSocket)
-    except Exception as e:
-        logging.error(e)
-        sys.exit(1)
+    args.offline = False
+    if virtClient.domainOffline(domObj) is True:
+        logging.info("Domain is offline, resetting backup options")
+        args.level = "copy"
+        args.qemu = True
+        args.worker = 1
+        args.offline = True
+    else:
+        try:
+            logging.info("Starting backup job.")
+            virtClient.startBackup(
+                domObj,
+                disks,
+                args.level,
+                checkpointName,
+                parentCheckpoint,
+                args.scratchdir,
+                backupSocket,
+            )
+            logging.debug("Backup job started, using socket: %s", backupSocket)
+        except Exception as e:
+            logging.error(e)
+            sys.exit(1)
 
     if args.level != "copy":
         logging.info("Started backup job with checkpoint, saving information.")
@@ -387,25 +406,27 @@ def main():
                 ): disk
                 for count, disk in enumerate(disks)
             }
-            results = {}
             for future in as_completed(futures):
                 if future.result() is not True:
                     raise RuntimeError("Backup of one disk failed")
     except Exception as e:
         logging.error("Unable to backup Disk: %s", e)
         logging.exception(e)
-        virtClient.stopBackup(domObj)
+        if virtClient.domainOffline(domObj) is False:
+            virtClient.stopBackup(domObj)
         sys.exit(1)
 
     configFile = None
     if args.printonly is False:
         configFile = backupConfig(vmConfig, args, checkpointName)
-    logging.info("Backup jobs finished, stopping backup task.")
-    ret = virtClient.stopBackup(domObj)
-    if ret == 0:
-        logging.info("Finished")
-    else:
-        logging.warning("Unable to stop backup task, return: %s", e)
+
+    if virtClient.domainOffline(domObj) is False:
+        logging.info("Backup jobs finished, stopping backup task.")
+        ret = virtClient.stopBackup(domObj)
+        if ret != 0:
+            logging.warning("Unable to stop backup task, return: %s", e)
+
+    logging.info("Finished")
 
     if toStdout is True and args.printonly is False:
         addFiles(configFile, zipStream, cptFile, logFile, args)
@@ -419,7 +440,7 @@ def addFiles(configFile, zipStream, cptFile, logFile, args):
     if args.level in ("full", "inc"):
         logging.info("Adding checkpoint info to zipfile")
         zipStream.zipStream.write(cptFile, cptFile)
-        for dirname, subdirs, files in os.walk(args.checkpointdir):
+        for dirname, _, files in os.walk(args.checkpointdir):
             zipStream.zipStream.write(dirname)
             for filename in files:
                 zipStream.zipStream.write(os.path.join(dirname, filename))
@@ -468,10 +489,17 @@ def backupDisk(
         metaContext = "qemu:dirty-bitmap:backup-%s" % disk.diskTarget
         logging.info("INC backup: set context to %s", metaContext)
 
+    if args.offline is True:
+        logging.info("Offline backup, starting NDB Service")
+        pid = qemuhelper.qemuHelper(disk.diskTarget).startBackupNbdServer(
+            disk.diskFormat, disk.diskPath, backupSocket
+        )
+        logging.info("NDB Service PID: [%s]", pid)
+
     nbdClient = nbdhelper.nbdClient(disk.diskTarget, metaContext, backupSocket)
-    connection = nbdClient.connect()
+    connection = nbdClient.waitForServer()
     if not connection:
-        raise RuntimeError("Error connecting to nbd endpoint.")
+        raise RuntimeError(f"Error connecting to nbd endpoint: {backupSocket}")
 
     if args.qemu and args.level != "inc":
         logging.info("Using qemu tools to query extents")
@@ -620,6 +648,9 @@ def backupDisk(
     logging.debug("Closing write handle.")
     writer.close()
     nbdClient.disconnect()
+    if args.offline is True:
+        logging.info("Stopping NBD Service with pid: [%s]", pid)
+        lib.killPid(pid)
     if toStdout is False:
         try:
             os.rename(targetFilePartial, targetFile)
