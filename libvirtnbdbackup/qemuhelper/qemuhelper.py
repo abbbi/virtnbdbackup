@@ -59,6 +59,7 @@ class qemuHelper:
         p = subprocess.Popen(
             [
                 "qemu-nbd",
+                "-r",
                 f"--format={diskFormat}",
                 "-x",
                 f"{self.exportName}",
