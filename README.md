@@ -175,7 +175,7 @@ finishes, the job is stopped and the nbd server quits operation.
 
 `Note`:
 > If the virtual domain is not in running state (powered off) `virtnbdbackup` 
-> supports both `copy` and `inc` backpu modes. The backup will then allways save
+> supports both `copy` and `inc` backup modes. The backup will then allways save
 > the changed blocks of the last existing checkpoints. As no new checkpoints
 > can be defined for offline domains, the Backup mode `full` is changed to mode
 > `copy`.
