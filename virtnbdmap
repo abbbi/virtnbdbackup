@@ -18,7 +18,6 @@
 import os
 import sys
 import shutil
-import shlex
 import tempfile
 import signal
 from functools import partial
@@ -36,7 +35,7 @@ def handleSignal(nbdkitProcess, device, blockMap, log, signum, frame):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
     disconnectDevice = subprocess.run(
-        shlex.split(f"qemu-nbd -d {device}"), stdout=subprocess.PIPE
+        ["qemu-nbd", "-d", f"{device}"], stdout=subprocess.PIPE
     )
     if disconnectDevice.returncode == 0:
         log.info("Disconnected nbd device [%s]", device)
@@ -210,22 +209,29 @@ def main():
     )
     logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
     nbdkitProcess = subprocess.Popen(
-        shlex.split(
-            f"""nbdkit
-            -i {args.listen_address}
-            -e {args.export_name}
-            --filter=blocksize
-            -f -v python {nbdkitModule}
-            blockmap={blockMap.name}
-            disk={args.file}
-            -t {args.threads}
-            maxlen={args.blocksize}"""
-        ),
+        [
+            "nbdkit",
+            "-i",
+            f"{args.listen_address}",
+            f"-e",
+            f"{args.export_name}",
+            "--filter=blocksize",
+            "-f",
+            "-v",
+            "python",
+            f"{nbdkitModule}",
+            f"blockmap={blockMap.name}",
+            f"disk={args.file}",
+            f"-t",
+            f"{args.threads}",
+            f"maxlen={args.blocksize}",
+        ],
         close_fds=True,
         stdout=nbdkitLog,
         stderr=nbdkitLog,
     )
 
+    print(nbdkitProcess.args)
     if nbdkitProcess.returncode is None:
         logging.info("Started nbdkit process pid: [%s]", nbdkitProcess.pid)
         signal.signal(
@@ -246,9 +252,13 @@ def main():
     while True:
         try:
             deviceProcess = subprocess.run(
-                shlex.split(
-                    f"qemu-nbd -c {args.device} nbd://127.0.0.1:10809/{args.export_name} -r"
-                ),
+                [
+                    "qemu-nbd",
+                    "-c",
+                    f"{args.device}",
+                    f"nbd://127.0.0.1:10809/{args.export_name}",
+                    "-r",
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True,
@@ -257,7 +267,8 @@ def main():
         except subprocess.CalledProcessError as e:
             if retryCnt >= maxRetry:
                 logging.info(
-                    "Unable to connect device after service start: %s", e.stderr
+                    "Unable to connect device after service start: %s",
+                    e.stderr.decode(),
                 )
                 nbdkitProcess.kill()
                 sys.exit(1)
