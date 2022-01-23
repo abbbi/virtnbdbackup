@@ -498,7 +498,7 @@ As example:
 
 `virtnbdbackup -d vm1 -l full -o /tmp/backup_hosta --checkpointdir /mnt/shared/vm1`
 
- 2) After backup, the virtual machine is relocated to boost B and loses its
+ 2) After backup, the virtual machine is relocated to host B and loses its
  information about checkpoints and bitmaps, thus, the next full backup
  usually fails with:
 
