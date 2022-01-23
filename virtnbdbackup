@@ -269,7 +269,7 @@ def main():
         if args.level == "full":
             logging.warning("Domain is offline, resetting backup options")
             args.level = "copy"
-        logging.info("Backup level: [%s]", args.level)
+            logging.info("Backup level: [%s]", args.level)
         args.qemu = True
         args.offline = True
 
