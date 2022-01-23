@@ -162,7 +162,7 @@ def main():
     try:
         reader = open(args.file, "rb")
     except Exception as e:
-        print("Unable to open backup file: %s" % e)
+        logging.fatal("Unable to open backup file: %s" % e)
         sys.exit(1)
 
     if not os.path.exists(args.device):
@@ -231,7 +231,6 @@ def main():
         stderr=nbdkitLog,
     )
 
-    print(nbdkitProcess.args)
     if nbdkitProcess.returncode is None:
         logging.info("Started nbdkit process pid: [%s]", nbdkitProcess.pid)
         signal.signal(
