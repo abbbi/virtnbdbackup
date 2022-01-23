@@ -248,6 +248,13 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
 Special devices such as `cdrom` or `direct attached luns` are excluded by
 default, as they are not supported by the changed block tracking layer.
 
+It is also possible to only backup specific disks using the include option
+(`--include`, or `-i`):
+
+```
+virtnbdbackup -d vm1 -l full -o /tmp/backupset -i sdf
+```
+
 ## Estimating backup size
 
 Sometimes it can be useful to estimate the data size prior to executing the
