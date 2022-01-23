@@ -172,7 +172,9 @@ def restore(lib, args, vmConfig):
     diskState = False
     for disk in vmDisks:
         if len(disk.backingStores) > 0:
-            logging.warning("Target image [%s] seems to be a snapshot image.", disk.diskFileName)
+            logging.warning(
+                "Target image [%s] seems to be a snapshot image.", disk.diskFileName
+            )
             logging.warning("Target virtual machine configuration must be altered!")
             logging.warning("Configured backing store images must be changed.")
         if args.disk != "all" and args.disk != disk.diskTarget:
