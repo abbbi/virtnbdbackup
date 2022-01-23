@@ -95,7 +95,10 @@ class qemuHelper:
             log.debug("Read error messages from logfile")
             logHandle.flush()
             logHandle.close()
-            err = open(logFile, "r").read().strip()
+            try:
+                err = open(logFile, "r").read().strip()
+            except OSError as errmsg:
+                err = errmsg
 
         log.debug("Removing temporary logfile: %s", logFile)
         os.remove(logFile)
