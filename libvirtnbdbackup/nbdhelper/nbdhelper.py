@@ -41,7 +41,7 @@ class nbdClient:
         if maxSize != 0:
             self.maxRequestSize = maxSize
 
-        log.info("Using Maximum Block size supported by nbd server: %s", maxSize)
+        log.info("Using Maximum Block size supported by NBD server: [%s]", maxSize)
 
     def connect(self):
         """Setup connection to NBD server endpoint, return
@@ -61,7 +61,7 @@ class nbdClient:
 
     def waitForServer(self):
         """Wait until NBD endpoint connection can be established"""
-        logging.info("Waiting until nbd server on socket %s is up.", self._socket)
+        logging.info("Waiting until NBD server on socket [%s] is up.", self._socket)
         retry = 0
         maxRetry = 20
         sleepTime = 1
@@ -77,7 +77,7 @@ class nbdClient:
 
             connection = self.connect()
             if connection:
-                logging.info("Connection to nbd backend succeeded.")
+                logging.info("Connection to NBD backend succeeded.")
                 return connection
 
             logging.info("Waiting for NBD Server, Retry: %s", retry)

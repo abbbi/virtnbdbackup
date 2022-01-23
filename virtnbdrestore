@@ -87,7 +87,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
     progressBar = lib.progressBar(
-        meta["dataSize"], f"restoring disk {meta['diskName']}", args
+        meta["dataSize"], f"restoring disk [{meta['diskName']}]", args
     )
     dataSize = 0
     dataBlockCnt = 0
@@ -171,6 +171,10 @@ def restore(lib, args, vmConfig):
 
     diskState = False
     for disk in vmDisks:
+        if len(disk.backingStores) > 0:
+            logging.warning("Target image [%s] seems to be a snapshot image.", disk.diskFileName)
+            logging.warning("Target virtual machine configuration must be altered!")
+            logging.warning("Configured backing store images must be changed.")
         if args.disk != "all" and args.disk != disk.diskTarget:
             logging.info("Skipping disk %s for restore", disk.diskTarget)
             continue
@@ -212,7 +216,7 @@ def restore(lib, args, vmConfig):
             targetFile,
             disk.diskFormat,
         )
-        logging.info("Virtual Size %s", meta["virtualSize"])
+        logging.info("Virtual Size: [%s]", meta["virtualSize"])
         qFh = qemuhelper.qemuHelper(meta["diskName"])
 
         try:
@@ -223,10 +227,10 @@ def restore(lib, args, vmConfig):
 
         socketFile = lib.getSocketFile(args.socketfile)
 
-        logging.info("Starting nbd server on socket: %s", socketFile)
+        logging.info("Starting NBD server on socket: [%s]", socketFile)
         err = qFh.startRestoreNbdServer(targetFile, socketFile)
         if err is not None:
-            logging.error("Unable to start nbd server: %s", err)
+            logging.error("Unable to start NBD server: [%s]", err)
             return False
 
         nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)
@@ -356,7 +360,7 @@ def main():
         if restore(lib, args, vmConfig) is True:
             shutil.copy(vmConfig, args.output)
             logging.info(
-                "Copied vm config to %s/%s", args.output, os.path.basename(vmConfig)
+                "Copied vm config to [%s/%s]", args.output, os.path.basename(vmConfig)
             )
             logging.info("Note: virtual machine config must be adjusted manually.")
             sys.exit(0)
