@@ -224,11 +224,9 @@ def restore(lib, args, vmConfig):
         socketFile = lib.getSocketFile(args.socketfile)
 
         logging.info("Starting nbd server on socket: %s", socketFile)
-        try:
-            nbdSrv = qFh.startRestoreNbdServer(targetFile, socketFile)
-            logging.info("NBD Server PID: %s", nbdSrv)
-        except Exception as e:
-            logging.error("Unable to start nbd server: %s", e)
+        err = qFh.startRestoreNbdServer(targetFile, socketFile)
+        if err is not None:
+            logging.error("Unable to start nbd server: %s", err)
             return False
 
         nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)

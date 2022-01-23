@@ -175,8 +175,10 @@ finishes, the job is stopped and the nbd server quits operation.
 
 `Note`:
 > If the virtual domain is not in running state (powered off) `virtnbdbackup` 
-> forces the backup mode to `copy` and creates a complete VM backup, the 
-> required NBD Services are started automatically.
+> supports both `copy` and `inc` backpu modes. The backup will then allways save
+> the changed blocks of the last existing checkpoints. As no new checkpoints
+> can be defined for offline domains, the Backup mode `full` is changed to mode
+> `copy`.
 
 It is possible to backup multiple virtual machines on the same host system at
 the same time, using separate calls to the application with a different target

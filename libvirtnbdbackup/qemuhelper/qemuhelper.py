@@ -1,6 +1,9 @@
 import os
 import json
+import logging
 import subprocess
+
+log = logging.getLogger(__name__)
 
 
 class qemuHelper:
@@ -13,7 +16,7 @@ class qemuHelper:
         extentMap = subprocess.run(
             f"qemu-img map --output json 'nbd+unix:///{self.exportName}?socket={backupSocket}'",
             shell=True,
-            check=1,
+            check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -24,53 +27,78 @@ class qemuHelper:
         subprocess.run(
             f"qemu-img create -f {diskFormat} '{targetFile}' {fileSize}",
             shell=True,
-            check=1,
+            check=True,
             stdout=subprocess.PIPE,
         )
 
     def startRestoreNbdServer(self, targetFile, socketFile):
-        """Start NBD endpoint for restoring data
+        cmd = [
+            "qemu-nbd",
+            "--discard=unmap",
+            "--format=qcow2",
+            "-x",
+            f"{self.exportName}",
+            f"{targetFile}",
+            "-k",
+            f"{socketFile}",
+            "--fork",
+        ]
+        return self._runcmd(cmd, socketFile)
 
-        Process will end itself after last connection has
-        finished.
-        """
+    def startBackupNbdServer(self, diskFormat, diskFile, socketFile, bitMap):
+        bitmapOpt = "--"
+        if bitMap is not None:
+            bitmapOpt = f"--bitmap={bitMap}"
+
+        cmd = [
+            "qemu-nbd",
+            "-r",
+            f"--format={diskFormat}",
+            "-x",
+            f"{self.exportName}",
+            f"{diskFile}",
+            "-k",
+            f"{socketFile}",
+            "-t",
+            "-e 2",
+            "--fork",
+            "--detect-zeroes=on",
+            f"--pid-file={socketFile}.pid",
+            bitmapOpt,
+        ]
+        return self._runcmd(cmd, socketFile)
+
+    def _runcmd(self, cmdLine, socketFile):
+        """Start NBD Service"""
+        logFile = f"{socketFile}.nbdserver.log"
+
+        log.debug("CMD: %s", " ".join(cmdLine))
+
+        try:
+            logHandle = open(logFile, "w+")
+            log.debug("Temporary logfile: %s", logFile)
+        except OSError as errmsg:
+            return 1, errmsg
+
         p = subprocess.Popen(
-            [
-                "qemu-nbd",
-                "--discard=unmap",
-                "--format=qcow2",
-                "-x",
-                f"{self.exportName}",
-                f"{targetFile}",
-                "-k",
-                f"{socketFile}",
-            ],
+            cmdLine,
             close_fds=True,
+            stderr=logHandle,
+            stdout=logHandle,
         )
 
-        return p.pid
+        p.wait()
+        log.debug("Return code: %s", p.returncode)
+        err = None
+        if p.returncode != 0:
+            p.wait()
+            log.debug("Read error messages from logfile")
+            logHandle.flush()
+            logHandle.close()
+            err = open(logFile, "r").read().strip()
 
-    def startBackupNbdServer(self, diskFormat, diskFile, socketFile):
-        """Start NBD Service for Disk device in order to query extend information and
-        allow for backup of offline domain
+        log.debug("Removing temporary logfile: %s", logFile)
+        os.remove(logFile)
 
-        Process will not end itself and must be stopped manually
-        """
-        p = subprocess.Popen(
-            [
-                "qemu-nbd",
-                "-r",
-                f"--format={diskFormat}",
-                "-x",
-                f"{self.exportName}",
-                f"{diskFile}",
-                "-k",
-                f"{socketFile}",
-                "-t",
-                "-e 2",
-                "--detect-zeroes=on",
-            ],
-            close_fds=True,
-        )
-
-        return p.pid
+        log.debug("Started process, returning: %s", err)
+        return err

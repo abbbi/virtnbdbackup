@@ -266,8 +266,9 @@ def main():
 
     args.offline = False
     if virtClient.domainOffline(domObj) is True:
-        logging.warning("Domain is offline, resetting backup options")
-        args.level = "copy"
+        if args.level == "full":
+            logging.warning("Domain is offline, resetting backup options")
+            args.level = "copy"
         logging.info("Backup level: [%s]", args.level)
         args.qemu = True
         args.offline = True
@@ -310,10 +311,11 @@ def main():
             checkpoints = json.loads(cptFh.read())
 
     if args.level != "copy":
-        logging.info("Check for missing checkpoints from: %s", args.checkpointdir)
-        if virtClient.redefineCheckpoints(domObj, args) is False:
-            logging.error("Unable to redefine checkpoints.")
-            sys.exit(1)
+        if args.offline is False:
+            logging.info("Check for missing checkpoints from: %s", args.checkpointdir)
+            if virtClient.redefineCheckpoints(domObj, args) is False:
+                logging.error("Unable to redefine checkpoints.")
+                sys.exit(1)
 
         logging.info("Checkpoint handling")
         if args.level == "full" and checkpoints:
@@ -329,15 +331,19 @@ def main():
             nextCpt = len(checkpoints)
             checkpointName = "%s.%s" % (lib.checkpointName, nextCpt)
             if args.checkpoint is not False:
-                logging.info("Overriding parent checkpoint: %s", args.checkpoint)
+                logging.warning("Overriding parent checkpoint: %s", args.checkpoint)
                 parentCheckpoint = args.checkpoint
             else:
                 parentCheckpoint = checkpoints[-1]
             logging.info("Next checkpoint id: %s", nextCpt)
             logging.info("Parent checkpoint name %s", parentCheckpoint)
 
+            if args.offline is True:
+                logging.info("Offline backup, use last known checkpoint.")
+                checkpointName = parentCheckpoint
+
         if args.level == "inc" and len(checkpoints) < 1:
-            logging.error("No prior checkpoints found, execute full backup first")
+            logging.error("No checkpoints found, execute full backup first.")
             sys.exit(1)
 
         logging.info("Using checkpoint name: %s", checkpointName)
@@ -366,7 +372,7 @@ def main():
             logging.error(e)
             sys.exit(1)
 
-    if args.level != "copy":
+    if args.level != "copy" and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
         if not checkpoints:
             checkpoints = []
@@ -404,7 +410,6 @@ def main():
                     raise RuntimeError("Backup of one disk failed")
     except Exception as e:
         logging.error("Unable to backup Disk: %s", e)
-        logging.exception(e)
         if virtClient.domainOffline(domObj) is False:
             virtClient.stopBackup(domObj)
         sys.exit(1)
@@ -415,9 +420,9 @@ def main():
 
     if virtClient.domainOffline(domObj) is False:
         logging.info("Backup jobs finished, stopping backup task.")
-        ret = virtClient.stopBackup(domObj)
+        ret, err = virtClient.stopBackup(domObj)
         if ret != 0:
-            logging.warning("Unable to stop backup task, return: %s", e)
+            logging.warning("Unable to stop backup task, return: %s", err)
 
     logging.info("Finished")
 
@@ -479,16 +484,25 @@ def backupDisk(
 
     metaContext = None
     if args.level == "inc":
-        metaContext = "qemu:dirty-bitmap:backup-%s" % disk.diskTarget
+        if args.offline is True:
+            metaContext = f"qemu:dirty-bitmap:{checkpointName}"
+        else:
+            metaContext = f"qemu:dirty-bitmap:backup-{disk.diskTarget}"
         logging.info("INC backup: set context to %s", metaContext)
 
     if args.offline is True:
+        bitMap = None
+        if args.level == "inc":
+            bitMap = checkpointName
         backupSocket = f"{backupSocket}.{disk.diskTarget}"
         logging.info("Offline backup, starting NDB Service")
-        pid = qemuhelper.qemuHelper(disk.diskTarget).startBackupNbdServer(
-            disk.diskFormat, disk.diskPath, backupSocket
+        err = qemuhelper.qemuHelper(disk.diskTarget).startBackupNbdServer(
+            disk.diskFormat, disk.diskPath, backupSocket, bitMap
         )
-        logging.info("NDB Service PID: [%s]", pid)
+        if err is not None:
+            logging.fatal("Error starting NBD Server: %s", err)
+            return False
+        logging.info("NDB Service started")
 
     nbdClient = nbdhelper.nbdClient(disk.diskTarget, metaContext, backupSocket)
     connection = nbdClient.waitForServer()
@@ -643,8 +657,8 @@ def backupDisk(
     writer.close()
     nbdClient.disconnect()
     if args.offline is True:
-        logging.info("Stopping NBD Service with pid: [%s]", pid)
-        lib.killPid(pid)
+        logging.info("Stopping NBD Service")
+        lib.killNbdServer(backupSocket)
     if toStdout is False:
         try:
             os.rename(targetFilePartial, targetFile)

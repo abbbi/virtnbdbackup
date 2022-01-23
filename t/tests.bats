@@ -250,6 +250,13 @@ toOut() {
     command -v guestmount || exit 1
     rm -rf ${TMPDIR}/inctest
 }
+@test "Backup: incremental backup must fail without any checkpoints" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+    rm -rf ${TMPDIR}/inctest
+}
 @test "Backup: create full backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/inctest
@@ -273,6 +280,7 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+
 @test "Setup: start VM after creating file" {
     [ -z $INCTEST ] && skip "skipping"
     sleep 5 # not sure why..
@@ -314,12 +322,62 @@ toOut() {
     [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
     echo "output = ${output}"
 }
-@test "Backup: create full backup for offline VM" {
+
+# tests for offline incremental backup
+
+@test "Setup: destroy VM for offline backup" {
+    [ -z $INCTEST ] && skip "skipping"
     run virsh destroy $VM
-    run ../virtnbdbackup -d $VM -o ${TMPDIR}/offlinebackup
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Setup: mount offline disk via guestmount and create file" {
+    [ -z $INCTEST ] && skip "skipping"
+    mkdir -p /empty
+    run guestmount -d $VM -m /dev/sda1  /empty/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    echo incfile-offline > /empty/incfile-offline
+    run umount /empty/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Wait for things to settle {
+    [ -z $GITHUB_JOB ] && skip "on homelab"
+    sleep 5
+}
+@test "Offline Backup: full backup must be switched to copy" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/offline-full
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    [[ "${output}" =~  "Domain is offline, resetting backup options" ]]
+    [ -e "${TMPDIR}/offline-full/sda.copy.data" ]
+}
+@test "Offline Backup: incremental backup for offline VM" {
+    [ -z $INCTEST ] && skip "skipping"
+    run virsh destroy $VM
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Restore: restore data and check if file from offline incremental backup exists" {
+    [ -z $INCTEST ] && skip "skipping"
+    rm -rf ${TMPDIR}/RESTOREINC/
+    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    FILENAME=$(basename ${VM_IMAGE})
+    run guestmount -a ${TMPDIR}/RESTOREINC/${FILENAME} -m /dev/sda1  /empty
+    [ "$status" -eq 0 ]
+    echo "output = ${output}"
+    [ -e /empty/incfile ]
+    [ -e /empty/incfile-offline ]
+    run umount /empty
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+
 @test "Map: Map full backup to nbd block device, check device size and partitions" {
     [ -f /.dockerenv ] && skip "wont work inside docker image"
     [ -z $MAPTEST ] && skip "skipping"

@@ -98,8 +98,14 @@ class Common:
             leave=False,
         )
 
-    def killPid(self, pid):
+    def killNbdServer(self, socketFile):
         """Attempt kill PID"""
+        pidFile = f"{socketFile}.pid"
+        with open(pidFile, "r") as pidfh:
+            pid = int(pidfh.read())
+        os.remove(pidFile)
+
+        logging.debug("Killing PID: %s", pid)
         while True:
             try:
                 os.kill(pid, signal.SIGTERM)
