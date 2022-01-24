@@ -175,8 +175,8 @@ finishes, the job is stopped and the nbd server quits operation.
 
 `Note`:
 > If the virtual domain is not in running state (powered off) `virtnbdbackup` 
-> supports both `copy` and `inc` backup modes. The backup will then allways save
-> the changed blocks of the last existing checkpoints. As no new checkpoints
+> supports both `copy` and `inc` backup modes. Incremental backups will then 
+> save the changed blocks of the last existing checkpoint. As no new checkpoints
 > can be defined for offline domains, the Backup mode `full` is changed to mode
 > `copy`.
 
@@ -498,7 +498,7 @@ As example:
 
 `virtnbdbackup -d vm1 -l full -o /tmp/backup_hosta --checkpointdir /mnt/shared/vm1`
 
- 2) After backup, the virtual machine is relocated to boost B and loses its
+ 2) After backup, the virtual machine is relocated to host B and loses its
  information about checkpoints and bitmaps, thus, the next full backup
  usually fails with:
 
