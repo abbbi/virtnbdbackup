@@ -45,6 +45,16 @@ setup() {
     echo "output = ${output}"
 }
 
+@test "Checkpoints: Full backup must remove existing checkpoints" {
+    virsh checkpoint-create-as $VM --name virtnbdbackup.0 > /dev/null
+    virsh checkpoint-create-as $VM --name virtnbdbackup.1 > /dev/null
+    ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/remove-checkpoints
+    run virsh checkpoint-delete $VM --checkpointname virtnbdbackup.1
+    [ "$status" -eq 1 ]
+    run virsh checkpoint-delete $VM --checkpointname virtnbdbackup.0
+    [ "$status" -eq 0 ]
+}
+
 @test "Start backup job and nbd endpoint to create reference image" {
     rm -rf $BACKUPSET
     run ../virtnbdbackup -t raw $OPT -d $VM -s -o $BACKUPSET --socketfile ${TMPDIR}/sock
