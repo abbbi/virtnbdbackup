@@ -46,6 +46,7 @@ setup() {
 }
 
 @test "Checkpoints: Full backup must remove existing checkpoints" {
+    [ -z $INCTEST ] && skip "skipping"
     virsh checkpoint-create-as $VM --name virtnbdbackup.0 > /dev/null
     virsh checkpoint-create-as $VM --name virtnbdbackup.1 > /dev/null
     ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/remove-checkpoints
