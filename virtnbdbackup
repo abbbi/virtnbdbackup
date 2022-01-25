@@ -37,6 +37,24 @@ import libvirtnbdbackup.outputhelper as outputhelper
 from libvirtnbdbackup import __version__
 
 
+class LogType:
+    def __init__(self):
+        self.warnings = 0
+        self.errors = 0
+
+
+class logCount(logging.Handler):
+    def __init__(self, *args, **kwargs):
+        super(logCount, self).__init__(*args, **kwargs)
+        self.count = LogType()
+
+    def emit(self, record):
+        if record.levelname == "WARNING":
+            self.count.warnings += 1
+        if record.levelname == "ERROR":
+            self.count.errors += 1
+
+
 def handleSignal(args, domObj, virtClient, log, signum, frame):
     """Catch signal, attempt to stop running backup job."""
     log.error("Caught signal: %s", signum)
@@ -178,6 +196,13 @@ def main():
         default=None,
         help="Amount of concurrent workers used to backup multiple disks. (default: amount of disks)",
     )
+    parser.add_argument(
+        "-e",
+        "--strict",
+        default=False,
+        help="Change exit code if warnings occur during backup. (default: %(default)s)",
+        action="store_true",
+    )
 
     outHelper = outputhelper.outputHelper()
     lib = common.Common()
@@ -203,6 +228,7 @@ def main():
         datetime.now().strftime("%m%d%Y%H%M%S"),
     )
 
+    counter = logCount()
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
         format=lib.logFormat,
@@ -210,6 +236,7 @@ def main():
         handlers=[
             logging.FileHandler(logFile),
             logging.StreamHandler(stream=sys.stderr),
+            counter,
         ],
     )
 
@@ -309,7 +336,6 @@ def main():
 
     if args.level != "copy":
         if args.offline is False:
-            logging.info("Check for missing checkpoints from: %s", args.checkpointdir)
             if virtClient.redefineCheckpoints(domObj, args) is False:
                 logging.error("Unable to redefine checkpoints.")
                 sys.exit(1)
@@ -419,10 +445,17 @@ def main():
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
-    logging.info("Finished")
-
     if toStdout is True and args.printonly is False:
         addFiles(configFile, zipStream, cptFile, logFile, args)
+
+    logging.info("Finished")
+
+    if counter.count.warnings > 0 and args.strict is True:
+        logging.info(
+            "[%s] Warnings detected during backup operation, forcing exit code 2",
+            counter.count.warnings,
+        )
+        sys.exit(2)
 
 
 def addFiles(configFile, zipStream, cptFile, logFile, args):

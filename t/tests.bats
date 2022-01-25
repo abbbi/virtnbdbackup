@@ -45,6 +45,10 @@ setup() {
     echo "output = ${output}"
 }
 
+@test "Error handling: strict mode must change exit code if warning happens during backup" {
+    run ../virtnbdbackup -d $VM -l copy --strict -o ${TMPDIR}/strict
+    [ "$status" -eq 2 ]
+}
 @test "Checkpoints: Full backup must remove existing checkpoints" {
     [ -z $INCTEST ] && skip "skipping"
     virsh checkpoint-create-as $VM --name virtnbdbackup.0 > /dev/null
@@ -55,7 +59,6 @@ setup() {
     run virsh checkpoint-delete $VM --checkpointname virtnbdbackup.0
     [ "$status" -eq 0 ]
 }
-
 @test "Start backup job and nbd endpoint to create reference image" {
     rm -rf $BACKUPSET
     run ../virtnbdbackup -t raw $OPT -d $VM -s -o $BACKUPSET --socketfile ${TMPDIR}/sock
