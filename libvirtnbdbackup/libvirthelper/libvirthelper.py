@@ -334,7 +334,8 @@ class client:
         try:
             return domObj.abortJob(), None
         except libvirt.libvirtError as err:
-            return 1, err
+            log.warning("Unable to stop backup job: [%s]", err)
+            return False
 
     def redefineCheckpoints(self, domObj, args):
         """Redefine checkpoints from persistent storage"""

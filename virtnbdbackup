@@ -295,12 +295,9 @@ def main():
 
     if args.killonly is True:
         logging.info("Stopping backup job")
-        try:
-            virtClient.stopBackup(domObj)
-            sys.exit(0)
-        except Exception as e:
-            logging.exception(e)
+        if not virtClient.stopBackup(domObj):
             sys.exit(1)
+        sys.exit(0)
 
     checkpointName = f"{lib.checkpointName}.0"
     parentCheckpoint = False
@@ -420,9 +417,7 @@ def main():
 
     if virtClient.domainOffline(domObj) is False:
         logging.info("Backup jobs finished, stopping backup task.")
-        ret, err = virtClient.stopBackup(domObj)
-        if ret != 0:
-            logging.warning("Unable to stop backup task, return: %s", err)
+        virtClient.stopBackup(domObj)
 
     logging.info("Finished")
 

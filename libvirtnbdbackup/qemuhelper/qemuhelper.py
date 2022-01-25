@@ -78,7 +78,7 @@ class qemuHelper:
             logHandle = open(logFile, "w+")
             log.debug("Temporary logfile: %s", logFile)
         except OSError as errmsg:
-            return 1, errmsg
+            return errmsg
 
         p = subprocess.Popen(
             cmdLine,
