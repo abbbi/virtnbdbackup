@@ -137,7 +137,7 @@ def main():
         "-c",
         "--checkpoint",
         default=False,
-        help="During incremental backup, use specified checkpoint as parent",
+        help="During incremental backup, use specified checkpoint as parent (use with care)",
         type=str,
     )
     parser.add_argument(
@@ -343,11 +343,13 @@ def main():
         logging.info("Checkpoint handling")
         if args.level == "full" and checkpoints:
             logging.info("Removing all existent checkpoints before full backup")
-            virtClient.removeAllCheckpoints(domObj, checkpoints, args)
+            virtClient.removeAllCheckpoints(
+                domObj, checkpoints, args, lib.checkpointName
+            )
             os.remove(cptFile)
             checkpoints = []
         elif args.level == "full" and len(checkpoints) < 1:
-            virtClient.removeAllCheckpoints(domObj, None, args)
+            virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName)
             checkpoints = []
 
         if checkpoints and args.level == "inc":

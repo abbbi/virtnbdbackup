@@ -294,7 +294,7 @@ class client:
         """Check if an checkpoint exists"""
         return domObj.checkpointLookupByName(checkpointName)
 
-    def removeAllCheckpoints(self, domObj, checkpointList, args):
+    def removeAllCheckpoints(self, domObj, checkpointList, args, defaultCheckpointName):
         """Remove all existing checkpoints for a virtual machine,
         used during FULL backup to reset checkpoint chain
         """
@@ -315,19 +315,34 @@ class client:
             cpts = domObj.listAllCheckpoints()
             if cpts:
                 for cpt in domObj.listAllCheckpoints():
-                    if "virtnbdbackup" in cpt.getName():
-                        try:
-                            cpt.delete()
-                        except libvirt.libvirtError as e:
-                            log.error(e)
-                            return False
+                    if self.deleteCheckpoint(cpt, defaultCheckpointName) is False:
+                        return False
             return True
 
         for checkpoint in checkpointList:
             cptObj = self.checkpointExists(domObj, checkpoint)
             if cptObj:
-                cptObj.delete()
+                if self.deleteCheckpoint(cpt, defaultCheckpointName) is False:
+                    return False
         return True
+
+    def deleteCheckpoint(self, cptObj, defaultCheckpointName):
+        """Delete checkpoint"""
+        checkpointName = cptObj.getName()
+        if not defaultCheckpointName in checkpointName:
+            log.debug(
+                "Skipping checkpoint removal: [%s]: not from this application",
+                checkpointName,
+            )
+            return True
+        log.debug("Attempt to remove checkpoint: [%s]", checkpointName)
+        try:
+            cptObj.delete()
+            log.debug("Removed checkpoint: [%s]", checkpointName)
+            return True
+        except libvirt.libvirtError as errmsg:
+            log.error("Error during checkpoint removal: [%s]", errmsg)
+            return False
 
     def stopBackup(self, domObj):
         """Cancel the backup task using job abort"""
