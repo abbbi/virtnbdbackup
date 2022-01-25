@@ -16,9 +16,9 @@
  """
 import os
 import builtins
-import nbdkit
 import json
 import pprint
+import nbdkit
 
 API_VERSION = 2
 
@@ -35,7 +35,8 @@ def config(key, value):
     global image
     if key == "blockmap":
         blockMapFile = value
-        blockMap = json.loads(builtins.open(blockMapFile, "r").read())
+        with builtins.open(blockMapFile, "rb") as fh:
+            blockMap = json.loads(fh.read())
         return
     if key == "disk":
         image = value
@@ -76,7 +77,7 @@ def open(readonly):
     return {"fd": fd}
 
 
-def close(foo):
+def close(param):
     return 1
 
 
@@ -117,17 +118,17 @@ def pread(h, buf, offset, flags):
     else:
         block = blockList[-1]
 
-    nbdkit.debug("%s" % block)
+    nbdkit.debug(f"{block}")
 
     fileOffset = block["offset"] - block["originalOffset"] + offset
 
     dataRange = fileOffset + len(buf)
     blockRange = fileOffset + block["length"]
     isData = block["data"]
-    nbdkit.debug("READ AT: %s" % fileOffset)
-    nbdkit.debug("READ: %s" % len(buf))
-    nbdkit.debug("DATA-RANGE: %s" % dataRange)
-    nbdkit.debug("BLOCK-RANGE: %s" % blockRange)
+    nbdkit.debug(f"READ AT: {fileOffset}")
+    nbdkit.debug(f"READ: {len(buf)}")
+    nbdkit.debug(f"DATA-RANGE: {dataRange}")
+    nbdkit.debug(f"BLOCK-RANGE: {blockRange}")
 
     if block["nextBlockOffset"] is None:
         nbdkit.debug("Data is within last block")
@@ -143,7 +144,7 @@ def pread(h, buf, offset, flags):
             else:
                 nbdkit.debug("can read everything")
                 data += os.pread(h["fd"], len(buf), fileOffset)
-                nbdkit.debug("readed: %s" % len(data))
+                nbdkit.debug(f"received: {len(data)}")
         else:
             raise RuntimeError("Unexpected block range size.")
 
