@@ -156,7 +156,7 @@ class client:
 
             backingStoreFiles = []
             backingStore = target.find("backingStore")
-            while backingStore != None:
+            while backingStore is not None:
                 backingStoreSource = backingStore.find("source")
 
                 if backingStoreSource is not None:
@@ -329,7 +329,7 @@ class client:
     def deleteCheckpoint(self, cptObj, defaultCheckpointName):
         """Delete checkpoint"""
         checkpointName = cptObj.getName()
-        if not defaultCheckpointName in checkpointName:
+        if defaultCheckpointName not in checkpointName:
             log.debug(
                 "Skipping checkpoint removal: [%s]: not from this application",
                 checkpointName,
@@ -384,7 +384,7 @@ class client:
                 return False
 
             try:
-                c = domObj.checkpointLookupByName(checkpointName)
+                _ = domObj.checkpointLookupByName(checkpointName)
                 log.debug("Checkpoint [%s] found", checkpointName)
                 continue
             except libvirt.libvirtError as e:
