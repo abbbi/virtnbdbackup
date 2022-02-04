@@ -21,7 +21,6 @@ import shutil
 import logging
 import argparse
 import pprint
-from time import sleep
 
 import libvirtnbdbackup.common as common
 import libvirtnbdbackup.nbdhelper as nbdhelper
@@ -202,7 +201,7 @@ def restore(lib, args, vmConfig):
             except Exception as e:
                 logging.error("Unable to copy raw image: %s", e)
 
-        if not "full" in restoreDisk[0] and not "copy" in restoreDisk[0]:
+        if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
             logging.error(
                 "%s Unable to locate base full or copy backup.", restoreDisk[0]
             )
@@ -320,7 +319,6 @@ def main():
     args = lib.argparse(parser)
 
     stream = sparsestream.SparseStream()
-    sTypes = sparsestream.SparseStreamTypes()
 
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),

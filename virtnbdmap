@@ -213,7 +213,7 @@ def main():
             "nbdkit",
             "-i",
             f"{args.listen_address}",
-            f"-e",
+            "-e",
             f"{args.export_name}",
             "--filter=blocksize",
             "-f",
@@ -222,7 +222,7 @@ def main():
             f"{nbdkitModule}",
             f"blockmap={blockMap.name}",
             f"disk={args.file}",
-            f"-t",
+            "-t",
             f"{args.threads}",
             f"maxlen={args.blocksize}",
         ],
@@ -247,10 +247,9 @@ def main():
 
     maxRetry = 10
     retryCnt = 0
-    deviceProcess = None
     while True:
         try:
-            deviceProcess = subprocess.run(
+            subprocess.run(
                 [
                     "qemu-nbd",
                     "-c",
