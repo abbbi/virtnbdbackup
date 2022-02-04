@@ -12,7 +12,7 @@ jobs:
     - uses: abbbi/github-actions-tune@v1
     - name: Python code format test
       run: |
-        sudo pip3 install black
+        sudo pip3 install black==22.1.0
         black --check .
         black --check virtnbdbackup
         black --check virtnbdrestore
