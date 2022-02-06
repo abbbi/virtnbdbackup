@@ -161,7 +161,7 @@ class Common:
         """Return true if stream is compressed"""
         try:
             version = meta["stream-version"] == 2
-        except:
+        except KeyError:
             version = meta["streamVersion"] == 2
 
         if version:
