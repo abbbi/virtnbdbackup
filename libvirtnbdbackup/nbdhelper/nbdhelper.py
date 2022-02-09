@@ -1,7 +1,7 @@
 import os
 import logging
-import nbd
 from time import sleep
+import nbd
 
 log = logging.getLogger(__name__)
 

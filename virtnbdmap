@@ -50,7 +50,7 @@ def getDataRanges(stream, sTypes, reader):
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
-    except:
+    except Exception:
         return False, False
     meta = stream.loadMetadata(reader.read(length))
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM

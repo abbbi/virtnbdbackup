@@ -24,11 +24,12 @@ from collections import namedtuple
 import logging
 import libvirt
 
-# this is required so libvirt.py does not report errors to stderr
-# which it does by default. Error messages are fetched accordingly
-# using exceptions.
+
 def libvirt_ignore(ignore, err):
-    pass
+    """this is required so libvirt.py does not report errors to stderr
+    which it does by default. Error messages are fetched accordingly
+    using exceptions.
+    """
 
 
 libvirt.registerErrorHandler(f=libvirt_ignore, ctx=None)
@@ -57,7 +58,7 @@ class client:
 
     def domainOffline(self, domObj):
         """Returns true if domain is not in running state"""
-        state, reason = domObj.state()
+        state, _ = domObj.state()
         return state != libvirt.VIR_DOMAIN_RUNNING
 
     def hasIncrementalEnabled(self, domObj):
@@ -176,8 +177,8 @@ class client:
     def _indentXml(self, top):
         try:
             ElementTree.indent(top)
-        except:
-            pass
+        except Exception as errmsg:
+            log.debug("Unable to indent xml: [%s]", errmsg)
 
         xml = ElementTree.tostring(top).decode()
         log.debug("\n%s", xml)
@@ -285,10 +286,12 @@ class client:
             domObj.backupBegin(backupXml, checkpointXml)
             if freezed is True:
                 self.fsThaw(domObj)
-        except:
+        except Exception as errmsg:
+            # check if filesystem is freezted and thaw
+            # in case creating checkpoint fails.
             if freezed is True:
                 self.fsThaw(domObj)
-            raise
+            raise errmsg
 
     def checkpointExists(self, domObj, checkpointName):
         """Check if an checkpoint exists"""
