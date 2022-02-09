@@ -191,7 +191,7 @@ class client:
         """Create XML file for starting an backup task using libvirt API."""
         top = ElementTree.Element("domainbackup", {"mode": "pull"})
         ElementTree.SubElement(
-            top, "server", {"transport": "unix", "socket": "%s" % socketFilePath}
+            top, "server", {"transport": "unix", "socket": f"{socketFilePath}"}
         )
         disks = ElementTree.SubElement(top, "disks")
 
@@ -210,7 +210,7 @@ class client:
             )
             log.debug("Using scratch file: %s", scratchFile)
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
-            ElementTree.SubElement(dE, "scratch", {"file": "%s" % (scratchFile)})
+            ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
 
         xml = self._indentXml(top)
 
@@ -229,10 +229,11 @@ class client:
             cptName.text = parentCheckpoint
         disks = ElementTree.SubElement(top, "disks")
         for disk in diskList:
-            """No persistent checkpoint will be created for raw disks, because
-            it is not supported. Backup will only be crash consistent. If we
-            would like to create a consistent backup, we would have to create an
-            snapshot for these kind of disks.
+            """No persistent checkpoint will be created for raw disks,
+            because it is not supported. Backup will only be crash
+            consistent. If we would like to create a consistent
+            backup, we would have to create an snapshot for these
+            kind of disks.
             """
             if disk.diskFormat != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
@@ -247,8 +248,8 @@ class client:
             domObj.fsFreeze()
             log.info("Freeze filesystems.")
             return True
-        except Exception as e:
-            log.warning(e)
+        except libvirt.libvirtError as errmsg:
+            log.warning(errmsg)
             return False
 
     def fsThaw(self, domObj):
@@ -257,8 +258,8 @@ class client:
             domObj.fsThaw()
             log.info("Thawed filesystems.")
             return True
-        except Exception as e:
-            log.warning(e)
+        except libvirt.libvirtError as errmsg:
+            log.warning(errmsg)
             return False
 
     def startBackup(
@@ -325,7 +326,7 @@ class client:
         for checkpoint in checkpointList:
             cptObj = self.checkpointExists(domObj, checkpoint)
             if cptObj:
-                if self.deleteCheckpoint(cpt, defaultCheckpointName) is False:
+                if self.deleteCheckpoint(cptObj, defaultCheckpointName) is False:
                     return False
         return True
 
@@ -371,7 +372,7 @@ class client:
         for checkpointFile in checkpointList:
             log.debug("Loading checkpoint config from: [%s]", checkpointFile)
             try:
-                with open(checkpointFile, "r") as f:
+                with open(checkpointFile, "rb") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
             except Exception as e:

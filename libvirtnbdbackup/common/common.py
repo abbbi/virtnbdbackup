@@ -3,8 +3,8 @@ import sys
 import glob
 import json
 import logging
-import lz4.frame
 import signal
+import lz4.frame
 from tqdm import tqdm
 
 log = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class Common:
         if os.path.exists(args.output) and args.level in ("full", "copy"):
             dirList = [
                 f
-                for f in glob.glob("%s/*" % args.output)
+                for f in glob.glob(f"{args.output}/*")
                 if not os.path.basename(f).endswith(".log")
             ]
             if len(dirList) > 0:
@@ -101,7 +101,7 @@ class Common:
     def killNbdServer(self, socketFile):
         """Attempt kill PID"""
         pidFile = f"{socketFile}.pid"
-        with open(pidFile, "r") as pidfh:
+        with open(pidFile, "rb") as pidfh:
             pid = int(pidfh.read())
         os.remove(pidFile)
 
