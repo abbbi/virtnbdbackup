@@ -151,7 +151,7 @@ class SparseStream:
         reader.seek(0, os.SEEK_END)
         reader.seek(-(self.types.FRAME_LEN + len(self.types.TERM)), os.SEEK_CUR)
         header = reader.read(self.types.FRAME_LEN)
-        kind, start, length = header.split(b" ", 2)
+        _, _, length = header.split(b" ", 2)
         reader.seek(-(self.types.FRAME_LEN + int(length, 16)), os.SEEK_CUR)
         trailer = json.loads(reader.read(int(length, 16)))
         reader.seek(pos)
