@@ -1,3 +1,6 @@
+"""
+    Common functions
+"""
 import os
 import sys
 import glob
@@ -19,13 +22,19 @@ class Common:
         self.logDateFormat = "[%Y-%m-%d %H:%M:%S]"
         self.checkpointName = "virtnbdbackup"
 
-    def argparse(self, parser):
+    @staticmethod
+    def argparse(parser):
+        """Parse arguments"""
         return parser.parse_args()
 
-    def printVersion(self, version):
+    @staticmethod
+    def printVersion(version):
+        """Print version and passed arguments"""
         log.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
-    def setLogLevel(self, verbose):
+    @staticmethod
+    def setLogLevel(verbose):
+        """Set loglevel"""
         if verbose is True:
             level = logging.DEBUG
         else:
@@ -33,7 +42,9 @@ class Common:
 
         return level
 
-    def getSocketFile(self, arg):
+    @staticmethod
+    def getSocketFile(arg):
+        """Return used socket file name"""
         if not arg:
             socketFile = f"/var/tmp/virtnbdbackup.{os.getpid()}"
         else:
@@ -41,14 +52,18 @@ class Common:
 
         return socketFile
 
-    def partialBackup(self, args):
+    @staticmethod
+    def partialBackup(args):
+        """Check for possible partial backup files"""
         partialFiles = glob.glob(f"{args.output}/*.partial")
         if len(partialFiles) > 0:
             return True
 
         return False
 
-    def targetIsEmpty(self, args):
+    @staticmethod
+    def targetIsEmpty(args):
+        """Check if target directory is empty"""
         if os.path.exists(args.output) and args.level in ("full", "copy"):
             dirList = [
                 f
@@ -60,7 +75,8 @@ class Common:
 
         return True
 
-    def getDataFiles(self, targetDir):
+    @staticmethod
+    def getDataFiles(targetDir):
         """return data files within backupset
         directory
         """
@@ -69,7 +85,8 @@ class Common:
 
         return files
 
-    def getDataFilesByDisk(self, targetDir, targetDisk):
+    @staticmethod
+    def getDataFilesByDisk(targetDir, targetDisk):
         """return data files subject to one disk
         from backupset directory
         """
@@ -77,7 +94,8 @@ class Common:
         files.sort(key=os.path.getmtime)
         return files
 
-    def getLastConfigFile(self, targetDir):
+    @staticmethod
+    def getLastConfigFile(targetDir):
         """get the last backed up configuration file
         from the backupset
         """
@@ -86,7 +104,8 @@ class Common:
         except IndexError:
             return None
 
-    def progressBar(self, total, desc, args, count=0):
+    @staticmethod
+    def progressBar(total, desc, args, count=0):
         """Return tqdm object"""
         return tqdm(
             total=total,
@@ -98,7 +117,8 @@ class Common:
             leave=False,
         )
 
-    def killNbdServer(self, socketFile):
+    @staticmethod
+    def killNbdServer(socketFile):
         """Attempt kill PID"""
         pidFile = f"{socketFile}.pid"
         with open(pidFile, "rb") as pidfh:
@@ -113,7 +133,8 @@ class Common:
             except ProcessLookupError:
                 return True
 
-    def dumpExtentJson(self, extents):
+    @staticmethod
+    def dumpExtentJson(extents):
         extList = []
         for extent in extents:
             ext = {}
@@ -124,17 +145,19 @@ class Common:
 
         return json.dumps(extList, indent=4, sort_keys=True)
 
-    def dumpMetaData(self, dataFile, stream):
+    @staticmethod
+    def dumpMetaData(dataFile, stream):
         """read metadata header"""
         with open(dataFile, "rb") as reader:
             try:
-                kind, start, length = stream.readFrame(reader)
+                _, _, length = stream.readFrame(reader)
             except ValueError:
                 return False
 
             return stream.loadMetadata(reader.read(length))
 
-    def blockStep(self, offset, length, maxRequestSize):
+    @staticmethod
+    def blockStep(offset, length, maxRequestSize):
         """Process block and ensure to not exceed the maximum request size
         from NBD server.
 
@@ -157,7 +180,8 @@ class Common:
                 yield blocklen, blockOffset
                 blockOffset += blocklen
 
-    def isCompressed(self, meta):
+    @staticmethod
+    def isCompressed(meta):
         """Return true if stream is compressed"""
         try:
             version = meta["stream-version"] == 2
@@ -170,13 +194,15 @@ class Common:
 
         return False
 
-    def lz4DecompressFrame(self, data):
+    @staticmethod
+    def lz4DecompressFrame(data):
         """Decompress lz4 frame, print frame information"""
         frameInfo = lz4.frame.get_frame_info(data)
         log.debug("Compressed Frame: %s", frameInfo)
         return lz4.frame.decompress(data)
 
-    def lz4CompressFrame(self, data):
+    @staticmethod
+    def lz4CompressFrame(data):
         """Compress block with to lz4 frame, checksums
         enabled for safety
         """
