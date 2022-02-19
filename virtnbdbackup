@@ -38,12 +38,16 @@ from libvirtnbdbackup import __version__
 
 
 class LogType:
+    """Log message type"""
+
     def __init__(self):
         self.warnings = 0
         self.errors = 0
 
 
 class logCount(logging.Handler):
+    """Custom log handler keeping track of issued log messages"""
+
     def __init__(self, *args, **kwargs):
         super(logCount, self).__init__(*args, **kwargs)
         self.count = LogType()
@@ -55,7 +59,7 @@ class logCount(logging.Handler):
             self.count.errors += 1
 
 
-def handleSignal(args, domObj, virtClient, log, signum, frame):
+def handleSignal(args, domObj, virtClient, log, signum, _):
     """Catch signal, attempt to stop running backup job."""
     log.error("Caught signal: %s", signum)
     log.error("Cleanup: Stopping backup job")
@@ -473,9 +477,9 @@ def backupConfig(vmConfig, args, checkpointName):
         with open(configFile, "w") as configFh:
             configFh.write(vmConfig)
         return configFile
-    except Exception as e:
-        logging.error("Unable to save VM config: %s", e)
-        logging.exception(e)
+    except OSError as errmsg:
+        logging.error("Unable to save VM config: %s", errmsg)
+        logging.exception(errmsg)
         sys.exit(1)
 
 
