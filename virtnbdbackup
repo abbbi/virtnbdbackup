@@ -134,13 +134,6 @@ def main():
         help="Exclude disk(s) with target dev name (-x vda,vdb)",
     )
     parser.add_argument(
-        "-c",
-        "--checkpoint",
-        default=False,
-        help="During incremental backup, use specified checkpoint as parent (use with care)",
-        type=str,
-    )
-    parser.add_argument(
         "-s",
         "--startonly",
         default=False,
@@ -355,11 +348,7 @@ def main():
         if checkpoints and args.level == "inc":
             nextCpt = len(checkpoints)
             checkpointName = "%s.%s" % (lib.checkpointName, nextCpt)
-            if args.checkpoint is not False:
-                logging.warning("Overriding parent checkpoint: %s", args.checkpoint)
-                parentCheckpoint = args.checkpoint
-            else:
-                parentCheckpoint = checkpoints[-1]
+            parentCheckpoint = checkpoints[-1]
             logging.info("Next checkpoint id: %s", nextCpt)
             logging.info("Parent checkpoint name %s", parentCheckpoint)
 
