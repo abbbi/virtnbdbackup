@@ -57,8 +57,8 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     """Restore data for disk"""
     try:
         reader = open(dataFile, "rb")
-    except Exception as e:
-        logging.critical("Unable to open backup file for reading: %s", e)
+    except OSError as errmsg:
+        logging.critical("Unable to open backup file for reading: %s", errmsg)
         return False
 
     sTypes = sparsestream.SparseStreamTypes()
@@ -198,8 +198,8 @@ def restore(lib, args, vmConfig):
             try:
                 shutil.copy(restoreDisk[0], targetFile)
                 continue
-            except Exception as e:
-                logging.error("Unable to copy raw image: %s", e)
+            except shutil.Error as errmsg:
+                logging.error("Unable to copy raw image: %s", errmsg)
 
         if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
             logging.error(
@@ -250,6 +250,7 @@ def restore(lib, args, vmConfig):
 
 
 def main():
+    """main function"""
     parser = argparse.ArgumentParser(description="Restore virtual machine disks")
     parser.add_argument(
         "-a",
