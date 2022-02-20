@@ -295,7 +295,7 @@ def main():
             args.level = "copy"
             logging.info("Backup level: [%s]", args.level)
 
-        if args.level in ("inc", "diff"):
+        if args.level == "inc":
             logging.fatal(
                 "Incremental or differencial backup not supported for offline domains."
             )
