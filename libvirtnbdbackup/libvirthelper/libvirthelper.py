@@ -25,7 +25,7 @@ import logging
 import libvirt
 
 
-def libvirt_ignore(ignore, err):
+def libvirt_ignore(_ignore, _err):
     """this is required so libvirt.py does not report errors to stderr
     which it does by default. Error messages are fetched accordingly
     using exceptions.
@@ -44,7 +44,9 @@ class client:
         self._conn = self._connect()
         self._domObj = None
 
-    def _connect(self):
+    @staticmethod
+    def _connect():
+        """return libvirt conneciton handle"""
         URI = "qemu:///system"
         try:
             return libvirt.open(URI)
@@ -56,12 +58,14 @@ class client:
         """Lookup domain"""
         return self._conn.lookupByName(name)
 
-    def domainOffline(self, domObj):
+    @staticmethod
+    def domainOffline(domObj):
         """Returns true if domain is not in running state"""
         state, _ = domObj.state()
         return state != libvirt.VIR_DOMAIN_RUNNING
 
-    def hasIncrementalEnabled(self, domObj):
+    @staticmethod
+    def hasIncrementalEnabled(domObj):
         """Check if virtual machine has enabled required capabilities
         for incremental backup
         """
@@ -77,11 +81,13 @@ class client:
 
         return False
 
-    def getDomainConfig(self, domObj):
+    @staticmethod
+    def getDomainConfig(domObj):
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
-    def getDomainDisks(self, vmConfig, excludedDisks, includeDisk, includeRaw):
+    @staticmethod
+    def getDomainDisks(vmConfig, excludedDisks, includeDisk, includeRaw):
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
@@ -175,6 +181,7 @@ class client:
         return devices
 
     def _indentXml(self, top):
+        """Indent xml output for debug logging"""
         try:
             ElementTree.indent(top)
         except Exception as errmsg:
@@ -229,12 +236,11 @@ class client:
             cptName.text = parentCheckpoint
         disks = ElementTree.SubElement(top, "disks")
         for disk in diskList:
-            """No persistent checkpoint will be created for raw disks,
-            because it is not supported. Backup will only be crash
-            consistent. If we would like to create a consistent
-            backup, we would have to create an snapshot for these
-            kind of disks.
-            """
+            # No persistent checkpoint will be created for raw disks,
+            # because it is not supported. Backup will only be crash
+            # consistent. If we would like to create a consistent
+            # backup, we would have to create an snapshot for these
+            # kind of disks.
             if disk.diskFormat != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
 
@@ -309,7 +315,7 @@ class client:
             for checkpointFile in glob.glob(f"{args.checkpointdir}/*.xml"):
                 log.debug("Remove checkpoint file: %s", checkpointFile)
                 os.remove(checkpointFile)
-        except Exception as e:
+        except OSError as e:
             log.error(
                 "Unable to clean persistent storage %s: %s", args.checkpointdir, e
             )
@@ -375,7 +381,7 @@ class client:
                 with open(checkpointFile, "rb") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
-            except Exception as e:
+            except ElementTree.ParseError as e:
                 log.error(
                     "Unable to load checkpoint config from [%s]: %s", checkpointFile, e
                 )
@@ -383,7 +389,7 @@ class client:
 
             try:
                 checkpointName = root.find("name").text
-            except Exception as e:
+            except ElementTree.ParseError as e:
                 log.error("Unable to find checkpoint name: [%s]", e)
                 return False
 
@@ -402,7 +408,7 @@ class client:
                 domObj.checkpointCreateXML(
                     checkpointConfig, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
                 )
-            except Exception as e:
+            except libvirt.libvirtError as e:
                 log.error("Unable to redefine checkpoint: [%s]: %s", checkpointName, e)
                 return False
 
@@ -417,8 +423,10 @@ class client:
                 c = domObj.checkpointLookupByName(checkpointName)
                 f.write(c.getXMLDesc())
                 return True
-        except Exception as e:
+        except OSError as errmsg:
             log.error(
-                "Unable to save checkpoint config to file: [%s]: %s", checkpointFile, e
+                "Unable to save checkpoint config to file: [%s]: %s",
+                checkpointFile,
+                errmsg,
             )
             return False
