@@ -294,6 +294,12 @@ def main():
             logging.warning("Domain is offline, resetting backup options")
             args.level = "copy"
             logging.info("Backup level: [%s]", args.level)
+
+        if args.level in ("inc", "diff"):
+            logging.fatal(
+                "Incremental or differencial backup not supported for offline domains."
+            )
+            sys.exit(1)
         args.qemu = True
         args.offline = True
 
