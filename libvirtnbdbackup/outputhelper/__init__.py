@@ -1,4 +1,5 @@
-__title__ = "libvirthelper"
+"""Output helper class"""
+__title__ = "outputhelper"
 __version__ = "0.1"
 
 from .outputhelper import outputHelper
