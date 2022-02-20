@@ -62,6 +62,7 @@ class client:
     def domainOffline(domObj):
         """Returns true if domain is not in running state"""
         state, _ = domObj.state()
+        log.debug("Domain state returned by libvirt: [%s]", state)
         return state != libvirt.VIR_DOMAIN_RUNNING
 
     @staticmethod
