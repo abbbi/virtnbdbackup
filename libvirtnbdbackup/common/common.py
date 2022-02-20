@@ -135,6 +135,7 @@ class Common:
 
     @staticmethod
     def dumpExtentJson(extents):
+        """Dump extent object as json"""
         extList = []
         for extent in extents:
             ext = {}

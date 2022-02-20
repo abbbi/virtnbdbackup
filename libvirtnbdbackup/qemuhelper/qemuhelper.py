@@ -1,3 +1,20 @@
+"""
+    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import os
 import json
 import logging
@@ -13,6 +30,7 @@ class qemuHelper:
         self.exportName = exportName
 
     def map(self, backupSocket):
+        """Read extent map using qemu img utility"""
         extentMap = subprocess.run(
             f"qemu-img map --output json 'nbd+unix:///{self.exportName}?socket={backupSocket}'",
             shell=True,
@@ -23,7 +41,9 @@ class qemuHelper:
 
         return json.loads(extentMap.stdout)
 
-    def create(self, targetFile, fileSize, diskFormat):
+    @staticmethod
+    def create(targetFile, fileSize, diskFormat):
+        """Create the target qcow image"""
         subprocess.run(
             f"qemu-img create -f {diskFormat} '{targetFile}' {fileSize}",
             shell=True,
@@ -32,6 +52,7 @@ class qemuHelper:
         )
 
     def startRestoreNbdServer(self, targetFile, socketFile):
+        """Start nbd server process for restore operation"""
         cmd = [
             "qemu-nbd",
             "--discard=unmap",
@@ -46,6 +67,7 @@ class qemuHelper:
         return self._runcmd(cmd, socketFile)
 
     def startBackupNbdServer(self, diskFormat, diskFile, socketFile, bitMap):
+        """Start nbd server process for offline backup operation"""
         bitmapOpt = "--"
         if bitMap is not None:
             bitmapOpt = f"--bitmap={bitMap}"
@@ -68,7 +90,8 @@ class qemuHelper:
         ]
         return self._runcmd(cmd, socketFile)
 
-    def _runcmd(self, cmdLine, socketFile):
+    @staticmethod
+    def _runcmd(cmdLine, socketFile):
         """Start NBD Service"""
         logFile = f"{socketFile}.nbdserver.log"
 

@@ -21,6 +21,8 @@ log = logging.getLogger(__name__)
 
 
 class Extent:
+    """Extent description"""
+
     def __init__(self):
         self.data = False
         self.zero = False
@@ -29,6 +31,8 @@ class Extent:
 
 
 class _ExtentObj:
+    """Single Extent object"""
+
     def __init__(self):
         self.length = None
         self.type = None
@@ -75,6 +79,7 @@ class ExtentHandler:
         log.debug("entries: %s", len(self._extentEntries))
 
     def _setRequestAligment(self):
+        """Align request size to nbd server"""
         align = self._nbdFh.get_block_size(0)
         if align == 0:
             align = self._align
@@ -123,7 +128,8 @@ class ExtentHandler:
 
         return extentList
 
-    def _unifyExtents(self, extentObjects):
+    @staticmethod
+    def _unifyExtents(extentObjects):
         """Unify extents. If a sequence of extents has the
         same type (data or zero) it is better to unify them
         into a bigger block, so during backup, less requests
