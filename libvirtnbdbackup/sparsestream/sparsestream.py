@@ -1,3 +1,8 @@
+"""
+Sparsestream format description
+"""
+
+
 import json
 import os
 import datetime
@@ -157,7 +162,8 @@ class SparseStream:
         reader.seek(pos)
         return trailer
 
-    def loadMetadata(self, s):
+    @staticmethod
+    def loadMetadata(s):
         """Load and parse metadata information
         Parameters:
             s:  (str)   Json string as received during data file read
