@@ -629,7 +629,7 @@ See: https://github.com/adrianparilli/virtnbdbackup-docker
 
 ## Test your backups!
 
-The utility is provided "as is", i take no responibility or warranty if you
+The utility is provided "as is", i take no responsibility or warranty if you
 face any issues recovering your data! The only way to ensure your backups are
 valid and your backup plan works correctly is to repately test the validity of
 your backups by restoring them! If you find any issues, please do not hesitate
