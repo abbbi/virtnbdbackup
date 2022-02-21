@@ -271,6 +271,15 @@ toOut() {
     [ "$status" -eq 1 ]
     rm -rf ${TMPDIR}/inctest
 }
+@test "Backup: incremental backup must fail if third party checkpoint exists" {
+    [ -z $INCTEST ] && skip "skipping"
+    run virsh checkpoint-create-as --name "external"
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+    run virsh checkpoint-delete --name "external"
+    rm -rf ${TMPDIR}/inctest
+}
 @test "Backup: create full backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/inctest

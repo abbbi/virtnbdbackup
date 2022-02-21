@@ -431,3 +431,22 @@ class client:
                 errmsg,
             )
             return False
+
+    def hasforeignCheckpoint(self, domObj, defaultCheckpointName):
+        """Check if the virtual machine has an checkpoint which was not
+        created by virtnbdbackup
+
+        If an user or a third party utility creates an checkpoint,
+        it is in line with the complete checkpoint chain, but
+        virtnbdbackup does not save it. We can ensure consistency
+        only if the complete chain of checkpoints is created by
+        ourself. In case we detect an checkpoint that does not
+        match our name, return so.
+        """
+        cpts = domObj.listAllCheckpoints()
+        if cpts:
+            for cpt in cpts:
+                checkpointName = cpt.getName()
+                if defaultCheckpointName not in checkpointName:
+                    return checkpointName
+        return None

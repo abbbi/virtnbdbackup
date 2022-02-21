@@ -288,6 +288,16 @@ def main():
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
+    if args.level == "inc":
+        extCheckpoint = virtClient.hasforeignCheckpoint(domObj, lib.checkpointName)
+        if extCheckpoint:
+            logging.fatal("VM has external checkpoint: [%s]", extCheckpoint)
+            logging.fatal("This checkpoint has not been created by this utility.")
+            logging.fatal(
+                "To ensure checkpoint chain consistency, remove it or create a new full backup."
+            )
+            sys.exit(1)
+
     args.offline = False
     if virtClient.domainOffline(domObj) is True:
         if args.level == "full":
