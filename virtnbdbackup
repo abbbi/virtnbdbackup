@@ -307,7 +307,7 @@ def main():
             logging.info("Backup level: [%s]", args.level)
         args.offline = True
 
-    if args.qemu is True and args.level in ("inc") and args.offline is False:
+    if args.qemu is True and args.level == "inc":
         logging.fatal(
             "Extent query via qemu tools only works with full backup currently"
         )
