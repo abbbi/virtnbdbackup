@@ -30,7 +30,12 @@ class qemuHelper:
         self.exportName = exportName
 
     def map(self, backupSocket):
-        """Read extent map using qemu img utility"""
+        """Read extent map using qemu img utility
+
+        qemu-img does not support setting a bitmap here,
+        so it will only work with full/copy backup. Can
+        be changed to use nbdinfo in the future.
+        """
         extentMap = subprocess.run(
             f"qemu-img map --output json 'nbd+unix:///{self.exportName}?socket={backupSocket}'",
             shell=True,

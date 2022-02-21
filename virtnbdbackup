@@ -121,7 +121,7 @@ def main():
         "--qemu",
         default=False,
         action="store_true",
-        help="Use Qemu tools to query extents",
+        help="Use Qemu tools to query extents (full and copy only)",
     )
     parser.add_argument(
         "-i",
@@ -305,8 +305,13 @@ def main():
             logging.warning("Domain is offline, resetting backup options")
             args.level = "copy"
             logging.info("Backup level: [%s]", args.level)
-        args.qemu = True
         args.offline = True
+
+    if args.qemu is True and args.level in ("inc") and args.offline is False:
+        logging.fatal(
+            "Extent query via qemu tools only works with full backup currently"
+        )
+        sys.exit(1)
 
     signal.signal(
         signal.SIGINT, partial(handleSignal, args, domObj, virtClient, logging)
@@ -384,7 +389,7 @@ def main():
     backupSocket = lib.getSocketFile(args.socketfile)
     logging.info("NDB Endpoint socket: %s", backupSocket)
 
-    if virtClient.domainOffline(domObj) is not True:
+    if args.offline is not True:
         try:
             logging.info("Starting backup job.")
             virtClient.startBackup(
@@ -439,7 +444,7 @@ def main():
                     raise RuntimeError("Backup of one disk failed")
     except Exception as e:
         logging.error("Unable to backup Disk: %s", e)
-        if virtClient.domainOffline(domObj) is False:
+        if args.offline is False:
             virtClient.stopBackup(domObj)
         sys.exit(1)
 
@@ -447,7 +452,7 @@ def main():
     if args.printonly is False:
         configFile = backupConfig(vmConfig, args, checkpointName)
 
-    if virtClient.domainOffline(domObj) is False:
+    if args.offline is False:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
