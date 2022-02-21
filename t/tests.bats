@@ -273,12 +273,29 @@ toOut() {
 }
 @test "Backup: incremental backup must fail if third party checkpoint exists" {
     [ -z $INCTEST ] && skip "skipping"
-    run virsh checkpoint-create-as --name "external"
-    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
+    run virsh checkpoint-create-as $VM --name "external"
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/ext-checkpoint
     echo "output = ${output}"
     [ "$status" -eq 1 ]
-    run virsh checkpoint-delete --name "external"
-    rm -rf ${TMPDIR}/inctest
+    run virsh checkpoint-delete $VM "external"
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    rm -rf ${TMPDIR}/ext-checkpoint
+}
+@test "Backup: full backup must fail if third party checkpoint exists" {
+    [ -z $INCTEST ] && skip "skipping"
+    run virsh checkpoint-create-as $VM --name "external"
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run ../virtnbdbackup -v -d $VM -l full -o ${TMPDIR}/ext-checkpoint-full
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+    run virsh checkpoint-delete $VM "external"
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    rm -rf ${TMPDIR}/ext-checkpoint
 }
 @test "Backup: create full backup" {
     [ -z $INCTEST ] && skip "skipping"

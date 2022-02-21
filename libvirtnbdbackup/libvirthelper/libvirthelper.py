@@ -447,6 +447,7 @@ class client:
         if cpts:
             for cpt in cpts:
                 checkpointName = cpt.getName()
+                log.debug("Found checkpoint: [%s]", checkpointName)
                 if defaultCheckpointName not in checkpointName:
                     return checkpointName
         return None
