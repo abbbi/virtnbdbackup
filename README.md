@@ -42,6 +42,7 @@ virtual machines.
    * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
    * [High memory usage during backup](#high-memory-usage-during-backup)
    * [Docker images](#docker-images)
+* [Test your backups!](#test-your-backups)
 
 # About
 
@@ -624,3 +625,12 @@ See also: https://github.com/abbbi/virtnbdbackup/issues/8
 ## Docker images
 
 See: https://github.com/adrianparilli/virtnbdbackup-docker
+
+
+## Test your backups!
+
+The utility is provided "as is", i take no responibility or warranty if you
+face any issues recovering your data! The only way to ensure your backups are
+valid and your backup plan works correctly is to repately test the validity of
+your backups by restoring them! If you find any issues, please do not hesitate
+to report them.
