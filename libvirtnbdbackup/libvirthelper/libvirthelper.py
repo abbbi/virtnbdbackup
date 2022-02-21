@@ -325,7 +325,7 @@ class client:
         if checkpointList is None:
             cpts = domObj.listAllCheckpoints()
             if cpts:
-                for cpt in domObj.listAllCheckpoints():
+                for cpt in cpts:
                     if self.deleteCheckpoint(cpt, defaultCheckpointName) is False:
                         return False
             return True
