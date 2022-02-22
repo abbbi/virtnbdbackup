@@ -456,8 +456,8 @@ To remove the mappings, stop the utility via "CTRL-C"
 # Extents
 
 In order to save only used data from the images, dirty blocks are queried from
-the NBD server. The behavior can be changed by using the option `-q` to use common
-qemu tools (qemu-img map ..). By default `virtnbdbackup` uses a custom
+the NBD server. The behavior can be changed by using the option `-q` to use
+common qemu tools (nbdinfo). By default `virtnbdbackup` uses a custom
 implemented extent handler.
 
 # Transient virtual machines: checkpoint persistency
