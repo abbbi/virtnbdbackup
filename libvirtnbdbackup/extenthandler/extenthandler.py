@@ -99,10 +99,10 @@ class ExtentHandler:
         server
         """
         extents = []
-        for extent in self._nbdFh.map(self._socket):
+        for extent in self._nbdFh.map(self._socket, self._metaContext):
             extentObj = Extent()
-            extentObj.data = bool(extent["data"])
-            extentObj.offset = extent["start"]
+            extentObj.data = self.setBlockType(extent["type"])
+            extentObj.offset = extent["offset"]
             extentObj.length = extent["length"]
             extents.append(extentObj)
 
@@ -174,9 +174,8 @@ class ExtentHandler:
 
         return self._extentsToObj()
 
-    def queryBlockStatus(self, extentList=None):
-        """Check the status for each extent, whether if it is
-        real data or zeroes, return a list of extent objects
+    def setBlockType(self, blockType):
+        """Returns block type
 
         The extent types are as follows:
 
@@ -189,6 +188,29 @@ class ExtentHandler:
             case 0: ("clean")
             case 1: ("dirty")
         """
+        data = None
+        log.debug("Setting block type, allocation: %s", self._metaContext)
+        if self._metaContext == CONTEXT_BASE_ALLOCATION:
+            assert blockType in (0, 1, 2, 3)
+            if blockType == 0:
+                data = True
+            if blockType == 1:
+                data = False
+            elif blockType == 2:
+                data = True
+            elif blockType == 3:
+                data = False
+        else:
+            assert blockType in (0, 1)
+            data = bool(blockType)
+
+        assert data is not None
+        return data
+
+    def queryBlockStatus(self, extentList=None):
+        """Check the status for each extent, whether if it is
+        real data or zeroes, return a list of extent objects
+        """
         if self.useQemu is True:
             return self.queryExtentsQemu()
 
@@ -196,20 +218,7 @@ class ExtentHandler:
         start = 0
         for extent in self._unifyExtents(self.queryExtentsNbd()):
             extObj = Extent()
-            if self._metaContext == CONTEXT_BASE_ALLOCATION:
-                assert extent.type in (0, 1, 2, 3)
-                if extent.type == 0:
-                    extObj.data = True
-                if extent.type == 1:
-                    extObj.data = False
-                elif extent.type == 2:
-                    extObj.data = True
-                elif extent.type == 3:
-                    extObj.data = False
-            else:
-                assert extent.type in (0, 1)
-                extObj.data = bool(extent.type)
-
+            extObj.data = self.setBlockType(extent.type)
             extObj.offset = start
             extObj.length = extent.length
             extentList.append(extObj)

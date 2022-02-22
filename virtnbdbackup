@@ -307,12 +307,6 @@ def main():
             logging.info("Backup level: [%s]", args.level)
         args.offline = True
 
-    if args.qemu is True and args.level == "inc":
-        logging.fatal(
-            "Extent query via qemu tools only works with full backup currently"
-        )
-        sys.exit(1)
-
     signal.signal(
         signal.SIGINT, partial(handleSignal, args, domObj, virtClient, logging)
     )
@@ -444,6 +438,7 @@ def main():
                     raise RuntimeError("Backup of one disk failed")
     except Exception as e:
         logging.error("Unable to backup Disk: %s", e)
+        logging.exception(e)
         if args.offline is False:
             virtClient.stopBackup(domObj)
         sys.exit(1)
@@ -548,7 +543,7 @@ def backupDisk(
     if not connection:
         raise RuntimeError(f"Error connecting to nbd endpoint: {backupSocket}")
 
-    if args.qemu and args.level != "inc":
+    if args.qemu:
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
             qemuhelper.qemuHelper(disk.diskTarget), metaContext, backupSocket

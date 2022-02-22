@@ -29,15 +29,19 @@ class qemuHelper:
     def __init__(self, exportName):
         self.exportName = exportName
 
-    def map(self, backupSocket):
-        """Read extent map using qemu img utility
+    def map(self, backupSocket, metaContext):
+        """Read extent map using nbdinfo utility"""
+        metaOpt = ""
+        if metaContext is not None:
+            metaOpt = f"--map={metaContext}"
 
-        qemu-img does not support setting a bitmap here,
-        so it will only work with full/copy backup. Can
-        be changed to use nbdinfo in the future.
-        """
+        cmd = (
+            f"nbdinfo --json {metaOpt} "
+            f"'nbd+unix:///{self.exportName}?socket={backupSocket}'"
+        )
+        log.debug("Starting CMD: [%s]", cmd)
         extentMap = subprocess.run(
-            f"qemu-img map --output json 'nbd+unix:///{self.exportName}?socket={backupSocket}'",
+            cmd,
             shell=True,
             check=True,
             stdout=subprocess.PIPE,
