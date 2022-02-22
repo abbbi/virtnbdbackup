@@ -53,6 +53,15 @@ def getDataRanges(stream, sTypes, reader):
     except Exception:
         return False, False
     meta = stream.loadMetadata(reader.read(length))
+
+    if meta["compressed"] is True:
+        logging.error("Mapping compressed images currently not supported.")
+        return False, False
+
+    if meta["incremental"] is True:
+        logging.error("Only supported with full backups currently.")
+        return False, False
+
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
     dataRanges = []
@@ -178,13 +187,6 @@ def main():
     if dataRanges is False or meta is False:
         logging.error("Unable to read meta header from backup file.")
         sys.exit(1)
-    if meta["incremental"] is True:
-        logging.error("Only supported with full backups currently.")
-        sys.exit(1)
-
-    if meta["compressed"] is True:
-        logging.error("Mapping compressed images currently not supported.")
-        sys.exit(1)
 
     logging.info("Source file: %s", args.file)
     logging.info("Target device: %s", args.device)
@@ -200,7 +202,7 @@ def main():
         ) as blockMap:
             blockMap.write(json.dumps(dataRanges, indent=4).encode())
             logging.info("Wrote blockmap to temporary file: [%s]", blockMap.name)
-    except Exception as e:
+    except OSError as e:
         logging.error("Unable to create temporary blockmap file: %s", e)
         sys.exit(1)
 

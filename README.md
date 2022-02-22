@@ -453,6 +453,13 @@ qemu-system-x86_64 -enable-kvm -m 2000 -hda bootme.qcow2
 
 To remove the mappings, stop the utility via "CTRL-C"
 
+`Note`:
+> If you attempt to mount the filesystems mapped, you may need to add several
+> mount options (XFS for example needs `-o norecovery,ro`). Additionally, if
+> the backed up virtual machine has logical volumes which have the same name
+> then the system you are mapping the diks to, you need to activate them
+> forcefully to be able to access them correctly.
+
 # Extents
 
 In order to save only used data from the images, dirty blocks are queried from
