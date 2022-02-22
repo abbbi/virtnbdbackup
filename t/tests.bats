@@ -27,6 +27,9 @@ setup() {
 }
 
 @test "Setup / download vm image $VM_IMAGE to ${TMPDIR}/" {
+    if [ -e ${VM_IMAGE}.gz ]; then
+        gunzip ${VM_IMAGE}.gz
+    fi
     cp ${VM_IMAGE} ${TMPDIR}
 }
 
@@ -429,7 +432,7 @@ toOut() {
     echo $PID >&3
     run fdisk -l /dev/nbd0
     echo "output = ${output}"
-    [[ "${output}" =~  "Disk /dev/nbd0: 1 MiB, 1048576 bytes, 2048 sectors" ]]
+    [[ "${output}" =~  "Disk /dev/nbd0: 50 MiB, 52428800 bytes, 102400 sectors" ]]
     [[ "${output}" =~  "nbd0p1" ]]
     kill -2 $PID
 }
