@@ -22,11 +22,11 @@ import logging
 import argparse
 import pprint
 
-import libvirtnbdbackup.common as common
-import libvirtnbdbackup.nbdhelper as nbdhelper
-import libvirtnbdbackup.libvirthelper as virtclient
-import libvirtnbdbackup.sparsestream as sparsestream
-import libvirtnbdbackup.qemuhelper as qemuhelper
+from libvirtnbdbackup import common
+from libvirtnbdbackup import nbdhelper
+from libvirtnbdbackup import libvirthelper
+from libvirtnbdbackup import sparsestream
+from libvirtnbdbackup import qemuhelper
 
 from libvirtnbdbackup import __version__
 
@@ -164,7 +164,7 @@ def restore(lib, args, vmConfig):
     stream = sparsestream.SparseStream()
 
     with open(vmConfig, "r") as vmConf:
-        vmDisks = virtclient.client().getDomainDisks(
+        vmDisks = libvirthelper.client().getDomainDisks(
             vmConf.read(), None, None, args.raw
         )
 
