@@ -40,6 +40,7 @@ jobs:
           nbdkit \
           nbdkit-plugin-python \
           unzip \
+          libnbd-bin
         ;
         # start daemon
         echo 'security_driver = "none"' | sudo tee -a /etc/libvirt/qemu.conf
