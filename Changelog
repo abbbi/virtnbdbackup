@@ -1,0 +1,334 @@
+Version 0.45
+---------
+* Adds differencial backup option: backup option -l diff now saves the
+delta since the last incremental or full backup. Option -q now uses
+nbdinfo instead of qemu-img map, which supports reading specific bitmap
+information: now option -q can be used during incremental/differencial backup
+too,which might be good for debugging issues.
+* If incremental backup for offline Domain is attempted, backup would save all
+data, not just dirty extents: now saves only dirty extents.  
+* Extends the testsuite with tests for the implemented new features
+* Fixes various pylint warnings, better error handling in some situations.
+* Update documentation and executable dependencies for the debian package build.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.44...v0.45
+
+Version 0.44
+---------
+Ensure checkpoint chain consistency:
+
+As discussed during issue #33, the "parent" option to a checkpoint
+created is readonly currently. Thus, virtnbdbackup can not force
+an parent checkpoint during creation of the actual checkpoints.
+    
+This means we cannot ensure that the complete checkpoint chain
+we are based on for the current incremental backup is entirely
+created by us, like so:
+    
+   > virsh checkpoint-list vm1 --tree
+   > virtnbdbackup.0                                                    r
+   >   |
+   >   +- virtnbdbackup.1
+   >       |
+   >       +- virtnbdbackup.2
+   >           |
+   >           +- not-our-checkpoint
+
+The delta for "not our checkpoint" would never be saved because
+we dont know about this checkpoint.
+
+Now virtnbdbackup checks for checkpoints which might have been
+created by users or third party applications and exits with
+error if incremental or full backup is attempted.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.43...v0.44
+
+Version 0.43
+---------
+Remove --checkpoint option: has never behaved the way it should. The parent
+option to a checkpoint XML definition is, according to the documentation read
+only. So currently its not supported to force a specific checkpoint using this
+option.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.42...v0.43
+
+Version 0.42
+---------
+* Fixes some pylint/flake8 warnings.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.41...v0.42
+
+Version 0.41
+---------
+Minor code changes regards checkpoint handling, fix some pylint warnings.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.40...v0.41
+
+Version 0.40
+---------
+Introduce custom handler for logging facility to track number of warnings
+during backup operation.
+
+Recent changes introduce a new logging facility handler that counts the number
+of warnings during backup (for example if qemu agent is not
+reachable etc..)
+
+If option "--strict" is set during backup, the exit code will now set to
+2.
+
+This allows calling applications or scripts to have a more detailed
+error handling in regards to warnings and/or errors.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.39...v0.40
+
+Version 0.39
+---------
+Adds full support for offline domains:
+
+* Allows for incremental backup of offline domains: changed data for last
+checkpoint will be saved until a new checkpoint is created.  * Adds proper
+error handling for cases where starting the NBD server for offline domains
+causes error
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.38...v0.39
+
+Version 0.38
+---------
+Add support for backup of shutdown domains (#27)
+
+Usually virtnbdbackup makes most sense while operating
+on running domains. Only if a virtual domain is running,
+checkpoints can be defined via libvirt API and the
+required backup operations can be executed. The qemu
+Process will then start the NBD backend in order to
+receive the backup data.
+
+With the recent changes, virtnbdbackup now detects
+if the backup source is offline and then:
+
+ * Forces the backup mode to "copy": no full or
+ incremental backup supported because we cant create
+ an checkpoint via libvirt API. Copy type backup
+ is like a full backup just without checkpoint.
+ * Forces the amount of workers to 1
+ * Starts an NBD Process via qemu-nbd for each disk, operating
+ directly on the Virtual Disk files as detected from the VM
+ configuration.
+ * Queries required extents and data from the NBD
+ Service and saves it accordingly.
+
+Full changeset:
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.36...v0.38
+
+Version 0.36
+---------
+Fix for issue #28
+Fix for issue #26 
+
+Only minor changes regards logging messages.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.35...v0.36
+
+Version 0.35
+---------
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.34...v0.35
+
+Version 0.34
+---------
+Slight improvements to `virtnbdmap`.
+Show argument parameter default values in help outputs where useful.  Add
+nbdkit and python plugin to rpm/debian package dependencies.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.33...v0.34
+
+Version 0.33
+---------
+Slight improvements for `virtnbdmap`:
+
+* add option to pass listening socket for nbdkit process
+* add option to specify export name, might be required on older versions
+
+Tests:
+
+* add test for `virtndbmap` (currently skipped on github because access to nbd
+devices not possible within docker containers.)
+
+Version 0.32
+---------
+Introduce new `virtnbdmap` utlity to allow simple single file and instant recovery, see:
+
+ https://github.com/abbbi/virtnbdbackup#single-file-restore-and-instant-recovery
+
+Version 0.31
+---------
+Add documentation and update for nbdkit plugin: Its now possible to create
+single file restores or do instant recovery by booting the virtual machine
+from the thin provisioned full backups.
+
+Version 0.30
+---------
+Various bugfixes, added some small features in `virtnbdrestore`: it now
+attempts to use the original disks name for the disk files and copies the
+virtual machine config file. Fixed a few pylint warnings aswell.
+
+Updated readme and improved testsuite.
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.29...v0.30
+
+Version 0.29
+---------
+Version adds support for concurrent backup of multiple disks:
+
+ https://github.com/abbbi/virtnbdbackup#backup-concurrency
+
+**Full Changelog**: https://github.com/abbbi/virtnbdbackup/compare/v0.28...v0.29
+
+Version 0.28
+---------
+Minor changes: dont attempt to re-create checkpoints during copy backup,
+changes in error handling.
+
+Version 0.27
+---------
+Minor bugfix: exit gracefully if backup to stdout is attempted in raw format:
+does not work with the new zip archive stream.
+
+Version 0.26
+---------
+Implement feature from issue #16: it is now possible to dump complete backup
+output to stdout.
+
+Version 0.25
+---------
+Fixes issue #17: Fails to restore missing checkpoints after the 11th backup
+
+
+Version 0.24
+---------
+* Small change for log format output, enclose date.
+* Code reformat.
+
+Version 0.23
+---------
+No real functional changes:
+
+ * Reformat python code with python-black to have a common code format
+
+Version 0.22
+---------
+* Support compression with `--compress` option: blocks saved in stream are lz4
+compressed, add test cases.
+* Fix checkpoint creation with `--include` option: do not create checkpoints
+for disks which are not part of include list * Various other small Bugfixes
+related to error handling
+* If backup is done to stdout, save virtual machine config to current folder.
+* Update README
+
+Version 0.21
+---------
+* Add support for backup of raw disk images during full backup using option
+`--raw`:
+
+Version 0.20
+---------
+* Add Support for backup of transient domains in cluster environments.
+* Update README
+
+Version 0.19
+---------
+* If libvirthelper failed to setup backup job because of exception, an already
+freezed guest filesystem was not thawed.
+* Fix tests.
+
+Version 0.18
+---------
+* During backup to stdout it was attempted to close non opened file handle
+resulting in backup error
+* Include used libnbd version in backup log
+* Fix some pylint warnings
+* Update README
+
+Version 0.17
+---------
+* Remove sh module from requirements, obsoleted by subprocess module
+
+Version 0.16
+---------
+* Code cleanup, fix pylint warnings
+* Update README
+
+Version 0.15
+---------
+* Minor code changes, move some functions to common class
+* Use makedirs for targetfolder to support nested target pathes.
+* Updated README with more informations about backup workflow.
+
+Version 0.14
+---------
+Code cleanups
+Change shebang so executables appear in process list with real name instead of
+python3 executable
+
+Version 0.13
+---------
+Write backup to partial file first
+
+In case backup utility receives signal or fails otherwise,
+the backup data is written to the regular target file and
+it is assumed everything is OK.
+
+Now virtnbdbackup writes the data to a partial file first
+and renames the file as last step. During incremental
+backup the target directory is checked for possible existance
+of partial backups and backup is aborted with error.
+
+Version 0.11
+---------
+Mostly code cleanup and pylint related warning fixes.
+
+Version 0.10
+---------
+* Allow multiple concurrent backups as NBD server is now connected via local
+unix domain socket instead of TCP, allowing unique socket file names
+* Remove dependency on sh module
+
+Version 0.8
+---------
+* Fix name in setup.py
+* Provide RPM package for download
+
+Version 0.7
+---------
+* Minor code changes, improved error and signal handling
+* Update README with common backup errors
+* Introduce and use __version__, show version in log and command output
+
+Version 0.5
+---------
+* Show progress during restore, be less verbose.
+
+Version 0.4
+---------
+* Add per disk progress bar
+
+Version 0.3
+---------
+* backup: now calls fsFreeze() and fsThaw() functions to ensure consistent
+filesystems during backup.
+
+Version 0.2
+---------
+* Fix exception in virtnbdrestore due to missing arguments
+* Scratchfile target file name is now more unique, not causing issues if
+multiple domains are backed up at the same time
+* Minor tweaks and improvements
+
+Version 0.1
+---------
+First release version with following features:
+
+* Supports Full/copy/inc backup of virtual machines
+* Skips disks and direct attached disks which do not support backup via changed block tracking
+* Creates logfile for each executed backup
+* Allows to manually exclude certain disks for backup
