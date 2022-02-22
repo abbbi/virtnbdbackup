@@ -27,7 +27,6 @@ from libvirtnbdbackup import nbdhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import sparsestream
 from libvirtnbdbackup import qemuhelper
-
 from libvirtnbdbackup import __version__
 
 
