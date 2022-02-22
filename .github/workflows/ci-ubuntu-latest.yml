@@ -53,10 +53,13 @@ jobs:
       run: |
         # ubuntu 20.x does only include libnbd 1.2.2 which is too old
         # update package for ci testing to newer version backported.
+        # also copy nbdinfo from debian bullseye, for tests with
+        # option -q
         wget https://abbbi.github.io/files/libnbd0_1.6.2-1_amd64.deb
         wget https://abbbi.github.io/files/python3-libnbd_1.6.2-1_amd64.deb
         sudo dpkg -i libnbd0_1.6.2-1_amd64.deb
         sudo dpkg -i python3-libnbd_1.6.2-1_amd64.deb
+        wget https://abbbi.github.io/files/nbdinfo -O /usr/local/bin/
     - name: Execute tests (vm1)
       run: cd t && sudo -E make vm1.tests && cd -
     - name: Execute tests (vm3)
