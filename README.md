@@ -430,6 +430,7 @@ The following example maps an existing backup image to the network block
 device `/dev/nbd0`:
 
 ```
+ # modprobe nbd max_partitions=15
  # virtnbdmap -f /tmp/BACKUP/sda.full.data
  [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd0]
  [..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
