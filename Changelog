@@ -1,3 +1,7 @@
+Version 0.46
+---------
+* Add changelog file
+
 Version 0.45
 ---------
 * Adds differencial backup option: backup option -l diff now saves the
