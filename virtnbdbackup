@@ -21,6 +21,7 @@ import json
 import signal
 import logging
 import argparse
+from time import time
 from datetime import datetime
 from functools import partial
 from threading import current_thread
@@ -77,7 +78,7 @@ def main():
         "-l",
         "--level",
         default="copy",
-        choices=["copy", "full", "inc"],
+        choices=["copy", "full", "inc", "diff"],
         type=str,
         help="Backup level. (default: %(default)s)",
     )
@@ -190,13 +191,18 @@ def main():
         "--worker",
         type=int,
         default=None,
-        help="Amount of concurrent workers used to backup multiple disks. (default: amount of disks)",
+        help=(
+            "Amount of concurrent workers used"
+            "to backup multiple disks. (default: amount of disks)"
+        ),
     )
     parser.add_argument(
         "-e",
         "--strict",
         default=False,
-        help="Change exit code if warnings occur during backup. (default: %(default)s)",
+        help=(
+            "Change exit code if warnings occur" "during backup. (default: %(default)s)"
+        ),
         action="store_true",
     )
 
@@ -218,11 +224,8 @@ def main():
     if args.worker is not None and args.worker < 1:
         args.worker = 1
 
-    logFile = "%s/backup.%s.%s.log" % (
-        args.output,
-        args.level,
-        datetime.now().strftime("%m%d%Y%H%M%S"),
-    )
+    now = datetime.now().strftime("%m%d%Y%H%M%S")
+    logFile = f"{args.output}/backup.{args.level}.{now}.log"
 
     counter = logCount()
     logging.basicConfig(
@@ -251,19 +254,27 @@ def main():
             logging.error("Target directory must empty for full or copy backup.")
             sys.exit(1)
 
-    if args.raw and args.level == "inc":
-        logging.error("Raw disks cant be included during incremental backup.")
+    if args.raw and args.level in ("inc", "diff"):
+        logging.error(
+            "Raw disks cant be included during incremental or differencial backup."
+        )
         sys.exit(1)
 
-    if args.type == "raw" and args.level == "inc":
-        logging.error("Backup format raw does not support incremental backup")
+    if args.type == "raw" and args.level in ("inc", "diff"):
+        logging.error(
+            "Backup format raw does not support incremental or differencial backup"
+        )
         sys.exit(1)
 
     if args.printonly is True:
         logging.info("Printing only extend information: enforce level copy")
         args.level = "copy"
 
-    if args.level == "inc" and toStdout is False and lib.partialBackup(args) is True:
+    if (
+        args.level in ("inc", "diff")
+        and toStdout is False
+        and lib.partialBackup(args) is True
+    ):
         logging.error("Partial backup found in target directory: %s", args.output)
         logging.error("One of the last backups seems to have failed.")
         logging.error("Consider re-executing full backup.")
@@ -287,7 +298,7 @@ def main():
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
-    if args.level in ("full", "inc"):
+    if args.level in ("full", "inc", "diff"):
         extCheckpoint = virtClient.hasforeignCheckpoint(domObj, lib.checkpointName)
         if extCheckpoint:
             logging.fatal("VM has external checkpoint: [%s]", extCheckpoint)
@@ -335,7 +346,7 @@ def main():
     checkpointName = f"{lib.checkpointName}.0"
     parentCheckpoint = False
     checkpoints = []
-    cptFile = "%s/%s.cpt" % (args.output, args.domain)
+    cptFile = f"{args.output}/{args.domain}.cpt"
     if os.path.exists(cptFile):
         with open(cptFile, "r") as cptFh:
             checkpoints = json.loads(cptFh.read())
@@ -358,22 +369,30 @@ def main():
             virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName)
             checkpoints = []
 
-        if checkpoints and args.level == "inc":
+        if checkpoints and args.level in ("inc", "diff"):
             nextCpt = len(checkpoints)
-            checkpointName = "%s.%s" % (lib.checkpointName, nextCpt)
+            checkpointName = f"{lib.checkpointName}.{nextCpt}"
             parentCheckpoint = checkpoints[-1]
-            logging.info("Next checkpoint id: %s", nextCpt)
-            logging.info("Parent checkpoint name %s", parentCheckpoint)
+            logging.info("Next checkpoint id: [%s]", nextCpt)
+            logging.info("Parent checkpoint name [%s]", parentCheckpoint)
 
             if args.offline is True:
-                logging.info("Offline backup, use last known checkpoint.")
+                logging.info(
+                    "Offline backup, use last known checkpoint, save only delta."
+                )
                 checkpointName = parentCheckpoint
 
-        if args.level == "inc" and len(checkpoints) < 1:
+        if args.level == "diff":
+            logging.info(
+                "Diff backup: saving delta since checkpoint: [%s]", parentCheckpoint
+            )
+
+        if args.level in ("inc", "diff") and len(checkpoints) < 1:
             logging.error("No checkpoints found, execute full backup first.")
             sys.exit(1)
 
-        logging.info("Using checkpoint name: %s", checkpointName)
+        if args.level in ("full", "inc"):
+            logging.info("Using checkpoint name: %s", checkpointName)
 
     logging.info("Temporary scratch file target directory: %s", args.scratchdir)
 
@@ -399,7 +418,7 @@ def main():
             logging.error(e)
             sys.exit(1)
 
-    if args.level != "copy" and args.offline is False:
+    if args.level not in ("copy", "diff") and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
         if not checkpoints:
             checkpoints = []
@@ -481,8 +500,11 @@ def addFiles(configFile, zipStream, cptFile, logFile, args):
 
 def backupConfig(vmConfig, args, checkpointName):
     """Save domain config file"""
-    configFile = "%s/vmconfig.%s.xml" % (args.output, checkpointName)
-    logging.info("Saving VM config to: %s", configFile)
+    ident = checkpointName
+    if args.level == "diff":
+        ident = int(time())
+    configFile = f"{args.output}/vmconfig.{ident}.xml"
+    logging.info("Saving VM config to: [%s]", configFile)
     try:
         with open(configFile, "w") as configFh:
             configFh.write(vmConfig)
@@ -516,12 +538,12 @@ def backupDisk(
         streamType = "raw"
 
     metaContext = None
-    if args.level == "inc":
+    if args.level in ("inc", "diff"):
         if args.offline is True:
             metaContext = f"qemu:dirty-bitmap:{checkpointName}"
         else:
             metaContext = f"qemu:dirty-bitmap:backup-{disk.diskTarget}"
-        logging.info("INC backup: set context to %s", metaContext)
+        logging.info("INC/DIFF backup: set context to %s", metaContext)
 
     if args.offline is True:
         bitMap = None
@@ -567,7 +589,7 @@ def backupDisk(
         nbdClient.disconnect()
         return True
 
-    if args.level == "inc" and thinBackupSize == 0:
+    if args.level in ("inc", "diff") and thinBackupSize == 0:
         logging.info("No dirty blocks found")
         args.noprogress = True
 
@@ -576,12 +598,20 @@ def backupDisk(
             level = "copy"
         else:
             level = args.level
-        targetFile = "%s/%s.%s.data" % (args.output, disk.diskTarget, level)
+        targetFile = f"{args.output}/{disk.diskTarget}.{level}.data"
     elif args.level == "inc":
-        targetFile = "%s/%s.inc.%s.data" % (
+        targetFile = "%s/%s.%s.%s.data" % (
             args.output,
             disk.diskTarget,
+            args.level,
             checkpointName,
+        )
+    elif args.level == "diff":
+        targetFile = "%s/%s.%s.%s.data" % (
+            args.output,
+            disk.diskTarget,
+            args.level,
+            int(time()),
         )
 
     if toStdout is True:
@@ -590,7 +620,7 @@ def backupDisk(
         if writer is False:
             raise RuntimeError("Unable to open zip file in stream")
     else:
-        targetFilePartial = "%s.partial" % targetFile
+        targetFilePartial = f"{targetFile}.partial"
         logging.info("Write data to target file: %s", targetFilePartial)
         try:
             writer = open(targetFilePartial, "wb")
@@ -606,7 +636,7 @@ def backupDisk(
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
-        inc = args.level == "inc"
+        inc = args.level in ("inc", "diff")
         metadata = stream.dumpMetadata(
             diskSize,
             thinBackupSize,
@@ -678,7 +708,7 @@ def backupDisk(
         else:
             if streamType == "raw":
                 writer.seek(save.offset)
-            elif streamType == "stream" and args.level != "inc":
+            elif streamType == "stream" and args.level not in ("inc", "diff"):
                 stream.writeFrame(writer, sTypes.ZERO, save.offset, save.length)
     if streamType == "stream":
         stream.writeFrame(writer, sTypes.STOP, 0, 0)

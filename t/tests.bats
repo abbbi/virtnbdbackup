@@ -262,12 +262,12 @@ toOut() {
 
 # test for incremental backup
 
-@test "Setup: Prepare test for incremental backup" {
+@test "Incremental Setup: Prepare test for incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     command -v guestmount || exit 1
     rm -rf ${TMPDIR}/inctest
 }
-@test "Backup: incremental backup must fail without any checkpoints" {
+@test "Incremental Backup: incremental backup must fail without any checkpoints" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
@@ -306,13 +306,13 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Setup: destroy VM" {
+@test "Incremental Setup: destroy VM" {
     [ -z $INCTEST ] && skip "skipping"
     run virsh destroy $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Setup: mount disk via guestmount and create file" {
+@test "Incremental Setup: mount disk via guestmount and create file" {
     [ -z $INCTEST ] && skip "skipping"
     mkdir -p /empty
     run guestmount -d $VM -m /dev/sda1  /empty/
@@ -323,27 +323,26 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-
-@test "Setup: start VM after creating file" {
+@test "Incremental Setup: start VM after creating file" {
     [ -z $INCTEST ] && skip "skipping"
     sleep 5 # not sure why..
     run virsh start $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Backup: create first incremental backup" {
+@test "Incremental Backup: create first incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Backup: create second incremental backup" {
+@test "Incremental Backup: create second incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Restore: restore data and check if file from incremental backup exists" {
+@test "Incremental Restore: restore data and check if file from incremental backup exists" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
     run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
@@ -358,7 +357,7 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Restore: restore data until first incremental backup" {
+@test "Incremental Restore: restore data until first incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
     run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --until virtnbdbackup.1 -o ${TMPDIR}/RESTOREINC/
@@ -368,13 +367,13 @@ toOut() {
 
 # tests for offline incremental backup
 
-@test "Setup: destroy VM for offline backup" {
+@test "Incremental Setup: destroy VM for offline backup" {
     [ -z $INCTEST ] && skip "skipping"
     run virsh destroy $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Setup: mount offline disk via guestmount and create file" {
+@test "Incremental Setup: mount offline disk via guestmount and create file" {
     [ -z $INCTEST ] && skip "skipping"
     mkdir -p /empty
     run guestmount -d $VM -m /dev/sda1  /empty/
@@ -419,7 +418,106 @@ toOut() {
     run umount /empty
     echo "output = ${output}"
     [ "$status" -eq 0 ]
+    run virsh start $VM
 }
+
+# differencial backup
+
+@test "Differencial Setup: Prepare test for differencial backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    command -v guestmount || exit 1
+    rm -rf ${TMPDIR}/difftest
+}
+@test "Differencial Backup: differencial backup must fail without any checkpoints" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l diff -o ${TMPDIR}/difftest
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+    rm -rf ${TMPDIR}/difftest
+}
+@test "Differencial Backup: create full backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/difftest
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Setup: destroy VM" {
+    [ -z $INCTEST ] && skip "skipping"
+    run virsh destroy $VM
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Setup: mount disk via guestmount and create file" {
+    [ -z $INCTEST ] && skip "skipping"
+    mkdir -p /empty
+    run guestmount -d $VM -m /dev/sda1  /empty/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    echo difffile1 > /empty/diffile1
+    run umount /empty/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Setup: start VM after creating file" {
+    [ -z $INCTEST ] && skip "skipping"
+    sleep 5 # not sure why..
+    run virsh start $VM
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Backup: create first differencial backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/difftest
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Setup: destroy VM again" {
+    [ -z $INCTEST ] && skip "skipping"
+    run virsh destroy $VM
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Setup: mount disk via guestmount and create second file" {
+    [ -z $INCTEST ] && skip "skipping"
+    mkdir -p /empty
+    run guestmount -d $VM -m /dev/sda1  /empty/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    echo difffile2 > /empty/diffile2
+    run umount /empty/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Setup: start VM after creating second file" {
+    [ -z $INCTEST ] && skip "skipping"
+    sleep 5 # not sure why..
+    run virsh start $VM
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Backup: create second differencial backup" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/difftest
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Differencial Restore: restore data and check if both files from differencial backup exists" {
+    [ -z $INCTEST ] && skip "skipping"
+    rm -rf ${TMPDIR}/RESTOREINC/
+    run ../virtnbdrestore -a restore -i ${TMPDIR}/difftest/ -o ${TMPDIR}/RESTOREDIFF/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    FILENAME=$(basename ${VM_IMAGE})
+    run guestmount -a ${TMPDIR}/RESTOREDIFF/${FILENAME} -m /dev/sda1  /empty
+    [ "$status" -eq 0 ]
+    echo "output = ${output}"
+    [ -e /empty/diffile1 ]
+    [ -e /empty/diffile2 ]
+    run umount /empty
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+
 
 @test "Map: Map full backup to nbd block device, check device size and partitions" {
     [ -f /.dockerenv ] && skip "wont work inside docker image"

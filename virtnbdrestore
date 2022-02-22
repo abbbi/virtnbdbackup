@@ -175,7 +175,7 @@ def restore(lib, args, vmConfig):
             )
             logging.warning("Target virtual machine configuration must be altered!")
             logging.warning("Configured backing store images must be changed.")
-        if args.disk != "all" and args.disk != disk.diskTarget:
+        if args.disk not in ("all", disk.diskTarget):
             logging.info("Skipping disk %s for restore", disk.diskTarget)
             continue
 
@@ -343,6 +343,7 @@ def main():
 
     if args.action == "restore":
         vmConfig = lib.getLastConfigFile(args.input)
+        logging.info("Latest config file found: %s", vmConfig)
         if not vmConfig:
             logging.error("No domain config file found")
             sys.exit(1)

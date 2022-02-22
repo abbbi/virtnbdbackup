@@ -286,7 +286,9 @@ class client:
         checkpointXml = None
         freezed = False
         try:
-            if backupLevel != "copy":
+            # do not create checkpoint during copy/diff backup.
+            # backup saves delta until the last checkpoint
+            if backupLevel not in ("copy", "diff"):
                 checkpointXml = self._createCheckpointXml(
                     diskList, parentCheckpoint, checkpointName
                 )
@@ -295,7 +297,7 @@ class client:
             if freezed is True:
                 self.fsThaw(domObj)
         except Exception as errmsg:
-            # check if filesystem is freezted and thaw
+            # check if filesystem is freezed and thaw
             # in case creating checkpoint fails.
             if freezed is True:
                 self.fsThaw(domObj)

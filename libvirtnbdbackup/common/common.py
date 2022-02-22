@@ -7,6 +7,7 @@ import glob
 import json
 import logging
 import signal
+import pprint
 import lz4.frame
 from tqdm import tqdm
 
@@ -86,6 +87,7 @@ class Common:
         files = glob.glob(f"{targetDir}/*.data")
         files.sort(key=os.path.getmtime)
 
+        log.debug("Sorted data files: \n%s", pprint.pformat(files))
         return files
 
     @staticmethod
@@ -95,6 +97,10 @@ class Common:
         """
         files = glob.glob(f"{targetDir}/{targetDisk}*.data")
         files.sort(key=os.path.getmtime)
+
+        log.debug(
+            "Sorted file list for disk [%s]: \n%s", targetDisk, pprint.pformat(files)
+        )
         return files
 
     @staticmethod
@@ -103,7 +109,9 @@ class Common:
         from the backupset
         """
         try:
-            return glob.glob(f"{targetDir}/vmconfig*.xml")[-1]
+            files = glob.glob(f"{targetDir}/vmconfig*.xml")
+            files.sort(key=os.path.getmtime)
+            return files[-1]
         except IndexError:
             return None
 
