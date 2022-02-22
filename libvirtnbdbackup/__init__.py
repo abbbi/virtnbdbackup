@@ -15,4 +15,4 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = "0.45"
+__version__ = "0.46"
