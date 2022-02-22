@@ -28,7 +28,7 @@ setup() {
 
 @test "Setup / download vm image $VM_IMAGE to ${TMPDIR}/" {
     if [ -e ${VM_IMAGE}.gz ]; then
-        gunzip ${VM_IMAGE}.gz
+        gunzip ${VM_IMAGE}.gz > ${VM_IMAGE}
     fi
     cp ${VM_IMAGE} ${TMPDIR}
 }
