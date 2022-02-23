@@ -1,5 +1,13 @@
 Version 0.47
 ---------
+* Fix issue #37: If an backup directory contains multiple differencial
+or incremental backups, its not possible to use the --until option for
+point in time restore, because the differencial backups defaulted to
+the first checkpoint name in the metadata header. Recover would
+stop too early in such cases..
+
+Now the checkpoint name in the metadata header contains the same timestamp as
+the target files, which make it possible to use the --until option too.
 
 Version 0.46
 ---------
