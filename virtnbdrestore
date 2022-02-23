@@ -36,6 +36,7 @@ def dump(lib, args, stream, dataFiles):
     for dataFile in dataFiles:
         if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
             continue
+        logging.info(dataFile)
         meta = lib.dumpMetaData(dataFile, stream)
 
         if meta is False:

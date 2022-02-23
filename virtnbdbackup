@@ -599,19 +599,18 @@ def backupDisk(
         else:
             level = args.level
         targetFile = f"{args.output}/{disk.diskTarget}.{level}.data"
-    elif args.level == "inc":
+    elif args.level in ("inc", "diff"):
+        timestamp = int(time())
+        # during diff backup, we do not create an checkpoint,
+        # as such metadata header contains timestamp of
+        # target file
+        if args.level == "diff":
+            checkpointName = timestamp
         targetFile = "%s/%s.%s.%s.data" % (
             args.output,
             disk.diskTarget,
             args.level,
             checkpointName,
-        )
-    elif args.level == "diff":
-        targetFile = "%s/%s.%s.%s.data" % (
-            args.output,
-            disk.diskTarget,
-            args.level,
-            int(time()),
         )
 
     if toStdout is True:
