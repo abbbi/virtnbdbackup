@@ -367,7 +367,7 @@ toOut() {
 @test "Incremental Restore: restore with --sequence option" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
-    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --sequence ${TMPDIR}/inctest/sda.full.data,${TMPDIR}/inctest/sda.inc.virtnbdbackup.1.data -o ${TMPDIR}/SEQUENCE
+    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --sequence sda.full.data,sda.inc.virtnbdbackup.1.data -o ${TMPDIR}/SEQUENCE
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     [ -e ${TMPDIR}/SEQUENCE/sda ]
