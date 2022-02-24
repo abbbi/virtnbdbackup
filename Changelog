@@ -1,5 +1,6 @@
 Version 0.50
 ---------
+* Fix sequence restore: function returned too early.
 
 
 Version 0.49

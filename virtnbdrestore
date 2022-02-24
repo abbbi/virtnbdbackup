@@ -191,7 +191,7 @@ def restoreSequence(lib, args, dataFiles):
 
         nbdClient.disconnect()
 
-        return result
+    return result
 
 
 def writeData(lib, args, stream, disk, targetFile, nbdClient, connection):
