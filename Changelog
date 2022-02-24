@@ -1,3 +1,13 @@
+Version 0.48
+---------
+
+* Internal code changes: start using propper exceptions if stream format
+is not parseable
+* virtnbdbrestore: add --sequence option, allows to specify a comma seperated
+list of backup files whose informations should be dumped. Next step is to
+implement restore of a specified sequence.
+
+
 Version 0.47
 ---------
 * Fix issue #37: If an backup directory contains multiple differencial

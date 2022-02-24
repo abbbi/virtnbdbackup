@@ -27,14 +27,15 @@ from functools import partial
 from threading import current_thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup import nbdhelper
 from libvirtnbdbackup import extenthandler
-from libvirtnbdbackup import sparsestream
 from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import outputhelper
-from libvirtnbdbackup import __version__
+from libvirtnbdbackup.sparsestream import streamer
+from libvirtnbdbackup.sparsestream import types
 
 
 class LogType:
@@ -528,8 +529,8 @@ def backupDisk(
 ):
     """Backup domain disk data."""
 
-    stream = sparsestream.SparseStream()
-    sTypes = sparsestream.SparseStreamTypes()
+    stream = streamer.SparseStream(types)
+    sTypes = types.SparseStreamTypes()
 
     current_thread().name = disk.diskTarget
     if disk.diskFormat != "raw":

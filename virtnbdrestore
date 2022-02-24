@@ -22,12 +22,14 @@ import logging
 import argparse
 import pprint
 
+from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup import nbdhelper
 from libvirtnbdbackup import libvirthelper
-from libvirtnbdbackup import sparsestream
 from libvirtnbdbackup import qemuhelper
-from libvirtnbdbackup import __version__
+from libvirtnbdbackup.sparsestream import streamer
+from libvirtnbdbackup.sparsestream import types
+from libvirtnbdbackup.sparsestream import exceptions
 
 
 def dump(lib, args, stream, dataFiles):
@@ -37,14 +39,16 @@ def dump(lib, args, stream, dataFiles):
         if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
             continue
         logging.info(dataFile)
-        meta = lib.dumpMetaData(dataFile, stream)
 
-        if meta is False:
-            logging.warning(
-                "Unable to dump image contents: [%s] defunct or raw image?",
-                dataFile,
-            )
+        try:
+            meta = lib.dumpMetaData(dataFile, stream)
+        except exceptions.StreamFormatException as err:
+            logging.fatal(err)
             continue
+        except OSError as err:
+            logging.fatal(err)
+            continue
+
         pprint.pprint(meta)
 
         if lib.isCompressed(meta):
@@ -61,9 +65,14 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
         logging.critical("Unable to open backup file for reading: %s", errmsg)
         return False
 
-    sTypes = sparsestream.SparseStreamTypes()
-    kind, start, length = stream.readFrame(reader)
-    meta = stream.loadMetadata(reader.read(length))
+    sTypes = types.SparseStreamTypes()
+
+    try:
+        kind, start, length = stream.readFrame(reader)
+        meta = stream.loadMetadata(reader.read(length))
+    except exceptions.StreamFormatException as errmsg:
+        logging.fatal(errmsg)
+        return False
 
     if lib.isCompressed(meta) is True:
         trailer = stream.readCompressionTrailer(reader)
@@ -93,9 +102,9 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     while True:
         try:
             kind, start, length = stream.readFrame(reader)
-        except Exception as e:
+        except exceptions.StreamFormatException as err:
             logging.error("Wrong stream at pos: %s", reader.tell())
-            logging.exception(e)
+            logging.exception(err)
             return False
         if kind == sTypes.ZERO:
             logging.debug("Write zero segment from %s length: %s", start, length)
@@ -161,7 +170,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
 def restore(lib, args, vmConfig):
     """Handle restore operation"""
 
-    stream = sparsestream.SparseStream()
+    stream = streamer.SparseStream(types)
 
     with open(vmConfig, "r") as vmConf:
         vmDisks = libvirthelper.client().getDomainDisks(
@@ -278,6 +287,14 @@ def main():
         help="Restore only until checkpoint, point in time restore",
     )
     parser.add_argument(
+        "-s",
+        "--sequence",
+        required=False,
+        type=str,
+        default=None,
+        help="Dump specified files",
+    )
+    parser.add_argument(
         "-d",
         "--disk",
         required=False,
@@ -319,7 +336,7 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
-    stream = sparsestream.SparseStream()
+    stream = streamer.SparseStream(types)
 
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
@@ -334,13 +351,22 @@ def main():
         logging.error("Backup set directory does not exist")
         sys.exit(1)
 
-    dataFiles = lib.getDataFiles(args.input)
-    if not dataFiles:
-        logging.error("No data files found in directory: %s", args.input)
-        sys.exit(1)
+    if args.sequence is not None:
+        logging.info("Using manual specified sequence of files")
+        dataFiles = args.sequence.split(",")
+    else:
+        dataFiles = lib.getDataFiles(args.input)
+
+        if not dataFiles:
+            logging.error("No data files found in directory: %s", args.input)
+            sys.exit(1)
 
     if args.action == "dump":
         dump(lib, args, stream, dataFiles)
+
+    if args.action == "restore" and args.sequence is not None:
+        logging.error("Sequence can only be dumped")
+        sys.exit(1)
 
     if args.action == "restore":
         vmConfig = lib.getLastConfigFile(args.input)

@@ -161,11 +161,7 @@ class Common:
     def dumpMetaData(dataFile, stream):
         """read metadata header"""
         with open(dataFile, "rb") as reader:
-            try:
-                _, _, length = stream.readFrame(reader)
-            except ValueError:
-                return False
-
+            _, _, length = stream.readFrame(reader)
             return stream.loadMetadata(reader.read(length))
 
     @staticmethod
