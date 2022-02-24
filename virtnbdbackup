@@ -640,7 +640,7 @@ def backupDisk(
         metadata = stream.dumpMetadata(
             diskSize,
             thinBackupSize,
-            disk.diskTarget,
+            disk,
             checkpointName,
             parentCheckpoint,
             inc,

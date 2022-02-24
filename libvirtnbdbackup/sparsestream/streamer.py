@@ -26,7 +26,7 @@ class SparseStream:
         self,
         virtualSize,
         dataSize,
-        diskName,
+        disk,
         checkpointName,
         parentCheckpoint,
         incremental,
@@ -42,6 +42,7 @@ class SparseStream:
                 virtualSize:(int)       virtual size of disk
                 dataSize:   (int)       used space of disk
                 diskName:   (str)       name of the disk backed up
+                diskFormat: (str)       disk format (raw, qcow)
                 checkpointName:   (str)  checkpoint name
                 compressionmethod:(str)  used compression method
                 compressed:   (boolean)  flag whether if data is compressed
@@ -55,7 +56,8 @@ class SparseStream:
             "virtualSize": virtualSize,
             "dataSize": dataSize,
             "date": datetime.datetime.now().isoformat(),
-            "diskName": diskName,
+            "diskName": disk.diskTarget,
+            "diskFormat": disk.diskFormat,
             "checkpointName": checkpointName,
             "compressed": compressed,
             "compressionMethod": self.compressionMethod,

@@ -412,10 +412,19 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore -d sda
 
 Option `--until` allows to perform a point in time restore up to the desired
 checkpoint. The checkpoint name has to be specified as reported by the
-dump option (`checkpointName`), for example:
+dump output (field `checkpointName`), for example:
 
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdbackup.2
+```
+
+It is also possible to specify the source data files specifically used for the
+rollback via `--sequence` option, but beware: you must be sure the sequence you
+apply has the right order, otherwise the restored image might be errnous,
+example:
+
+```
+virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence /tmp/backupset/vdb.full.data,/tmp/backupset/vdb.inc.virtnbdbackup.1.data
 ```
 
 # Single file restore and instant recovery

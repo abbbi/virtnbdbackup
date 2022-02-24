@@ -40,14 +40,10 @@ def dump(lib, args, stream, dataFiles):
             continue
         logging.info(dataFile)
 
-        try:
-            meta = lib.dumpMetaData(dataFile, stream)
-        except exceptions.StreamFormatException as err:
-            logging.fatal(err)
-            continue
-        except OSError as err:
-            logging.fatal(err)
-            continue
+        meta = getHeader(lib, dataFile, stream)
+
+        if not meta:
+            return False
 
         pprint.pprint(meta)
 
@@ -167,17 +163,107 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     return False
 
 
-def restore(lib, args, vmConfig):
-    """Handle restore operation"""
-
+def restoreSequence(lib, args, dataFiles):
+    """Reconstruct image from a given set of data files"""
     stream = streamer.SparseStream(types)
 
-    with open(vmConfig, "r") as vmConf:
-        vmDisks = libvirthelper.client().getDomainDisks(
-            vmConf.read(), None, None, args.raw
-        )
+    for disk in dataFiles:
+        try:
+            meta = lib.dumpMetaData(disk, stream)
+        except exceptions.StreamFormatException as errmsg:
+            logging.error("Reading metadata from %s failed: %s", disk, errmsg)
+            return False
 
+        targetFile = f"{args.output}/{meta['diskName']}"
+
+        if not os.path.exists(targetFile):
+            if not createDiskFile(meta, targetFile=targetFile):
+                return False
+
+        diskName = meta["diskName"]
+
+        qFh = qemuhelper.qemuHelper(diskName)
+
+        socketFile = lib.getSocketFile(args.socketfile)
+        nbdClient, connection = startNbd(qFh, diskName, targetFile, socketFile)
+
+        result = writeData(lib, args, stream, disk, targetFile, nbdClient, connection)
+
+        nbdClient.disconnect()
+
+        return result
+
+
+def writeData(lib, args, stream, disk, targetFile, nbdClient, connection):
+    """Restore the data stream to the target file"""
     diskState = False
+    diskState = restoreData(lib, args, stream, disk, targetFile, nbdClient, connection)
+    # no data has been processed
+    if diskState is None:
+        diskState = True
+
+    return diskState
+
+
+def createDiskFile(meta, targetFile, diskFormat="qcow2"):
+    """Create target image file"""
+    logging.info("Create virtual Disk [%s] format: [%s]", targetFile, diskFormat)
+    logging.info("Virtual Size: [%s]", meta["virtualSize"])
+    qFh = qemuhelper.qemuHelper(meta["diskName"])
+
+    try:
+        qFh.create(targetFile, meta["virtualSize"], diskFormat)
+    except Exception as e:
+        logging.error("Cant create restore target: %s", e)
+        return False
+
+    return True
+
+
+def getHeader(lib, diskFile, stream):
+    """Read header from data file"""
+    try:
+        return lib.dumpMetaData(diskFile, stream)
+    except exceptions.StreamFormatException as errmsg:
+        logging.error("Reading metadata from %s failed: %s", diskFile, errmsg)
+        return False
+    except OSError as errmsg:
+        logging.error("Reading data file %s failed: %s", diskFile, errmsg)
+        return False
+
+
+def startNbd(qFh, exportName, targetFile, socketFile):
+    logging.info("Starting NBD server on socket: [%s]", socketFile)
+    err = qFh.startRestoreNbdServer(targetFile, socketFile)
+    if err is not None:
+        logging.error("Unable to start NBD server: [%s]", err)
+        return False
+
+    nbdClient = nbdhelper.nbdClient(exportName, None, socketFile)
+    return nbdClient, nbdClient.waitForServer()
+
+
+def getDisksFromConfig(args, vmConfig):
+    """Parse disk information from latest config file
+    contained in the backup directory
+    """
+    try:
+        with open(vmConfig, "rb") as vmConf:
+            return libvirthelper.client().getDomainDisks(
+                vmConf.read().decode(), None, None, args.raw
+            )
+    except OSError as errmsg:
+        logging.error("Cant open config file: [%s]: [%s]", vmConfig, errmsg)
+        return False
+
+
+def restore(lib, args, vmConfig):
+    """Handle restore operation"""
+    stream = streamer.SparseStream(types)
+    vmDisks = getDisksFromConfig(args, vmConfig)
+    if not vmDisks:
+        return False
+
     for disk in vmDisks:
         if len(disk.backingStores) > 0:
             logging.warning(
@@ -215,47 +301,27 @@ def restore(lib, args, vmConfig):
                 "%s Unable to locate base full or copy backup.", restoreDisk[0]
             )
             return False
-        try:
-            meta = lib.dumpMetaData(restoreDisk[0], stream)
-        except Exception as e:
-            logging.error("Reading metadata from %s failed: %s", restoreDisk[0], e)
+
+        meta = getHeader(lib, restoreDisk[0], stream)
+        if not meta:
+            logging.error("Reading metadata from %s failed", restoreDisk[0])
             return False
 
-        logging.info(
-            "Create virtual Disk [%s] format: [%s]",
-            targetFile,
-            disk.diskFormat,
-        )
-        logging.info("Virtual Size: [%s]", meta["virtualSize"])
         qFh = qemuhelper.qemuHelper(meta["diskName"])
-
-        try:
-            qFh.create(targetFile, meta["virtualSize"], disk.diskFormat)
-        except Exception as e:
-            logging.error("Cant create restore target: %s", e)
+        if not createDiskFile(meta, targetFile, disk.diskFormat):
             return False
 
         socketFile = lib.getSocketFile(args.socketfile)
-
-        logging.info("Starting NBD server on socket: [%s]", socketFile)
-        err = qFh.startRestoreNbdServer(targetFile, socketFile)
-        if err is not None:
-            logging.error("Unable to start NBD server: [%s]", err)
-            return False
-
-        nbdClient = nbdhelper.nbdClient(meta["diskName"], None, socketFile)
-        connection = nbdClient.waitForServer()
+        nbdClient, connection = startNbd(qFh, meta["diskName"], targetFile, socketFile)
 
         for dataFile in restoreDisk:
-            diskState = restoreData(
+            result = writeData(
                 lib, args, stream, dataFile, targetFile, nbdClient, connection
             )
-            if diskState is None:
-                diskState = True
+            if result is False:
                 break
 
-        nbdClient.disconnect()
-    return diskState
+    return result
 
 
 def main():
@@ -284,7 +350,7 @@ def main():
         "--until",
         required=False,
         type=str,
-        help="Restore only until checkpoint, point in time restore",
+        help="Restore only until checkpoint, point in time restore.",
     )
     parser.add_argument(
         "-s",
@@ -292,7 +358,7 @@ def main():
         required=False,
         type=str,
         default=None,
-        help="Dump specified files",
+        help="Restore image based on specified backup files.",
     )
     parser.add_argument(
         "-d",
@@ -364,10 +430,6 @@ def main():
     if args.action == "dump":
         dump(lib, args, stream, dataFiles)
 
-    if args.action == "restore" and args.sequence is not None:
-        logging.error("Sequence can only be dumped")
-        sys.exit(1)
-
     if args.action == "restore":
         vmConfig = lib.getLastConfigFile(args.input)
         logging.info("Latest config file found: %s", vmConfig)
@@ -385,7 +447,13 @@ def main():
         if not os.path.exists(args.output):
             os.makedirs(args.output)
 
-        if restore(lib, args, vmConfig) is True:
+        ret = False
+        if args.sequence is not None:
+            ret = restoreSequence(lib, args, dataFiles)
+        else:
+            ret = restore(lib, args, vmConfig)
+
+        if ret is True:
             shutil.copy(vmConfig, args.output)
             logging.info(
                 "Copied vm config to [%s/%s]", args.output, os.path.basename(vmConfig)
