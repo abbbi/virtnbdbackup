@@ -73,6 +73,28 @@ class SparseStream:
         writer.write(self.types.TERM)
         self.writeFrame(writer, self.types.COMP, 0, size)
 
+    def _readHeader(self, reader):
+        """Attempt to read header"""
+        header = reader.read(self.types.FRAME_LEN)
+        try:
+            kind, start, length = header.split(b" ", 2)
+        except ValueError as err:
+            raise exceptions.BlockFormatException(
+                f"Invalid block format: [{err}]"
+            ) from err
+
+        return kind, start, length
+
+    @staticmethod
+    def _parseHeader(kind, start, length):
+        """Return parsed header information"""
+        try:
+            return kind, int(start, 16), int(length, 16)
+        except ValueError as err:
+            raise exceptions.FrameformatException(
+                f"Invalid frame format: [{err}]"
+            ) from err
+
     def readCompressionTrailer(self, reader):
         """If compressed stream is found, information about compressed
         block sizes is appended as last json payload.
@@ -82,10 +104,9 @@ class SparseStream:
         pos = reader.tell()
         reader.seek(0, os.SEEK_END)
         reader.seek(-(self.types.FRAME_LEN + len(self.types.TERM)), os.SEEK_CUR)
-        header = reader.read(self.types.FRAME_LEN)
-        _, _, length = header.split(b" ", 2)
+        _, _, length = self._readHeader(reader)
         reader.seek(-(self.types.FRAME_LEN + int(length, 16)), os.SEEK_CUR)
-        trailer = json.loads(reader.read(int(length, 16)))
+        trailer = self.loadMetadata(reader.read(int(length, 16)))
         reader.seek(pos)
         return trailer
 
@@ -118,17 +139,5 @@ class SparseStream:
         Parameters:
             reader: (fh)    Reader object which implements .read()
         """
-        header = reader.read(self.types.FRAME_LEN)
-        try:
-            kind, start, length = header.split(b" ", 2)
-        except ValueError as err:
-            raise exceptions.BlockFormatException(
-                f"Invalid block format: [{err}]"
-            ) from err
-
-        try:
-            return kind, int(start, 16), int(length, 16)
-        except ValueError as err:
-            raise exceptions.FrameformatException(
-                f"Invalid frame format: [{err}]"
-            ) from err
+        kind, start, length = self._readHeader(reader)
+        return self._parseHeader(kind, start, length)
