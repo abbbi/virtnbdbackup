@@ -169,10 +169,9 @@ def restoreSequence(lib, args, dataFiles):
 
     for disk in dataFiles:
         sourceFile = f"{args.input}/{disk}"
-        try:
-            meta = lib.dumpMetaData(sourceFile, stream)
-        except exceptions.StreamFormatException as errmsg:
-            logging.error("Reading metadata from %s failed: %s", disk, errmsg)
+
+        meta = getHeader(lib, sourceFile, stream)
+        if not meta:
             return False
 
         targetFile = f"{args.output}/{meta['diskName']}"
