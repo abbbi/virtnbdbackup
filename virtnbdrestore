@@ -168,8 +168,9 @@ def restoreSequence(lib, args, dataFiles):
     stream = streamer.SparseStream(types)
 
     for disk in dataFiles:
+        sourceFile = f"{args.input}/{disk}"
         try:
-            meta = lib.dumpMetaData(disk, stream)
+            meta = lib.dumpMetaData(sourceFile, stream)
         except exceptions.StreamFormatException as errmsg:
             logging.error("Reading metadata from %s failed: %s", disk, errmsg)
             return False
@@ -187,7 +188,9 @@ def restoreSequence(lib, args, dataFiles):
         socketFile = lib.getSocketFile(args.socketfile)
         nbdClient, connection = startNbd(qFh, diskName, targetFile, socketFile)
 
-        result = writeData(lib, args, stream, disk, targetFile, nbdClient, connection)
+        result = writeData(
+            lib, args, stream, sourceFile, targetFile, nbdClient, connection
+        )
 
         nbdClient.disconnect()
 

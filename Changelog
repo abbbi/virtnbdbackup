@@ -1,6 +1,7 @@
 Version 0.50
 ---------
 * Fix sequence restore: function returned too early.
+* Parameter for --sequence option does not require absolute path anymore.
 
 
 Version 0.49

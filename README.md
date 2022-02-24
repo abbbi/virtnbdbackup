@@ -424,7 +424,7 @@ apply has the right order, otherwise the restored image might be errnous,
 example:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence /tmp/backupset/vdb.full.data,/tmp/backupset/vdb.inc.virtnbdbackup.1.data
+virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
 ```
 
 # Single file restore and instant recovery
