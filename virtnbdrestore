@@ -99,8 +99,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
         try:
             kind, start, length = stream.readFrame(reader)
         except exceptions.StreamFormatException as err:
-            logging.error("Wrong stream at pos: %s", reader.tell())
-            logging.exception(err)
+            logging.error("Cant read stream at pos: %s: %s", reader.tell(), err)
             return False
         if kind == sTypes.ZERO:
             logging.debug("Write zero segment from %s length: %s", start, length)
