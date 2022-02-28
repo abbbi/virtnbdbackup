@@ -181,11 +181,12 @@ class client:
 
         return devices
 
-    def _indentXml(self, top):
+    @staticmethod
+    def _indentXml(top):
         """Indent xml output for debug logging"""
         try:
             ElementTree.indent(top)
-        except Exception as errmsg:
+        except ElementTree.ParseError as errmsg:
             log.debug("Unable to indent xml: [%s]", errmsg)
 
         xml = ElementTree.tostring(top).decode()
@@ -249,7 +250,8 @@ class client:
 
         return xml
 
-    def fsFreeze(self, domObj):
+    @staticmethod
+    def fsFreeze(domObj):
         """Attempt to freeze domain filesystems using qemu guest agent"""
         try:
             domObj.fsFreeze()
@@ -259,7 +261,8 @@ class client:
             log.warning(errmsg)
             return False
 
-    def fsThaw(self, domObj):
+    @staticmethod
+    def fsThaw(domObj):
         """Thaw freeze filesystems"""
         try:
             domObj.fsThaw()
@@ -303,7 +306,8 @@ class client:
                 self.fsThaw(domObj)
             raise errmsg
 
-    def checkpointExists(self, domObj, checkpointName):
+    @staticmethod
+    def checkpointExists(domObj, checkpointName):
         """Check if an checkpoint exists"""
         return domObj.checkpointLookupByName(checkpointName)
 
@@ -339,7 +343,8 @@ class client:
                     return False
         return True
 
-    def deleteCheckpoint(self, cptObj, defaultCheckpointName):
+    @staticmethod
+    def deleteCheckpoint(cptObj, defaultCheckpointName):
         """Delete checkpoint"""
         checkpointName = cptObj.getName()
         if defaultCheckpointName not in checkpointName:
@@ -357,7 +362,8 @@ class client:
             log.error("Error during checkpoint removal: [%s]", errmsg)
             return False
 
-    def stopBackup(self, domObj):
+    @staticmethod
+    def stopBackup(domObj):
         """Cancel the backup task using job abort"""
         try:
             return domObj.abortJob(), None
@@ -365,18 +371,13 @@ class client:
             log.warning("Unable to stop backup job: [%s]", err)
             return False
 
-    def redefineCheckpoints(self, domObj, args):
+    @staticmethod
+    def redefineCheckpoints(domObj, args):
         """Redefine checkpoints from persistent storage"""
         # get list of all .xml files in checkpointdir
         log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
-        try:
-            checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
-            checkpointList.sort(key=os.path.getmtime)
-        except Exception as e:
-            log.error(
-                "Unable to get checkpoint list from [%s]: %s", args.checkpointdir, e
-            )
-            return False
+        checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
+        checkpointList.sort(key=os.path.getmtime)
 
         for checkpointFile in checkpointList:
             log.debug("Loading checkpoint config from: [%s]", checkpointFile)
@@ -384,6 +385,9 @@ class client:
                 with open(checkpointFile, "rb") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
+            except OSError as e:
+                log.error("Unable to open checkpoint file: [%s]: %s", checkpointFile, e)
+                return False
             except ElementTree.ParseError as e:
                 log.error(
                     "Unable to load checkpoint config from [%s]: %s", checkpointFile, e
@@ -417,7 +421,8 @@ class client:
 
         return True
 
-    def backupCheckpoint(self, domObj, args, checkpointName):
+    @staticmethod
+    def backupCheckpoint(domObj, args, checkpointName):
         """save checkpoint config to persistent storage"""
         checkpointFile = f"{args.checkpointdir}/{checkpointName}.xml"
         log.info("Saving checkpoint config to: %s", checkpointFile)
@@ -434,7 +439,8 @@ class client:
             )
             return False
 
-    def hasforeignCheckpoint(self, domObj, defaultCheckpointName):
+    @staticmethod
+    def hasforeignCheckpoint(domObj, defaultCheckpointName):
         """Check if the virtual machine has an checkpoint which was not
         created by virtnbdbackup
 
