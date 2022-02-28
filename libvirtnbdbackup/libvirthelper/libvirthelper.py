@@ -187,7 +187,12 @@ class client:
         try:
             ElementTree.indent(top)
         except ElementTree.ParseError as errmsg:
-            log.debug("Unable to indent xml: [%s]", errmsg)
+            log.debug("Unable to parse xml: [%s]", errmsg)
+        except AttributeError:
+            # older ElementTree verisons dont have the
+            # indent method, skip silently and use
+            # non formatted string
+            pass
 
         xml = ElementTree.tostring(top).decode()
         log.debug("\n%s", xml)
