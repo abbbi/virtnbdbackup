@@ -26,9 +26,11 @@ import time
 import argparse
 import logging
 import subprocess
-from libvirtnbdbackup import common
-from libvirtnbdbackup import sparsestream
+
 from libvirtnbdbackup import __version__
+from libvirtnbdbackup import common
+from libvirtnbdbackup.sparsestream import streamer
+from libvirtnbdbackup.sparsestream import types
 
 
 def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
@@ -180,8 +182,8 @@ def main():
         )
         sys.exit(1)
 
-    stream = sparsestream.SparseStream()
-    sTypes = sparsestream.SparseStreamTypes()
+    stream = streamer.SparseStream(types)
+    sTypes = types.SparseStreamTypes()
 
     dataRanges, meta = getDataRanges(stream, sTypes, reader)
     if dataRanges is False or meta is False:
