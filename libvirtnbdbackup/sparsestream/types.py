@@ -2,6 +2,8 @@
 Sparsestream format description
 """
 
+from dataclasses import dataclass
+
 
 class SparseStreamTypes:
     """Sparse stream format
@@ -68,12 +70,11 @@ class SparseStreamTypes:
     comp 0000000000000000 00000000000000010\r\n
     """
 
-    def __init__(self):
-        self.META = b"meta"
-        self.DATA = b"data"
-        self.COMP = b"comp"
-        self.ZERO = b"zero"
-        self.STOP = b"stop"
-        self.TERM = b"\r\n"
-        self.FRAME = b"%s %016x %016x" + self.TERM
-        self.FRAME_LEN = len(self.FRAME % (self.STOP, 0, 0))
+    META: bytes = b"meta"
+    DATA: bytes = b"data"
+    COMP: bytes = b"comp"
+    ZERO: bytes = b"zero"
+    STOP: bytes = b"stop"
+    TERM: bytes = b"\r\n"
+    FRAME: bytes = b"%s %016x %016x" + TERM
+    FRAME_LEN: bytes = len(FRAME % (STOP, 0, 0))
