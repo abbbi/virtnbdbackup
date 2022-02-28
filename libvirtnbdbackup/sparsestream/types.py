@@ -77,4 +77,4 @@ class SparseStreamTypes:
     STOP: bytes = b"stop"
     TERM: bytes = b"\r\n"
     FRAME: bytes = b"%s %016x %016x" + TERM
-    FRAME_LEN: bytes = len(FRAME % (STOP, 0, 0))
+    FRAME_LEN: int = len(FRAME % (STOP, 0, 0))
