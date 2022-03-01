@@ -38,20 +38,19 @@ from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 
 
-class LogType:
-    """Log message type"""
-
-    def __init__(self):
-        self.warnings = 0
-        self.errors = 0
-
-
 class logCount(logging.Handler):
     """Custom log handler keeping track of issued log messages"""
 
+    class LogType:
+        """Log message type"""
+
+        def __init__(self):
+            self.warnings = 0
+            self.errors = 0
+
     def __init__(self):
         super().__init__()
-        self.count = LogType()
+        self.count = self.LogType()
 
     def emit(self, record):
         if record.levelname == "WARNING":
