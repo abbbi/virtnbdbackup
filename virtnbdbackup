@@ -515,6 +515,68 @@ def backupConfig(vmConfig, args, checkpointName):
         sys.exit(1)
 
 
+def setMetaContext(args, checkpointName, disk):
+    """Set meta context passed to nbd server based on
+    backup type"""
+    metaContext = None
+    if args.level in ("inc", "diff"):
+        if args.offline is True:
+            metaContext = f"qemu:dirty-bitmap:{checkpointName}"
+        else:
+            metaContext = f"qemu:dirty-bitmap:backup-{disk.diskTarget}"
+
+    return metaContext
+
+
+def setStreamType(args, disk):
+    """Set target stream type"""
+    if disk.diskFormat != "raw":
+        streamType = args.type
+    else:
+        streamType = "raw"
+
+    return streamType
+
+
+def setTargetFile(args, disk, checkpointName):
+    """Set Target file name to write"""
+    if args.level in ("full", "copy"):
+        if disk.diskFormat == "raw":
+            level = "copy"
+        else:
+            level = args.level
+        targetFile = f"{args.output}/{disk.diskTarget}.{level}.data"
+    elif args.level in ("inc", "diff"):
+        timestamp = int(time())
+        # during diff backup, we do not create an checkpoint,
+        # as such metadata header contains timestamp of
+        # target file
+        if args.level == "diff":
+            checkpointName = timestamp
+        targetFile = "%s/%s.%s.%s.data" % (
+            args.output,
+            disk.diskTarget,
+            args.level,
+            checkpointName,
+        )
+
+    targetFilePartial = f"{targetFile}.partial"
+
+    return targetFile, targetFilePartial
+
+
+def renamePartial(targetFilePartial, targetFile):
+    """After backup, move .partial file to real
+    target file"""
+    try:
+        os.rename(targetFilePartial, targetFile)
+    except OSError as e:
+        logging.error("Unable to rename file: %s", e)
+        return False
+
+    return True
+
+
 def backupDisk(
     disk,
     count,
@@ -532,18 +594,9 @@ def backupDisk(
     sTypes = types.SparseStreamTypes()
 
     current_thread().name = disk.diskTarget
-    if disk.diskFormat != "raw":
-        streamType = args.type
-    else:
-        streamType = "raw"
-
-    metaContext = None
-    if args.level in ("inc", "diff"):
-        if args.offline is True:
-            metaContext = f"qemu:dirty-bitmap:{checkpointName}"
-        else:
-            metaContext = f"qemu:dirty-bitmap:backup-{disk.diskTarget}"
-        logging.info("INC/DIFF backup: set context to %s", metaContext)
+    streamType = setStreamType(args, disk)
+    metaContext = setMetaContext(args, checkpointName, disk)
+    logging.info("INC/DIFF backup: set context to %s", metaContext)
 
     if args.offline is True:
         bitMap = None
@@ -593,25 +646,7 @@ def backupDisk(
         logging.info("No dirty blocks found")
         args.noprogress = True
 
-    if args.level in ("full", "copy"):
-        if disk.diskFormat == "raw":
-            level = "copy"
-        else:
-            level = args.level
-        targetFile = f"{args.output}/{disk.diskTarget}.{level}.data"
-    elif args.level in ("inc", "diff"):
-        timestamp = int(time())
-        # during diff backup, we do not create an checkpoint,
-        # as such metadata header contains timestamp of
-        # target file
-        if args.level == "diff":
-            checkpointName = timestamp
-        targetFile = "%s/%s.%s.%s.data" % (
-            args.output,
-            disk.diskTarget,
-            args.level,
-            checkpointName,
-        )
+    targetFile, targetFilePartial = setTargetFile(args, disk, checkpointName)
 
     if toStdout is True:
         targetFile = os.path.basename(targetFile)
@@ -619,11 +654,10 @@ def backupDisk(
         if writer is False:
             raise RuntimeError("Unable to open zip file in stream")
     else:
-        targetFilePartial = f"{targetFile}.partial"
         logging.info("Write data to target file: %s", targetFilePartial)
         try:
             writer = open(targetFilePartial, "wb")
-        except Exception as e:
+        except OSError as e:
             raise RuntimeError(f"Unable to open target file: {e}") from e
 
     if streamType == "raw":
@@ -722,15 +756,11 @@ def backupDisk(
         logging.info("Stopping NBD Service")
         lib.killNbdServer(backupSocket)
     if toStdout is False:
-        try:
-            os.rename(targetFilePartial, targetFile)
-            if args.noprogress is True:
-                logging.info(
-                    "Backup of disk %s finished, file: %s", disk.diskTarget, targetFile
-                )
-        except OSError as e:
-            logging.error("Unable to rename file: %s", e)
-            sys.exit(1)
+        if args.noprogress is True:
+            logging.info(
+                "Backup of disk %s finished, file: %s", disk.diskTarget, targetFile
+            )
+        return renamePartial(targetFilePartial, targetFile)
 
     return True
 
