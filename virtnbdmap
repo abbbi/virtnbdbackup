@@ -71,7 +71,7 @@ def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     sys.exit(0)
 
 
-def getDataRanges(stream, sTypes, reader):
+def getDataRanges(lib, stream, sTypes, reader):
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
@@ -80,7 +80,7 @@ def getDataRanges(stream, sTypes, reader):
         return False, False
     meta = stream.loadMetadata(reader.read(length))
 
-    if meta["compressed"] is True:
+    if lib.isCompressed(meta):
         logging.error("Mapping compressed images currently not supported.")
         return False, False
 
@@ -195,7 +195,7 @@ def main():
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
 
-    dataRanges, meta = getDataRanges(stream, sTypes, reader)
+    dataRanges, meta = getDataRanges(lib, stream, sTypes, reader)
     if dataRanges is False or meta is False:
         logging.error("Unable to read meta header from backup file.")
         sys.exit(1)
