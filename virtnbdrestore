@@ -258,6 +258,29 @@ def getDisksFromConfig(args, vmConfig):
         return False
 
 
+def checkBackingStore(disk):
+    """If an virtual machine was running on an snapshot image,
+    warn user, the virtual machine configuration has to be
+    adjusted before starting the VM is possible"""
+    if len(disk.backingStores) > 0:
+        logging.warning(
+            "Target image [%s] seems to be a snapshot image.", disk.diskFileName
+        )
+        logging.warning("Target virtual machine configuration must be altered!")
+        logging.warning("Configured backing store images must be changed.")
+
+
+def setTargetFile(args, disk):
+    """Based on disk information, set target file
+    to write"""
+    if disk.diskFileName is not None:
+        targetFile = f"{args.output}/{disk.diskFileName}"
+    else:
+        targetFile = f"{args.output}/{disk.diskTarget}"
+
+    return targetFile
+
+
 def restore(lib, args, vmConfig):
     """Handle restore operation"""
     stream = streamer.SparseStream(types)
@@ -266,12 +289,7 @@ def restore(lib, args, vmConfig):
         return False
 
     for disk in vmDisks:
-        if len(disk.backingStores) > 0:
-            logging.warning(
-                "Target image [%s] seems to be a snapshot image.", disk.diskFileName
-            )
-            logging.warning("Target virtual machine configuration must be altered!")
-            logging.warning("Configured backing store images must be changed.")
+        checkBackingStore(disk)
         if args.disk not in ("all", disk.diskTarget):
             logging.info("Skipping disk %s for restore", disk.diskTarget)
             continue
@@ -284,10 +302,7 @@ def restore(lib, args, vmConfig):
             )
             continue
 
-        if disk.diskFileName is not None:
-            targetFile = f"{args.output}/{disk.diskFileName}"
-        else:
-            targetFile = f"{args.output}/{disk.diskTarget}"
+        targetFile = setTargetFile(args, disk)
 
         if args.raw and disk.diskFormat == "raw":
             logging.info("Copy raw image to %s", targetFile)
