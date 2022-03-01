@@ -53,8 +53,6 @@ def locatePlugin():
         logging.error("Unable to locate nbdkit plugin: %s", pluginFileName)
         sys.exit(1)
 
-    logging.info("Using %s as nbdkit plugin", nbdkitModule)
-
     return nbdkitModule
 
 
