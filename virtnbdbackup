@@ -34,6 +34,7 @@ from libvirtnbdbackup import extenthandler
 from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import outputhelper
+from libvirtnbdbackup import exceptions
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 
@@ -71,19 +72,22 @@ def handleSignal(args, domObj, virtClient, log, signum, _):
 def checkForeign(args, virtClient, domObj, lib):
     """Check and warn user if virtual machine has checkpoints
     not originating from this utility"""
-    extCheckpoint = None
+    foreign = None
     if args.level in ("full", "inc", "diff"):
-        extCheckpoint = virtClient.hasforeignCheckpoint(domObj, lib.checkpointName)
+        foreign = virtClient.hasforeignCheckpoint(domObj, lib.checkpointName)
 
-    if extCheckpoint:
-        logging.fatal("VM has external checkpoint: [%s]", extCheckpoint)
-        logging.fatal("This checkpoint has not been created by this utility.")
-        logging.fatal(
-            "To ensure checkpoint chain consistency, clean up existing checkpoints,"
-        )
-        logging.fatal("and start a new backup chain by creating a full backup.")
+    if not foreign:
+        return True
 
-    return extCheckpoint
+    logging.fatal("VM has external checkpoint: [%s]", foreign)
+    logging.fatal("This checkpoint has not been created by this utility.")
+    logging.fatal(
+        "To ensure checkpoint chain consistency,"
+        "remove existing checkpoints,"
+        "and start a new backup chain by creating a full backup."
+    )
+
+    raise exceptions.ForeignCeckpointError()
 
 
 def setOfflineArguments(args, virtClient, domObj):
@@ -113,6 +117,66 @@ def hasPartial(args, toStdout, lib):
         return True
 
     return False
+
+
+def readCheckpointFile(cptFile):
+    """Open checkpoint file and read checkpoint
+    information"""
+    checkpoints = []
+    if os.path.exists(cptFile):
+        with open(cptFile, "r") as cptFh:
+            checkpoints = json.loads(cptFh.read())
+
+    return checkpoints
+
+
+def handleCheckpoints(args, virtClient, domObj, lib):
+    """Checkpoint handling for different backup modes
+    to be executed"""
+    checkpointName = f"{lib.checkpointName}.0"
+    parentCheckpoint = False
+    cptFile = f"{args.output}/{args.domain}.cpt"
+    checkpoints = readCheckpointFile(cptFile)
+
+    if args.offline is False:
+        if virtClient.redefineCheckpoints(domObj, args) is False:
+            raise exceptions.RedefineCheckpointError("Unable to redefine checkpoints.")
+
+    logging.info("Checkpoint handling")
+    if args.level == "full" and checkpoints:
+        logging.info("Removing all existent checkpoints before full backup")
+        virtClient.removeAllCheckpoints(domObj, checkpoints, args, lib.checkpointName)
+        os.remove(cptFile)
+        checkpoints = []
+    elif args.level == "full" and len(checkpoints) < 1:
+        virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName)
+        checkpoints = []
+
+    if checkpoints and args.level in ("inc", "diff"):
+        nextCpt = len(checkpoints)
+        checkpointName = f"{lib.checkpointName}.{nextCpt}"
+        parentCheckpoint = checkpoints[-1]
+        logging.info("Next checkpoint id: [%s]", nextCpt)
+        logging.info("Parent checkpoint name [%s]", parentCheckpoint)
+
+        if args.offline is True:
+            logging.info("Offline backup, use last known checkpoint, save only delta.")
+            checkpointName = parentCheckpoint
+
+    if args.level == "diff":
+        logging.info(
+            "Diff backup: saving delta since checkpoint: [%s]", parentCheckpoint
+        )
+
+    if args.level in ("inc", "diff") and len(checkpoints) < 1:
+        raise exceptions.NoCheckpointsFound(
+            "No existing checkpoints found, execute full backup first."
+        )
+
+    if args.level in ("full", "inc"):
+        logging.info("Using checkpoint name: %s", checkpointName)
+
+    return checkpointName, parentCheckpoint, cptFile
 
 
 def main():
@@ -338,7 +402,9 @@ def main():
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
-    if checkForeign(args, virtClient, domObj, lib):
+    try:
+        checkForeign(args, virtClient, domObj, lib)
+    except exceptions.CheckpointException():
         sys.exit(1)
 
     setOfflineArguments(args, virtClient, domObj)
@@ -369,56 +435,13 @@ def main():
             sys.exit(1)
         sys.exit(0)
 
-    checkpointName = f"{lib.checkpointName}.0"
-    parentCheckpoint = False
-    checkpoints = []
-    cptFile = f"{args.output}/{args.domain}.cpt"
-    if os.path.exists(cptFile):
-        with open(cptFile, "r") as cptFh:
-            checkpoints = json.loads(cptFh.read())
-
-    if args.level != "copy":
-        if args.offline is False:
-            if virtClient.redefineCheckpoints(domObj, args) is False:
-                logging.error("Unable to redefine checkpoints.")
-                sys.exit(1)
-
-        logging.info("Checkpoint handling")
-        if args.level == "full" and checkpoints:
-            logging.info("Removing all existent checkpoints before full backup")
-            virtClient.removeAllCheckpoints(
-                domObj, checkpoints, args, lib.checkpointName
-            )
-            os.remove(cptFile)
-            checkpoints = []
-        elif args.level == "full" and len(checkpoints) < 1:
-            virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName)
-            checkpoints = []
-
-        if checkpoints and args.level in ("inc", "diff"):
-            nextCpt = len(checkpoints)
-            checkpointName = f"{lib.checkpointName}.{nextCpt}"
-            parentCheckpoint = checkpoints[-1]
-            logging.info("Next checkpoint id: [%s]", nextCpt)
-            logging.info("Parent checkpoint name [%s]", parentCheckpoint)
-
-            if args.offline is True:
-                logging.info(
-                    "Offline backup, use last known checkpoint, save only delta."
-                )
-                checkpointName = parentCheckpoint
-
-        if args.level == "diff":
-            logging.info(
-                "Diff backup: saving delta since checkpoint: [%s]", parentCheckpoint
-            )
-
-        if args.level in ("inc", "diff") and len(checkpoints) < 1:
-            logging.error("No checkpoints found, execute full backup first.")
-            sys.exit(1)
-
-        if args.level in ("full", "inc"):
-            logging.info("Using checkpoint name: %s", checkpointName)
+    try:
+        checkpointName, parentCheckpoint, cptFile = handleCheckpoints(
+            args, virtClient, domObj, lib
+        )
+    except exceptions.CheckpointException as errmsg:
+        logging.error(errmsg)
+        sys.exit(1)
 
     logging.info("Temporary scratch file target directory: %s", args.scratchdir)
 
@@ -446,8 +469,7 @@ def main():
 
     if args.level not in ("copy", "diff") and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
-        if not checkpoints:
-            checkpoints = []
+        checkpoints = readCheckpointFile(cptFile)
         checkpoints.append(checkpointName)
         with open(cptFile, "w") as cFw:
             cFw.write(json.dumps(checkpoints))
