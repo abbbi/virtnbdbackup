@@ -42,6 +42,16 @@ def checkRequirements():
             sys.exit(1)
 
 
+def checkDevice(device):
+    """Check if /dev/nbdX exists, otherwise it is likely
+    nbd module isnt loaded on the system"""
+    if not os.path.exists(device):
+        logging.error(
+            "Target device [%s] does not exist, nbd module not loaded?", device
+        )
+        sys.exit(1)
+
+
 def locatePlugin():
     """Attempt to locate the nbdkit plugin that is passed to the
     nbdkit process"""
@@ -75,10 +85,10 @@ def getDataRanges(lib, stream, sTypes, reader):
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
+        meta = stream.loadMetadata(reader.read(length))
     except exceptions.StreamFormatException as errmsg:
-        logging.error("Unable to read header: %s", errmsg)
+        logging.error("Unable to read metadata header: %s", errmsg)
         return False, False
-    meta = stream.loadMetadata(reader.read(length))
 
     if lib.isCompressed(meta):
         logging.error("Mapping compressed images currently not supported.")
@@ -179,17 +189,12 @@ def main():
     logging.info("Using %s as nbdkit plugin", nbdkitModule)
 
     checkRequirements()
+    checkDevice(args.device)
 
     try:
         reader = open(args.file, "rb")
     except OSError as e:
         logging.fatal("Unable to open backup file: [%s]", e)
-        sys.exit(1)
-
-    if not os.path.exists(args.device):
-        logging.error(
-            "Target device [%s] does not exist, nbd module not loaded?", args.device
-        )
         sys.exit(1)
 
     stream = streamer.SparseStream(types)
