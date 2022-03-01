@@ -306,6 +306,20 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Backup: incremental and differencial backup must fail if partial file found" {
+    [ -z $INCTEST ] && skip "skipping"
+    touch ${TMPDIR}/inctest/sda.partial
+
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+
+    run ../virtnbdbackup -d $VM -l diff -o ${TMPDIR}/inctest
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+
+    rm -f ${TMPDIR}/inctest/sda.partial
+}
 @test "Incremental Setup: destroy VM" {
     [ -z $INCTEST ] && skip "skipping"
     run virsh destroy $VM

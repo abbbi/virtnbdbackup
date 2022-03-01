@@ -68,6 +68,53 @@ def handleSignal(args, domObj, virtClient, log, signum, _):
     sys.exit(1)
 
 
+def checkForeign(args, virtClient, domObj, lib):
+    """Check and warn user if virtual machine has checkpoints
+    not originating from this utility"""
+    extCheckpoint = None
+    if args.level in ("full", "inc", "diff"):
+        extCheckpoint = virtClient.hasforeignCheckpoint(domObj, lib.checkpointName)
+
+    if extCheckpoint:
+        logging.fatal("VM has external checkpoint: [%s]", extCheckpoint)
+        logging.fatal("This checkpoint has not been created by this utility.")
+        logging.fatal(
+            "To ensure checkpoint chain consistency, clean up existing checkpoints,"
+        )
+        logging.fatal("and start a new backup chain by creating a full backup.")
+
+    return extCheckpoint
+
+
+def setOfflineArguments(args, virtClient, domObj):
+    """Check if to be saved VM is offline and set
+    propper options/overwrite backup mode"""
+    args.offline = False
+    if virtClient.domainOffline(domObj) is True:
+        if args.level == "full":
+            logging.warning("Domain is offline, resetting backup options")
+            args.level = "copy"
+            logging.info("Backup level: [%s]", args.level)
+        args.offline = True
+
+
+def hasPartial(args, toStdout, lib):
+    """Check if target directory has an partial backup,
+    makes backup utility exit errnous in case backup
+    type is full or inc"""
+    if (
+        args.level in ("inc", "diff")
+        and toStdout is False
+        and lib.partialBackup(args) is True
+    ):
+        logging.error("Partial backup found in target directory: %s", args.output)
+        logging.error("One of the last backups seems to have failed.")
+        logging.error("Consider re-executing full backup.")
+        return True
+
+    return False
+
+
 def main():
     """Handle backup operation"""
     parser = argparse.ArgumentParser(description="Backup libvirt/qemu virtual machines")
@@ -270,14 +317,7 @@ def main():
         logging.info("Printing only extend information: enforce level copy")
         args.level = "copy"
 
-    if (
-        args.level in ("inc", "diff")
-        and toStdout is False
-        and lib.partialBackup(args) is True
-    ):
-        logging.error("Partial backup found in target directory: %s", args.output)
-        logging.error("One of the last backups seems to have failed.")
-        logging.error("Consider re-executing full backup.")
+    if hasPartial(args, toStdout, lib):
         sys.exit(1)
 
     if not args.checkpointdir:
@@ -298,24 +338,10 @@ def main():
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
-    if args.level in ("full", "inc", "diff"):
-        extCheckpoint = virtClient.hasforeignCheckpoint(domObj, lib.checkpointName)
-        if extCheckpoint:
-            logging.fatal("VM has external checkpoint: [%s]", extCheckpoint)
-            logging.fatal("This checkpoint has not been created by this utility.")
-            logging.fatal(
-                "To ensure checkpoint chain consistency, clean up existing checkpoints,"
-            )
-            logging.fatal("and start a new backup chain by creating a full backup.")
-            sys.exit(1)
+    if checkForeign(args, virtClient, domObj, lib):
+        sys.exit(1)
 
-    args.offline = False
-    if virtClient.domainOffline(domObj) is True:
-        if args.level == "full":
-            logging.warning("Domain is offline, resetting backup options")
-            args.level = "copy"
-            logging.info("Backup level: [%s]", args.level)
-        args.offline = True
+    setOfflineArguments(args, virtClient, domObj)
 
     signal.signal(
         signal.SIGINT, partial(handleSignal, args, domObj, virtClient, logging)
@@ -566,6 +592,24 @@ def setTargetFile(args, disk, checkpointName):
     return targetFile, targetFilePartial
 
 
+def getWriter(toStdout, zipStream, targetFile, targetFilePartial):
+    """Open target file based on output writer"""
+    if toStdout is True:
+        targetFile = os.path.basename(targetFile)
+        writer = zipStream.open(targetFile)
+        logging.info("Write data to zip archive")
+
+        return writer
+
+    logging.info("Write data to target file: %s", targetFilePartial)
+    try:
+        writer = open(targetFilePartial, "wb")
+    except OSError as e:
+        raise RuntimeError(f"Unable to open target file: {e}") from e
+
+    return writer
+
+
 def renamePartial(targetFilePartial, targetFile):
     """After backup, move .partial file to real
     target file"""
@@ -647,24 +691,13 @@ def backupDisk(
         args.noprogress = True
 
     targetFile, targetFilePartial = setTargetFile(args, disk, checkpointName)
-
-    if toStdout is True:
-        targetFile = os.path.basename(targetFile)
-        writer = zipStream.open(targetFile)
-        if writer is False:
-            raise RuntimeError("Unable to open zip file in stream")
-    else:
-        logging.info("Write data to target file: %s", targetFilePartial)
-        try:
-            writer = open(targetFilePartial, "wb")
-        except OSError as e:
-            raise RuntimeError(f"Unable to open target file: {e}") from e
+    writer = getWriter(toStdout, zipStream, targetFile, targetFilePartial)
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
         try:
             writer.truncate(diskSize)
-        except Exception as e:
+        except OSError as e:
             raise RuntimeError(f"Unable to truncate target file: {e}") from e
         writer.seek(0)
     else:

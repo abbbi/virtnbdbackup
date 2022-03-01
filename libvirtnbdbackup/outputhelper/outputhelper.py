@@ -102,7 +102,7 @@ class outputHelper:
                 self.zipFileStream = self.zipStream.open(zipFile, "w", force_zip64=True)
                 return self.zipFileStream
             except zipfile.error as e:
-                log.error("Unable to open file: %s", e)
+                raise RuntimeError(f"Unable to open zip stream: {e}") from e
 
             return False
 
