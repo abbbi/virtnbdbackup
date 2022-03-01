@@ -553,11 +553,10 @@ def setTargetFile(args, disk, checkpointName):
         # target file
         if args.level == "diff":
             checkpointName = timestamp
-        targetFile = "%s/%s.%s.%s.data" % (
-            args.output,
-            disk.diskTarget,
-            args.level,
-            checkpointName,
+        targetFile = (
+            f"{args.output}/"
+            f"{disk.diskTarget}.{args.level}."
+            f"{checkpointName}.data"
         )
 
     targetFilePartial = f"{targetFile}.partial"
