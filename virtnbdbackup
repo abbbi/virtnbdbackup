@@ -482,6 +482,7 @@ def main():
         logging.info("Started backup job for debugging, exiting.")
         sys.exit(0)
 
+    error = False
     try:
         with ThreadPoolExecutor(max_workers=args.worker) as executor:
             futures = {
@@ -501,13 +502,14 @@ def main():
             }
             for future in as_completed(futures):
                 if future.result() is not True:
-                    raise RuntimeError("Backup of one disk failed")
-    except Exception as e:
+                    raise exceptions.DiskBackupFailed("Backup of one disk failed")
+    except exceptions.BackupException as e:
         logging.error("Unable to backup Disk: %s", e)
         logging.exception(e)
-        if args.offline is False:
-            virtClient.stopBackup(domObj)
-        sys.exit(1)
+        error = True
+    except Exception as e:
+        logging.fatal("Unknown Exception during backup: %s", e)
+        error = True
 
     configFile = None
     if args.printonly is False:
@@ -520,7 +522,8 @@ def main():
     if toStdout is True and args.printonly is False:
         addFiles(configFile, zipStream, cptFile, logFile, args)
 
-    logging.info("Finished")
+    if error is True:
+        sys.exit(1)
 
     if counter.count.warnings > 0 and args.strict is True:
         logging.info(
@@ -528,6 +531,8 @@ def main():
             counter.count.warnings,
         )
         sys.exit(2)
+
+    logging.info("Finished successfully")
 
 
 def addFiles(configFile, zipStream, cptFile, logFile, args):
@@ -627,7 +632,9 @@ def getWriter(toStdout, zipStream, targetFile, targetFilePartial):
     try:
         writer = open(targetFilePartial, "wb")
     except OSError as e:
-        raise RuntimeError(f"Unable to open target file: {e}") from e
+        raise exceptions.DiskBackupWriterException(
+            f"Unable to open target file: {e}"
+        ) from e
 
     return writer
 
@@ -681,7 +688,9 @@ def backupDisk(
     nbdClient = nbdhelper.nbdClient(disk.diskTarget, metaContext, backupSocket)
     connection = nbdClient.waitForServer()
     if not connection:
-        raise RuntimeError(f"Error connecting to nbd endpoint: {backupSocket}")
+        raise exceptions.DiskBackupFailed(
+            f"Error connecting to nbd endpoint: {backupSocket}"
+        )
 
     if args.qemu:
         logging.info("Using qemu tools to query extents")
@@ -720,7 +729,9 @@ def backupDisk(
         try:
             writer.truncate(diskSize)
         except OSError as e:
-            raise RuntimeError(f"Unable to truncate target file: {e}") from e
+            raise exceptions.DiskBackupWriterException(
+                f"Unable to truncate target file: {e}"
+            ) from e
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")

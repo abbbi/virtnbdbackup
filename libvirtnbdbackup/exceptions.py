@@ -20,3 +20,16 @@ class RedefineCheckpointError(CheckpointException):
 class ForeignCeckpointError(CheckpointException):
     """Checkpoint for vm found which was not created
     by virtnbdbackup"""
+
+
+class BackupException(Exception):
+    """Base backup Exception"""
+
+
+class DiskBackupFailed(BackupException):
+    """Backup of one disk failed"""
+
+
+class DiskBackupWriterException(BackupException):
+    """Opening the target file writer
+    failed"""
