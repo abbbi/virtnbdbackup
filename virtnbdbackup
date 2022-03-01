@@ -49,8 +49,8 @@ class LogType:
 class logCount(logging.Handler):
     """Custom log handler keeping track of issued log messages"""
 
-    def __init__(self, *args, **kwargs):
-        super(logCount, self).__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__()
         self.count = LogType()
 
     def emit(self, record):
