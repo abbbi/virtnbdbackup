@@ -217,11 +217,7 @@ class client:
             scratchId = "".join(
                 random.choices(string.ascii_uppercase + string.digits, k=5)
             )
-            scratchFile = "%s/backup.%s.%s" % (
-                scratchFilePath,
-                scratchId,
-                disk.diskTarget,
-            )
+            scratchFile = f"{scratchFilePath}/backup.{scratchId}.{disk.diskTarget}"
             log.debug("Using scratch file: %s", scratchFile)
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
             ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})

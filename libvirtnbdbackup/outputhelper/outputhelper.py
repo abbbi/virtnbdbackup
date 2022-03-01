@@ -89,7 +89,7 @@ class outputHelper:
                 log.error("Error setting up zip stream: %s", e)
                 raise
 
-        def open(self, fileName, mode="x"):
+        def open(self, fileName):
             """Open wrapper"""
             zipFile = zipfile.ZipInfo(
                 filename=fileName,
