@@ -31,6 +31,31 @@ from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
+from libvirtnbdbackup.sparsestream import exceptions
+
+
+def checkRequirements():
+    """Check if required utils are installed"""
+    for exe in ("nbdkit", "qemu-nbd"):
+        if not shutil.which(exe):
+            logging.error("Please install required [%s] utility.", exe)
+            sys.exit(1)
+
+
+def locatePlugin():
+    """Attempt to locate the nbdkit plugin that is passed to the
+    nbdkit process"""
+    pluginFileName = "virtnbd-nbdkit-plugin"
+    installDir = os.path.dirname(sys.argv[0])
+    nbdkitModule = f"{installDir}/{pluginFileName}"
+
+    if not os.path.exists(nbdkitModule):
+        logging.error("Unable to locate nbdkit plugin: %s", pluginFileName)
+        sys.exit(1)
+
+    logging.info("Using %s as nbdkit plugin", nbdkitModule)
+
+    return nbdkitModule
 
 
 def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
@@ -52,7 +77,8 @@ def getDataRanges(stream, sTypes, reader):
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
-    except Exception:
+    except exceptions.StreamFormatException as errmsg:
+        logging.error("Unable to read header: %s", errmsg)
         return False, False
     meta = stream.loadMetadata(reader.read(length))
 
@@ -151,24 +177,10 @@ def main():
     )
 
     lib.printVersion(__version__)
-    pluginFileName = "virtnbd-nbdkit-plugin"
-
-    installDir = os.path.dirname(sys.argv[0])
-    nbdkitModule = f"{installDir}/{pluginFileName}"
-
-    if not os.path.exists(nbdkitModule):
-        logging.error("Unable to locate nbdkit plugin: %s", pluginFileName)
-        sys.exit(1)
-
+    nbdkitModule = locatePlugin()
     logging.info("Using %s as nbdkit plugin", nbdkitModule)
 
-    if shutil.which("nbdkit") is None:
-        logging.error("Please install nbdkit utility with python plugin.")
-        sys.exit(1)
-
-    if shutil.which("qemu-nbd") is None:
-        logging.error("qemu-nbd executable is required.")
-        sys.exit(1)
+    checkRequirements()
 
     try:
         reader = open(args.file, "rb")
@@ -212,24 +224,26 @@ def main():
         delete=False, prefix="nbdkit.", suffix=".log"
     )
     logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
+    nbdkitCmd = [
+        "nbdkit",
+        "-i",
+        f"{args.listen_address}",
+        "-e",
+        f"{args.export_name}",
+        "--filter=blocksize",
+        "-f",
+        "-v",
+        "python",
+        f"{nbdkitModule}",
+        f"blockmap={blockMap.name}",
+        f"disk={args.file}",
+        "-t",
+        f"{args.threads}",
+        f"maxlen={args.blocksize}",
+    ]
+    logging.debug(" ".join(nbdkitCmd))
     nbdkitProcess = subprocess.Popen(
-        [
-            "nbdkit",
-            "-i",
-            f"{args.listen_address}",
-            "-e",
-            f"{args.export_name}",
-            "--filter=blocksize",
-            "-f",
-            "-v",
-            "python",
-            f"{nbdkitModule}",
-            f"blockmap={blockMap.name}",
-            f"disk={args.file}",
-            "-t",
-            f"{args.threads}",
-            f"maxlen={args.blocksize}",
-        ],
+        nbdkitCmd,
         close_fds=True,
         stdout=nbdkitLog,
         stderr=nbdkitLog,
