@@ -525,6 +525,8 @@ def setMetaContext(args, checkpointName, disk):
         else:
             metaContext = f"qemu:dirty-bitmap:backup-{disk.diskTarget}"
 
+        logging.info("INC/DIFF backup: set context to %s", metaContext)
+
     return metaContext
 
 
@@ -595,7 +597,6 @@ def backupDisk(
     current_thread().name = disk.diskTarget
     streamType = setStreamType(args, disk)
     metaContext = setMetaContext(args, checkpointName, disk)
-    logging.info("INC/DIFF backup: set context to %s", metaContext)
 
     if args.offline is True:
         bitMap = None
