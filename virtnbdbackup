@@ -102,13 +102,13 @@ def setOfflineArguments(args, virtClient, domObj):
         args.offline = True
 
 
-def hasPartial(args, toStdout, lib):
+def hasPartial(args, lib):
     """Check if target directory has an partial backup,
     makes backup utility exit errnous in case backup
     type is full or inc"""
     if (
         args.level in ("inc", "diff")
-        and toStdout is False
+        and args.stdout is False
         and lib.partialBackup(args) is True
     ):
         logging.error("Partial backup found in target directory: %s", args.output)
@@ -177,6 +177,20 @@ def handleCheckpoints(args, virtClient, domObj, lib):
         logging.info("Using checkpoint name: %s", checkpointName)
 
     return checkpointName, parentCheckpoint, cptFile
+
+
+def saveCheckpointFile(cptFile, checkpointName):
+    """Append created checkpoint to checkpoint
+    file"""
+    try:
+        checkpoints = readCheckpointFile(cptFile)
+        checkpoints.append(checkpointName)
+        with open(cptFile, "w") as cFw:
+            cFw.write(json.dumps(checkpoints))
+    except exceptions.CheckpointException() as e:
+        raise exceptions.CheckpointException from e
+    except OSError as e:
+        raise exceptions.SaveCheckpointError from e
 
 
 def main():
@@ -321,10 +335,10 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
-    toStdout = args.output == "-"
+    args.stdout = args.output == "-"
 
     zipStream = None
-    if toStdout is False:
+    if args.stdout is False:
         outHelper.Directory(args.output)
     else:
         zipStream = outHelper.Zip()
@@ -356,11 +370,11 @@ def main():
     if args.compress:
         logging.info("Compression enabled")
 
-    if toStdout is True and args.type == "raw":
+    if args.stdout is True and args.type == "raw":
         logging.error("Output type raw not supported to stdout")
         sys.exit(1)
 
-    if not toStdout and not args.startonly and not args.killonly:
+    if not args.stdout and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
             logging.error("Target directory must empty for full or copy backup.")
             sys.exit(1)
@@ -381,7 +395,7 @@ def main():
         logging.info("Printing only extend information: enforce level copy")
         args.level = "copy"
 
-    if hasPartial(args, toStdout, lib):
+    if hasPartial(args, lib):
         sys.exit(1)
 
     if not args.checkpointdir:
@@ -469,10 +483,11 @@ def main():
 
     if args.level not in ("copy", "diff") and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
-        checkpoints = readCheckpointFile(cptFile)
-        checkpoints.append(checkpointName)
-        with open(cptFile, "w") as cFw:
-            cFw.write(json.dumps(checkpoints))
+        try:
+            saveCheckpointFile(cptFile, checkpointName)
+        except exceptions.CheckpointException() as e:
+            logging.error("Unable to append checkpoint file: %s", e)
+            sys.exit(1)
         if args.printonly is False:
             if not virtClient.backupCheckpoint(domObj, args, checkpointName):
                 virtClient.stopBackup(domObj)
@@ -496,7 +511,6 @@ def main():
                     parentCheckpoint,
                     backupSocket,
                     zipStream,
-                    toStdout,
                 ): disk
                 for count, disk in enumerate(disks)
             }
@@ -509,6 +523,7 @@ def main():
         error = True
     except Exception as e:
         logging.fatal("Unknown Exception during backup: %s", e)
+        logging.exception(e)
         error = True
 
     configFile = None
@@ -519,7 +534,7 @@ def main():
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
-    if toStdout is True and args.printonly is False:
+    if args.stdout is True and args.printonly is False:
         addFiles(configFile, zipStream, cptFile, logFile, args)
 
     if error is True:
@@ -619,9 +634,9 @@ def setTargetFile(args, disk, checkpointName):
     return targetFile, targetFilePartial
 
 
-def getWriter(toStdout, zipStream, targetFile, targetFilePartial):
+def getWriter(args, zipStream, targetFile, targetFilePartial):
     """Open target file based on output writer"""
-    if toStdout is True:
+    if args.stdout is True:
         targetFile = os.path.basename(targetFile)
         writer = zipStream.open(targetFile)
         logging.info("Write data to zip archive")
@@ -660,7 +675,6 @@ def backupDisk(
     parentCheckpoint,
     backupSocket,
     zipStream,
-    toStdout,
 ):
     """Backup domain disk data."""
 
@@ -722,7 +736,7 @@ def backupDisk(
         args.noprogress = True
 
     targetFile, targetFilePartial = setTargetFile(args, disk, checkpointName)
-    writer = getWriter(toStdout, zipStream, targetFile, targetFilePartial)
+    writer = getWriter(args, zipStream, targetFile, targetFilePartial)
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
@@ -821,7 +835,7 @@ def backupDisk(
     if args.offline is True:
         logging.info("Stopping NBD Service")
         lib.killNbdServer(backupSocket)
-    if toStdout is False:
+    if args.stdout is False:
         if args.noprogress is True:
             logging.info(
                 "Backup of disk %s finished, file: %s", disk.diskTarget, targetFile

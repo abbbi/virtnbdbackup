@@ -50,6 +50,7 @@ setup() {
 
 @test "Error handling: strict mode must change exit code if warning happens during backup" {
     run ../virtnbdbackup -d $VM -l copy --strict -o ${TMPDIR}/strict
+    echo "output = ${output}"
     [ "$status" -eq 2 ]
 }
 @test "Checkpoints: Full backup must remove existing checkpoints" {

@@ -17,6 +17,11 @@ class RedefineCheckpointError(CheckpointException):
     vm relocate, an error occured"""
 
 
+class SaveCheckpointError(CheckpointException):
+    """Unable to append checkpoint to checkpoint
+    file"""
+
+
 class ForeignCeckpointError(CheckpointException):
     """Checkpoint for vm found which was not created
     by virtnbdbackup"""
