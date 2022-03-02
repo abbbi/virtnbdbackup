@@ -21,6 +21,7 @@ import json
 import signal
 import logging
 import argparse
+from argparse import Namespace
 from time import time
 from datetime import datetime
 from functools import partial
@@ -132,7 +133,11 @@ def readCheckpointFile(cptFile):
 
 def handleCheckpoints(args, virtClient, domObj, lib):
     """Checkpoint handling for different backup modes
-    to be executed"""
+    to be executed.
+
+    Creates a new namespace in the argparse object,
+    for easy pass around in further functions.
+    """
     checkpointName = f"{lib.checkpointName}.0"
     parentCheckpoint = False
     cptFile = f"{args.output}/{args.domain}.cpt"
@@ -176,16 +181,21 @@ def handleCheckpoints(args, virtClient, domObj, lib):
     if args.level in ("full", "inc"):
         logging.info("Using checkpoint name: %s", checkpointName)
 
-    return checkpointName, parentCheckpoint, cptFile
+    args.cpt = Namespace()
+    args.cpt.name = checkpointName
+    args.cpt.parent = parentCheckpoint
+    args.cpt.file = cptFile
+
+    logging.debug("Checkpoint info: %s", vars(args.cpt))
 
 
-def saveCheckpointFile(cptFile, checkpointName):
+def saveCheckpointFile(args):
     """Append created checkpoint to checkpoint
     file"""
     try:
-        checkpoints = readCheckpointFile(cptFile)
-        checkpoints.append(checkpointName)
-        with open(cptFile, "w") as cFw:
+        checkpoints = readCheckpointFile(args.cpt.file)
+        checkpoints.append(args.cpt.name)
+        with open(args.cpt.file, "w") as cFw:
             cFw.write(json.dumps(checkpoints))
     except exceptions.CheckpointException() as e:
         raise exceptions.CheckpointException from e
@@ -451,9 +461,7 @@ def main():
         sys.exit(0)
 
     try:
-        checkpointName, parentCheckpoint, cptFile = handleCheckpoints(
-            args, virtClient, domObj, lib
-        )
+        handleCheckpoints(args, virtClient, domObj, lib)
     except exceptions.CheckpointException as errmsg:
         logging.error(errmsg)
         sys.exit(1)
@@ -472,8 +480,6 @@ def main():
                 args,
                 domObj,
                 disks,
-                checkpointName,
-                parentCheckpoint,
                 backupSocket,
             )
             logging.debug("Backup job started, using socket: %s", backupSocket)
@@ -484,12 +490,12 @@ def main():
     if args.level not in ("copy", "diff") and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
         try:
-            saveCheckpointFile(cptFile, checkpointName)
+            saveCheckpointFile(args)
         except exceptions.CheckpointException() as e:
             logging.error("Unable to append checkpoint file: %s", e)
             sys.exit(1)
         if args.printonly is False:
-            if not virtClient.backupCheckpoint(domObj, args, checkpointName):
+            if not virtClient.backupCheckpoint(args, domObj):
                 virtClient.stopBackup(domObj)
                 sys.exit(1)
 
@@ -503,12 +509,10 @@ def main():
             futures = {
                 executor.submit(
                     backupDisk,
+                    args,
                     disk,
                     count,
-                    args,
                     lib,
-                    checkpointName,
-                    parentCheckpoint,
                     backupSocket,
                     zipStream,
                 ): disk
@@ -528,14 +532,14 @@ def main():
 
     configFile = None
     if args.printonly is False:
-        configFile = backupConfig(vmConfig, args, checkpointName)
+        configFile = backupConfig(args, vmConfig)
 
     if args.offline is False:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
     if args.stdout is True and args.printonly is False:
-        addFiles(configFile, zipStream, cptFile, logFile, args)
+        addFiles(args, configFile, zipStream, logFile)
 
     if error is True:
         sys.exit(1)
@@ -550,14 +554,14 @@ def main():
     logging.info("Finished successfully")
 
 
-def addFiles(configFile, zipStream, cptFile, logFile, args):
+def addFiles(args, configFile, zipStream, logFile):
     """Add backup log and other files to zip archive"""
     if configFile is not None:
         logging.info("Adding vm config to zipfile")
         zipStream.zipStream.write(configFile, configFile)
     if args.level in ("full", "inc"):
         logging.info("Adding checkpoint info to zipfile")
-        zipStream.zipStream.write(cptFile, cptFile)
+        zipStream.zipStream.write(args.cpt.file, args.cpt.file)
         for dirname, _, files in os.walk(args.checkpointdir):
             zipStream.zipStream.write(dirname)
             for filename in files:
@@ -566,9 +570,9 @@ def addFiles(configFile, zipStream, cptFile, logFile, args):
     zipStream.zipStream.write(logFile, logFile)
 
 
-def backupConfig(vmConfig, args, checkpointName):
+def backupConfig(args, vmConfig):
     """Save domain config file"""
-    ident = checkpointName
+    ident = args.cpt.name
     if args.level == "diff":
         ident = int(time())
     configFile = f"{args.output}/vmconfig.{ident}.xml"
@@ -583,13 +587,13 @@ def backupConfig(vmConfig, args, checkpointName):
         sys.exit(1)
 
 
-def setMetaContext(args, checkpointName, disk):
+def setMetaContext(args, disk):
     """Set meta context passed to nbd server based on
     backup type"""
     metaContext = None
     if args.level in ("inc", "diff"):
         if args.offline is True:
-            metaContext = f"qemu:dirty-bitmap:{checkpointName}"
+            metaContext = f"qemu:dirty-bitmap:{args.cpt.name}"
         else:
             metaContext = f"qemu:dirty-bitmap:backup-{disk.diskTarget}"
 
@@ -608,7 +612,7 @@ def setStreamType(args, disk):
     return streamType
 
 
-def setTargetFile(args, disk, checkpointName):
+def setTargetFile(args, disk):
     """Set Target file name to write"""
     if args.level in ("full", "copy"):
         if disk.diskFormat == "raw":
@@ -623,6 +627,8 @@ def setTargetFile(args, disk, checkpointName):
         # target file
         if args.level == "diff":
             checkpointName = timestamp
+        else:
+            checkpointName = args.cpt.name
         targetFile = (
             f"{args.output}/"
             f"{disk.diskTarget}.{args.level}."
@@ -667,12 +673,10 @@ def renamePartial(targetFilePartial, targetFile):
 
 
 def backupDisk(
+    args,
     disk,
     count,
-    args,
     lib,
-    checkpointName,
-    parentCheckpoint,
     backupSocket,
     zipStream,
 ):
@@ -683,12 +687,12 @@ def backupDisk(
 
     current_thread().name = disk.diskTarget
     streamType = setStreamType(args, disk)
-    metaContext = setMetaContext(args, checkpointName, disk)
+    metaContext = setMetaContext(args, disk)
 
     if args.offline is True:
         bitMap = None
         if args.level == "inc":
-            bitMap = checkpointName
+            bitMap = args.cpt.name
         backupSocket = f"{backupSocket}.{disk.diskTarget}"
         logging.info("Offline backup, starting NDB Service")
         err = qemuhelper.qemuHelper(disk.diskTarget).startBackupNbdServer(
@@ -735,7 +739,7 @@ def backupDisk(
         logging.info("No dirty blocks found")
         args.noprogress = True
 
-    targetFile, targetFilePartial = setTargetFile(args, disk, checkpointName)
+    targetFile, targetFilePartial = setTargetFile(args, disk)
     writer = getWriter(args, zipStream, targetFile, targetFilePartial)
 
     if streamType == "raw":
@@ -754,8 +758,8 @@ def backupDisk(
             diskSize,
             thinBackupSize,
             disk,
-            checkpointName,
-            parentCheckpoint,
+            args.cpt.name,
+            args.cpt.parent,
             inc,
             args.compress,
         )

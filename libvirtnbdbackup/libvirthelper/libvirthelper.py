@@ -278,13 +278,11 @@ class client:
         args,
         domObj,
         diskList,
-        checkpointName,
-        parentCheckpoint,
         socketFilePath,
     ):
         """Attempt to start pull based backup task using  XMl description"""
         backupXml = self._createBackupXml(
-            diskList, parentCheckpoint, args.scratchdir, socketFilePath
+            diskList, args.cpt.parent, args.scratchdir, socketFilePath
         )
         checkpointXml = None
         freezed = False
@@ -293,7 +291,7 @@ class client:
             # backup saves delta until the last checkpoint
             if args.level not in ("copy", "diff"):
                 checkpointXml = self._createCheckpointXml(
-                    diskList, parentCheckpoint, checkpointName
+                    diskList, args.cpt.parent, args.cpt.name
                 )
             freezed = self.fsFreeze(domObj)
             domObj.backupBegin(backupXml, checkpointXml)
@@ -422,13 +420,13 @@ class client:
         return True
 
     @staticmethod
-    def backupCheckpoint(domObj, args, checkpointName):
+    def backupCheckpoint(args, domObj):
         """save checkpoint config to persistent storage"""
-        checkpointFile = f"{args.checkpointdir}/{checkpointName}.xml"
+        checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
         log.info("Saving checkpoint config to: %s", checkpointFile)
         try:
             with open(checkpointFile, "w") as f:
-                c = domObj.checkpointLookupByName(checkpointName)
+                c = domObj.checkpointLookupByName(args.cpt.name)
                 f.write(c.getXMLDesc())
                 return True
         except OSError as errmsg:
