@@ -239,7 +239,7 @@ def main():
         default="/var/tmp",
         required=False,
         type=str,
-        help="Target directory for temporary scratch file. (default: %(default)s)",
+        help="Target dir for temporary scratch file. (default: %(default)s)",
     )
     parser.add_argument(
         "-q",
@@ -288,7 +288,7 @@ def main():
         "--socketfile",
         default=None,
         type=str,
-        help="Use specified file for NBD Server socket instead of random file",
+        help="Use file for NBD Server socket instead of random file",
     )
     parser.add_argument(
         "-v",
@@ -326,7 +326,8 @@ def main():
         "--strict",
         default=False,
         help=(
-            "Change exit code if warnings occur" "during backup. (default: %(default)s)"
+            "Change exit code if warnings occur during backup operation."
+            "(default: %(default)s)"
         ),
         action="store_true",
     )
