@@ -262,9 +262,9 @@ def checkBackingStore(disk):
     """If an virtual machine was running on an snapshot image,
     warn user, the virtual machine configuration has to be
     adjusted before starting the VM is possible"""
-    if len(disk.backingStores) > 0:
+    if len(disk.backingstores) > 0:
         logging.warning(
-            "Target image [%s] seems to be a snapshot image.", disk.diskFileName
+            "Target image [%s] seems to be a snapshot image.", disk.filename
         )
         logging.warning("Target virtual machine configuration must be altered!")
         logging.warning("Configured backing store images must be changed.")
@@ -273,10 +273,10 @@ def checkBackingStore(disk):
 def setTargetFile(args, disk):
     """Based on disk information, set target file
     to write"""
-    if disk.diskFileName is not None:
-        targetFile = f"{args.output}/{disk.diskFileName}"
+    if disk.filename is not None:
+        targetFile = f"{args.output}/{disk.filename}"
     else:
-        targetFile = f"{args.output}/{disk.diskTarget}"
+        targetFile = f"{args.output}/{disk.target}"
 
     return targetFile
 
@@ -290,21 +290,19 @@ def restore(lib, args, vmConfig):
 
     for disk in vmDisks:
         checkBackingStore(disk)
-        if args.disk not in ("all", disk.diskTarget):
-            logging.info("Skipping disk %s for restore", disk.diskTarget)
+        if args.disk not in ("all", disk.target):
+            logging.info("Skipping disk %s for restore", disk.target)
             continue
 
-        restoreDisk = lib.getDataFilesByDisk(args.input, disk.diskTarget)
+        restoreDisk = lib.getDataFilesByDisk(args.input, disk.target)
         logging.debug("Restoring disk: %s", restoreDisk)
         if len(restoreDisk) < 1:
-            logging.warning(
-                "Did not find any backups for disk image %s", disk.diskTarget
-            )
+            logging.warning("No backup file for disk [%s] found.", disk.target)
             continue
 
         targetFile = setTargetFile(args, disk)
 
-        if args.raw and disk.diskFormat == "raw":
+        if args.raw and disk.format == "raw":
             logging.info("Copy raw image to %s", targetFile)
             try:
                 shutil.copy(restoreDisk[0], targetFile)
@@ -324,7 +322,7 @@ def restore(lib, args, vmConfig):
             return False
 
         qFh = qemuhelper.qemuHelper(meta["diskName"])
-        if not createDiskFile(meta, targetFile, disk.diskFormat):
+        if not createDiskFile(meta, targetFile, disk.format):
             return False
 
         socketFile = lib.getSocketFile(args.socketfile)

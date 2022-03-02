@@ -485,6 +485,7 @@ def main():
             logging.debug("Backup job started, using socket: %s", backupSocket)
         except Exception as e:
             logging.error(e)
+            logging.exception(e)
             sys.exit(1)
 
     if args.level not in ("copy", "diff") and args.offline is False:
@@ -595,7 +596,7 @@ def setMetaContext(args, disk):
         if args.offline is True:
             metaContext = f"qemu:dirty-bitmap:{args.cpt.name}"
         else:
-            metaContext = f"qemu:dirty-bitmap:backup-{disk.diskTarget}"
+            metaContext = f"qemu:dirty-bitmap:backup-{disk.target}"
 
         logging.info("INC/DIFF backup: set context to %s", metaContext)
 
@@ -604,7 +605,7 @@ def setMetaContext(args, disk):
 
 def setStreamType(args, disk):
     """Set target stream type"""
-    if disk.diskFormat != "raw":
+    if disk.format != "raw":
         streamType = args.type
     else:
         streamType = "raw"
@@ -615,11 +616,11 @@ def setStreamType(args, disk):
 def setTargetFile(args, disk):
     """Set Target file name to write"""
     if args.level in ("full", "copy"):
-        if disk.diskFormat == "raw":
+        if disk.format == "raw":
             level = "copy"
         else:
             level = args.level
-        targetFile = f"{args.output}/{disk.diskTarget}.{level}.data"
+        targetFile = f"{args.output}/{disk.target}.{level}.data"
     elif args.level in ("inc", "diff"):
         timestamp = int(time())
         # during diff backup, we do not create an checkpoint,
@@ -629,11 +630,7 @@ def setTargetFile(args, disk):
             checkpointName = timestamp
         else:
             checkpointName = args.cpt.name
-        targetFile = (
-            f"{args.output}/"
-            f"{disk.diskTarget}.{args.level}."
-            f"{checkpointName}.data"
-        )
+        targetFile = f"{args.output}/{disk.target}.{args.level}.{checkpointName}.data"
 
     targetFilePartial = f"{targetFile}.partial"
 
@@ -685,7 +682,7 @@ def backupDisk(
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
 
-    current_thread().name = disk.diskTarget
+    current_thread().name = disk.target
     streamType = setStreamType(args, disk)
     metaContext = setMetaContext(args, disk)
 
@@ -693,17 +690,17 @@ def backupDisk(
         bitMap = None
         if args.level == "inc":
             bitMap = args.cpt.name
-        backupSocket = f"{backupSocket}.{disk.diskTarget}"
+        backupSocket = f"{backupSocket}.{disk.target}"
         logging.info("Offline backup, starting NDB Service")
-        err = qemuhelper.qemuHelper(disk.diskTarget).startBackupNbdServer(
-            disk.diskFormat, disk.diskPath, backupSocket, bitMap
+        err = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
+            disk.format, disk.path, backupSocket, bitMap
         )
         if err is not None:
             logging.fatal("Error starting NBD Server: %s", err)
             return False
         logging.info("NDB Service started")
 
-    nbdClient = nbdhelper.nbdClient(disk.diskTarget, metaContext, backupSocket)
+    nbdClient = nbdhelper.nbdClient(disk.target, metaContext, backupSocket)
     connection = nbdClient.waitForServer()
     if not connection:
         raise exceptions.DiskBackupFailed(
@@ -713,7 +710,7 @@ def backupDisk(
     if args.qemu:
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(disk.diskTarget), metaContext, backupSocket
+            qemuhelper.qemuHelper(disk.target), metaContext, backupSocket
         )
     else:
         extentHandler = extenthandler.ExtentHandler(
@@ -768,7 +765,7 @@ def backupDisk(
         writer.write(sTypes.TERM)
 
     progressBar = lib.progressBar(
-        thinBackupSize, f"saving disk {disk.diskTarget}", args, count=count
+        thinBackupSize, f"saving disk {disk.target}", args, count=count
     )
     compressedSizes = []
     for save in extents:
@@ -842,7 +839,7 @@ def backupDisk(
     if args.stdout is False:
         if args.noprogress is True:
             logging.info(
-                "Backup of disk %s finished, file: %s", disk.diskTarget, targetFile
+                "Backup of disk %s finished, file: %s", disk.target, targetFile
             )
         return renamePartial(targetFilePartial, targetFile)
 

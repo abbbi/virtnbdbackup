@@ -94,7 +94,7 @@ class client:
         """
         DomainDisk = namedtuple(
             "DomainDisk",
-            ["diskTarget", "diskFormat", "diskFileName", "diskPath", "backingStores"],
+            ["target", "format", "filename", "path", "backingstores"],
         )
         tree = ElementTree.fromstring(vmConfig)
         devices = []
@@ -217,9 +217,9 @@ class client:
             scratchId = "".join(
                 random.choices(string.ascii_uppercase + string.digits, k=5)
             )
-            scratchFile = f"{scratchFilePath}/backup.{scratchId}.{disk.diskTarget}"
+            scratchFile = f"{scratchFilePath}/backup.{scratchId}.{disk.target}"
             log.debug("Using scratch file: %s", scratchFile)
-            dE = ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
+            dE = ElementTree.SubElement(disks, "disk", {"name": disk.target})
             ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
 
         xml = self._indentXml(top)
@@ -244,8 +244,8 @@ class client:
             # consistent. If we would like to create a consistent
             # backup, we would have to create an snapshot for these
             # kind of disks.
-            if disk.diskFormat != "raw":
-                ElementTree.SubElement(disks, "disk", {"name": disk.diskTarget})
+            if disk.format != "raw":
+                ElementTree.SubElement(disks, "disk", {"name": disk.target})
 
         xml = self._indentXml(top)
 
