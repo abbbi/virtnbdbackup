@@ -468,12 +468,11 @@ def main():
         try:
             logging.info("Starting backup job.")
             virtClient.startBackup(
+                args,
                 domObj,
                 disks,
-                args.level,
                 checkpointName,
                 parentCheckpoint,
-                args.scratchdir,
                 backupSocket,
             )
             logging.debug("Backup job started, using socket: %s", backupSocket)

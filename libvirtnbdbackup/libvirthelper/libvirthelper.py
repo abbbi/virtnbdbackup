@@ -275,24 +275,23 @@ class client:
 
     def startBackup(
         self,
+        args,
         domObj,
         diskList,
-        backupLevel,
         checkpointName,
         parentCheckpoint,
-        scratchFilePath,
         socketFilePath,
     ):
         """Attempt to start pull based backup task using  XMl description"""
         backupXml = self._createBackupXml(
-            diskList, parentCheckpoint, scratchFilePath, socketFilePath
+            diskList, parentCheckpoint, args.scratchdir, socketFilePath
         )
         checkpointXml = None
         freezed = False
         try:
             # do not create checkpoint during copy/diff backup.
             # backup saves delta until the last checkpoint
-            if backupLevel not in ("copy", "diff"):
+            if args.level not in ("copy", "diff"):
                 checkpointXml = self._createCheckpointXml(
                     diskList, parentCheckpoint, checkpointName
                 )
