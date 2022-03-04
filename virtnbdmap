@@ -76,8 +76,8 @@ def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
         log.info("Disconnected nbd device [%s]", device)
     log.info("Stopping nbdkit process, pid: [%s]", nbdkitProcess.pid)
     nbdkitProcess.kill()
-    log.info("Removing temporary blockmap file: [%s]", blockMap)
-    os.remove(blockMap)
+    log.info("Removing temporary blockmap file: [%s]", blockMap.name)
+    os.remove(blockMap.name)
     sys.exit(0)
 
 
@@ -92,10 +92,6 @@ def getDataRanges(lib, stream, sTypes, reader):
 
     if lib.isCompressed(meta):
         logging.error("Mapping compressed images currently not supported.")
-        return False, False
-
-    if meta["incremental"] is True:
-        logging.error("Only supported with full backups currently.")
         return False, False
 
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
@@ -126,19 +122,14 @@ def getDataRanges(lib, stream, sTypes, reader):
     return dataRanges, meta
 
 
-def dumpBlockMap(dataRanges):
+def dumpBlockMap(tfile, dataRanges):
     """Dump block map to temporary file"""
     try:
-        with tempfile.NamedTemporaryFile(
-            delete=False, prefix="block.", suffix=".map"
-        ) as blockMap:
-            blockMap.write(json.dumps(dataRanges, indent=4).encode())
-            logging.info("Wrote blockmap to temporary file: [%s]", blockMap.name)
+        tfile.write(json.dumps(dataRanges, indent=4).encode())
+        return True
     except OSError as e:
-        logging.error("Unable to create temporary blockmap file: %s", e)
+        logging.error("Unable to write blockmap file: %s", e)
         return False
-
-    return blockMap.name
 
 
 def main():
@@ -207,30 +198,42 @@ def main():
     checkRequirements()
     checkDevice(args.device)
 
-    try:
-        reader = open(args.file, "rb")
-    except OSError as e:
-        logging.fatal("Unable to open backup file: [%s]", e)
-
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
 
-    dataRanges, meta = getDataRanges(lib, stream, sTypes, reader)
-    if dataRanges is False or meta is False:
-        logging.error("Unable to read meta header from backup file.")
-        sys.exit(1)
+    blockMap = tempfile.NamedTemporaryFile(
+        delete=False, prefix="block.", suffix=".map"
+    )
+    logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
 
-    logging.info("Source file: %s", args.file)
+    for file in args.file.split(","):
+        try:
+            reader = open(file, "rb")
+        except OSError as e:
+            logging.fatal("Unable to open backup file: [%s]", e)
+            sys.exit(1)
+
+        dataRanges, meta = getDataRanges(lib, stream, sTypes, reader)
+        if dataRanges is False or meta is False:
+            logging.error("Unable to read meta header from backup file.")
+            sys.exit(1)
+
+        if args.verbose is True:
+            logging.info(json.dumps(dataRanges, indent=4))
+        else:
+            logging.info(
+                "Parsed [%s] block offsets from file [%s]", len(dataRanges), file
+            )
+
+        dumpBlockMap(blockMap, dataRanges)
+        blockMap.flush()
+
+    blockMap.close()
+
+    from time import sleep
+    sleep(20)
+
     logging.info("Target device: %s", args.device)
-
-    if args.verbose is True:
-        logging.info(json.dumps(dataRanges, indent=4))
-    else:
-        logging.info("Parsed [%s] block offsets", len(dataRanges))
-
-    blockMap = dumpBlockMap(dataRanges)
-    if not blockMap:
-        sys.exit(1)
 
     nbdkitLog = tempfile.NamedTemporaryFile(
         delete=False, prefix="nbdkit.", suffix=".log"
@@ -247,7 +250,7 @@ def main():
         "-v",
         "python",
         f"{nbdkitModule}",
-        f"blockmap={blockMap}",
+        f"blockmap={blockMap.name}",
         f"disk={args.file}",
         "-t",
         f"{args.threads}",
