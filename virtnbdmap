@@ -100,12 +100,11 @@ def getDataRanges(lib, stream, sTypes, reader):
 
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
-    dataRanges = {}
-    dataRanges[reader.name] = []
+    dataRanges = []
     while True:
         kind, start, length = stream.readFrame(reader)
         if kind == sTypes.STOP:
-            dataRanges[reader.name][-1]["nextBlockOffset"] = None
+            dataRanges[-1]["nextBlockOffset"] = None
             break
 
         blockInfo = {}
@@ -114,6 +113,7 @@ def getDataRanges(lib, stream, sTypes, reader):
         blockInfo["nextOriginalOffset"] = start + length
         blockInfo["length"] = length
         blockInfo["data"] = kind == sTypes.DATA
+        blockInfo["file"] = reader.name
 
         if kind == sTypes.DATA:
             reader.seek(length, os.SEEK_CUR)
@@ -121,7 +121,7 @@ def getDataRanges(lib, stream, sTypes, reader):
 
         nextBlockOffset = reader.tell() + sTypes.FRAME_LEN
         blockInfo["nextBlockOffset"] = nextBlockOffset
-        dataRanges[reader.name].append(blockInfo)
+        dataRanges.append(blockInfo)
 
     return dataRanges, meta
 
