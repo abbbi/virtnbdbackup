@@ -69,11 +69,7 @@ def thread_model():
 
 def open(readonly):
     """Open backup file and return FD"""
-    if readonly:
-        flags = os.O_RDONLY
-    else:
-        flags = os.O_RDWR
-    fd = os.open(image, flags)
+    fd = os.open(image, os.O_RDONLY)
     return {"fd": fd}
 
 
