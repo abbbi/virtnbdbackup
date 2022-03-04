@@ -292,7 +292,7 @@ def main():
         type=int,
         default=None,
         help=(
-            "Amount of concurrent workers used"
+            "Amount of concurrent workers used "
             "to backup multiple disks. (default: amount of disks)"
         ),
     )
