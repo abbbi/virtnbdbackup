@@ -530,6 +530,9 @@ def main():
         logging.exception(e)
         error = True
 
+    if error is True:
+        sys.exit(1)
+
     configFile = None
     if args.printonly is False:
         configFile = backupConfig(args, vmConfig)
@@ -540,9 +543,6 @@ def main():
 
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, zipStream, logFile)
-
-    if error is True:
-        sys.exit(1)
 
     if counter.count.warnings > 0 and args.strict is True:
         logging.info(
@@ -690,13 +690,13 @@ def backupDisk(
             bitMap = args.cpt.name
         args.socketfile = f"{args.socketfile}.{disk.target}"
         logging.info("Offline backup, starting NDB Service")
-        err = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
-            disk.format, disk.path, args.socketfile, bitMap
-        )
-        if err is not None:
-            logging.fatal("Error starting NBD Server: %s", err)
-            return False
-        logging.info("NDB Service started")
+        try:
+            qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
+                disk.format, disk.path, args.socketfile, bitMap
+            )
+            logging.info("NDB Service started")
+        except qemuhelper.exceptions.QemuHelperError as e:
+            raise exceptions.DiskBackupFailed(e)
 
     nbdClient = nbdhelper.nbdClient(disk.target, metaContext, args.socketfile)
     try:

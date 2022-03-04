@@ -17,8 +17,8 @@
 import os
 import logging
 from time import sleep
-from libvirtnbdbackup.nbdhelper import exceptions
 import nbd
+from libvirtnbdbackup.nbdhelper import exceptions
 
 log = logging.getLogger(__name__)
 
@@ -72,8 +72,8 @@ class nbdClient:
             self._nbdHandle.connect_unix(self._socket)
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(
-                "Unable to connect nbd server: %s", e
-            ) from e
+                f"Unable to connect nbd server: {e}"
+            )
 
         self.getBlockInfo()
 

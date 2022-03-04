@@ -19,6 +19,7 @@ import os
 import json
 import logging
 import subprocess
+from libvirtnbdbackup.qemuhelper import exceptions
 
 log = logging.getLogger(__name__)
 
@@ -130,7 +131,11 @@ class qemuHelper:
             try:
                 err = open(logFile, "r").read().strip()
             except OSError as errmsg:
-                err = errmsg
+                raise exceptions.NbdServerProcessError(
+                    f"Cant start NBD Server: Unable to get error message: {errmsg}"
+                )
+
+            raise exceptions.NbdServerProcessError(f"Unable to start NBD server: {err}")
 
         log.debug("Removing temporary logfile: %s", logFile)
         os.remove(logFile)
