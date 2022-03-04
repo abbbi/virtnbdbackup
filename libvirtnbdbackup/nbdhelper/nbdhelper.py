@@ -71,9 +71,7 @@ class nbdClient:
             self._nbdHandle.set_export_name(self._exportName)
             self._nbdHandle.connect_unix(self._socket)
         except nbd.Error as e:
-            raise exceptions.NbdConnectionError(
-                f"Unable to connect nbd server: {e}"
-            )
+            raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")
 
         self.getBlockInfo()
 
