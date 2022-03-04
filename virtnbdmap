@@ -100,11 +100,12 @@ def getDataRanges(lib, stream, sTypes, reader):
 
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
-    dataRanges = []
+    dataRanges = {}
+    dataRanges[reader.name] = []
     while True:
         kind, start, length = stream.readFrame(reader)
         if kind == sTypes.STOP:
-            dataRanges[-1]["nextBlockOffset"] = None
+            dataRanges[reader.name][-1]["nextBlockOffset"] = None
             break
 
         blockInfo = {}
@@ -120,9 +121,24 @@ def getDataRanges(lib, stream, sTypes, reader):
 
         nextBlockOffset = reader.tell() + sTypes.FRAME_LEN
         blockInfo["nextBlockOffset"] = nextBlockOffset
-        dataRanges.append(blockInfo)
+        dataRanges[reader.name].append(blockInfo)
 
     return dataRanges, meta
+
+
+def dumpBlockMap(dataRanges):
+    """Dump block map to temporary file"""
+    try:
+        with tempfile.NamedTemporaryFile(
+            delete=False, prefix="block.", suffix=".map"
+        ) as blockMap:
+            blockMap.write(json.dumps(dataRanges, indent=4).encode())
+            logging.info("Wrote blockmap to temporary file: [%s]", blockMap.name)
+    except OSError as e:
+        logging.error("Unable to create temporary blockmap file: %s", e)
+        return False
+
+    return blockMap.name
 
 
 def main():
@@ -195,7 +211,6 @@ def main():
         reader = open(args.file, "rb")
     except OSError as e:
         logging.fatal("Unable to open backup file: [%s]", e)
-        sys.exit(1)
 
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
@@ -213,14 +228,8 @@ def main():
     else:
         logging.info("Parsed [%s] block offsets", len(dataRanges))
 
-    try:
-        with tempfile.NamedTemporaryFile(
-            delete=False, prefix="block.", suffix=".map"
-        ) as blockMap:
-            blockMap.write(json.dumps(dataRanges, indent=4).encode())
-            logging.info("Wrote blockmap to temporary file: [%s]", blockMap.name)
-    except OSError as e:
-        logging.error("Unable to create temporary blockmap file: %s", e)
+    blockMap = dumpBlockMap(dataRanges)
+    if not blockMap:
         sys.exit(1)
 
     nbdkitLog = tempfile.NamedTemporaryFile(
@@ -238,7 +247,7 @@ def main():
         "-v",
         "python",
         f"{nbdkitModule}",
-        f"blockmap={blockMap.name}",
+        f"blockmap={blockMap}",
         f"disk={args.file}",
         "-t",
         f"{args.threads}",
@@ -256,7 +265,7 @@ def main():
         logging.info("Started nbdkit process pid: [%s]", nbdkitProcess.pid)
         signal.signal(
             signal.SIGINT,
-            partial(handleSignal, nbdkitProcess, args.device, blockMap.name, logging),
+            partial(handleSignal, nbdkitProcess, args.device, blockMap, logging),
         )
     else:
         logging.error(
