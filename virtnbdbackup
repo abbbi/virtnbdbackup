@@ -206,10 +206,10 @@ def saveCheckpointFile(args):
 def main():
     """Handle backup operation"""
     parser = argparse.ArgumentParser(description="Backup libvirt/qemu virtual machines")
-    parser.add_argument(
-        "-d", "--domain", required=True, type=str, help="Domain to backup"
-    )
-    parser.add_argument(
+
+    opt = parser.add_argument_group("General options")
+    opt.add_argument("-d", "--domain", required=True, type=str, help="Domain to backup")
+    opt.add_argument(
         "-l",
         "--level",
         default="copy",
@@ -217,7 +217,7 @@ def main():
         type=str,
         help="Backup level. (default: %(default)s)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-t",
         "--type",
         default="stream",
@@ -225,17 +225,17 @@ def main():
         choices=["stream", "raw"],
         help="Output type: stream or raw. (default: %(default)s)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-r",
         "--raw",
         default=False,
         action="store_true",
         help="Include full provisioned disk images in backup. (default: %(default)s)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-o", "--output", required=True, type=str, help="Output target directory"
     )
-    parser.add_argument(
+    opt.add_argument(
         "-C",
         "--checkpointdir",
         required=False,
@@ -243,7 +243,7 @@ def main():
         type=str,
         help="Persistent libvirt checkpoint storage directory",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-S",
         "--scratchdir",
         default="/var/tmp",
@@ -251,77 +251,42 @@ def main():
         type=str,
         help="Target dir for temporary scratch file. (default: %(default)s)",
     )
-    parser.add_argument(
-        "-q",
-        "--qemu",
-        default=False,
-        action="store_true",
-        help="Use Qemu tools to query extents (full and copy only)",
-    )
-    parser.add_argument(
+    opt.add_argument(
         "-i",
         "--include",
         default=None,
         type=str,
         help="Backup only disk with target dev name (-i vda)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-x",
         "--exclude",
         default=None,
         type=str,
         help="Exclude disk(s) with target dev name (-x vda,vdb)",
     )
-    parser.add_argument(
-        "-s",
-        "--startonly",
-        default=False,
-        help="Only initialize backup job via libvirt, do not backup any data",
-        action="store_true",
-    )
-    parser.add_argument(
-        "-k",
-        "--killonly",
-        default=False,
-        help="Kill any running block job",
-        action="store_true",
-    )
-    parser.add_argument(
-        "-p",
-        "--printonly",
-        default=False,
-        help="Quit after printing extent information",
-        action="store_true",
-    )
-    parser.add_argument(
+    opt.add_argument(
         "-f",
         "--socketfile",
         default=None,
         type=str,
         help="Use file for NBD Server socket instead of random file",
     )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        default=False,
-        help="Enable debug output",
-        action="store_true",
-    )
-    parser.add_argument(
+    opt.add_argument(
         "-n",
         "--noprogress",
         default=False,
         help="Disable progress bar",
         action="store_true",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-z",
         "--compress",
         default=False,
         help="Compress with lz4. (default: %(default)s)",
         action="store_true",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-w",
         "--worker",
         type=int,
@@ -331,7 +296,7 @@ def main():
             "to backup multiple disks. (default: amount of disks)"
         ),
     )
-    parser.add_argument(
+    opt.add_argument(
         "-e",
         "--strict",
         default=False,
@@ -339,6 +304,42 @@ def main():
             "Change exit code if warnings occur during backup operation."
             "(default: %(default)s)"
         ),
+        action="store_true",
+    )
+    debopt = parser.add_argument_group("Debug options")
+    debopt.add_argument(
+        "-q",
+        "--qemu",
+        default=False,
+        action="store_true",
+        help="Use Qemu tools to query extents.",
+    )
+    debopt.add_argument(
+        "-s",
+        "--startonly",
+        default=False,
+        help="Only initialize backup job via libvirt, do not backup any data",
+        action="store_true",
+    )
+    debopt.add_argument(
+        "-k",
+        "--killonly",
+        default=False,
+        help="Kill any running block job",
+        action="store_true",
+    )
+    debopt.add_argument(
+        "-p",
+        "--printonly",
+        default=False,
+        help="Quit after printing extent information",
+        action="store_true",
+    )
+    debopt.add_argument(
+        "-v",
+        "--verbose",
+        default=False,
+        help="Enable debug output",
         action="store_true",
     )
 
