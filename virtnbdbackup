@@ -471,8 +471,8 @@ def main():
 
     outHelper.Directory(args.scratchdir)
 
-    backupSocket = lib.getSocketFile(args.socketfile)
-    logging.info("NDB Endpoint socket: %s", backupSocket)
+    args.socketfile = lib.getSocketFile(args.socketfile)
+    logging.info("NDB Endpoint socket: %s", args.socketfile)
 
     if args.offline is not True:
         try:
@@ -481,9 +481,8 @@ def main():
                 args,
                 domObj,
                 disks,
-                backupSocket,
             )
-            logging.debug("Backup job started, using socket: %s", backupSocket)
+            logging.debug("Backup job started, using socket: %s", args.socketfile)
         except Exception as e:
             logging.error(e)
             logging.exception(e)
@@ -515,7 +514,6 @@ def main():
                     disk,
                     count,
                     lib,
-                    backupSocket,
                     zipStream,
                 ): disk
                 for count, disk in enumerate(disks)
@@ -675,7 +673,6 @@ def backupDisk(
     disk,
     count,
     lib,
-    backupSocket,
     zipStream,
 ):
     """Backup domain disk data."""
@@ -691,31 +688,32 @@ def backupDisk(
         bitMap = None
         if args.level == "inc":
             bitMap = args.cpt.name
-        backupSocket = f"{backupSocket}.{disk.target}"
+        args.socketfile = f"{args.socketfile}.{disk.target}"
         logging.info("Offline backup, starting NDB Service")
         err = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
-            disk.format, disk.path, backupSocket, bitMap
+            disk.format, disk.path, args.socketfile, bitMap
         )
         if err is not None:
             logging.fatal("Error starting NBD Server: %s", err)
             return False
         logging.info("NDB Service started")
 
-    nbdClient = nbdhelper.nbdClient(disk.target, metaContext, backupSocket)
-    connection = nbdClient.waitForServer()
-    if not connection:
+    nbdClient = nbdhelper.nbdClient(disk.target, metaContext, args.socketfile)
+    try:
+        connection = nbdClient.waitForServer()
+    except nbdhelper.exceptions.NbdClientException as e:
         raise exceptions.DiskBackupFailed(
-            f"Error connecting to nbd endpoint: {backupSocket}"
+            f"NBD endpoint: {args.socketfile}: connection failed: {e}"
         )
 
     if args.qemu:
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(disk.target), metaContext, backupSocket
+            qemuhelper.qemuHelper(disk.target), metaContext, args.socketfile
         )
     else:
         extentHandler = extenthandler.ExtentHandler(
-            connection, metaContext, backupSocket
+            connection, metaContext, args.socketfile
         )
     extents = extentHandler.queryBlockStatus()
     diskSize = connection.get_size()
@@ -836,7 +834,7 @@ def backupDisk(
     nbdClient.disconnect()
     if args.offline is True:
         logging.info("Stopping NBD Service")
-        lib.killNbdServer(backupSocket)
+        lib.killNbdServer(args.socketfile)
     if args.stdout is False:
         if args.noprogress is True:
             logging.info(

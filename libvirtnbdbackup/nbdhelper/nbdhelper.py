@@ -17,6 +17,7 @@
 import os
 import logging
 from time import sleep
+from libvirtnbdbackup.nbdhelper import exceptions
 import nbd
 
 log = logging.getLogger(__name__)
@@ -70,8 +71,9 @@ class nbdClient:
             self._nbdHandle.set_export_name(self._exportName)
             self._nbdHandle.connect_unix(self._socket)
         except nbd.Error as e:
-            log.error("Unable to connect ndb server: %s", e)
-            return False
+            raise exceptions.NbdConnectionError(
+                "Unable to connect nbd server: %s", e
+            ) from e
 
         self.getBlockInfo()
 
@@ -86,8 +88,9 @@ class nbdClient:
         while True:
             sleep(sleepTime)
             if retry >= maxRetry:
-                logging.error("NBD server connection failed.")
-                return False
+                raise exceptions.NbdConnectionTimeout(
+                    "Timeout during connection to NBD server backend."
+                )
 
             if not os.path.exists(self._socket):
                 logging.info("Waiting for NBD Server, Retry: %s", retry)

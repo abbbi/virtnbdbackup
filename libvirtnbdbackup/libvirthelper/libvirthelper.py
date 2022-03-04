@@ -278,11 +278,10 @@ class client:
         args,
         domObj,
         diskList,
-        socketFilePath,
     ):
         """Attempt to start pull based backup task using  XMl description"""
         backupXml = self._createBackupXml(
-            diskList, args.cpt.parent, args.scratchdir, socketFilePath
+            diskList, args.cpt.parent, args.scratchdir, args.socketfile
         )
         checkpointXml = None
         freezed = False
