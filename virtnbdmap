@@ -206,6 +206,7 @@ def main():
     )
     logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
 
+    dataRanges = []
     for file in args.file.split(","):
         try:
             reader = open(file, "rb")
@@ -213,8 +214,9 @@ def main():
             logging.fatal("Unable to open backup file: [%s]", e)
             sys.exit(1)
 
-        dataRanges, meta = getDataRanges(lib, stream, sTypes, reader)
-        if dataRanges is False or meta is False:
+        ranges, meta = getDataRanges(lib, stream, sTypes, reader)
+        dataRanges.extend(ranges)
+        if ranges is False or meta is False:
             logging.error("Unable to read meta header from backup file.")
             sys.exit(1)
 
@@ -224,14 +226,11 @@ def main():
             logging.info(
                 "Parsed [%s] block offsets from file [%s]", len(dataRanges), file
             )
+    reader.close()
 
-        dumpBlockMap(blockMap, dataRanges)
-        blockMap.flush()
-
+    dumpBlockMap(blockMap, dataRanges)
+    blockMap.flush()
     blockMap.close()
-
-    from time import sleep
-    sleep(20)
 
     logging.info("Target device: %s", args.device)
 
