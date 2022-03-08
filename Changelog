@@ -2,6 +2,7 @@ Version 0.52
 ---------
 * Update help regarding --qemu option: works with diff/inc now too
 * Group possible options in help output
+* Introduce more exceptions, cleanup codebase.
 
 Version 0.51
 ---------
