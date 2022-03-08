@@ -530,16 +530,17 @@ def main():
         logging.exception(e)
         error = True
 
+    if args.offline is False:
+        logging.info("Backup jobs finished, stopping backup task.")
+        virtClient.stopBackup(domObj)
+
     if error is True:
+        logging.error("Error during backup")
         sys.exit(1)
 
     configFile = None
     if args.printonly is False:
         configFile = backupConfig(args, vmConfig)
-
-    if args.offline is False:
-        logging.info("Backup jobs finished, stopping backup task.")
-        virtClient.stopBackup(domObj)
 
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, zipStream, logFile)
@@ -662,10 +663,7 @@ def renamePartial(targetFilePartial, targetFile):
     try:
         os.rename(targetFilePartial, targetFile)
     except OSError as e:
-        logging.error("Unable to rename file: %s", e)
-        return False
-
-    return True
+        raise exceptions.DiskBackupFailed(f"Unable to rename file: {e}") from e
 
 
 def backupDisk(
@@ -840,7 +838,7 @@ def backupDisk(
             logging.info(
                 "Backup of disk %s finished, file: %s", disk.target, targetFile
             )
-        return renamePartial(targetFilePartial, targetFile)
+        renamePartial(targetFilePartial, targetFile)
 
     return True
 

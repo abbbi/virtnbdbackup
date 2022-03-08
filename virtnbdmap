@@ -201,9 +201,7 @@ def main():
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
 
-    blockMap = tempfile.NamedTemporaryFile(
-        delete=False, prefix="block.", suffix=".map"
-    )
+    blockMap = tempfile.NamedTemporaryFile(delete=False, prefix="block.", suffix=".map")
     logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
 
     dataRanges = []

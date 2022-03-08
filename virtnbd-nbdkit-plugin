@@ -39,7 +39,7 @@ def config(key, value):
             blockMap = json.loads(fh.read())
         return
     if key == "disk":
-        images = value.split(',')
+        images = value.split(",")
         return
 
     raise RuntimeError(f"Unsupported parameter: {key}")
