@@ -417,11 +417,14 @@ def main():
 
     outHelper.Directory(args.checkpointdir)
 
-    virtClient = libvirthelper.client()
     try:
+        virtClient = libvirthelper.client()
         domObj = virtClient.getDomain(args.domain)
-    except Exception as e:
-        logging.error("Unable to get domain information: %s", e)
+    except libvirthelper.exceptions.domainNotFound as e:
+        logging.error("%s", e)
+        sys.exit(1)
+    except libvirthelper.exceptions.connectionFailed as e:
+        logging.error("Cant connect libvirt daemon: %s", e)
         sys.exit(1)
 
     if virtClient.hasIncrementalEnabled(domObj) is False:

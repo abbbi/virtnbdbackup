@@ -24,6 +24,8 @@ from collections import namedtuple
 import logging
 import libvirt
 
+from libvirtnbdbackup.libvirthelper import exceptions
+
 
 def libvirt_ignore(_ignore, _err):
     """this is required so libvirt.py does not report errors to stderr
@@ -46,17 +48,19 @@ class client:
 
     @staticmethod
     def _connect():
-        """return libvirt conneciton handle"""
+        """return libvirt connection handle"""
         URI = "qemu:///system"
         try:
             return libvirt.open(URI)
         except libvirt.libvirtError as e:
-            log.error("Cant connect libvirt daemon: %s", e)
-            sys.exit(1)
+            raise exceptions.connectionFailed(e) from e
 
     def getDomain(self, name):
         """Lookup domain"""
-        return self._conn.lookupByName(name)
+        try:
+            return self._conn.lookupByName(name)
+        except libvirt.libvirtError as e:
+            raise exceptions.domainNotFound(e) from e
 
     @staticmethod
     def domainOffline(domObj):
