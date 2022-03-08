@@ -687,7 +687,7 @@ def backupDisk(
 
     if args.offline is True:
         bitMap = None
-        if args.level == "inc":
+        if args.level in ("inc", "diff"):
             bitMap = args.cpt.name
         args.socketfile = f"{args.socketfile}.{disk.target}"
         logging.info("Offline backup, starting NDB Service")

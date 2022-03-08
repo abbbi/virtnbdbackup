@@ -1,6 +1,8 @@
 Version 0.53
 ---------
 * Cleanup codebase
+* Fix differencial backup for offline domains: apply same logic as during
+incremental backup.
 
 Version 0.52
 ---------
