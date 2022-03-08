@@ -36,7 +36,9 @@ def dump(lib, args, stream, dataFiles):
     """Dump stream contents to json output"""
     logging.info("Dumping saveset meta information")
     for dataFile in dataFiles:
-        if args.disk != "all" and not os.path.basename(dataFile).startswith(args.disk):
+        if args.disk is not None and not os.path.basename(dataFile).startswith(
+            args.disk
+        ):
             continue
         logging.info(dataFile)
 
@@ -234,6 +236,7 @@ def getHeader(lib, diskFile, stream):
 
 
 def startNbd(qFh, exportName, targetFile, socketFile):
+    """Start NBD service for restore"""
     logging.info("Starting NBD server on socket: [%s]", socketFile)
     err = qFh.startRestoreNbdServer(targetFile, socketFile)
     if err is not None:
@@ -250,9 +253,7 @@ def getDisksFromConfig(args, vmConfig):
     """
     try:
         with open(vmConfig, "rb") as vmConf:
-            return libvirthelper.client().getDomainDisks(
-                vmConf.read().decode(), None, None, args.raw
-            )
+            return libvirthelper.client().getDomainDisks(args, vmConf.read().decode())
     except OSError as errmsg:
         logging.error("Cant open config file: [%s]: [%s]", vmConfig, errmsg)
         return False
@@ -290,7 +291,7 @@ def restore(lib, args, vmConfig):
 
     for disk in vmDisks:
         checkBackingStore(disk)
-        if args.disk not in ("all", disk.target):
+        if args.disk not in (None, disk.target):
             logging.info("Skipping disk %s for restore", disk.target)
             continue
 
@@ -379,7 +380,7 @@ def main():
         "--disk",
         required=False,
         type=str,
-        default="all",
+        default=None,
         help="Process only disk matching target dev name. (default: %(default)s)",
     )
     parser.add_argument(
@@ -415,6 +416,10 @@ def main():
 
     lib = common.Common()
     args = lib.argparse(parser)
+
+    # default values for common usage of lib.getDomainDisks
+    args.exclude = None
+    args.include = args.disk
 
     stream = streamer.SparseStream(types)
 
