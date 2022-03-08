@@ -543,7 +543,7 @@ toOut() {
 }
 
 
-@test "Map: Map full backup to nbd block device, check device size and partitions" {
+@test "Map: Map full backup to nbd block device, check device size and partitions, mount filesystem" {
     [ -f /.dockerenv ] && skip "wont work inside docker image"
     [ -z $MAPTEST ] && skip "skipping"
     [ ! -z $GITHUB_JOB ] && skip "on github ci"
@@ -556,5 +556,11 @@ toOut() {
     echo "output = ${output}"
     [[ "${output}" =~  "Disk /dev/nbd0: 50 MiB, 52428800 bytes, 102400 sectors" ]]
     [[ "${output}" =~  "nbd0p1" ]]
+
+    mkdir -p /empty
+    run mount /dev/nbd0p1 /empty
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run umount /empty
     kill -2 $PID
 }

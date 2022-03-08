@@ -92,7 +92,7 @@ class client:
         return domObj.XMLDesc(0)
 
     @staticmethod
-    def getDomainDisks(vmConfig, excludedDisks, includeDisk, includeRaw):
+    def getDomainDisks(args, vmConfig):
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
@@ -104,8 +104,8 @@ class client:
         devices = []
 
         excludeList = None
-        if excludedDisks is not None:
-            excludeList = excludedDisks.split(",")
+        if args.exclude is not None:
+            excludeList = args.exclude.split(",")
 
         driver = None
         device = None
@@ -140,7 +140,7 @@ class client:
             driver = target.find("driver")
             if driver is not None:
                 diskFormat = driver.get("type")
-                if diskFormat == "raw" and includeRaw is False:
+                if diskFormat == "raw" and args.raw is False:
                     log.warning(
                         "Raw disk %s excluded by default, use option --raw to include.",
                         dev,
@@ -158,11 +158,11 @@ class client:
             if target.get("device") == "cdrom":
                 continue
 
-            if includeDisk is not None and dev != includeDisk:
+            if args.include is not None and dev != args.include:
                 log.info(
                     "Skipping disk: %s as requested: does not match disk %s",
                     dev,
-                    includeDisk,
+                    args.include,
                 )
                 continue
 

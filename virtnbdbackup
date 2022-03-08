@@ -443,7 +443,7 @@ def main():
     )
 
     vmConfig = virtClient.getDomainConfig(domObj)
-    disks = virtClient.getDomainDisks(vmConfig, args.exclude, args.include, args.raw)
+    disks = virtClient.getDomainDisks(args, vmConfig)
 
     if not disks:
         logging.error(
