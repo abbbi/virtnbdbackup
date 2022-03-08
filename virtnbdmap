@@ -145,15 +145,9 @@ def main():
     """Map full backup file to nbd device for single file or
     instant recovery"""
     parser = argparse.ArgumentParser(description="Map backup image to block device")
-    parser.add_argument("-f", "--file", required=True, type=str, help="Backup file")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        required=False,
-        action="store_true",
-        help="Enable debug output",
-    )
-    parser.add_argument(
+    opt = parser.add_argument_group("General options")
+    opt.add_argument("-f", "--file", required=True, type=str, help="Backup file")
+    opt.add_argument(
         "-b",
         "--blocksize",
         required=False,
@@ -161,33 +155,41 @@ def main():
         default="4096",
         help="Maximum blocksize passed to nbdkit. (default: %(default)s)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-d",
         "--device",
         default="/dev/nbd0",
         type=str,
         help="Target device. (default: %(default)s)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-e",
         "--export-name",
         default="sda",
         type=str,
         help="Export name passed to nbdkit. (default: %(default)s)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-t",
         "--threads",
         default=1,
         type=str,
         help="Amount of threads passed to nbdkit process. (default: %(default)s)",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-l",
         "--listen-address",
         default="127.0.0.1",
         type=str,
         help="IP Address for nbdkit process to listen on. (default: %(default)s)",
+    )
+    debopt = parser.add_argument_group("Debug options")
+    debopt.add_argument(
+        "-v",
+        "--verbose",
+        required=False,
+        action="store_true",
+        help="Enable debug output",
     )
 
     lib = common.Common()

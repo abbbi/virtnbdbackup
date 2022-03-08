@@ -342,7 +342,8 @@ def restore(lib, args, vmConfig):
 def main():
     """main function"""
     parser = argparse.ArgumentParser(description="Restore virtual machine disks")
-    parser.add_argument(
+    opt = parser.add_argument_group("General options")
+    opt.add_argument(
         "-a",
         "--action",
         required=True,
@@ -350,24 +351,24 @@ def main():
         choices=["dump", "restore"],
         help="Action to perform",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-i",
         "--input",
         required=True,
         type=str,
         help="Directory including a backup set",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-o", "--output", required=True, type=str, help="Restore target directory"
     )
-    parser.add_argument(
+    opt.add_argument(
         "-u",
         "--until",
         required=False,
         type=str,
         help="Restore only until checkpoint, point in time restore.",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-s",
         "--sequence",
         required=False,
@@ -375,7 +376,7 @@ def main():
         default=None,
         help="Restore image based on specified backup files.",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-d",
         "--disk",
         required=False,
@@ -383,15 +384,7 @@ def main():
         default=None,
         help="Process only disk matching target dev name. (default: %(default)s)",
     )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        required=False,
-        action="store_true",
-        default=False,
-        help="Enable debug output",
-    )
-    parser.add_argument(
+    opt.add_argument(
         "-n",
         "--noprogress",
         required=False,
@@ -399,19 +392,28 @@ def main():
         default=False,
         help="Disable progress bar",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-f",
         "--socketfile",
         default=None,
         type=str,
         help="Use specified file for NBD Server socket instead of random file",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-r",
         "--raw",
         default=False,
         action="store_true",
         help="Copy raw images as is during restore. (default: %(default)s)",
+    )
+    debopt = parser.add_argument_group("Debug options")
+    debopt.add_argument(
+        "-v",
+        "--verbose",
+        required=False,
+        action="store_true",
+        default=False,
+        help="Enable debug output",
     )
 
     lib = common.Common()
