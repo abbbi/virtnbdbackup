@@ -42,7 +42,10 @@ def dump(lib, args, stream, dataFiles):
             continue
         logging.info(dataFile)
 
-        meta = getHeader(lib, dataFile, stream)
+        sourceFile = dataFile
+        if args.sequence:
+            sourceFile = f"{args.input}/{dataFile}"
+        meta = getHeader(lib, sourceFile, stream)
 
         if not meta:
             return False
@@ -435,12 +438,16 @@ def main():
     lib.printVersion(__version__)
 
     if not os.path.exists(args.input):
-        logging.error("Backup set directory does not exist")
+        logging.error("Backup set directory does not exist.")
         sys.exit(1)
 
     if args.sequence is not None:
-        logging.info("Using manual specified sequence of files")
+        logging.info("Using manual specified sequence of files.")
         dataFiles = args.sequence.split(",")
+
+        if "full" not in dataFiles[0]:
+            logging.error("Sequence must start with full backup.")
+            sys.exit(1)
     else:
         dataFiles = lib.getDataFiles(args.input)
 
