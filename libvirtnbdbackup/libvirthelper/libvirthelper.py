@@ -14,7 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import sys
 import string
 import random
 import glob
@@ -55,6 +54,11 @@ class client:
         except libvirt.libvirtError as e:
             raise exceptions.connectionFailed(e) from e
 
+    @staticmethod
+    def _getTree(vmConfig):
+        """Return Etree element for vm config"""
+        return ElementTree.fromstring(vmConfig)
+
     def getDomain(self, name):
         """Lookup domain"""
         try:
@@ -69,12 +73,11 @@ class client:
         log.debug("Domain state returned by libvirt: [%s]", state)
         return state != libvirt.VIR_DOMAIN_RUNNING
 
-    @staticmethod
-    def hasIncrementalEnabled(domObj):
+    def hasIncrementalEnabled(self, domObj):
         """Check if virtual machine has enabled required capabilities
         for incremental backup
         """
-        tree = ElementTree.fromstring(domObj.XMLDesc(0))
+        tree = self._getTree(domObj.XMLDesc(0))
         for target in tree.findall(
             "{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"
         ):
@@ -91,8 +94,27 @@ class client:
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
-    @staticmethod
-    def getDomainDisks(args, vmConfig):
+    def getDomainInfo(self, vmConfig):
+        """Return object with general vm information relevant
+        for backup"""
+        tree = self._getTree(vmConfig)
+        DomainInfo = namedtuple("DomainInfo", ["loader", "nvram"])
+        loader = None
+        nvram = None
+        try:
+            loader = tree.find("os").find("loader").text
+        except AttributeError as e:
+            logging.debug("No loader setting found: %s", e)
+        try:
+            nvram = tree.find("os").find("nvram").text
+        except AttributeError as e:
+            logging.debug("No nvram setting found: %s", e)
+
+        info = DomainInfo(loader, nvram)
+        logging.debug("Domain Info: [%s]", info)
+        return info
+
+    def getDomainDisks(self, args, vmConfig):
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
@@ -100,7 +122,7 @@ class client:
             "DomainDisk",
             ["target", "format", "filename", "path", "backingstores"],
         )
-        tree = ElementTree.fromstring(vmConfig)
+        tree = self._getTree(vmConfig)
         devices = []
 
         excludeList = None

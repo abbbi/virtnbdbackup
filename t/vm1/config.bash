@@ -5,6 +5,8 @@ RESTORESET=${TMPDIR}/restoreset
 VM="vm1"
 VM_IMAGE="${VM}/vm1-sda.qcow2"
 
+VM_UEFI_VARS="${VM}/UEFI_VARS.gz"
+
 
 # following outputs are expected for this vm image
 DATA_SIZE="6094848"

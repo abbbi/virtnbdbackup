@@ -31,6 +31,12 @@ setup() {
         gunzip -fk ${VM_IMAGE}.gz > ${VM_IMAGE}
     fi
     cp ${VM_IMAGE} ${TMPDIR}
+    if [ ! -z ${VM_UEFI_VARS} ]; then
+        rm -f /tmp/UEFI.fd /tmp/UEFI_VARS.fd
+        # simulates firmware even tho its empty.
+        truncate -s 4096 /tmp/UEFI.fd
+        zcat ${VM_UEFI_VARS} >> /tmp/UEFI_VARS.fd
+    fi
 }
 
 @test "Setup: Define and start test VM ${VM}" {

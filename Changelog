@@ -1,6 +1,10 @@
 Version 0.54
 ---------
-
+* (#38) Backup virtual machines loader bios and nvram if defined,
+provide notice to user during restore that files must be copied
+manually.
+* Fix --until option during restore: would not stop processing further
+files since --sequence option was introduced
 
 Version 0.53
 ---------
