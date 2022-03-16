@@ -25,6 +25,7 @@ of your `kvm/qemu` virtual machines.
    * [Excluding disks](#excluding-disks)
    * [Estimating backup size](#estimating-backup-size)
    * [Compression](#compression)
+   * [Pipe data to other hosts](#pipe-data-to-other-hosts)
    * [NVram and additional files](#nvram-and-additional-files)
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
