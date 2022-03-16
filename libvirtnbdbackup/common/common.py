@@ -7,6 +7,7 @@ import glob
 import json
 import logging
 import signal
+import shutil
 import pprint
 import lz4.frame
 from tqdm import tqdm
@@ -98,6 +99,14 @@ class Common:
             return ret
         except IndexError:
             return None
+
+    @staticmethod
+    def copy(source, target):
+        """Copy file, handle exceptions"""
+        try:
+            shutil.copyfile(source, target)
+        except OSError as e:
+            log.warning("Unable to copy [%s] to [%s]: [%s]", source, target, e)
 
     @staticmethod
     def progressBar(total, desc, args, count=0):

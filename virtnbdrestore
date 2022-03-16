@@ -83,13 +83,10 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     else:
         trailer = None
 
-    if meta["checkpointName"] == args.until:
-        logging.info("Reached checkpoint %s, stopping", args.until)
-        raise baseexception.UntilCheckpointReached
-
     if meta["dataSize"] == 0:
         logging.info("Saveset %s contains no dirty blocks, skipping", dataFile)
         return True
+
     logging.info(
         "Applying data from backup file [%s] to target file [%s]", dataFile, targetFile
     )
@@ -154,15 +151,21 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
             dataBlockCnt += 1
         elif kind == sTypes.STOP:
             progressBar.close()
-            if dataSize == meta["dataSize"]:
-                logging.info("End of stream, %s bytes of data processed", dataSize)
-                return True
-            logging.error(
-                "Error: restored data size %s != %s",
-                dataSize,
-                meta["dataSize"],
-            )
-            raise baseexception.RestoreError
+            if dataSize != meta["dataSize"]:
+                logging.error(
+                    "Error: restored data size %s != %s",
+                    dataSize,
+                    meta["dataSize"],
+                )
+                raise baseexception.RestoreError
+            break
+
+    logging.info("End of stream, %s bytes of data processed", dataSize)
+    if meta["checkpointName"] == args.until:
+        logging.info("Reached checkpoint %s, stopping", args.until)
+        raise baseexception.UntilCheckpointReached
+
+    return True
 
 
 def restoreSequence(lib, args, dataFiles):

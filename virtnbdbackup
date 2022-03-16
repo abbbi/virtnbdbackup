@@ -19,7 +19,6 @@ import os
 import sys
 import json
 import signal
-import shutil
 import logging
 import argparse
 from argparse import Namespace
@@ -89,7 +88,7 @@ def checkForeign(args, virtClient, domObj, lib):
         "and start a new backup chain by creating a full backup."
     )
 
-    raise exceptions.ForeignCeckpointError()
+    raise exceptions.ForeignCeckpointError
 
 
 def setOfflineArguments(args, virtClient, domObj):
@@ -198,7 +197,7 @@ def saveCheckpointFile(args):
         checkpoints.append(args.cpt.name)
         with open(args.cpt.file, "w") as cFw:
             cFw.write(json.dumps(checkpoints))
-    except exceptions.CheckpointException() as e:
+    except exceptions.CheckpointException as e:
         raise exceptions.CheckpointException from e
     except OSError as e:
         raise exceptions.SaveCheckpointError from e
@@ -437,7 +436,7 @@ def main():
 
     try:
         checkForeign(args, virtClient, domObj, lib)
-    except exceptions.CheckpointException():
+    except exceptions.CheckpointException:
         sys.exit(1)
 
     setOfflineArguments(args, virtClient, domObj)
@@ -551,7 +550,7 @@ def main():
         configFile = backupConfig(args, vmConfig)
 
     if info.loader is not None or info.nvram is not None:
-        backupNvram(args, info)
+        backupNvram(args, lib, info)
 
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, zipStream, logFile)
@@ -578,22 +577,32 @@ def addFiles(args, configFile, zipStream, logFile):
             zipStream.zipStream.write(dirname)
             for filename in files:
                 zipStream.zipStream.write(os.path.join(dirname, filename))
-    logging.info("Adding backup log to zipfile")
-    zipStream.zipStream.write(logFile, logFile)
 
     if args.info.nvram is not None:
-        logging.info("Adding NVRAM to zipfile")
-        zipStream.zipStream.write(args.info.nvram, args.info.nvram)
+        logging.info("Adding NVRAM [%s] to zipfile", args.info.nvram)
+        zipStream.zipStream.write(args.info.nvram, os.path.basename(args.info.nvram))
     if args.info.loader is not None:
-        logging.info("Adding Loader to zipfile")
-        zipStream.zipStream.write(args.info.loader, args.info.loader)
+        logging.info("Adding Loader [%s] to zipfile", args.info.loader)
+        zipStream.zipStream.write(args.info.loader, os.path.basename(args.info.loader))
+
+    logging.info("Adding backup log [%s] to zipfile", logFile)
+    zipStream.zipStream.write(logFile, logFile)
+
+
+def getIdent(args):
+    """Used to get an uniqe identifier for target files,
+    usually checkpoint name is used, but if no checkpoint
+    is created, we use timestamp"""
+    ident = args.cpt.name
+    if args.level == "diff":
+        ident = int(time())
+
+    return ident
 
 
 def backupConfig(args, vmConfig):
     """Save domain config file"""
-    ident = args.cpt.name
-    if args.level == "diff":
-        ident = int(time())
+    ident = getIdent(args)
     configFile = f"{args.output}/vmconfig.{ident}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
@@ -606,22 +615,20 @@ def backupConfig(args, vmConfig):
         sys.exit(1)
 
 
-def backupNvram(args, domainInfo):
+def backupNvram(args, lib, domainInfo):
     """Save domain nvram and loader"""
-    ident = args.cpt.name
-    if args.level == "diff":
-        ident = int(time())
+    ident = getIdent(args)
 
     if domainInfo.loader is not None:
         uefiLoader = f"{args.output}/uefi_loader.{ident}.fd"
         logging.info("Saving Loader to: [%s]", uefiLoader)
-        shutil.copyfile(domainInfo.loader, uefiLoader)
+        lib.copy(domainInfo.loader, uefiLoader)
         args.info.loader = uefiLoader
 
     if domainInfo.nvram is not None:
         uefiNvram = f"{args.output}/uefi_vars.{ident}.fd"
         logging.info("Saving NVRAM to: [%s]", uefiNvram)
-        shutil.copyfile(domainInfo.nvram, uefiNvram)
+        lib.copy(domainInfo.nvram, uefiNvram)
         args.info.nvram = uefiNvram
 
 

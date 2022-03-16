@@ -192,7 +192,13 @@ toOut() {
     [ "$status" -eq 0 ]
     unzip -l ${TMPDIR}/backup.zip | grep checkpoints
     [ "$status" -eq 0 ]
-    echo "output = ${output}"
+    if [ ! -z ${VM_UEFI_VARS} ]; then
+        echo "output = ${output}"
+        unzip -l ${TMPDIR}/backup.zip | grep uefi_loader
+        [ "$status" -eq 0 ]
+        unzip -l ${TMPDIR}/backup.zip | grep uefi_vars
+        [ "$status" -eq 0 ]
+    fi
 }
 @test "Dump metadata information" {
     run ../virtnbdrestore -i $BACKUPSET -a dump -o /dev/null
@@ -382,8 +388,10 @@ toOut() {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
     run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --until virtnbdbackup.1 -o ${TMPDIR}/RESTOREINC/
+    echo "output = ${output}"
     [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
     echo "output = ${output}"
+    [[ ! "${output}" =~  "Applying data from backup file.*virtnbdbackup.2.*" ]]
 }
 @test "Incremental Restore: restore with --sequence option" {
     [ -z $INCTEST ] && skip "skipping"

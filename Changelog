@@ -3,8 +3,11 @@ Version 0.54
 * (#38) Backup virtual machines loader bios and nvram if defined,
 provide notice to user during restore that files must be copied
 manually.
-* Fix --until option during restore: would not stop processing further
-files since --sequence option was introduced
+* virtnbdrestore: Fixes for --until option:
+	+ would not stop processing further files since --sequence option was introduced
+	+ would stop before actually processing specified checkpoint, now function
+	stops after restoring data of checkpoint to be reached.
+	+ extend tests
 
 Version 0.53
 ---------
