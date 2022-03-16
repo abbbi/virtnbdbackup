@@ -251,16 +251,23 @@ def startNbd(qFh, exportName, targetFile, socketFile):
     return nbdClient, nbdClient.waitForServer()
 
 
+def readConfig(vmConfig):
+    """Read saved virtual machine config'"""
+    try:
+        with open(vmConfig, "rb") as vmConf:
+            config = vmConf.read().decode()
+        return config
+    except OSError as errmsg:
+        logging.error("Cant open config file: [%s]: [%s]", vmConfig, errmsg)
+        return False
+
+
 def getDisksFromConfig(args, vmConfig):
     """Parse disk information from latest config file
     contained in the backup directory
     """
-    try:
-        with open(vmConfig, "rb") as vmConf:
-            return libvirthelper.client().getDomainDisks(args, vmConf.read().decode())
-    except OSError as errmsg:
-        logging.error("Cant open config file: [%s]: [%s]", vmConfig, errmsg)
-        return False
+    config = readConfig(vmConfig)
+    return libvirthelper.client().getDomainDisks(args, config)
 
 
 def checkBackingStore(disk):
@@ -275,16 +282,30 @@ def checkBackingStore(disk):
         logging.warning("Configured backing store images must be changed.")
 
 
-def checkAdditional(args, lib):
+def checkAdditional(args, lib, vmConfig):
     """Notice user if backed up vm had loader / nvram"""
-    loader = lib.getLatest(args.input, "uefi_loader*", -1)
-    nvram = lib.getLatest(args.input, "uefi_vars*", -1)
+    config = readConfig(vmConfig)
+    info = libvirthelper.client().getDomainInfo(config)
 
-    if loader:
-        logging.warning("Loader file [%s] must be copied manually.", loader)
+    if info.loader:
+        s = os.path.basename(info.loader)
+        loader = lib.getLatest(args.input, f"*{s}*", -1)
+        logging.warning(
+            "Domain config includes loader: [%s]: "
+            "Loader file [%s] must be copied manually.",
+            info.loader,
+            loader,
+        )
 
-    if nvram:
-        logging.warning("NVRAM file [%s] must be copied manually.", nvram)
+    if info.nvram:
+        s = os.path.basename(info.nvram)
+        nvram = lib.getLatest(args.input, f"*{s}*", -1)
+        logging.warning(
+            "Domain config includes NVRAM: [%s]: "
+            "Loader file [%s] must be copied manually.",
+            info.nvram,
+            nvram,
+        )
 
 
 def setTargetFile(args, disk):
@@ -499,7 +520,7 @@ def main():
         else:
             ret = restore(lib, args, vmConfig)
 
-        checkAdditional(args, lib)
+        checkAdditional(args, lib, vmConfig)
 
         if ret is True:
             shutil.copy(vmConfig, args.output)

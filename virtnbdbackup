@@ -620,13 +620,15 @@ def backupNvram(args, lib, domainInfo):
     ident = getIdent(args)
 
     if domainInfo.loader is not None:
-        uefiLoader = f"{args.output}/uefi_loader.{ident}.fd"
+        loader = os.path.basename(domainInfo.loader)
+        uefiLoader = f"{args.output}/{loader}.{ident}"
         logging.info("Saving Loader to: [%s]", uefiLoader)
         lib.copy(domainInfo.loader, uefiLoader)
         args.info.loader = uefiLoader
 
     if domainInfo.nvram is not None:
-        uefiNvram = f"{args.output}/uefi_vars.{ident}.fd"
+        nvram = os.path.basename(domainInfo.nvram)
+        uefiNvram = f"{args.output}/{nvram}.{ident}"
         logging.info("Saving NVRAM to: [%s]", uefiNvram)
         lib.copy(domainInfo.nvram, uefiNvram)
         args.info.nvram = uefiNvram

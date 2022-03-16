@@ -194,9 +194,9 @@ toOut() {
     [ "$status" -eq 0 ]
     if [ ! -z ${VM_UEFI_VARS} ]; then
         echo "output = ${output}"
-        unzip -l ${TMPDIR}/backup.zip | grep uefi_loader
+        unzip -l ${TMPDIR}/backup.zip | grep UEFI.fd
         [ "$status" -eq 0 ]
-        unzip -l ${TMPDIR}/backup.zip | grep uefi_vars
+        unzip -l ${TMPDIR}/backup.zip | grep UEFI_VARS
         [ "$status" -eq 0 ]
     fi
 }

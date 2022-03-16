@@ -357,8 +357,8 @@ if the domain boots from OVM UEFI BIOS), these images will be saved to the
 backup folder, too:
 
 ```
- backupNvram [MainThread]: Saving Loader to: [/tmp/backupset/uefi_loader.virtnbdbackup.0.fd]
- backupNvram [MainThread]: Saving NVRAM to: [/tmp/backkupset/uefi_vars.virtnbdbackup.0.fd]
+ backupNvram [MainThread]: Saving Loader to: [/tmp/backupset/UEFI.fd.virtnbdbackup.0.fd]
+ backupNvram [MainThread]: Saving NVRAM to: [/tmp/backkupset/UEFI_VARS.fd.virtnbdbackup.0.fd]
 ```
 
 as the virtual domain might depend on certain UEFI settings or vars to
