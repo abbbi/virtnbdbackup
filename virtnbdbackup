@@ -196,7 +196,7 @@ def saveCheckpointFile(args):
         checkpoints = readCheckpointFile(args.cpt.file)
         checkpoints.append(args.cpt.name)
         with open(args.cpt.file, "wb") as cFw:
-            cFw.write(json.dumps(checkpoints))
+            cFw.write(json.dumps(checkpoints).encode())
     except exceptions.CheckpointException as e:
         raise exceptions.CheckpointException from e
     except OSError as e:
