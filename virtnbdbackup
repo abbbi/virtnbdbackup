@@ -499,7 +499,7 @@ def main():
         logging.info("Started backup job with checkpoint, saving information.")
         try:
             saveCheckpointFile(args)
-        except exceptions.CheckpointException() as e:
+        except exceptions.CheckpointException as e:
             logging.error("Unable to append checkpoint file: %s", e)
             sys.exit(1)
         if args.printonly is False:
