@@ -125,8 +125,8 @@ def readCheckpointFile(cptFile):
     information"""
     checkpoints = []
     if os.path.exists(cptFile):
-        with open(cptFile, "r") as cptFh:
-            checkpoints = json.loads(cptFh.read())
+        with open(cptFile, "rb") as cptFh:
+            checkpoints = json.loads(cptFh.read().decode())
 
     return checkpoints
 
@@ -195,7 +195,7 @@ def saveCheckpointFile(args):
     try:
         checkpoints = readCheckpointFile(args.cpt.file)
         checkpoints.append(args.cpt.name)
-        with open(args.cpt.file, "w") as cFw:
+        with open(args.cpt.file, "wb") as cFw:
             cFw.write(json.dumps(checkpoints))
     except exceptions.CheckpointException as e:
         raise exceptions.CheckpointException from e
