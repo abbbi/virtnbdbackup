@@ -1,5 +1,8 @@
 Version 0.55
 ---------
+* Correct some wrongly catched exceptions
+* Update README
+
 
 Version 0.54
 ---------
