@@ -1,3 +1,7 @@
+Version 0.57
+---------
+
+
 Version 0.56
 ---------
  * Fix for Issue (#40): redefining checkpoints failes
