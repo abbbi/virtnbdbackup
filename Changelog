@@ -1,6 +1,6 @@
 Version 0.56
 ---------
-
+ * Fix for Isuse (#40): redefining checkpoints failes
 
 Version 0.55
 ---------

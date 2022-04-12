@@ -436,7 +436,8 @@ class client:
             log.info("Redefine missing checkpoint: [%s]", checkpointName)
             try:
                 domObj.checkpointCreateXML(
-                    checkpointConfig, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
+                    checkpointConfig.decode(),
+                    libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE,
                 )
             except libvirt.libvirtError as e:
                 log.error("Unable to redefine checkpoint: [%s]: %s", checkpointName, e)
