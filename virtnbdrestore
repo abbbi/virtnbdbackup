@@ -295,8 +295,9 @@ def checkAdditional(args, lib, vmConfig):
                 "Domain config includes additional boot option: [%s]: "
                 "File [%s] must be copied manually.",
                 setting,
-                f
+                f,
             )
+
 
 def setTargetFile(args, disk):
     """Based on disk information, set target file
