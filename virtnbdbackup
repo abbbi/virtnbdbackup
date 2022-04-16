@@ -444,7 +444,7 @@ def main():
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks = virtClient.getDomainDisks(args, vmConfig)
-    info = virtClient.getDomainInfo(vmConfig)
+    args.info = virtClient.getDomainInfo(vmConfig)
 
     if not disks:
         logging.error(
@@ -546,9 +546,8 @@ def main():
     if args.printonly is False:
         configFile = backupConfig(args, vmConfig)
 
-    backupBootConfig(args, lib, info)
+    backupBootConfig(args, lib)
 
-    args.info = info
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, zipStream, logFile)
 
@@ -614,18 +613,18 @@ def backupConfig(args, vmConfig):
         sys.exit(1)
 
 
-def backupBootConfig(args, lib, domainInfo):
+def backupBootConfig(args, lib):
     """Save domain nvram and loader"""
     ident = getIdent(args)
 
-    for setting in domainInfo.keys():
-        if domainInfo[setting] is not None:
-            fileBase = os.path.basename(domainInfo[setting])
+    for setting in args.info.keys():
+        if args.info[setting] is not None:
+            fileBase = os.path.basename(args.info[setting])
             tfile = f"{args.output}/{fileBase}.{ident}"
             logging.info(
                 "Save additional boot config file [%s] to: [%s]", setting, tfile
             )
-            lib.copy(domainInfo[setting], tfile)
+            lib.copy(args.info[setting], tfile)
 
 
 def setMetaContext(args, disk):
