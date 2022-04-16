@@ -105,7 +105,7 @@ class client:
             "initrd": None,
         }
 
-        for flag in settings:
+        for flag in iter(settings):
             try:
                 settings[flag] = tree.find("os").find(flag).text
             except AttributeError as e:
