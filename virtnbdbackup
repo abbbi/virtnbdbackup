@@ -348,7 +348,6 @@ def main():
     args = lib.argparse(parser)
 
     args.stdout = args.output == "-"
-    args.info = Namespace()
 
     zipStream = None
     if args.stdout is False:
@@ -549,6 +548,7 @@ def main():
 
     backupBootConfig(args, lib, info)
 
+    args.info = info
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, zipStream, logFile)
 
@@ -575,12 +575,14 @@ def addFiles(args, configFile, zipStream, logFile):
             for filename in files:
                 zipStream.zipStream.write(os.path.join(dirname, filename))
 
-    if args.info.nvram is not None:
-        logging.info("Adding NVRAM [%s] to zipfile", args.info.nvram)
-        zipStream.zipStream.write(args.info.nvram, os.path.basename(args.info.nvram))
-    if args.info.loader is not None:
-        logging.info("Adding Loader [%s] to zipfile", args.info.loader)
-        zipStream.zipStream.write(args.info.loader, os.path.basename(args.info.loader))
+    for setting in args.info:
+        if args.info[setting] is not None:
+            logging.info(
+                "Adding additional config file [%s] to zipfile", args.info[setting]
+            )
+            zipStream.zipStream.write(
+                args.info[setting], os.path.basename(args.info[setting])
+            )
 
     logging.info("Adding backup log [%s] to zipfile", logFile)
     zipStream.zipStream.write(logFile, logFile)
