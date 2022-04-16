@@ -349,8 +349,6 @@ def main():
 
     args.stdout = args.output == "-"
     args.info = Namespace()
-    args.info.loader = None
-    args.info.nvram = None
 
     zipStream = None
     if args.stdout is False:
@@ -549,8 +547,7 @@ def main():
     if args.printonly is False:
         configFile = backupConfig(args, vmConfig)
 
-    if info.loader is not None or info.nvram is not None:
-        backupNvram(args, lib, info)
+    backupBootConfig(args, lib, info)
 
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, zipStream, logFile)
@@ -615,23 +612,18 @@ def backupConfig(args, vmConfig):
         sys.exit(1)
 
 
-def backupNvram(args, lib, domainInfo):
+def backupBootConfig(args, lib, domainInfo):
     """Save domain nvram and loader"""
     ident = getIdent(args)
 
-    if domainInfo.loader is not None:
-        loader = os.path.basename(domainInfo.loader)
-        uefiLoader = f"{args.output}/{loader}.{ident}"
-        logging.info("Saving Loader to: [%s]", uefiLoader)
-        lib.copy(domainInfo.loader, uefiLoader)
-        args.info.loader = uefiLoader
-
-    if domainInfo.nvram is not None:
-        nvram = os.path.basename(domainInfo.nvram)
-        uefiNvram = f"{args.output}/{nvram}.{ident}"
-        logging.info("Saving NVRAM to: [%s]", uefiNvram)
-        lib.copy(domainInfo.nvram, uefiNvram)
-        args.info.nvram = uefiNvram
+    for setting in domainInfo.keys():
+        if domainInfo[setting] is not None:
+            fileBase = os.path.basename(domainInfo[setting])
+            tfile = f"{args.output}/{fileBase}.{ident}"
+            logging.info(
+                "Save additional boot config file [%s] to: [%s]", setting, tfile
+            )
+            lib.copy(domainInfo[setting], tfile)
 
 
 def setMetaContext(args, disk):

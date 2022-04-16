@@ -287,26 +287,16 @@ def checkAdditional(args, lib, vmConfig):
     config = readConfig(vmConfig)
     info = libvirthelper.client().getDomainInfo(config)
 
-    if info.loader:
-        s = os.path.basename(info.loader)
-        loader = lib.getLatest(args.input, f"*{s}*", -1)
-        logging.warning(
-            "Domain config includes loader: [%s]: "
-            "Loader file [%s] must be copied manually.",
-            info.loader,
-            loader,
-        )
-
-    if info.nvram:
-        s = os.path.basename(info.nvram)
-        nvram = lib.getLatest(args.input, f"*{s}*", -1)
-        logging.warning(
-            "Domain config includes NVRAM: [%s]: "
-            "Loader file [%s] must be copied manually.",
-            info.nvram,
-            nvram,
-        )
-
+    for setting in info.keys():
+        if info[setting] is not None:
+            s = os.path.basename(info[setting])
+            f = lib.getLatest(args.input, f"*{s}*", -1)
+            logging.warning(
+                "Domain config includes additional boot option: [%s]: "
+                "File [%s] must be copied manually.",
+                setting,
+                f
+            )
 
 def setTargetFile(args, disk):
     """Based on disk information, set target file

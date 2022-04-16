@@ -98,21 +98,21 @@ class client:
         """Return object with general vm information relevant
         for backup"""
         tree = self._getTree(vmConfig)
-        DomainInfo = namedtuple("DomainInfo", ["loader", "nvram"])
-        loader = None
-        nvram = None
-        try:
-            loader = tree.find("os").find("loader").text
-        except AttributeError as e:
-            logging.debug("No loader setting found: %s", e)
-        try:
-            nvram = tree.find("os").find("nvram").text
-        except AttributeError as e:
-            logging.debug("No nvram setting found: %s", e)
+        settings = {
+            "loader": None,
+            "nvram": None,
+            "kernel": None,
+            "initrd": None,
+        }
 
-        info = DomainInfo(loader, nvram)
-        logging.debug("Domain Info: [%s]", info)
-        return info
+        for flag in settings:
+            try:
+                settings[flag] = tree.find("os").find(flag).text
+            except AttributeError as e:
+                logging.debug("No setting [%s] found: %s", flag, e)
+
+        logging.debug("Domain Info: [%s]", settings)
+        return settings
 
     def getDomainDisks(self, args, vmConfig):
         """Parse virtual machine configuration for disk devices, filter
