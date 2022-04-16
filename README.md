@@ -351,18 +351,13 @@ During restore unzip the data from both zip files into a single directory:
 ```
 
 
-## NVram and additional files
+## Kernel/initrd and additional files
 
-If an domain has configured custom loader or nvram images (usually the case
-if the domain boots from OVM UEFI BIOS), these images will be saved to the
-backup folder, too:
+If an domain has configured custom kernel, initrd, loader or nvram images
+(usually the case if the domain boots from OVM UEFI BIOS), these files will be
+saved to the backup folder aswell.
 
-```
- backupNvram [MainThread]: Saving Loader to: [/tmp/backupset/UEFI.fd.virtnbdbackup.0.fd]
- backupNvram [MainThread]: Saving NVRAM to: [/tmp/backkupset/UEFI_VARS.fd.virtnbdbackup.0.fd]
-```
-
-as the virtual domain might depend on certain UEFI settings or vars to
+As the virtual domain might depend on certain UEFI settings or vars to
 correctly boot, you must take care to copy these files to your restore target
 manually.
 
