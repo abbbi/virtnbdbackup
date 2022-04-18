@@ -451,9 +451,9 @@ class client:
         checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
         log.info("Saving checkpoint config to: %s", checkpointFile)
         try:
-            with open(checkpointFile, "w") as f:
+            with open(checkpointFile, "wb") as f:
                 c = domObj.checkpointLookupByName(args.cpt.name)
-                f.write(c.getXMLDesc())
+                f.write(c.getXMLDesc().encode())
                 return True
         except OSError as errmsg:
             log.error(
