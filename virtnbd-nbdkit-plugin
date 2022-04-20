@@ -121,12 +121,12 @@ def pread(h, buf, offset, flags):
     data = bytearray()
     blockListFull = list(
         filter(
-            lambda x: x["originalOffset"] <= offset and "inc" not in x["file"], blockMap
+            lambda x: x["originalOffset"] <= offset and x["inc"] is not True, blockMap
         )
     )
     blockListInc = list(
         filter(
-            lambda x: x["originalOffset"] <= offset and "full" not in x["file"],
+            lambda x: x["originalOffset"] <= offset and x["inc"] is True,
             blockMap,
         )
     )

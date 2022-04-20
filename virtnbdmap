@@ -110,6 +110,7 @@ def getDataRanges(lib, stream, sTypes, reader):
         blockInfo["length"] = length
         blockInfo["data"] = kind == sTypes.DATA
         blockInfo["file"] = reader.name
+        blockInfo["inc"] = meta["incremental"]
 
         if kind == sTypes.DATA:
             reader.seek(length, os.SEEK_CUR)
