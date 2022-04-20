@@ -661,15 +661,8 @@ def setTargetFile(args, disk):
             level = args.level
         targetFile = f"{args.output}/{disk.target}.{level}.data"
     elif args.level in ("inc", "diff"):
-        timestamp = int(time())
-        # during diff backup, we do not create an checkpoint,
-        # as such metadata header contains timestamp of
-        # target file
-        if args.level == "diff":
-            checkpointName = timestamp
-        else:
-            checkpointName = args.cpt.name
-        targetFile = f"{args.output}/{disk.target}.{args.level}.{checkpointName}.data"
+        cptName = getIdent(args)
+        targetFile = f"{args.output}/{disk.target}.{args.level}.{cptName}.data"
 
     targetFilePartial = f"{targetFile}.partial"
 
