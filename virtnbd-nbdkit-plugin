@@ -119,14 +119,33 @@ def pread(h, buf, offset, flags):
 
     # get block where offset sort of matches
     data = bytearray()
-    blockList = list(filter(lambda x: x["originalOffset"] <= offset, blockMap))
-    nbdkit.debug(f"blocklist: {blockList}")
-    if len(blockList) == 1:
-        block = blockList[0]
-    else:
-        block = blockList[-1]
+    blockListFull = list(
+        filter(
+            lambda x: x["originalOffset"] <= offset and "inc" not in x["file"], blockMap
+        )
+    )
+    blockListInc = list(
+        filter(
+            lambda x: x["originalOffset"] <= offset and "full" not in x["file"],
+            blockMap,
+        )
+    )
+    nbdkit.debug("-------------------------------------------")
+    nbdkit.debug(f"matching blocklist from full backup: {blockListFull}")
+    nbdkit.debug("+++++++++++++++++++++++++++++++++++++++++++")
+    nbdkit.debug(f"matching blocklist from inc backup: {blockListInc}")
+    nbdkit.debug("-------------------------------------------")
+    if len(blockListInc) > 0:
+        nbdkit.debug("Need to handle block from inc backup")
 
-    nbdkit.debug(f"{block}")
+    if len(blockListFull) == 1:
+        nbdkit.debug("using first block from blocklist")
+        block = blockListFull[0]
+    else:
+        nbdkit.debug("Using block from full backup")
+        block = blockListFull[-1]
+
+    nbdkit.debug(f"Processing block: {block}")
 
     fileOffset = block["offset"] - block["originalOffset"] + offset
 
