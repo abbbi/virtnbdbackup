@@ -24,56 +24,35 @@ from datetime import datetime
 log = logging.getLogger(__name__)
 
 
-class dirFunc:
-    """Create directory"""
-
-    def _makeDir(self):
-        if os.path.exists(self.targetDir):
-            if not os.path.isdir(self.targetDir):
-                log.error("Specified target is a file, not a directory")
-                raise SystemExit(1)
-        if not os.path.exists(self.targetDir):
-            try:
-                os.makedirs(self.targetDir)
-            except OSError as e:
-                log.error("Unable to create target directory: %s", e)
-                raise SystemExit(1) from e
-
-
 class outputHelper:
     """Directs output stream to either regular directory or
-    zipfile
+    zipfile. If other formats are added class should be
+    used as generic wrapper for open()/write()/close() functions.
+
+    Currently only used for zip file creation and creating
+    the target output directory.
     """
 
-    class Directory(dirFunc):
+    class Directory:
         """Backup target directory"""
 
         def __init__(self, targetDir):
             self.targetDir = targetDir
-            self.fileHandle = None
-
             self._makeDir()
 
-        def open(self, fileName, mode="w+"):
-            """Return file handle"""
-            targetFile = f"{self.targetDir}/{fileName}"
-            try:
-                self.fileHandle = open(targetFile, mode)
-                return self.fileHandle
-            except OSError as e:
-                log.error("Unable to open file: %s", e)
+        def _makeDir(self):
+            if os.path.exists(self.targetDir):
+                if not os.path.isdir(self.targetDir):
+                    log.error("Specified target is a file, not a directory")
+                    raise SystemExit(1)
+            if not os.path.exists(self.targetDir):
+                try:
+                    os.makedirs(self.targetDir)
+                except OSError as e:
+                    log.error("Unable to create target directory: %s", e)
+                    raise SystemExit(1) from e
 
-            return False
-
-        def close(self):
-            """Close wrapper"""
-            return self.fileHandle.close()
-
-        def write(self, data):
-            """Write handle wrapper"""
-            return self.fileHandle.write(data)
-
-    class Zip(dirFunc):
+    class Zip:
         """Backup to zip file"""
 
         def __init__(self):

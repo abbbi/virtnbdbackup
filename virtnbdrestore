@@ -27,6 +27,7 @@ from libvirtnbdbackup import common
 from libvirtnbdbackup import nbdhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import qemuhelper
+from libvirtnbdbackup import exceptions as baseexception
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import exceptions
@@ -42,7 +43,10 @@ def dump(lib, args, stream, dataFiles):
             continue
         logging.info(dataFile)
 
-        meta = getHeader(lib, dataFile, stream)
+        sourceFile = dataFile
+        if args.sequence:
+            sourceFile = f"{args.input}/{dataFile}"
+        meta = getHeader(lib, sourceFile, stream)
 
         if not meta:
             return False
@@ -70,7 +74,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
         meta = stream.loadMetadata(reader.read(length))
     except exceptions.StreamFormatException as errmsg:
         logging.fatal(errmsg)
-        return False
+        raise baseexception.RestoreError from errmsg
 
     if lib.isCompressed(meta) is True:
         trailer = stream.readCompressionTrailer(reader)
@@ -79,13 +83,10 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     else:
         trailer = None
 
-    if meta["checkpointName"] == args.until:
-        logging.info("Reached checkpoint %s, stopping", args.until)
-        return None
-
     if meta["dataSize"] == 0:
         logging.info("Saveset %s contains no dirty blocks, skipping", dataFile)
         return True
+
     logging.info(
         "Applying data from backup file [%s] to target file [%s]", dataFile, targetFile
     )
@@ -102,7 +103,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
             kind, start, length = stream.readFrame(reader)
         except exceptions.StreamFormatException as err:
             logging.error("Cant read stream at pos: %s: %s", reader.tell(), err)
-            return False
+            raise baseexception.RestoreError from err
         if kind == sTypes.ZERO:
             logging.debug("Write zero segment from %s length: %s", start, length)
             if length >= nbdClient.maxRequestSize:
@@ -132,8 +133,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
                         lib.isCompressed(meta),
                     )
                 except Exception as e:
-                    logging.exception(e)
-                    return False
+                    raise baseexception.RestoreError from e
                 logging.debug("Wrote: %s", written)
             else:
                 try:
@@ -143,8 +143,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
                     connection.pwrite(data, start)
                     written = len(data)
                 except Exception as e:
-                    logging.exception(e)
-                    return False
+                    raise baseexception.RestoreError from e
 
             assert reader.read(len(sTypes.TERM)) == sTypes.TERM
             dataSize += originalSize
@@ -152,16 +151,21 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
             dataBlockCnt += 1
         elif kind == sTypes.STOP:
             progressBar.close()
-            if dataSize == meta["dataSize"]:
-                logging.info("End of stream, %s bytes of data processed", dataSize)
-                return True
-            logging.error(
-                "Error: restored data size %s != %s",
-                dataSize,
-                meta["dataSize"],
-            )
-            return False
-    return False
+            if dataSize != meta["dataSize"]:
+                logging.error(
+                    "Error: restored data size %s != %s",
+                    dataSize,
+                    meta["dataSize"],
+                )
+                raise baseexception.RestoreError
+            break
+
+    logging.info("End of stream, %s bytes of data processed", dataSize)
+    if meta["checkpointName"] == args.until:
+        logging.info("Reached checkpoint %s, stopping", args.until)
+        raise baseexception.UntilCheckpointReached
+
+    return True
 
 
 def restoreSequence(lib, args, dataFiles):
@@ -247,16 +251,23 @@ def startNbd(qFh, exportName, targetFile, socketFile):
     return nbdClient, nbdClient.waitForServer()
 
 
+def readConfig(vmConfig):
+    """Read saved virtual machine config'"""
+    try:
+        with open(vmConfig, "rb") as vmConf:
+            config = vmConf.read().decode()
+        return config
+    except OSError as errmsg:
+        logging.error("Cant open config file: [%s]: [%s]", vmConfig, errmsg)
+        return False
+
+
 def getDisksFromConfig(args, vmConfig):
     """Parse disk information from latest config file
     contained in the backup directory
     """
-    try:
-        with open(vmConfig, "rb") as vmConf:
-            return libvirthelper.client().getDomainDisks(args, vmConf.read().decode())
-    except OSError as errmsg:
-        logging.error("Cant open config file: [%s]: [%s]", vmConfig, errmsg)
-        return False
+    config = readConfig(vmConfig)
+    return libvirthelper.client().getDomainDisks(args, config)
 
 
 def checkBackingStore(disk):
@@ -269,6 +280,23 @@ def checkBackingStore(disk):
         )
         logging.warning("Target virtual machine configuration must be altered!")
         logging.warning("Configured backing store images must be changed.")
+
+
+def checkAdditional(args, lib, vmConfig):
+    """Notice user if backed up vm had loader / nvram"""
+    config = readConfig(vmConfig)
+    info = libvirthelper.client().getDomainInfo(config)
+
+    for setting in info.keys():
+        if info[setting] is not None:
+            s = os.path.basename(info[setting])
+            f = lib.getLatest(args.input, f"*{s}*", -1)
+            logging.warning(
+                "Domain config includes additional boot option: [%s]: "
+                "File [%s] must be copied manually.",
+                setting,
+                f,
+            )
 
 
 def setTargetFile(args, disk):
@@ -295,7 +323,7 @@ def restore(lib, args, vmConfig):
             logging.info("Skipping disk %s for restore", disk.target)
             continue
 
-        restoreDisk = lib.getDataFilesByDisk(args.input, disk.target)
+        restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
         logging.debug("Restoring disk: %s", restoreDisk)
         if len(restoreDisk) < 1:
             logging.warning("No backup file for disk [%s] found.", disk.target)
@@ -329,20 +357,26 @@ def restore(lib, args, vmConfig):
         socketFile = lib.getSocketFile(args.socketfile)
         nbdClient, connection = startNbd(qFh, meta["diskName"], targetFile, socketFile)
 
+        result = False
         for dataFile in restoreDisk:
-            result = writeData(
-                lib, args, stream, dataFile, targetFile, nbdClient, connection
-            )
-            if result is False:
+            try:
+                result = writeData(
+                    lib, args, stream, dataFile, targetFile, nbdClient, connection
+                )
+            except baseexception.UntilCheckpointReached:
+                result = True
                 break
-
+            except baseexception.RestoreError:
+                result = False
+                break
     return result
 
 
 def main():
     """main function"""
     parser = argparse.ArgumentParser(description="Restore virtual machine disks")
-    parser.add_argument(
+    opt = parser.add_argument_group("General options")
+    opt.add_argument(
         "-a",
         "--action",
         required=True,
@@ -350,24 +384,24 @@ def main():
         choices=["dump", "restore"],
         help="Action to perform",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-i",
         "--input",
         required=True,
         type=str,
         help="Directory including a backup set",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-o", "--output", required=True, type=str, help="Restore target directory"
     )
-    parser.add_argument(
+    opt.add_argument(
         "-u",
         "--until",
         required=False,
         type=str,
         help="Restore only until checkpoint, point in time restore.",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-s",
         "--sequence",
         required=False,
@@ -375,7 +409,7 @@ def main():
         default=None,
         help="Restore image based on specified backup files.",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-d",
         "--disk",
         required=False,
@@ -383,15 +417,7 @@ def main():
         default=None,
         help="Process only disk matching target dev name. (default: %(default)s)",
     )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        required=False,
-        action="store_true",
-        default=False,
-        help="Enable debug output",
-    )
-    parser.add_argument(
+    opt.add_argument(
         "-n",
         "--noprogress",
         required=False,
@@ -399,19 +425,28 @@ def main():
         default=False,
         help="Disable progress bar",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-f",
         "--socketfile",
         default=None,
         type=str,
         help="Use specified file for NBD Server socket instead of random file",
     )
-    parser.add_argument(
+    opt.add_argument(
         "-r",
         "--raw",
         default=False,
         action="store_true",
         help="Copy raw images as is during restore. (default: %(default)s)",
+    )
+    debopt = parser.add_argument_group("Debug options")
+    debopt.add_argument(
+        "-v",
+        "--verbose",
+        required=False,
+        action="store_true",
+        default=False,
+        help="Enable debug output",
     )
 
     lib = common.Common()
@@ -433,14 +468,18 @@ def main():
     lib.printVersion(__version__)
 
     if not os.path.exists(args.input):
-        logging.error("Backup set directory does not exist")
+        logging.error("Backup set directory does not exist.")
         sys.exit(1)
 
     if args.sequence is not None:
-        logging.info("Using manual specified sequence of files")
+        logging.info("Using manual specified sequence of files.")
         dataFiles = args.sequence.split(",")
+
+        if "full" not in dataFiles[0]:
+            logging.error("Sequence must start with full backup.")
+            sys.exit(1)
     else:
-        dataFiles = lib.getDataFiles(args.input)
+        dataFiles = lib.getLatest(args.input, "*.data")
 
         if not dataFiles:
             logging.error("No data files found in directory: %s", args.input)
@@ -450,7 +489,7 @@ def main():
         dump(lib, args, stream, dataFiles)
 
     if args.action == "restore":
-        vmConfig = lib.getLastConfigFile(args.input)
+        vmConfig = lib.getLatest(args.input, "vmconfig*.xml", -1)
         logging.info("Latest config file found: %s", vmConfig)
         if not vmConfig:
             logging.error("No domain config file found")
@@ -471,6 +510,8 @@ def main():
             ret = restoreSequence(lib, args, dataFiles)
         else:
             ret = restore(lib, args, vmConfig)
+
+        checkAdditional(args, lib, vmConfig)
 
         if ret is True:
             shutil.copy(vmConfig, args.output)

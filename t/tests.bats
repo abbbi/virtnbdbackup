@@ -31,6 +31,12 @@ setup() {
         gunzip -fk ${VM_IMAGE}.gz > ${VM_IMAGE}
     fi
     cp ${VM_IMAGE} ${TMPDIR}
+    if [ ! -z ${VM_UEFI_VARS} ]; then
+        rm -f /tmp/UEFI.fd /tmp/UEFI_VARS.fd
+        # simulates firmware even tho its empty.
+        truncate -s 4096 /tmp/UEFI.fd
+        zcat ${VM_UEFI_VARS} >> /tmp/UEFI_VARS.fd
+    fi
 }
 
 @test "Setup: Define and start test VM ${VM}" {
@@ -186,7 +192,13 @@ toOut() {
     [ "$status" -eq 0 ]
     unzip -l ${TMPDIR}/backup.zip | grep checkpoints
     [ "$status" -eq 0 ]
-    echo "output = ${output}"
+    if [ ! -z ${VM_UEFI_VARS} ]; then
+        echo "output = ${output}"
+        unzip -l ${TMPDIR}/backup.zip | grep UEFI.fd
+        [ "$status" -eq 0 ]
+        unzip -l ${TMPDIR}/backup.zip | grep UEFI_VARS
+        [ "$status" -eq 0 ]
+    fi
 }
 @test "Dump metadata information" {
     run ../virtnbdrestore -i $BACKUPSET -a dump -o /dev/null
@@ -376,8 +388,10 @@ toOut() {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
     run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --until virtnbdbackup.1 -o ${TMPDIR}/RESTOREINC/
+    echo "output = ${output}"
     [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
     echo "output = ${output}"
+    [[ ! "${output}" =~  "Applying data from backup file.*virtnbdbackup.2.*" ]]
 }
 @test "Incremental Restore: restore with --sequence option" {
     [ -z $INCTEST ] && skip "skipping"

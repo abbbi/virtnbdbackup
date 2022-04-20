@@ -14,7 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import sys
 import string
 import random
 import glob
@@ -23,6 +22,8 @@ from xml.etree import ElementTree
 from collections import namedtuple
 import logging
 import libvirt
+
+from libvirtnbdbackup.libvirthelper import exceptions
 
 
 def libvirt_ignore(_ignore, _err):
@@ -46,17 +47,24 @@ class client:
 
     @staticmethod
     def _connect():
-        """return libvirt conneciton handle"""
+        """return libvirt connection handle"""
         URI = "qemu:///system"
         try:
             return libvirt.open(URI)
         except libvirt.libvirtError as e:
-            log.error("Cant connect libvirt daemon: %s", e)
-            sys.exit(1)
+            raise exceptions.connectionFailed(e) from e
+
+    @staticmethod
+    def _getTree(vmConfig):
+        """Return Etree element for vm config"""
+        return ElementTree.fromstring(vmConfig)
 
     def getDomain(self, name):
         """Lookup domain"""
-        return self._conn.lookupByName(name)
+        try:
+            return self._conn.lookupByName(name)
+        except libvirt.libvirtError as e:
+            raise exceptions.domainNotFound(e) from e
 
     @staticmethod
     def domainOffline(domObj):
@@ -65,12 +73,11 @@ class client:
         log.debug("Domain state returned by libvirt: [%s]", state)
         return state != libvirt.VIR_DOMAIN_RUNNING
 
-    @staticmethod
-    def hasIncrementalEnabled(domObj):
+    def hasIncrementalEnabled(self, domObj):
         """Check if virtual machine has enabled required capabilities
         for incremental backup
         """
-        tree = ElementTree.fromstring(domObj.XMLDesc(0))
+        tree = self._getTree(domObj.XMLDesc(0))
         for target in tree.findall(
             "{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"
         ):
@@ -87,8 +94,27 @@ class client:
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
-    @staticmethod
-    def getDomainDisks(args, vmConfig):
+    def getDomainInfo(self, vmConfig):
+        """Return object with general vm information relevant
+        for backup"""
+        tree = self._getTree(vmConfig)
+        settings = {
+            "loader": None,
+            "nvram": None,
+            "kernel": None,
+            "initrd": None,
+        }
+
+        for flag in iter(settings):
+            try:
+                settings[flag] = tree.find("os").find(flag).text
+            except AttributeError as e:
+                logging.debug("No setting [%s] found: %s", flag, e)
+
+        logging.debug("Domain Info: [%s]", settings)
+        return settings
+
+    def getDomainDisks(self, args, vmConfig):
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
@@ -96,7 +122,7 @@ class client:
             "DomainDisk",
             ["target", "format", "filename", "path", "backingstores"],
         )
-        tree = ElementTree.fromstring(vmConfig)
+        tree = self._getTree(vmConfig)
         devices = []
 
         excludeList = None
@@ -410,7 +436,8 @@ class client:
             log.info("Redefine missing checkpoint: [%s]", checkpointName)
             try:
                 domObj.checkpointCreateXML(
-                    checkpointConfig, libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
+                    checkpointConfig.decode(),
+                    libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE,
                 )
             except libvirt.libvirtError as e:
                 log.error("Unable to redefine checkpoint: [%s]: %s", checkpointName, e)
@@ -424,9 +451,9 @@ class client:
         checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
         log.info("Saving checkpoint config to: %s", checkpointFile)
         try:
-            with open(checkpointFile, "w") as f:
+            with open(checkpointFile, "wb") as f:
                 c = domObj.checkpointLookupByName(args.cpt.name)
-                f.write(c.getXMLDesc())
+                f.write(c.getXMLDesc().encode())
                 return True
         except OSError as errmsg:
             log.error(

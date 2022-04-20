@@ -7,6 +7,7 @@ import glob
 import json
 import logging
 import signal
+import shutil
 import pprint
 import lz4.frame
 from tqdm import tqdm
@@ -80,40 +81,32 @@ class Common:
         return True
 
     @staticmethod
-    def getDataFiles(targetDir):
-        """return data files within backupset
-        directory
-        """
-        files = glob.glob(f"{targetDir}/*.data")
-        files.sort(key=os.path.getmtime)
-
-        log.debug("Sorted data files: \n%s", pprint.pformat(files))
-        return files
-
-    @staticmethod
-    def getDataFilesByDisk(targetDir, targetDisk):
-        """return data files subject to one disk
-        from backupset directory
-        """
-        files = glob.glob(f"{targetDir}/{targetDisk}*.data")
-        files.sort(key=os.path.getmtime)
-
-        log.debug(
-            "Sorted file list for disk [%s]: \n%s", targetDisk, pprint.pformat(files)
-        )
-        return files
-
-    @staticmethod
-    def getLastConfigFile(targetDir):
-        """get the last backed up configuration file
-        from the backupset
+    def getLatest(targetDir, search, key=None):
+        """get the last backed up file matching search
+        from the backupset, used to find latest vm config,
+        data files or data files by disk.
         """
         try:
-            files = glob.glob(f"{targetDir}/vmconfig*.xml")
+            files = glob.glob(f"{targetDir}/{search}")
             files.sort(key=os.path.getmtime)
-            return files[-1]
+
+            if key is not None:
+                ret = files[key]
+            else:
+                ret = files
+
+            log.debug("Sorted data files: \n%s", pprint.pformat(ret))
+            return ret
         except IndexError:
             return None
+
+    @staticmethod
+    def copy(source, target):
+        """Copy file, handle exceptions"""
+        try:
+            shutil.copyfile(source, target)
+        except OSError as e:
+            log.warning("Unable to copy [%s] to [%s]: [%s]", source, target, e)
 
     @staticmethod
     def progressBar(total, desc, args, count=0):

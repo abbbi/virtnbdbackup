@@ -88,7 +88,7 @@ def checkForeign(args, virtClient, domObj, lib):
         "and start a new backup chain by creating a full backup."
     )
 
-    raise exceptions.ForeignCeckpointError()
+    raise exceptions.ForeignCeckpointError
 
 
 def setOfflineArguments(args, virtClient, domObj):
@@ -125,8 +125,8 @@ def readCheckpointFile(cptFile):
     information"""
     checkpoints = []
     if os.path.exists(cptFile):
-        with open(cptFile, "r") as cptFh:
-            checkpoints = json.loads(cptFh.read())
+        with open(cptFile, "rb") as cptFh:
+            checkpoints = json.loads(cptFh.read().decode())
 
     return checkpoints
 
@@ -195,9 +195,9 @@ def saveCheckpointFile(args):
     try:
         checkpoints = readCheckpointFile(args.cpt.file)
         checkpoints.append(args.cpt.name)
-        with open(args.cpt.file, "w") as cFw:
-            cFw.write(json.dumps(checkpoints))
-    except exceptions.CheckpointException() as e:
+        with open(args.cpt.file, "wb") as cFw:
+            cFw.write(json.dumps(checkpoints).encode())
+    except exceptions.CheckpointException as e:
         raise exceptions.CheckpointException from e
     except OSError as e:
         raise exceptions.SaveCheckpointError from e
@@ -417,11 +417,14 @@ def main():
 
     outHelper.Directory(args.checkpointdir)
 
-    virtClient = libvirthelper.client()
     try:
+        virtClient = libvirthelper.client()
         domObj = virtClient.getDomain(args.domain)
-    except Exception as e:
-        logging.error("Unable to get domain information: %s", e)
+    except libvirthelper.exceptions.domainNotFound as e:
+        logging.error("%s", e)
+        sys.exit(1)
+    except libvirthelper.exceptions.connectionFailed as e:
+        logging.error("Cant connect libvirt daemon: %s", e)
         sys.exit(1)
 
     if virtClient.hasIncrementalEnabled(domObj) is False:
@@ -430,7 +433,7 @@ def main():
 
     try:
         checkForeign(args, virtClient, domObj, lib)
-    except exceptions.CheckpointException():
+    except exceptions.CheckpointException:
         sys.exit(1)
 
     setOfflineArguments(args, virtClient, domObj)
@@ -441,6 +444,7 @@ def main():
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks = virtClient.getDomainDisks(args, vmConfig)
+    args.info = virtClient.getDomainInfo(vmConfig)
 
     if not disks:
         logging.error(
@@ -492,7 +496,7 @@ def main():
         logging.info("Started backup job with checkpoint, saving information.")
         try:
             saveCheckpointFile(args)
-        except exceptions.CheckpointException() as e:
+        except exceptions.CheckpointException as e:
             logging.error("Unable to append checkpoint file: %s", e)
             sys.exit(1)
         if args.printonly is False:
@@ -542,6 +546,8 @@ def main():
     if args.printonly is False:
         configFile = backupConfig(args, vmConfig)
 
+    backupBootConfig(args, lib)
+
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, zipStream, logFile)
 
@@ -567,15 +573,34 @@ def addFiles(args, configFile, zipStream, logFile):
             zipStream.zipStream.write(dirname)
             for filename in files:
                 zipStream.zipStream.write(os.path.join(dirname, filename))
-    logging.info("Adding backup log to zipfile")
+
+    for setting in args.info:
+        if args.info[setting] is not None:
+            logging.info(
+                "Adding additional config file [%s] to zipfile", args.info[setting]
+            )
+            zipStream.zipStream.write(
+                args.info[setting], os.path.basename(args.info[setting])
+            )
+
+    logging.info("Adding backup log [%s] to zipfile", logFile)
     zipStream.zipStream.write(logFile, logFile)
+
+
+def getIdent(args):
+    """Used to get an uniqe identifier for target files,
+    usually checkpoint name is used, but if no checkpoint
+    is created, we use timestamp"""
+    ident = args.cpt.name
+    if args.level == "diff":
+        ident = int(time())
+
+    return ident
 
 
 def backupConfig(args, vmConfig):
     """Save domain config file"""
-    ident = args.cpt.name
-    if args.level == "diff":
-        ident = int(time())
+    ident = getIdent(args)
     configFile = f"{args.output}/vmconfig.{ident}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
@@ -586,6 +611,20 @@ def backupConfig(args, vmConfig):
         logging.error("Unable to save VM config: %s", errmsg)
         logging.exception(errmsg)
         sys.exit(1)
+
+
+def backupBootConfig(args, lib):
+    """Save domain nvram and loader"""
+    ident = getIdent(args)
+
+    for setting in args.info.keys():
+        if args.info[setting] is not None:
+            fileBase = os.path.basename(args.info[setting])
+            tfile = f"{args.output}/{fileBase}.{ident}"
+            logging.info(
+                "Save additional boot config file [%s] to: [%s]", setting, tfile
+            )
+            lib.copy(args.info[setting], tfile)
 
 
 def setMetaContext(args, disk):
@@ -622,15 +661,8 @@ def setTargetFile(args, disk):
             level = args.level
         targetFile = f"{args.output}/{disk.target}.{level}.data"
     elif args.level in ("inc", "diff"):
-        timestamp = int(time())
-        # during diff backup, we do not create an checkpoint,
-        # as such metadata header contains timestamp of
-        # target file
-        if args.level == "diff":
-            checkpointName = timestamp
-        else:
-            checkpointName = args.cpt.name
-        targetFile = f"{args.output}/{disk.target}.{args.level}.{checkpointName}.data"
+        cptName = getIdent(args)
+        targetFile = f"{args.output}/{disk.target}.{args.level}.{cptName}.data"
 
     targetFilePartial = f"{targetFile}.partial"
 
@@ -684,7 +716,7 @@ def backupDisk(
 
     if args.offline is True:
         bitMap = None
-        if args.level == "inc":
+        if args.level in ("inc", "diff"):
             bitMap = args.cpt.name
         args.socketfile = f"{args.socketfile}.{disk.target}"
         logging.info("Offline backup, starting NDB Service")

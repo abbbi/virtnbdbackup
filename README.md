@@ -26,6 +26,7 @@ of your `kvm/qemu` virtual machines.
    * [Estimating backup size](#estimating-backup-size)
    * [Compression](#compression)
    * [Pipe data to other hosts](#pipe-data-to-other-hosts)
+* [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
    * [Complete restore](#complete-restore)
@@ -349,6 +350,16 @@ During restore unzip the data from both zip files into a single directory:
  # unzip -o -d restoredata backup-inc1.zip
 ```
 
+
+## Kernel/initrd and additional files
+
+If an domain has configured custom kernel, initrd, loader or nvram images
+(usually the case if the domain boots from OVM UEFI BIOS), these files will be
+saved to the backup folder aswell.
+
+As the virtual domain might depend on certain UEFI settings or vars to
+correctly boot, you must take care to copy these files to your restore target
+manually.
 
 # Restore examples
 

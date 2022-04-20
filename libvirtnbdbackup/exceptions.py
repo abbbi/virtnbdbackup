@@ -38,3 +38,15 @@ class DiskBackupFailed(BackupException):
 class DiskBackupWriterException(BackupException):
     """Opening the target file writer
     failed"""
+
+
+class RestoreException(Exception):
+    """Base restore Exception"""
+
+
+class UntilCheckpointReached(RestoreException):
+    """Base restore Exception"""
+
+
+class RestoreError(RestoreException):
+    """Base restore error Exception"""
