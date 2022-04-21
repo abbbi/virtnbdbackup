@@ -137,10 +137,9 @@ class client:
             for src in target.findall("target"):
                 dev = src.get("dev")
 
-            if excludeList is not None:
-                if dev in excludeList:
-                    log.warning("Excluding Disks %s from backup as requested", dev)
-                    continue
+            if excludeList is not None and dev in excludeList:
+                log.warning("Excluding Disks %s from backup as requested", dev)
+                continue
 
             # ignore attached lun or direct access block devices
             if target.get("type") == "block":
@@ -156,6 +155,9 @@ class client:
                         "Ignoring lun disk %s does not support changed block tracking.",
                         dev,
                     )
+                    continue
+                if device in ("cdrom", "floppy"):
+                    log.debug("Skipping attached CDROM / Floppy: [%s]", dev)
                     continue
 
             # ignore disk which use raw format, they do not support CBT
@@ -176,9 +178,6 @@ class client:
                 if diskSrc:
                     diskFileName = os.path.basename(diskSrc)
                     diskPath = diskSrc
-
-            if target.get("device") == "cdrom":
-                continue
 
             if args.include is not None and dev != args.include:
                 log.info(

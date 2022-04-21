@@ -1,6 +1,7 @@
 Version 0.58
 ---------
-
+ * Slight code improvements
+ * Skip devices with type "floppy", just as "cdrom" devices.
 
 Version 0.57
 ---------
