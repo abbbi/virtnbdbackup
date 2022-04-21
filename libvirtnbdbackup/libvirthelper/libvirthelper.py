@@ -157,7 +157,7 @@ class client:
                     )
                     continue
                 if device in ("cdrom", "floppy"):
-                    log.debug("Skipping attached CDROM / Floppy: [%s]", dev)
+                    log.info("Skipping attached CDROM / Floppy: [%s]", dev)
                     continue
 
             # ignore disk which use raw format, they do not support CBT
