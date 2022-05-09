@@ -205,25 +205,24 @@ def saveCheckpointFile(args):
 
 def main():
     """Handle backup operation"""
-    exe = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(
         description="Backup libvirt/qemu virtual machines",
         epilog=(
             "Examples:\n"
             "   # full backup of domain 'webvm' with all attached disks:\n"
-            f"\t{exe} -d webvm -l full -o /backup/\n"
+            f"\t%(prog)s -d webvm -l full -o /backup/\n"
             "   # incremental backup:\n"
-            f"\t{exe} -d webvm -l inc -o /backup/\n"
+            f"\t%(prog)s -d webvm -l inc -o /backup/\n"
             "   # differencial backup:\n"
-            f"\t{exe} -d webvm -l diff -o /backup/\n"
+            f"\t%(prog)s -d webvm -l diff -o /backup/\n"
             "   # full backup, exclude disk 'vda':\n"
-            f"\t{exe} -d webvm -l full -x vda -o /backup/\n"
+            f"\t%(prog)s -d webvm -l full -x vda -o /backup/\n"
             "   # full backup, backup only disk 'vdb':\n"
-            f"\t{exe} -d webvm -l full -i vdb -o /backup/\n"
+            f"\t%(prog)s -d webvm -l full -i vdb -o /backup/\n"
             "   # full backup, compression enabled:\n"
-            f"\t{exe} -d webvm -l full -z -o /backup/\n"
+            f"\t%(prog)s -d webvm -l full -z -o /backup/\n"
             "   # full backup, create archive:\n"
-            f"\t{exe} -d webvm -l full -o - > backup.zip\n"
+            f"\t%(prog)s -d webvm -l full -o - > backup.zip\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
