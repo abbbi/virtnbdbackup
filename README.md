@@ -663,9 +663,9 @@ See: https://github.com/adrianparilli/virtnbdbackup-docker
 
 The utility is provided "as is", i take no responsibility or warranty if you
 face any issues recovering your data! The only way to ensure your backups are
-valid and your backup plan works correctly is to repeatedly test the validity of
-your backups by restoring them! If you find any issues, please do not hesitate
-to report them.
+valid and your backup plan works correctly is to repeatedly test the integrity
+by restoring them! If you discover any issues, please do not hesitate to open
+an issue.
 
 
 ## Links
