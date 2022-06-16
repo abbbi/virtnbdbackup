@@ -15,7 +15,7 @@ of your `kvm/qemu` virtual machines.
 * [Installation](#installation)
    * [Python package](#python-package)
    * [RPM package](#rpm-package)
-      * [Centos 8](#centos-8)
+      * [Redhat/Centos/Alma](#centos-8)
    * [Debian package](#debian-package)
 * [Backup Format](#backup-format)
 * [Backup Operation](#backup-operation)
