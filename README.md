@@ -71,8 +71,8 @@ boot from an backup image.
 * Obviously a libvirt/qemu version that supports the incremental backup
   features.
 
-  On Centos8, libvirt packages from the advanced virtualization stream support
-  all required features. To install libvirt from the stream use:
+  On Centos8/Almalinux, libvirt packages from the advanced virtualization
+  stream support all required features. To install libvirt from the stream use:
 
   ```
   yum install centos-release-advanced-virtualization
@@ -115,7 +115,7 @@ python3 setup.py install
 
 To create an RPM package from source suitable for installation:
 
-### Centos 8
+### Centos/Almalinux 8
 
 To build the rpm package from source:
 
