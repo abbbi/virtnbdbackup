@@ -1,6 +1,7 @@
 Version 0.60
 ---------
-
+ * Add python3-dataclasses to RPM dependencies.
+ * Update README
 
 
 Version 0.59
