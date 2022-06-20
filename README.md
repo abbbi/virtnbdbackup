@@ -142,6 +142,10 @@ python3 setup.py --command-packages=stdeb.command bdist_deb
 You can also use the [vagrant scripts](vagrant/) to build the
 packages.
 
+## Docker images
+
+See: https://github.com/adrianparilli/virtnbdbackup-docker
+
 # Backup Format
 
 Currently, there are two output formats implemented:
@@ -659,11 +663,6 @@ The fix itself was released with libnbd 1.5.2, so be sure to use at least this
 version if using `virtnbdbackup` on any other distribution.
 
 See also: https://github.com/abbbi/virtnbdbackup/issues/8
-
-## Docker images
-
-See: https://github.com/adrianparilli/virtnbdbackup-docker
-
 
 ## Test your backups!
 
