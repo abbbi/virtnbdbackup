@@ -1,6 +1,6 @@
 Version 0.61
 ---------
-
+ * Add vagrant scripts
 
 Version 0.60
 ---------
@@ -9,7 +9,6 @@ Version 0.60
 
 Version 0.59
 ---------
-
  * Add epilog to help output with some example commands
  * Update README
 

@@ -17,6 +17,7 @@ of your `kvm/qemu` virtual machines.
    * [RPM package](#rpm-package)
       * [Redhat/Centos/Alma](#centosalmalinux-8)
    * [Debian package](#debian-package)
+   * [Vagrant](#vagrant)
 * [Backup Format](#backup-format)
 * [Backup Operation](#backup-operation)
 * [Backup concurrency](#backup-concurrency)
