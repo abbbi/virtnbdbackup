@@ -139,8 +139,7 @@ python3 setup.py --command-packages=stdeb.command bdist_deb
 
 ## Vagrant
 
-You can also use the [vagrant scripts](vagrant/) to build the
-packages.
+You can also use existing [vagrant scripts](vagrant/) to build the packages.
 
 ## Docker images
 
