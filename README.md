@@ -18,6 +18,7 @@ of your `kvm/qemu` virtual machines.
       * [Redhat/Centos/Alma](#centosalmalinux-8)
    * [Debian package](#debian-package)
    * [Vagrant](#vagrant)
+   * [Docker images](#docker-images)
 * [Backup Format](#backup-format)
 * [Backup Operation](#backup-operation)
 * [Backup concurrency](#backup-concurrency)
@@ -43,7 +44,6 @@ of your `kvm/qemu` virtual machines.
    * [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
    * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
    * [High memory usage during backup](#high-memory-usage-during-backup)
-   * [Docker images](#docker-images)
 * [Links](#links)
 * [Test your backups!](#test-your-backups)
 
