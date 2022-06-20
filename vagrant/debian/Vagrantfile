@@ -1,0 +1,35 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/debian11"
+  config.vm.box_check_update = false
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.cpus = 2
+    libvirt.memory = 3500
+    libvirt.memorybacking :access, :mode => "shared"
+  end
+  config.vm.provision "shell", inline: <<-SHELL
+    set -xe
+    apt-get update -qy
+    apt-get install -qy python3-all \
+      python3-stdeb \
+      dh-python \
+      python3-libnbd \
+      python3-tqdm \
+      python3-lz4 \
+      python3-libvirt \
+      git
+    rm -rf virtnbdbackup;
+    git clone https://github.com/abbbi/virtnbdbackup
+    cd virtnbdbackup
+    set +x
+    python3 setup.py --command-packages=stdeb.command bdist_deb
+    cp -a deb_dist/*.* /vagrant
+   SHELL
+   config.vm.synced_folder "./", "/vagrant", type: "virtiofs"
+end

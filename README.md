@@ -136,6 +136,11 @@ sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-
 python3 setup.py --command-packages=stdeb.command bdist_deb
 ```
 
+## Vagrant
+
+You can also use the [vagrant scripts](vagrant/) to build the
+packages.
+
 # Backup Format
 
 Currently, there are two output formats implemented:
