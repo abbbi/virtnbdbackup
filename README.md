@@ -86,7 +86,7 @@ boot from an backup image.
 
 * Virtual machines you want to backup **must enable incremental backup
   feature** by including the capability statement and using the extended schema
-  in its configuration as shown below:
+  (the first line must be changed, too) in its configuration as shown below:
  
  ```
   <domain type='kvm' id='1' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
