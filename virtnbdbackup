@@ -447,6 +447,8 @@ def main():
         logging.error("Cant connect libvirt daemon: %s", e)
         sys.exit(1)
 
+    logging.info("Libvirt library version: %s", virtClient.libvirtVersion)
+
     if virtClient.hasIncrementalEnabled(domObj) is False:
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)

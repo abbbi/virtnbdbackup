@@ -1,6 +1,7 @@
 Version 0.61
 ---------
  * Add vagrant scripts
+ * Print libvirt library version.
 
 Version 0.60
 ---------

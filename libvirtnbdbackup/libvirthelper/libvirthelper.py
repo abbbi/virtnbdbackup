@@ -44,6 +44,7 @@ class client:
     def __init__(self):
         self._conn = self._connect()
         self._domObj = None
+        self.libvirtVersion = self._conn.getLibVersion()
 
     @staticmethod
     def _connect():
