@@ -449,7 +449,10 @@ def main():
 
     logging.info("Libvirt library version: %s", virtClient.libvirtVersion)
 
-    if virtClient.hasIncrementalEnabled(domObj) is False:
+    if (
+        virtClient.hasIncrementalEnabled(domObj) is False
+        and virtClient.libvirtVersion <= 8002000
+    ):
         logging.error("Domain is missing required incremental-backup capability.")
         sys.exit(1)
 
