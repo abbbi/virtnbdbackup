@@ -2,6 +2,8 @@ Version 0.61
 ---------
  * Add vagrant scripts
  * Print libvirt library version.
+ * Disable xml based check if incremental backup capability is enabled for
+ libvirt versions > 8002000: feature is enabled by default. (#4)
 
 Version 0.60
 ---------
