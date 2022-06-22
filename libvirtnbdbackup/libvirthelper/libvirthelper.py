@@ -77,7 +77,14 @@ class client:
     def hasIncrementalEnabled(self, domObj):
         """Check if virtual machine has enabled required capabilities
         for incremental backup
+
+        Libvirt version >= 8002000 seems to have the feature enabled
+        by default without the domain XML including the capability
+        statement.
         """
+        if self.libvirtVersion >= 8002000:
+            return True
+
         tree = self._getTree(domObj.XMLDesc(0))
         for target in tree.findall(
             "{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"
