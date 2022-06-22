@@ -18,6 +18,7 @@ of your `kvm/qemu` virtual machines.
       * [Redhat/Centos/Alma](#centosalmalinux-8)
    * [Debian package](#debian-package)
    * [Vagrant](#vagrant)
+   * [Venv](#virtualenv)
    * [Docker images](#docker-images)
 * [Backup Format](#backup-format)
 * [Backup Operation](#backup-operation)
@@ -141,6 +142,10 @@ python3 setup.py --command-packages=stdeb.command bdist_deb
 ## Vagrant
 
 You can also use existing [vagrant scripts](vagrant/) to build the packages.
+
+## Virtualenv
+
+For setup within an virtualenv see [venv scripts](venv/).
 
 ## Docker images
 
