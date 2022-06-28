@@ -1,6 +1,9 @@
 Version 0.62
 ---------
 * Add script to create virtualenv with required dependencies.
+* virtnbdmap now supports mounting of full->incremental chains: the
+current approach is to use the nbdkit COW (copy on write) filter to
+replay the data blocks against the mapped nbd device.
 
 Version 0.61
 ---------

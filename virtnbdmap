@@ -210,6 +210,11 @@ def main():
 
     checkRequirements()
     checkDevice(args.device)
+    dataFiles = args.file.split(",")
+
+    if len(dataFiles) > 1 and not "full.data" in dataFiles[0]:
+        logging.error("Sequence must start with a full backup")
+        sys.exit(1)
 
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
@@ -346,6 +351,7 @@ def main():
                     replayDevice.write(replaySrc.read(extent["length"]))
                 replayDevice.seek(0)
                 replayDevice.flush()
+                os.sync()
 
     logging.info("Done mapping backup image to [%s]", args.device)
     logging.info("Press CTRL+C to disconnect")
