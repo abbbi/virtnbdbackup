@@ -66,6 +66,30 @@ def locatePlugin():
     return nbdkitModule
 
 
+def replayChanges(dataRanges, args):
+    """Replay the changes from an incremental or differencial
+    backup file to the NBD device"""
+    logging.info("Need to replay incremental backups")
+    blockListInc = list(
+        filter(
+            lambda x: x["inc"] is True,
+            dataRanges,
+        )
+    )
+    with open(args.device, "wb") as replayDevice:
+        for extent in blockListInc:
+            logging.info(
+                "Replaying offset %s from %s", extent["offset"], extent["file"]
+            )
+            with open(extent["file"], "rb") as replaySrc:
+                replaySrc.seek(extent["offset"])
+                replayDevice.seek(extent["originalOffset"])
+                replayDevice.write(replaySrc.read(extent["length"]))
+            replayDevice.seek(0)
+            replayDevice.flush()
+            os.sync()
+
+
 def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
@@ -79,6 +103,13 @@ def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     log.info("Removing temporary blockmap file: [%s]", blockMap.name)
     os.remove(blockMap.name)
     sys.exit(0)
+
+
+def killProc(nbdkitProcess):
+    """Attempt to kill nbdkit process in case of
+    error"""
+    nbdkitProcess.kill()
+    sys.exit(1)
 
 
 def getDataRanges(lib, stream, sTypes, reader):
@@ -321,8 +352,7 @@ def main():
                     "Unable to connect device after service start: %s",
                     e.stderr.decode(),
                 )
-                nbdkitProcess.kill()
-                sys.exit(1)
+                killProc(nbdkitProcess)
             errMsg = e.stderr.decode()
             if "Connection refused" in errMsg:
                 logging.info("Nbd server refused connection, retry [%s]", retryCnt)
@@ -331,29 +361,15 @@ def main():
             else:
                 logging.error("Unable to map device:")
                 logging.error("Stderr: [%s]", errMsg)
-                nbdkitProcess.kill()
-                sys.exit(1)
+                killProc(nbdkitProcess)
 
     if len(dataFiles) > 1:
-        logging.info("Need to replay incremental backups")
-        blockListInc = list(
-            filter(
-                lambda x: x["inc"] is True,
-                dataRanges,
-            )
-        )
-        with open(args.device, "wb") as replayDevice:
-            for extent in blockListInc:
-                logging.info(
-                    "Replaying offset %s from %s", extent["offset"], extent["file"]
-                )
-                with open(extent["file"], "rb") as replaySrc:
-                    replaySrc.seek(extent["offset"])
-                    replayDevice.seek(extent["originalOffset"])
-                    replayDevice.write(replaySrc.read(extent["length"]))
-                replayDevice.seek(0)
-                replayDevice.flush()
-                os.sync()
+        try:
+            replayChanges(dataRanges, args)
+        except Exception as e:
+            logging.error("Unable to replay changes: %s", e)
+            logging.exception(e)
+            killProc(nbdkitProcess)
 
     logging.info("Done mapping backup image to [%s]", args.device)
     logging.info("Press CTRL+C to disconnect")
