@@ -494,9 +494,12 @@ the image will represent the latest state:
 ```
 virtnbdmap -f /backup/sda.full.data,/backup/sda.inc.virtnbdbackup.1.data,/backup/sda.inc.virtnbdbackup.2.data
 [..]
-[2022-06-28 22:25:22] INFO virtnbdmap - main [MainThread]: Need to replay incremental backups
-[2022-06-28 22:25:22] INFO virtnbdmap - main [MainThread]: Replaying offset 420 from mountme/sda.inc.virtnbdbackup.1.data
-[2022-06-28 22:25:22] INFO virtnbdmap - main [MainThread]: Replaying offset 131534 from mountme/sda.inc.virtnbdbackup.1.data
+[..] INFO virtnbdmap - main [MainThread]: Need to replay incremental backups
+[..] INFO virtnbdmap - main [MainThread]: Replaying offset 420 from /backup/sda.inc.virtnbdbackup.1.data
+[..] INFO virtnbdmap - main [MainThread]: Replaying offset 131534 from /backup/sda.inc.virtnbdbackup.1.data
+[..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd0]
+[..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
+[..]
 ```
 
 The original image will be left untouched as nbdkits copy on write filter is
