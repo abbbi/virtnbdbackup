@@ -1,14 +1,36 @@
+Version 0.62
+---------
+* Add script to create virtualenv with required dependencies.
+
+Version 0.61
+---------
+* Add vagrant scripts
+* Print libvirt library version.
+* Disable xml based check if incremental backup capability is enabled for
+libvirt versions > 8002000: feature is enabled by default. (#4)
+
+Version 0.60
+---------
+* Add python3-dataclasses to RPM dependencies.
+* Update README
+
+Version 0.59
+---------
+* Add epilog to help output with some example commands
+* Update README
+
 Version 0.58
 ---------
-
+* Slight code improvements
+* Skip devices with type "floppy", just as "cdrom" devices.
 
 Version 0.57
 ---------
- * Backup configured kernel/initrd images used for direct boot too.
+* Backup configured kernel/initrd images used for direct boot too.
 
 Version 0.56
 ---------
- * Fix for Issue (#40): redefining checkpoints failes
+* Fix for Issue (#40): redefining checkpoints failes
 
 Version 0.55
 ---------

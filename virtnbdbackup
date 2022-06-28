@@ -205,7 +205,27 @@ def saveCheckpointFile(args):
 
 def main():
     """Handle backup operation"""
-    parser = argparse.ArgumentParser(description="Backup libvirt/qemu virtual machines")
+    parser = argparse.ArgumentParser(
+        description="Backup libvirt/qemu virtual machines",
+        epilog=(
+            "Examples:\n"
+            "   # full backup of domain 'webvm' with all attached disks:\n"
+            f"\t%(prog)s -d webvm -l full -o /backup/\n"
+            "   # incremental backup:\n"
+            f"\t%(prog)s -d webvm -l inc -o /backup/\n"
+            "   # differencial backup:\n"
+            f"\t%(prog)s -d webvm -l diff -o /backup/\n"
+            "   # full backup, exclude disk 'vda':\n"
+            f"\t%(prog)s -d webvm -l full -x vda -o /backup/\n"
+            "   # full backup, backup only disk 'vdb':\n"
+            f"\t%(prog)s -d webvm -l full -i vdb -o /backup/\n"
+            "   # full backup, compression enabled:\n"
+            f"\t%(prog)s -d webvm -l full -z -o /backup/\n"
+            "   # full backup, create archive:\n"
+            f"\t%(prog)s -d webvm -l full -o - > backup.zip\n"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
     opt = parser.add_argument_group("General options")
     opt.add_argument("-d", "--domain", required=True, type=str, help="Domain to backup")
@@ -426,6 +446,8 @@ def main():
     except libvirthelper.exceptions.connectionFailed as e:
         logging.error("Cant connect libvirt daemon: %s", e)
         sys.exit(1)
+
+    logging.info("Libvirt library version: %s", virtClient.libvirtVersion)
 
     if virtClient.hasIncrementalEnabled(domObj) is False:
         logging.error("Domain is missing required incremental-backup capability.")

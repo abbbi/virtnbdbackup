@@ -21,7 +21,7 @@ fi
 
 setup() {
  aa-teardown >/dev/null
- DISKS=$(virsh -q domblklist ${VM} | awk '{print $1}' | wc -l)
+ DISKS=$(virsh -q domblklist ${VM} | grep -v cdrom | awk '{print $1}' | wc -l)
  export DISK_COUNT=$DISKS
 
 }
@@ -45,6 +45,8 @@ setup() {
     virsh undefine ${VM} --remove-all-storage --checkpoints-metadata || true
     echo "output = ${output}"
     cp ${VM}/${VM}.xml ${TMPDIR}/
+    touch ${TMPDIR}/cdrom
+    touch ${TMPDIR}/cdrom_floppy
     sed -i "s|__TMPDIR__|${TMPDIR}|g" ${TMPDIR}/${VM}.xml
     run virsh define ${TMPDIR}/${VM}.xml
     echo "output = ${output}"
@@ -61,8 +63,8 @@ setup() {
 }
 @test "Checkpoints: Full backup must remove existing checkpoints" {
     [ -z $INCTEST ] && skip "skipping"
-    virsh checkpoint-create-as $VM --name virtnbdbackup.0 > /dev/null
-    virsh checkpoint-create-as $VM --name virtnbdbackup.1 > /dev/null
+    virsh checkpoint-create-as $VM --name virtnbdbackup.0 --diskspec sda > /dev/null
+    virsh checkpoint-create-as $VM --name virtnbdbackup.1 --diskspec sda > /dev/null
     ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/remove-checkpoints
     run virsh checkpoint-delete $VM --checkpointname virtnbdbackup.1
     [ "$status" -eq 1 ]
@@ -76,7 +78,7 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Create reference backup image using qemu-img convert to $BACKUPSET" {
-    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+    for disk in $(virsh -q domblklist ${VM} | grep -v cdrom | awk '{print $1}'); do
         run qemu-img convert -f raw nbd+unix:///${disk}?socket=${TMPDIR}/sock -O raw $QEMU_FILE.${disk}
         echo "output = ${output}"
         [ "$status" -eq 0 ]
@@ -111,7 +113,7 @@ setup() {
     [[ "$output" =~ "Creating full provisioned" ]]
 }
 @test "Compare backup image contents against reference image" {
-    for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+    for disk in $(virsh -q domblklist ${VM} | grep -v cdrom | awk '{print $1}'); do
         echo "Disk:${disk}" >&3
         run cmp -b $QEMU_FILE.${disk} "${BACKUPSET}/${disk}.copy.data"
         echo "output = ${output}"
@@ -126,7 +128,7 @@ setup() {
 }
 @test "Compare backup image, extents queried via qemu tools" {
     if [ -z $HAS_RAW ]; then
-        for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+        for disk in $(virsh -q domblklist ${VM} | grep -v cdrom | awk '{print $1}'); do
             run cmp -b $QEMU_FILE.${disk} "${BACKUPSET}/${disk}.copy.data"
             echo "output = ${output}"
             [ "$status" -eq 0 ]
@@ -214,7 +216,7 @@ toOut() {
 }
 @test "Convert restored qcow2 image to RAW image, compare with reference image"  {
     if [ -z $HAS_RAW ]; then
-        for disk in $(virsh -q domblklist ${VM} | awk '{print $1}'); do
+        for disk in $(virsh -q domblklist ${VM} | grep -v cdrom | awk '{print $1}'); do
             FILENAME="${VM}-${disk}.qcow2"
             echo $FILENAME >&3
             run qemu-img convert -f qcow2 -O raw $RESTORESET/${FILENAME} $RESTORESET/${disk}.raw
@@ -289,7 +291,7 @@ toOut() {
 }
 @test "Backup: incremental backup must fail if third party checkpoint exists" {
     [ -z $INCTEST ] && skip "skipping"
-    run virsh checkpoint-create-as $VM --name "external"
+    run virsh checkpoint-create-as $VM --name "external" --diskspec sda
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/ext-checkpoint
@@ -302,7 +304,7 @@ toOut() {
 }
 @test "Backup: full backup must fail if third party checkpoint exists" {
     [ -z $INCTEST ] && skip "skipping"
-    run virsh checkpoint-create-as $VM --name "external"
+    run virsh checkpoint-create-as $VM --name "external" --diskspec sda
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run ../virtnbdbackup -v -d $VM -l full -o ${TMPDIR}/ext-checkpoint-full

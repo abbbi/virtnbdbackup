@@ -374,7 +374,24 @@ def restore(lib, args, vmConfig):
 
 def main():
     """main function"""
-    parser = argparse.ArgumentParser(description="Restore virtual machine disks")
+    parser = argparse.ArgumentParser(
+        description="Restore virtual machine disks",
+        epilog=(
+            "Examples:\n"
+            "   # Dump backup metadata:\n"
+            f"\t%(prog)s -i /backup/ -a dump -o /target\n"
+            "   # Complete restore with all disks:\n"
+            f"\t%(prog)s -i /backup/ -a restore -o /target\n"
+            "   # Restore only disk 'vda':\n"
+            f"\t%(prog)s -i /backup/ -a restore -o /target -d vda\n"
+            "   # Point in time restore:\n"
+            f"\t%(prog)s -i /backup/ -a restore -o /target --until virtnbdbackup.2\n"
+            "   # Restore and process specific file sequence:\n"
+            f"\t%(prog)s -i /backup/ -a restore -o /target "
+            "--sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     opt = parser.add_argument_group("General options")
     opt.add_argument(
         "-a",

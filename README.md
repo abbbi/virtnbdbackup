@@ -15,8 +15,11 @@ of your `kvm/qemu` virtual machines.
 * [Installation](#installation)
    * [Python package](#python-package)
    * [RPM package](#rpm-package)
-      * [Centos 8](#centos-8)
+      * [Redhat/Centos/Alma](#centosalmalinux-8)
    * [Debian package](#debian-package)
+   * [Vagrant](#vagrant)
+   * [Venv](#virtualenv)
+   * [Docker images](#docker-images)
 * [Backup Format](#backup-format)
 * [Backup Operation](#backup-operation)
 * [Backup concurrency](#backup-concurrency)
@@ -42,7 +45,6 @@ of your `kvm/qemu` virtual machines.
    * [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
    * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
    * [High memory usage during backup](#high-memory-usage-during-backup)
-   * [Docker images](#docker-images)
 * [Links](#links)
 * [Test your backups!](#test-your-backups)
 
@@ -71,8 +73,8 @@ boot from an backup image.
 * Obviously a libvirt/qemu version that supports the incremental backup
   features.
 
-  On Centos8, libvirt packages from the advanced virtualization stream support
-  all required features. To install libvirt from the stream use:
+  On Centos8/Almalinux, libvirt packages from the advanced virtualization
+  stream support all required features. To install libvirt from the stream use:
 
   ```
   yum install centos-release-advanced-virtualization
@@ -83,10 +85,11 @@ boot from an backup image.
   Debian bullseye or Ubuntu 20.x include libvirt versions supporting this
   feature already.
 
-* Virtual machines you want to backup **must enable incremental backup
-  feature** by including the capability statement and using the extended schema
-  in its configuration as shown below:
- 
+* Virtual machines running on libvirt versions < 8.2.0 **must enable
+  incremental backup feature** by including the capability statement and using
+  the extended schema (the first line must be changed, too) in its
+  configuration as shown below:
+
  ```
   <domain type='kvm' id='1' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
   [..]
@@ -115,7 +118,7 @@ python3 setup.py install
 
 To create an RPM package from source suitable for installation:
 
-### Centos 8
+### Centos/Almalinux 8
 
 To build the rpm package from source:
 
@@ -135,6 +138,18 @@ To create a Debian package (Debian bullseye required) use:
 sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-tqdm python3-lz4
 python3 setup.py --command-packages=stdeb.command bdist_deb
 ```
+
+## Vagrant
+
+You can also use existing [vagrant scripts](vagrant/) to build the packages.
+
+## Virtualenv
+
+For setup within an virtualenv see [venv scripts](venv/).
+
+## Docker images
+
+See: https://github.com/adrianparilli/virtnbdbackup-docker
 
 # Backup Format
 
@@ -251,8 +266,8 @@ in the domains xml definition, for example:
 virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
 ```
 
-Special devices such as `cdrom` or `direct attached luns` are excluded by
-default, as they are not supported by the changed block tracking layer.
+Special devices such as `cdrom/floppy` or `direct attached luns` are excluded
+by default, as they are not supported by the changed block tracking layer.
 
 It is also possible to only backup specific disks using the include option
 (`--include`, or `-i`):
@@ -654,19 +669,13 @@ version if using `virtnbdbackup` on any other distribution.
 
 See also: https://github.com/abbbi/virtnbdbackup/issues/8
 
-## Docker images
-
-See: https://github.com/adrianparilli/virtnbdbackup-docker
-
-
 ## Test your backups!
 
 The utility is provided "as is", i take no responsibility or warranty if you
 face any issues recovering your data! The only way to ensure your backups are
-valid and your backup plan works correctly is to repeatedly test the validity of
-your backups by restoring them! If you find any issues, please do not hesitate
-to report them.
-
+valid and your backup plan works correctly is to repeatedly test the integrity
+by restoring them! If you discover any issues, please do not hesitate to open
+an issue.
 
 ## Links
 

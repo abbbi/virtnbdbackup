@@ -43,6 +43,19 @@
       <alias name='sata0-0-0'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='__TMPDIR__/cdrom' index='3'/>
+      <readonly/>
+      <target dev='sdb' bus='sata'/>
+      <alias name='sata0-0-1'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='1'/>
+    </disk>
+    <disk type="file" device="floppy">
+        <driver name="qemu" type="raw"/>
+        <source file="__TMPDIR__/cdrom_floppy"/>
+        <target dev="fda" bus="fdc"/>
+    </disk>
     <controller type='usb' index='0' model='qemu-xhci' ports='15'>
       <alias name='usb'/>
       <address type='pci' domain='0x0000' bus='0x02' slot='0x00' function='0x0'/>

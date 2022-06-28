@@ -136,7 +136,17 @@ def dumpBlockMap(tfile, dataRanges):
 def main():
     """Map full backup file to nbd device for single file or
     instant recovery"""
-    parser = argparse.ArgumentParser(description="Map backup image to block device")
+    parser = argparse.ArgumentParser(
+        description="Map backup image to block device",
+        epilog=(
+            "Examples:\n"
+            "   # Map full backup to device /dev/nbd0:\n"
+            f"\t%(prog)s -f /backup/sda.full.data\n"
+            "   # Map full backup to device /dev/nbd2:\n"
+            f"\t%(prog)s -f /backup/sda.full.data -d /dev/nbd2\n"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     opt = parser.add_argument_group("General options")
     opt.add_argument("-f", "--file", required=True, type=str, help="Backup file")
     opt.add_argument(

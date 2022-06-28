@@ -44,6 +44,7 @@ class client:
     def __init__(self):
         self._conn = self._connect()
         self._domObj = None
+        self.libvirtVersion = self._conn.getLibVersion()
 
     @staticmethod
     def _connect():
@@ -76,7 +77,14 @@ class client:
     def hasIncrementalEnabled(self, domObj):
         """Check if virtual machine has enabled required capabilities
         for incremental backup
+
+        Libvirt version >= 8002000 seems to have the feature enabled
+        by default without the domain XML including the capability
+        statement.
         """
+        if self.libvirtVersion >= 8002000:
+            return True
+
         tree = self._getTree(domObj.XMLDesc(0))
         for target in tree.findall(
             "{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"
@@ -137,10 +145,9 @@ class client:
             for src in target.findall("target"):
                 dev = src.get("dev")
 
-            if excludeList is not None:
-                if dev in excludeList:
-                    log.warning("Excluding Disks %s from backup as requested", dev)
-                    continue
+            if excludeList is not None and dev in excludeList:
+                log.warning("Excluding Disks %s from backup as requested", dev)
+                continue
 
             # ignore attached lun or direct access block devices
             if target.get("type") == "block":
@@ -156,6 +163,9 @@ class client:
                         "Ignoring lun disk %s does not support changed block tracking.",
                         dev,
                     )
+                    continue
+                if device in ("cdrom", "floppy"):
+                    log.info("Skipping attached CDROM / Floppy: [%s]", dev)
                     continue
 
             # ignore disk which use raw format, they do not support CBT
@@ -176,9 +186,6 @@ class client:
                 if diskSrc:
                     diskFileName = os.path.basename(diskSrc)
                     diskPath = diskSrc
-
-            if target.get("device") == "cdrom":
-                continue
 
             if args.include is not None and dev != args.include:
                 log.info(
