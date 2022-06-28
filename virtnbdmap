@@ -218,7 +218,8 @@ def main():
     logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
 
     dataRanges = []
-    for file in args.file.split(","):
+    dataFiles = args.file.split(",")
+    for file in dataFiles:
         try:
             reader = open(file, "rb")
         except OSError as e:
@@ -256,15 +257,16 @@ def main():
         "-e",
         f"{args.export_name}",
         "--filter=blocksize",
+        "--filter=cow",
         "-f",
         "-v",
         "python",
         f"{nbdkitModule}",
+        f"maxlen={args.blocksize}",
         f"blockmap={blockMap.name}",
         f"disk={args.file}",
         "-t",
         f"{args.threads}",
-        f"maxlen={args.blocksize}",
     ]
     logging.debug(" ".join(nbdkitCmd))
     nbdkitProcess = subprocess.Popen(
@@ -298,7 +300,8 @@ def main():
                     "-c",
                     f"{args.device}",
                     f"nbd://127.0.0.1:10809/{args.export_name}",
-                    "-r",
+                    "-f",
+                    "raw",
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -323,6 +326,26 @@ def main():
                 logging.error("Stderr: [%s]", errMsg)
                 nbdkitProcess.kill()
                 sys.exit(1)
+
+    if len(dataFiles) > 1:
+        logging.info("Need to replay incremental backups")
+        blockListInc = list(
+            filter(
+                lambda x: x["inc"] is True,
+                dataRanges,
+            )
+        )
+        with open(args.device, "wb") as replayDevice:
+            for extent in blockListInc:
+                logging.info(
+                    "Replaying offset %s from %s", extent["offset"], extent["file"]
+                )
+                with open(extent["file"], "rb") as replaySrc:
+                    replaySrc.seek(extent["offset"])
+                    replayDevice.seek(extent["originalOffset"])
+                    replayDevice.write(replaySrc.read(extent["length"]))
+                replayDevice.seek(0)
+                replayDevice.flush()
 
     logging.info("Done mapping backup image to [%s]", args.device)
     logging.info("Press CTRL+C to disconnect")

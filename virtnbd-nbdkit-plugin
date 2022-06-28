@@ -96,7 +96,6 @@ def get_size(h):
     nbdkit.debug(f"DISK SIZE: {size}")
     return size
 
-
 def pread(h, buf, offset, flags):
     """Return the right data during read operation.
 
@@ -124,20 +123,9 @@ def pread(h, buf, offset, flags):
             lambda x: x["originalOffset"] <= offset and x["inc"] is not True, blockMap
         )
     )
-    blockListInc = list(
-        filter(
-            lambda x: x["originalOffset"] <= offset and x["inc"] is True,
-            blockMap,
-        )
-    )
     nbdkit.debug("-------------------------------------------")
     nbdkit.debug(f"matching blocklist from full backup: {blockListFull}")
-    nbdkit.debug("+++++++++++++++++++++++++++++++++++++++++++")
-    nbdkit.debug(f"matching blocklist from inc backup: {blockListInc}")
     nbdkit.debug("-------------------------------------------")
-    if len(blockListInc) > 0:
-        nbdkit.debug("Need to handle block from inc backup")
-
     if len(blockListFull) == 1:
         nbdkit.debug("using first block from blocklist")
         block = blockListFull[0]
