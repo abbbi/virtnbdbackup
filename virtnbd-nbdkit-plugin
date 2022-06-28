@@ -24,7 +24,7 @@ API_VERSION = 2
 
 blockMap = None
 blockMapFile = None
-images = None
+image = None
 
 
 def config(key, value):
@@ -32,14 +32,14 @@ def config(key, value):
     builtins as the python plugin itself defines it again"""
     global blockMap
     global blockMapFile
-    global images
+    global image
     if key == "blockmap":
         blockMapFile = value
         with builtins.open(blockMapFile, "rb") as fh:
             blockMap = json.loads(fh.read())
         return
     if key == "disk":
-        images = value.split(",")
+        image = value
         return
 
     raise RuntimeError(f"Unsupported parameter: {key}")
@@ -47,19 +47,18 @@ def config(key, value):
 
 def config_complete():
     """Check if we have all required parameters"""
-    global images
+    global image
     global blockMap
     global blockMapFile
-    if images is None or blockMap is None:
+    if image is None or blockMap is None:
         raise RuntimeError(
             "Missing parameter: path to block list file and disk required."
         )
 
-    for image in images:
-        if not os.path.exists(image):
-            raise RuntimeError(f"Cant find images file: {images}")
+    if not os.path.exists(image):
+        raise RuntimeError(f"Cant find images file: {image}")
     if not os.path.exists(blockMapFile):
-        raise RuntimeError(f"Cant find images file: {blockMapFile}")
+        raise RuntimeError(f"Cant find blockmap file: {blockMapFile}")
 
     pprint.pprint(blockMap)
 
@@ -70,14 +69,9 @@ def thread_model():
 
 def open(readonly):
     """Open backup files and return FD for each"""
-    fds = {}
-    for image in images:
-        fd = os.open(image, os.O_RDONLY)
-        fds[image] = fd
-
-    nbdkit.debug(f"File descriptors: {fds}")
-
-    return fds
+    fd = os.open(image, os.O_RDONLY)
+    nbdkit.debug(f"File descriptors: {fd}")
+    return fd
 
 
 def close(param):
@@ -91,7 +85,7 @@ def get_size(h):
     size = 0
     for m in blockMap:
         # use only size from full backup image
-        if m["file"] == images[0]:
+        if m["file"] == image:
             size += m["length"]
     nbdkit.debug(f"DISK SIZE: {size}")
     return size
@@ -106,7 +100,7 @@ def pread(h, buf, offset, flags):
     data.
 
     There might be situations where this goes really wrong
-    and usually this results in an non-readable disk images.
+    and usually this results in an non-readable disk image.
     By using the blockfilter plugin, it "should" work most
     of the time, because the requested block size does
     not span amongst multiple frames within the sparse
@@ -155,7 +149,7 @@ def pread(h, buf, offset, flags):
             data += b"\0" * len(buf)
         else:
             nbdkit.debug("can read everything")
-            data += os.pread(h[dataFile], len(buf), fileOffset)
+            data += os.pread(h, len(buf), fileOffset)
             nbdkit.debug(f"received: {len(data)}")
     else:
         raise RuntimeError("Unexpected block range size.")

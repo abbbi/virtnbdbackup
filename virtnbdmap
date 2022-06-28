@@ -216,6 +216,8 @@ def main():
         logging.error("Sequence must start with a full backup")
         sys.exit(1)
 
+    fullImage = dataFiles[0]
+
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
 
@@ -269,7 +271,7 @@ def main():
         f"{nbdkitModule}",
         f"maxlen={args.blocksize}",
         f"blockmap={blockMap.name}",
-        f"disk={args.file}",
+        f"disk={fullImage}",
         "-t",
         f"{args.threads}",
     ]

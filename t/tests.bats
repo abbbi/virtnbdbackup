@@ -564,7 +564,7 @@ toOut() {
     [ -z $MAPTEST ] && skip "skipping"
     [ ! -z $GITHUB_JOB ] && skip "on github ci"
     modprobe nbd max_partitions=1 || true
-    ../virtnbdmap -f ${TMPDIR}/inctest/sda.full.data 3>- &
+    ../virtnbdmap -f ${TMPDIR}/inctest/sda.full.data,${TMPDIR}/inctest/sda.inc.virtnbdbackup.1.data 3>- &
     PID=$!
     sleep 10
     echo $PID >&3
@@ -577,6 +577,11 @@ toOut() {
     run mount /dev/nbd0p1 /empty
     echo "output = ${output}"
     [ "$status" -eq 0 ]
+
+    run ls -1 /empty/incfile
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+
     run umount /empty
     kill -2 $PID
 }
