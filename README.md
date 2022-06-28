@@ -459,10 +459,10 @@ virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence vdb.full
 
 # Single file restore and instant recovery
 
-The `virtnbdmap` utility can be used to map uncompressed full or copy type
-backup images from the stream format into an accessible block device on the
-fly. This way, you can restore single files or even boot from an existing
-backup image without having to restore the complete dataset.
+The `virtnbdmap` utility can be used to map uncompressed backup images from the
+stream format into an accessible block device on the fly. This way, you can
+restore single files or even boot from an existing backup image without having
+to restore the complete dataset.
 
 The utility requires `nbdkit with the python plugin` to be installed on the
 system along with required qemu tools (`qemu-nbd`) and an loaded nbd kernel
@@ -473,7 +473,7 @@ device `/dev/nbd0`:
 
 ```
  # modprobe nbd max_partitions=15
- # virtnbdmap -f /tmp/BACKUP/sda.full.data
+ # virtnbdmap -f /backup/sda.full.data
  [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd0]
  [..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
 ```
@@ -486,8 +486,23 @@ fdisk -l /dev/nbd0
 Disk /dev/nbd0: 2 GiB, 2147483648 bytes, 4194304 sectors
 ```
 
-As alternative, you might also create an overlay image via `qemu-img` and 
-boot from it right away:
+You can also create an mapped "point in time" recovery image by passing a
+sequence of full and incremental backups as parameter. The changes from the
+incremental backups will then be replayed to the block device on the fly and
+the image will represent the latest state:
+
+```
+virtnbdmap -f /backup/sda.full.data,/backup/sda.inc.virtnbdbackup.1.data,/backup/sda.inc.virtnbdbackup.2.data
+[..]
+[2022-06-28 22:25:22] INFO virtnbdmap - main [MainThread]: Need to replay incremental backups
+[2022-06-28 22:25:22] INFO virtnbdmap - main [MainThread]: Replaying offset 420 from mountme/sda.inc.virtnbdbackup.1.data
+[2022-06-28 22:25:22] INFO virtnbdmap - main [MainThread]: Replaying offset 131534 from mountme/sda.inc.virtnbdbackup.1.data
+```
+
+The original image will be left untouched as nbdkits copy on write filter is
+used to replay the changes.
+
+You also create an overlay image via `qemu-img` and boot from it right away:
 
 ```
 qemu-img create -b /dev/nbd0 -f qcow2 bootme.qcow2
@@ -679,7 +694,6 @@ face any issues recovering your data! The only way to ensure your backups are
 valid and your backup plan works correctly is to repeatedly test the integrity
 by restoring them! If you discover any issues, please do not hesitate to open
 an issue.
-
 
 ## Links
 

@@ -56,9 +56,9 @@ def config_complete():
         )
 
     if not os.path.exists(image):
-        raise RuntimeError(f"Cant find image file: {image}")
+        raise RuntimeError(f"Cant find images file: {image}")
     if not os.path.exists(blockMapFile):
-        raise RuntimeError(f"Cant find image file: {blockMapFile}")
+        raise RuntimeError(f"Cant find blockmap file: {blockMapFile}")
 
     pprint.pprint(blockMap)
 
@@ -68,9 +68,10 @@ def thread_model():
 
 
 def open(readonly):
-    """Open backup file and return FD"""
+    """Open backup files and return FD for each"""
     fd = os.open(image, os.O_RDONLY)
-    return {"fd": fd}
+    nbdkit.debug(f"File descriptors: {fd}")
+    return fd
 
 
 def close(param):
@@ -83,7 +84,9 @@ def get_size(h):
     global blockMap
     size = 0
     for m in blockMap:
-        size += m["length"]
+        # use only size from full backup image
+        if m["file"] == image:
+            size += m["length"]
     nbdkit.debug(f"DISK SIZE: {size}")
     return size
 
@@ -106,43 +109,50 @@ def pread(h, buf, offset, flags):
     """
     global blockMap
 
+    nbdkit.debug(f"Handle: {h}")
+
     # get block where offset sort of matches
     data = bytearray()
-    blockList = list(filter(lambda x: x["originalOffset"] <= offset, blockMap))
-    if len(blockList) == 1:
-        block = blockList[0]
+    blockListFull = list(
+        filter(
+            lambda x: x["originalOffset"] <= offset and x["inc"] is not True, blockMap
+        )
+    )
+    nbdkit.debug("-------------------------------------------")
+    nbdkit.debug(f"matching blocklist from full backup: {blockListFull}")
+    nbdkit.debug("-------------------------------------------")
+    if len(blockListFull) == 1:
+        nbdkit.debug("using first block from blocklist")
+        block = blockListFull[0]
     else:
-        block = blockList[-1]
+        nbdkit.debug("Using block from full backup")
+        block = blockListFull[-1]
 
-    nbdkit.debug(f"{block}")
+    nbdkit.debug(f"Processing block: {block}")
 
     fileOffset = block["offset"] - block["originalOffset"] + offset
+
+    dataFile = block["file"]
 
     dataRange = fileOffset + len(buf)
     blockRange = fileOffset + block["length"]
     isData = block["data"]
+    nbdkit.debug(f"READ FROM: {dataFile}")
     nbdkit.debug(f"READ AT: {fileOffset}")
     nbdkit.debug(f"READ: {len(buf)}")
     nbdkit.debug(f"DATA-RANGE: {dataRange}")
     nbdkit.debug(f"BLOCK-RANGE: {blockRange}")
 
-    if block["nextBlockOffset"] is None:
-        nbdkit.debug("Data is within last block")
+    if dataRange < blockRange:
         if isData is False:
+            nbdkit.debug("handle zero")
             data += b"\0" * len(buf)
         else:
-            data += os.pread(h["fd"], len(buf), fileOffset)
+            nbdkit.debug("can read everything")
+            data += os.pread(h, len(buf), fileOffset)
+            nbdkit.debug(f"received: {len(data)}")
     else:
-        if dataRange < blockRange:
-            if isData is False:
-                nbdkit.debug("handle zero")
-                data += b"\0" * len(buf)
-            else:
-                nbdkit.debug("can read everything")
-                data += os.pread(h["fd"], len(buf), fileOffset)
-                nbdkit.debug(f"received: {len(data)}")
-        else:
-            raise RuntimeError("Unexpected block range size.")
+        raise RuntimeError("Unexpected block range size.")
 
     if len(data) != len(buf):
         raise RuntimeError("Unexpected short read from file.")
