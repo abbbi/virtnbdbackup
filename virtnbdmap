@@ -235,6 +235,13 @@ def main():
         type=str,
         help="Logfile (default: %(default)s)",
     )
+    debopt.add_argument(
+        "-r",
+        "--readonly",
+        required=False,
+        action="store_true",
+        help="Map image readonly (default: %(default)s)",
+    )
 
     lib = common.Common()
     args = lib.argparse(parser)
@@ -257,6 +264,9 @@ def main():
 
     if len(dataFiles) > 1 and not "full.data" in dataFiles[0]:
         logging.error("Sequence must start with a full backup")
+        sys.exit(1)
+    if len(dataFiles) > 1 and args.readonly:
+        logging.error("Device mapping with incrementals doesn't work in readonly mode")
         sys.exit(1)
 
     fullImage = dataFiles[0]
@@ -342,17 +352,23 @@ def main():
 
     maxRetry = 10
     retryCnt = 0
+    nbdCmd = [
+        "qemu-nbd",
+        "-c",
+        f"{args.device}",
+        f"nbd://127.0.0.1:10809/{args.export_name}",
+        "-f",
+        "raw",
+    ]
+    if args.readonly:
+        logging.warning("Device will be mapped readonly without cow.")
+        logging.warning("Mounting will only work with '-o norecovery,ro'")
+        nbdCmd.append("-r")
+    logging.debug(nbdCmd)
     while True:
         try:
             subprocess.run(
-                [
-                    "qemu-nbd",
-                    "-c",
-                    f"{args.device}",
-                    f"nbd://127.0.0.1:10809/{args.export_name}",
-                    "-f",
-                    "raw",
-                ],
+                nbdCmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True,

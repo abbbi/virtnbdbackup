@@ -527,6 +527,12 @@ To remove the mappings, stop the utility via "CTRL-C"
 > offline just before you remove the mapping, to free all references to the
 > mapped nbd device (vgchange -a n <vg_name>)
 
+`Note`:
+> If you map the image device with the `--readonly` option you may need to pass
+> certain options to the mount command (-o norecovery,ro) in order to be able
+> to mount the filesystems. This may also be the case if no qemu agent was
+> installed within the virtual machine during backup.
+
 # Extents
 
 In order to save only used data from the images, dirty blocks are queried from
