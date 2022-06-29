@@ -87,7 +87,10 @@ def replayChanges(dataRanges, args):
                 replayDevice.write(replaySrc.read(extent["length"]))
             replayDevice.seek(0)
             replayDevice.flush()
-            os.sync()
+
+    # make sure to sync all changes to the device, even
+    # if we flushed
+    os.sync()
 
 
 def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
