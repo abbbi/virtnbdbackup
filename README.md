@@ -702,4 +702,4 @@ an issue.
 
 Backup howto for Debian Bullseye: https://abbbi.github.io/debian/
 
-Short video: https://www.youtube.com/watch?v=DKxwOelDZ68
+Short video: https://youtu.be/dOE0iB-CEGM
