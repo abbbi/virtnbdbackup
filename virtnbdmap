@@ -223,6 +223,13 @@ def main():
         type=str,
         help="IP Address for nbdkit process to listen on. (default: %(default)s)",
     )
+    opt.add_argument(
+        "-p",
+        "--listen-port",
+        default="10809",
+        type=str,
+        help="Port for nbdkit process to listen on. (default: %(default)s)",
+    )
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-v",
@@ -317,11 +324,12 @@ def main():
         "nbdkit",
         "-i",
         f"{args.listen_address}",
+        "-p",
+        f"{args.listen_port}",
         "-e",
         f"{args.export_name}",
         "--filter=blocksize",
         "--filter=cow",
-        "-f",
         "-v",
         "python",
         f"{nbdkitModule}",
@@ -331,15 +339,16 @@ def main():
         "-t",
         f"{args.threads}",
     ]
-    logging.debug(" ".join(nbdkitCmd))
+    nbdkitCmdFlat = " ".join(nbdkitCmd)
+    logging.debug(nbdkitCmdFlat)
     nbdkitProcess = subprocess.Popen(
         nbdkitCmd,
         close_fds=True,
         stdout=nbdkitLog,
         stderr=nbdkitLog,
     )
-
-    if nbdkitProcess.returncode is None:
+    nbdkitProcess.wait(5)
+    if nbdkitProcess.returncode == 0:
         logging.info("Started nbdkit process pid: [%s]", nbdkitProcess.pid)
         signal.signal(
             signal.SIGINT,
@@ -347,10 +356,10 @@ def main():
         )
     else:
         logging.error(
-            "Error starting nbdkit process, error code: [%s]", nbdkitProcess.returncode
+            "Error starting nbdkit process, return code: [%s]", nbdkitProcess.returncode
         )
-        logging.error("Stderr: [%s]", nbdkitProcess.stderr)
-        logging.error("Stdout: [%s]", nbdkitProcess.stdout)
+        logging.info(nbdkitCmdFlat)
+        logging.error("Check logfile: [%s] for errors.", nbdkitLog.name)
         sys.exit(1)
 
     maxRetry = 10

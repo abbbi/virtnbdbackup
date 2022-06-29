@@ -2,6 +2,9 @@ Version 0.63
 ---------
 * virtnbdmap: update epilog examples, add logfile option
 * virtnbdmap: add --readonly option.
+* virtnbdmap: add --listen-port option: useful if one wants to map multiple
+backups on the same system concurrently.
+* virtnbdmap: better error handling if nbdkit process fails to start.
 * Update README
 
 Version 0.62
