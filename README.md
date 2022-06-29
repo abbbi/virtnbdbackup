@@ -522,10 +522,10 @@ To remove the mappings, stop the utility via "CTRL-C"
 > set them online as you create the mapping, because the copy on write device 
 > is writable by default.
 > If your host system is using the same volume group names this could lead to
-> issues (check or journalctl then).
+> issues (check `dmesg` or `journalctl` then).
 > In case the volume groups are online, it is recommended to change them to
 > offline just before you remove the mapping, to free all references to the
-> mapped nbd device (vgchange -a n <vg_name>)
+> mapped nbd device (`vgchange -a n <vg_name>`)
 
 `Note`:
 > If you map the image device with the `--readonly` option you may need to pass
