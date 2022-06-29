@@ -497,6 +497,8 @@ virtnbdmap -f /backup/sda.full.data,/backup/sda.inc.virtnbdbackup.1.data,/backup
 [..] INFO virtnbdmap - main [MainThread]: Need to replay incremental backups
 [..] INFO virtnbdmap - main [MainThread]: Replaying offset 420 from /backup/sda.inc.virtnbdbackup.1.data
 [..] INFO virtnbdmap - main [MainThread]: Replaying offset 131534 from /backup/sda.inc.virtnbdbackup.1.data
+[..]
+[..] INFO virtnbdmap - main [MainThread]: Replaying offset 33534 from /backup/sda.inc.virtnbdbackup.2.data
 [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd0]
 [..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
 [..]
@@ -505,7 +507,8 @@ virtnbdmap -f /backup/sda.full.data,/backup/sda.inc.virtnbdbackup.1.data,/backup
 The original image will be left untouched as nbdkits copy on write filter is
 used to replay the changes.
 
-You also create an overlay image via `qemu-img` and boot from it right away:
+Further you can create an overlay image via `qemu-img` and boot from it right
+away (or boot directly from the /dev/nbd0 device).
 
 ```
 qemu-img create -b /dev/nbd0 -f qcow2 bootme.qcow2
