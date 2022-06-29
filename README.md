@@ -515,11 +515,14 @@ qemu-system-x86_64 -enable-kvm -m 2000 -hda bootme.qcow2
 To remove the mappings, stop the utility via "CTRL-C"
 
 `Note`:
-> If you attempt to mount the filesystems mapped, you may need to add several
-> mount options (XFS for example needs `-o norecovery,ro`). Additionally, if
-> the backed up virtual machine has logical volumes which have the same name
-> then the system you are mapping the diks to, you need to activate them
-> forcefully to be able to access them correctly.
+> If the virtual machine includes volume groups, the system will attempt to
+> set them online as you create the mapping, because the copy on write device 
+> is writable by default.
+> If your host system is using the same volume group names this could lead to
+> issues (check or journalctl then).
+> In case the volume groups are online, it is recommended to change them to
+> offline just before you remove the mapping, to free all references to the
+> mapped nbd device (vgchange -a n <vg_name>)
 
 # Extents
 

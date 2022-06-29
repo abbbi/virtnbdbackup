@@ -1,6 +1,7 @@
 Version 0.63
 ---------
-
+* virtnbdmap: update epilog examples, add logfile option
+* Update README
 
 Version 0.62
 ---------
