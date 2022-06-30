@@ -15,7 +15,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
 import json
 import logging
 import tempfile
@@ -88,6 +87,7 @@ class qemuHelper:
         return self._runcmd(cmd)
 
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
+        """Execute nbdkit process for virtnbdmap"""
         cmd = [
             "nbdkit",
             "-i",

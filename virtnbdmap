@@ -94,7 +94,7 @@ def replayChanges(dataRanges, args):
     os.sync()
 
 
-def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
+def handleSignal(device, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
     disconnectDevice = subprocess.run(
@@ -331,7 +331,7 @@ def main():
     )
     signal.signal(
         signal.SIGINT,
-        partial(handleSignal, nbdkitProcess, args.device, blockMap, logging),
+        partial(handleSignal, args.device, blockMap, logging),
     )
 
     maxRetry = 10
