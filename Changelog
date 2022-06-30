@@ -1,5 +1,7 @@
 Version 0.66
 ---------
+* virtnbdmap: use absolute path of files specified.
+* Fix pylint warnings
 
 Version 0.65
 ---------

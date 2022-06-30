@@ -81,7 +81,7 @@ def replayChanges(dataRanges, args, lib):
             dataRanges,
         )
     )
-    dataSize = sum([extent["length"] for extent in blockListInc])
+    dataSize = sum(extent["length"] for extent in blockListInc)
     progressBar = lib.progressBar(dataSize, "replaying..", args)
     with open(args.device, "wb", os.O_DIRECT) as replayDevice:
         for extent in blockListInc:
@@ -89,7 +89,7 @@ def replayChanges(dataRanges, args, lib):
                 logging.info(
                     "Replaying offset %s from %s", extent["offset"], extent["file"]
                 )
-            with open(extent["file"], "rb") as replaySrc:
+            with open(os.path.abspath(extent["file"]), "rb") as replaySrc:
                 replaySrc.seek(extent["offset"])
                 replayDevice.seek(extent["originalOffset"])
                 replayDevice.write(replaySrc.read(extent["length"]))
@@ -144,7 +144,7 @@ def getDataRanges(lib, stream, sTypes, reader):
         blockInfo["nextOriginalOffset"] = start + length
         blockInfo["length"] = length
         blockInfo["data"] = kind == sTypes.DATA
-        blockInfo["file"] = reader.name
+        blockInfo["file"] = os.path.abspath(reader.name)
         blockInfo["inc"] = meta["incremental"]
 
         if kind == sTypes.DATA:
@@ -289,7 +289,7 @@ def main():
         logging.error("Device mapping with incrementals doesn't work in readonly mode")
         sys.exit(1)
 
-    fullImage = dataFiles[0]
+    fullImage = os.path.abspath(dataFiles[0])
 
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
@@ -392,7 +392,8 @@ def main():
         except Exception as e:
             logging.error("Unable to replay changes: %s", e)
             logging.exception(e)
-            lib.killProc(nbdkitProcess)
+            lib.killProc(nbdkitProcess.pid)
+            sys.exit(1)
 
     logging.info("Done mapping backup image to [%s]", args.device)
     logging.info("Press CTRL+C to disconnect")
