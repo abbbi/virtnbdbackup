@@ -67,38 +67,44 @@ def locatePlugin():
     return nbdkitModule
 
 
-def replayChanges(dataRanges, args):
+def replayChanges(dataRanges, args, lib):
     """Replay the changes from an incremental or differencial
     backup file to the NBD device"""
-    logging.info("Need to replay incremental backups")
+    logging.info("Replaying changes from incremental backups")
     blockListInc = list(
         filter(
             lambda x: x["inc"] is True,
             dataRanges,
         )
     )
+    dataSize = sum([extent["length"] for extent in blockListInc])
+    progressBar = lib.progressBar(dataSize, "replaying..", args)
     with open(args.device, "wb") as replayDevice:
         for extent in blockListInc:
-            logging.info(
-                "Replaying offset %s from %s", extent["offset"], extent["file"]
-            )
+            if args.noprogress:
+                logging.info(
+                    "Replaying offset %s from %s", extent["offset"], extent["file"]
+                )
             with open(extent["file"], "rb") as replaySrc:
                 replaySrc.seek(extent["offset"])
                 replayDevice.seek(extent["originalOffset"])
                 replayDevice.write(replaySrc.read(extent["length"]))
             replayDevice.seek(0)
             replayDevice.flush()
+            os.sync()
+            progressBar.update(extent["length"])
 
     # make sure to sync all changes to the device, even
     # if we flushed
     os.sync()
+    progressBar.close()
 
 
 def handleSignal(device, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
     disconnectDevice = subprocess.run(
-        ["qemu-nbd", "-d", f"{device}"], stdout=subprocess.PIPE
+        ["qemu-nbd", "-d", f"{device}"], stdout=subprocess.PIPE, check=True
     )
     if disconnectDevice.returncode == 0:
         log.info("Disconnected nbd device [%s]", device)
@@ -110,7 +116,10 @@ def handleSignal(device, blockMap, log, signum, _):
 def killProc(pid, exitCode=1):
     """Attempt to kill nbdkit process in case of
     error"""
-    os.kill(pid, signal.SIGTERM)
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
     sys.exit(exitCode)
 
 
@@ -229,6 +238,15 @@ def main():
         type=str,
         help="Port for nbdkit process to listen on. (default: %(default)s)",
     )
+    opt.add_argument(
+        "-n",
+        "--noprogress",
+        required=False,
+        action="store_true",
+        default=False,
+        help="Disable progress bar",
+    )
+
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-v",
@@ -325,7 +343,7 @@ def main():
         sys.exit(1)
 
     logging.info(
-        "Started nbdkit process pid: [%s], [%s]",
+        "Started nbdkit process pid: [%s], Logfile: [%s]",
         nbdkitProcess.pid,
         nbdkitProcess.logFile,
     )
@@ -364,7 +382,7 @@ def main():
                     "Unable to connect device after service start: %s",
                     e.stderr.decode(),
                 )
-                killProc(nbdkitProcess)
+                killProc(nbdkitProcess.pid)
             errMsg = e.stderr.decode()
             if "Connection refused" in errMsg:
                 logging.info("Nbd server refused connection, retry [%s]", retryCnt)
@@ -373,11 +391,11 @@ def main():
             else:
                 logging.error("Unable to map device:")
                 logging.error("Stderr: [%s]", errMsg)
-                killProc(nbdkitProcess)
+                killProc(nbdkitProcess.pid)
 
     if len(dataFiles) > 1:
         try:
-            replayChanges(dataRanges, args)
+            replayChanges(dataRanges, args, lib)
         except Exception as e:
             logging.error("Unable to replay changes: %s", e)
             logging.exception(e)
