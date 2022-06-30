@@ -46,6 +46,10 @@ def checkRequirements():
 def checkDevice(device):
     """Check if /dev/nbdX exists, otherwise it is likely
     nbd module isnt loaded on the system"""
+    if not device.startswith("/dev/nbd"):
+        logging.error("Target device [%s] seems not to be a ndb device?", device)
+        sys.exit(1)
+
     if not os.path.exists(device):
         logging.error(
             "Target device [%s] does not exist, nbd module not loaded?", device
@@ -108,6 +112,7 @@ def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     os.remove(blockMap.name)
     log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
     os.remove(nbdkitProcess.logFile)
+    killProc(nbdkitProcess.pid)
     sys.exit(0)
 
 

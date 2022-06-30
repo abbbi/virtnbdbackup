@@ -88,8 +88,14 @@ class qemuHelper:
 
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
         """Execute nbdkit process for virtnbdmap"""
+
+        pidFile = tempfile.NamedTemporaryFile(
+            delete=False, prefix="nbdkit", suffix=".pid"
+        ).name
         cmd = [
             "nbdkit",
+            "--pidfile",
+            f"{pidFile}",
             "-i",
             f"{args.listen_address}",
             "-p",
@@ -107,7 +113,7 @@ class qemuHelper:
             "-t",
             f"{args.threads}",
         ]
-        return self._runcmd(cmd)
+        return self._runcmd(cmd, pidFile=pidFile)
 
     def startBackupNbdServer(self, diskFormat, diskFile, socketFile, bitMap):
         """Start nbd server process for offline backup operation"""
@@ -144,7 +150,7 @@ class qemuHelper:
 
         return err
 
-    def _runcmd(self, cmdLine):
+    def _runcmd(self, cmdLine, pidFile=None):
         """Execute passed command"""
         logFile = tempfile.NamedTemporaryFile(
             delete=False, prefix=cmdLine[0], suffix=".log"
@@ -170,6 +176,11 @@ class qemuHelper:
                 f"Unable to start {cmdLine[0]} process: {err}"
             )
 
-        process = processInfo(p.pid, logFile.name, err)
+        if pidFile is not None:
+            realPid = int(self._readlog(pidFile, ""))
+        else:
+            realPid = p.pid
+
+        process = processInfo(realPid, logFile.name, err)
         log.debug("Started [%s] process, returning: %s", cmdLine[0], err)
         return process
