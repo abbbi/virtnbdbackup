@@ -199,10 +199,10 @@ finishes, the job is stopped and the nbd server quits operation.
 
 `Note`:
 > If the virtual domain is not in running state (powered off) `virtnbdbackup` 
-> supports both `copy` and `inc` backup modes. Incremental backups will then 
-> save the changed blocks of the last existing checkpoint. As no new checkpoints
-> can be defined for offline domains, the Backup mode `full` is changed to mode
-> `copy`.
+> supports `copy` and `inc/diff` backup modes. Incremental and differencial backups
+> will then save the changed blocks since last created checkpoint. As no new
+> checkpoints can be defined for offline domains, the Backup mode `full` is
+> changed to mode `copy`.
 
 It is possible to backup multiple virtual machines on the same host system at
 the same time, using separate calls to the application with a different target
