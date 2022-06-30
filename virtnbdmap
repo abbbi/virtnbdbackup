@@ -29,6 +29,7 @@ import subprocess
 
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
+from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import exceptions
@@ -101,18 +102,16 @@ def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     )
     if disconnectDevice.returncode == 0:
         log.info("Disconnected nbd device [%s]", device)
-    log.info("Stopping nbdkit process, pid: [%s]", nbdkitProcess.pid)
-    nbdkitProcess.kill()
     log.info("Removing temporary blockmap file: [%s]", blockMap.name)
     os.remove(blockMap.name)
     sys.exit(0)
 
 
-def killProc(nbdkitProcess):
+def killProc(pid, exitCode=1):
     """Attempt to kill nbdkit process in case of
     error"""
-    nbdkitProcess.kill()
-    sys.exit(1)
+    os.kill(pid, signal.SIGTERM)
+    sys.exit(exitCode)
 
 
 def getDataRanges(lib, stream, sTypes, reader):
@@ -316,51 +315,24 @@ def main():
 
     logging.info("Target device: %s", args.device)
 
-    nbdkitLog = tempfile.NamedTemporaryFile(
-        delete=False, prefix="nbdkit.", suffix=".log"
-    )
-    logging.info("Starting nbdkit process, logfile: [%s]", nbdkitLog.name)
-    nbdkitCmd = [
-        "nbdkit",
-        "-i",
-        f"{args.listen_address}",
-        "-p",
-        f"{args.listen_port}",
-        "-e",
-        f"{args.export_name}",
-        "--filter=blocksize",
-        "--filter=cow",
-        "-v",
-        "python",
-        f"{nbdkitModule}",
-        f"maxlen={args.blocksize}",
-        f"blockmap={blockMap.name}",
-        f"disk={fullImage}",
-        "-t",
-        f"{args.threads}",
-    ]
-    nbdkitCmdFlat = " ".join(nbdkitCmd)
-    logging.debug(nbdkitCmdFlat)
-    nbdkitProcess = subprocess.Popen(
-        nbdkitCmd,
-        close_fds=True,
-        stdout=nbdkitLog,
-        stderr=nbdkitLog,
-    )
-    nbdkitProcess.wait(5)
-    if nbdkitProcess.returncode == 0:
-        logging.info("Started nbdkit process pid: [%s]", nbdkitProcess.pid)
-        signal.signal(
-            signal.SIGINT,
-            partial(handleSignal, nbdkitProcess, args.device, blockMap, logging),
+    qFh = qemuhelper.qemuHelper(args.export_name)
+    try:
+        nbdkitProcess = qFh.startNbdkitProcess(
+            args, nbdkitModule, blockMap.name, fullImage
         )
-    else:
-        logging.error(
-            "Error starting nbdkit process, return code: [%s]", nbdkitProcess.returncode
-        )
-        logging.info(nbdkitCmdFlat)
-        logging.error("Check logfile: [%s] for errors.", nbdkitLog.name)
+    except qemuhelper.exceptions.QemuHelperError as e:
+        logging.error("Unable to start nbdkit Process: [%s]", e)
         sys.exit(1)
+
+    logging.info(
+        "Started nbdkit process pid: [%s], [%s]",
+        nbdkitProcess.pid,
+        nbdkitProcess.logFile,
+    )
+    signal.signal(
+        signal.SIGINT,
+        partial(handleSignal, nbdkitProcess, args.device, blockMap, logging),
+    )
 
     maxRetry = 10
     retryCnt = 0
@@ -368,7 +340,7 @@ def main():
         "qemu-nbd",
         "-c",
         f"{args.device}",
-        f"nbd://127.0.0.1:10809/{args.export_name}",
+        f"nbd://127.0.0.1:{args.listen_port}/{args.export_name}",
         "-f",
         "raw",
     ]

@@ -18,10 +18,21 @@
 import os
 import json
 import logging
+import tempfile
 import subprocess
+from dataclasses import dataclass
 from libvirtnbdbackup.qemuhelper import exceptions
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class processInfo:
+    """Process info object"""
+
+    pid: int
+    logFile: str
+    err: str
 
 
 class qemuHelper:
@@ -74,7 +85,29 @@ class qemuHelper:
             f"{socketFile}",
             "--fork",
         ]
-        return self._runcmd(cmd, socketFile)
+        return self._runcmd(cmd)
+
+    def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
+        cmd = [
+            "nbdkit",
+            "-i",
+            f"{args.listen_address}",
+            "-p",
+            f"{args.listen_port}",
+            "-e",
+            f"{self.exportName}",
+            "--filter=blocksize",
+            "--filter=cow",
+            "-v",
+            "python",
+            f"{nbdkitModule}",
+            f"maxlen={args.blocksize}",
+            f"blockmap={blockMap}",
+            f"disk={fullImage}",
+            "-t",
+            f"{args.threads}",
+        ]
+        return self._runcmd(cmd)
 
     def startBackupNbdServer(self, diskFormat, diskFile, socketFile, bitMap):
         """Start nbd server process for offline backup operation"""
@@ -98,47 +131,45 @@ class qemuHelper:
             f"--pid-file={socketFile}.pid",
             bitmapOpt,
         ]
-        return self._runcmd(cmd, socketFile)
+        return self._runcmd(cmd)
 
     @staticmethod
-    def _runcmd(cmdLine, socketFile):
-        """Start NBD Service"""
-        logFile = f"{socketFile}.nbdserver.log"
+    def _readlog(logFile, cmd):
+        try:
+            err = open(logFile, "r").read().strip()
+        except OSError as errmsg:
+            raise exceptions.ProcessError(
+                f"Error executing [{cmd}] Unable to get error message: {errmsg}"
+            )
+
+        return err
+
+    def _runcmd(self, cmdLine):
+        """Execute passed command"""
+        logFile = tempfile.NamedTemporaryFile(
+            delete=False, prefix=cmdLine[0], suffix=".log"
+        )
 
         log.debug("CMD: %s", " ".join(cmdLine))
-
-        try:
-            logHandle = open(logFile, "w+")
-            log.debug("Temporary logfile: %s", logFile)
-        except OSError as errmsg:
-            return errmsg
-
         p = subprocess.Popen(
             cmdLine,
             close_fds=True,
-            stderr=logHandle,
-            stdout=logHandle,
+            stderr=logFile,
+            stdout=logFile,
         )
 
-        p.wait()
+        p.wait(5)
         log.debug("Return code: %s", p.returncode)
         err = None
         if p.returncode != 0:
-            p.wait()
+            p.wait(5)
+            log.info("CMD: %s", " ".join(cmdLine))
             log.debug("Read error messages from logfile")
-            logHandle.flush()
-            logHandle.close()
-            try:
-                err = open(logFile, "r").read().strip()
-            except OSError as errmsg:
-                raise exceptions.NbdServerProcessError(
-                    f"Cant start NBD Server: Unable to get error message: {errmsg}"
-                )
+            err = self._readlog(logFile.name, cmdLine[0])
+            raise exceptions.ProcessError(
+                f"Unable to start {cmdLine[0]} process: {err}"
+            )
 
-            raise exceptions.NbdServerProcessError(f"Unable to start NBD server: {err}")
-
-        log.debug("Removing temporary logfile: %s", logFile)
-        os.remove(logFile)
-
-        log.debug("Started process, returning: %s", err)
-        return err
+        process = processInfo(p.pid, logFile.name, err)
+        log.debug("Started [%s] process, returning: %s", cmdLine[0], err)
+        return process

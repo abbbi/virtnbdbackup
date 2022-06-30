@@ -243,7 +243,7 @@ def startNbd(qFh, exportName, targetFile, socketFile):
     """Start NBD service for restore"""
     logging.info("Starting NBD server on socket: [%s]", socketFile)
     err = qFh.startRestoreNbdServer(targetFile, socketFile)
-    if err is not None:
+    if err.err is not None:
         logging.error("Unable to start NBD server: [%s]", err)
         return False
 
