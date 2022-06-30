@@ -1,7 +1,8 @@
 Version 0.64
 ---------
-* minor code cleanup
+* virtnbdmap: minor code cleanup
 * virtnbdmap: add progressbar during replay of incremental backups
+* virtnbdmap: pass listen port to qemu-nbd command too.
 
 Version 0.63
 ---------
