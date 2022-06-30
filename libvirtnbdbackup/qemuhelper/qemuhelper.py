@@ -121,6 +121,7 @@ class qemuHelper:
         if bitMap is not None:
             bitmapOpt = f"--bitmap={bitMap}"
 
+        pidFile = f"{socketFile}.pid"
         cmd = [
             "qemu-nbd",
             "-r",
@@ -134,10 +135,10 @@ class qemuHelper:
             "-e 2",
             "--fork",
             "--detect-zeroes=on",
-            f"--pid-file={socketFile}.pid",
+            f"--pid-file={pidFile}",
             bitmapOpt,
         ]
-        return self._runcmd(cmd)
+        return self._runcmd(cmd, pidFile=pidFile)
 
     @staticmethod
     def _readlog(logFile, cmd):

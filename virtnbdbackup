@@ -743,10 +743,10 @@ def backupDisk(
         args.socketfile = f"{args.socketfile}.{disk.target}"
         logging.info("Offline backup, starting NDB Service")
         try:
-            qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
+            nbdProc = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
                 disk.format, disk.path, args.socketfile, bitMap
             )
-            logging.info("NDB Service started")
+            logging.info("NDB Service started, PID: [%s]", nbdProc.pid)
         except qemuhelper.exceptions.QemuHelperError as e:
             raise exceptions.DiskBackupFailed(e)
 
@@ -886,7 +886,7 @@ def backupDisk(
     nbdClient.disconnect()
     if args.offline is True:
         logging.info("Stopping NBD Service")
-        lib.killNbdServer(args.socketfile)
+        lib.killProc(nbdProc.pid)
     if args.stdout is False:
         if args.noprogress is True:
             logging.info(

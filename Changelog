@@ -5,6 +5,7 @@ data to speedup the process: no need to sync then.
 * virtnbdmap: remove nbdkit logfile after exiting successfully
 * virtnbdmap: use pidfile and send signal to correct process. (#46)
 * virtnbdmap: check if the passed device starts with /dev/nbd
+* virtnbdmap: code cleanup
 
 Version 0.64
 ---------

@@ -122,13 +122,8 @@ class Common:
         )
 
     @staticmethod
-    def killNbdServer(socketFile):
+    def killProc(pid):
         """Attempt kill PID"""
-        pidFile = f"{socketFile}.pid"
-        with open(pidFile, "rb") as pidfh:
-            pid = int(pidfh.read())
-        os.remove(pidFile)
-
         logging.debug("Killing PID: %s", pid)
         while True:
             try:
