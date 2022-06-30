@@ -79,7 +79,7 @@ def replayChanges(dataRanges, args, lib):
     )
     dataSize = sum([extent["length"] for extent in blockListInc])
     progressBar = lib.progressBar(dataSize, "replaying..", args)
-    with open(args.device, "wb") as replayDevice:
+    with open(args.device, "wb", os.O_DIRECT) as replayDevice:
         for extent in blockListInc:
             if args.noprogress:
                 logging.info(
@@ -91,16 +91,12 @@ def replayChanges(dataRanges, args, lib):
                 replayDevice.write(replaySrc.read(extent["length"]))
             replayDevice.seek(0)
             replayDevice.flush()
-            os.sync()
             progressBar.update(extent["length"])
 
-    # make sure to sync all changes to the device, even
-    # if we flushed
-    os.sync()
     progressBar.close()
 
 
-def handleSignal(device, blockMap, log, signum, _):
+def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
     disconnectDevice = subprocess.run(
@@ -110,6 +106,8 @@ def handleSignal(device, blockMap, log, signum, _):
         log.info("Disconnected nbd device [%s]", device)
     log.info("Removing temporary blockmap file: [%s]", blockMap.name)
     os.remove(blockMap.name)
+    log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
+    os.remove(nbdkitProcess.logFile)
     sys.exit(0)
 
 
@@ -117,7 +115,7 @@ def killProc(pid, exitCode=1):
     """Attempt to kill nbdkit process in case of
     error"""
     try:
-        os.kill(pid, signal.SIGTERM)
+        os.kill(pid, signal.SIGKILL)
     except ProcessLookupError:
         pass
     sys.exit(exitCode)
@@ -349,7 +347,7 @@ def main():
     )
     signal.signal(
         signal.SIGINT,
-        partial(handleSignal, args.device, blockMap, logging),
+        partial(handleSignal, nbdkitProcess, args.device, blockMap, logging),
     )
 
     maxRetry = 10

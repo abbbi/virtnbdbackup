@@ -1,5 +1,8 @@
 Version 0.65
 ---------
+* virtnbdmap: open target device with O_DIRECT during replay of incremental
+data to speedup the process: no need to sync then.
+* virtnbdmap: remove nbdkit logfile after exiting successfully
 
 Version 0.64
 ---------
