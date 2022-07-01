@@ -125,20 +125,27 @@ def getDataRanges(lib, stream, sTypes, reader):
         logging.error("Unable to read metadata header: %s", errmsg)
         return False, False
 
+    trailer = None
     if lib.isCompressed(meta):
-        logging.error("Mapping compressed images currently not supported.")
-        return False, False
+        logging.error("Mapping compressed image, reading trailer.")
+        trailer = stream.readCompressionTrailer(reader)
 
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
     dataRanges = []
+    dataBlockCnt = 0
     while True:
         kind, start, length = stream.readFrame(reader)
+        print(kind)
         if kind == sTypes.STOP:
             dataRanges[-1]["nextBlockOffset"] = None
             break
 
         blockInfo = {}
+        blockInfo["compressed_length"] = None
+        if trailer:
+            blockInfo["compressed_length"] = trailer[dataBlockCnt]
+            length = trailer[dataBlockCnt]
         blockInfo["offset"] = reader.tell()
         blockInfo["originalOffset"] = start
         blockInfo["nextOriginalOffset"] = start + length
@@ -154,6 +161,8 @@ def getDataRanges(lib, stream, sTypes, reader):
         nextBlockOffset = reader.tell() + sTypes.FRAME_LEN
         blockInfo["nextBlockOffset"] = nextBlockOffset
         dataRanges.append(blockInfo)
+        dataBlockCnt += 1
+        print(dataRanges)
 
     return dataRanges, meta
 

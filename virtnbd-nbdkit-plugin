@@ -20,6 +20,8 @@ import json
 import pprint
 import nbdkit
 
+from libvirtnbdbackup.common import Common as lib
+
 API_VERSION = 2
 
 blockMap = None
@@ -160,7 +162,13 @@ def pread(h, buf, offset, flags):
             data += b"\0" * len(buf)
         else:
             log("can read everything")
-            data += os.pread(h, len(buf), fileOffset)
+
+            if block["compressed_length"]:
+                data += os.pread(h, len(block["compressed_length"]), fileOffset)
+                data = lib.lz4DecompressFrame(data)
+            else:
+                data += os.pread(h, len(buf), fileOffset)
+
             log(f"received: {len(data)}")
     else:
         raise RuntimeError("Unexpected block range size.")
