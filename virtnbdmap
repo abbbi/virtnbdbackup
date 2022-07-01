@@ -134,18 +134,36 @@ def getDataRanges(lib, stream, sTypes, reader):
 
     dataRanges = []
     dataBlockCnt = 0
+
     while True:
         kind, start, length = stream.readFrame(reader)
         print(kind)
         if kind == sTypes.STOP:
             dataRanges[-1]["nextBlockOffset"] = None
             break
+        if kind == sTypes.ZERO:
+            continue
 
         blockInfo = {}
         blockInfo["compressed_length"] = None
+        skip = False
         if trailer:
-            blockInfo["compressed_length"] = trailer[dataBlockCnt]
-            length = trailer[dataBlockCnt]
+            if length >=33554432:
+                skip = True
+            import pprint
+            pprint.pprint(trailer[dataBlockCnt])
+            if isinstance(trailer[dataBlockCnt], dict):
+                print("jo")
+                item = next(iter(trailer[dataBlockCnt]))
+                for step in trailer[dataBlockCnt][item]:
+                    length += step
+                    print("seek", step)
+                    reader.seek(step, os.SEEK_CUR)
+                reader.seek(len(sTypes.TERM),  os.SEEK_CUR)
+                dataBlockCnt += 1
+            else:
+                length = trailer[dataBlockCnt]
+            blockInfo["compressed_length"] = length
         blockInfo["offset"] = reader.tell()
         blockInfo["originalOffset"] = start
         blockInfo["nextOriginalOffset"] = start + length
@@ -153,16 +171,21 @@ def getDataRanges(lib, stream, sTypes, reader):
         blockInfo["data"] = kind == sTypes.DATA
         blockInfo["file"] = os.path.abspath(reader.name)
         blockInfo["inc"] = meta["incremental"]
-
-        if kind == sTypes.DATA:
-            reader.seek(length, os.SEEK_CUR)
-            assert reader.read(len(sTypes.TERM)) == sTypes.TERM
+        """
+           58     data 0000000000000000 00000000000100000\r\n
+   59     <1 MiB bytes>\r\n
+   60     zero 0000000000100000 00000000040000000\r\n
+   61     data 0000000040100000 00000000000001000\r\n
+   62     <4096 bytes>\r\n
+        """
+        if kind == sTypes.DATA and skip is False:
+            print("seek", length)
+            reader.seek(length+len(sTypes.TERM), os.SEEK_CUR)
+            dataBlockCnt += 1
 
         nextBlockOffset = reader.tell() + sTypes.FRAME_LEN
         blockInfo["nextBlockOffset"] = nextBlockOffset
         dataRanges.append(blockInfo)
-        dataBlockCnt += 1
-        print(dataRanges)
 
     return dataRanges, meta
 
