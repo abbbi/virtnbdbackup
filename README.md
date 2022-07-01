@@ -134,7 +134,7 @@ To build the rpm package from source:
 yum install epel-release    # required for tqdm on centos 8
 yum makecache
 yum install rpm-build
-python3 setup.py bdist_rpm
+python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
 yum install dist/virtnbdbackup-<version>-.noarch.rpm
 ```
 

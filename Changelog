@@ -3,6 +3,8 @@ Version 0.67
 * Disable xml based check if incremental backup is enabled for
 libvirt versions >= 7.6.0, the feature is enabled by default
 now: https://github.com/libvirt/libvirt/blob/master/NEWS.rst#v760-2021-08-02
+* Fix dependencies for rpm package: nbdkit-plugin-python3 -> nbdkit-plugin-python
+* Fix documentation regards build on almalinux
 
 
 Version 0.66
