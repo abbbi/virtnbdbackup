@@ -321,7 +321,7 @@ def main():
         "--strict",
         default=False,
         help=(
-            "Change exit code if warnings occur during backup operation."
+            "Change exit code if warnings occur during backup operation. "
             "(default: %(default)s)"
         ),
         action="store_true",
