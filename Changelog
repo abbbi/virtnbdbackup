@@ -1,6 +1,7 @@
 Version 0.66
 ---------
 * virtnbdmap: use absolute path of files specified.
+* nbdkit plugin: add debug flag, be less verbose (#47)
 * Fix pylint warnings
 * Update README
 

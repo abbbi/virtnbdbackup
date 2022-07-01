@@ -88,10 +88,12 @@ class qemuHelper:
 
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
         """Execute nbdkit process for virtnbdmap"""
-
+        debug = "0"
         pidFile = tempfile.NamedTemporaryFile(
             delete=False, prefix="nbdkit", suffix=".pid"
         ).name
+        if args.verbose:
+            debug = "1"
         cmd = [
             "nbdkit",
             "--pidfile",
@@ -110,6 +112,7 @@ class qemuHelper:
             f"maxlen={args.blocksize}",
             f"blockmap={blockMap}",
             f"disk={fullImage}",
+            f"debug={debug}",
             "-t",
             f"{args.threads}",
         ]

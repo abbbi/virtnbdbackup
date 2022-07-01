@@ -25,6 +25,7 @@ API_VERSION = 2
 blockMap = None
 blockMapFile = None
 image = None
+debug = "0"
 
 
 def config(key, value):
@@ -33,6 +34,7 @@ def config(key, value):
     global blockMap
     global blockMapFile
     global image
+    global debug
     if key == "blockmap":
         blockMapFile = value
         with builtins.open(blockMapFile, "rb") as fh:
@@ -41,8 +43,17 @@ def config(key, value):
     if key == "disk":
         image = value
         return
+    if key == "debug":
+        debug = value
+        return
 
     raise RuntimeError(f"Unsupported parameter: {key}")
+
+
+def log(msg):
+    global debug
+    if debug == "1":
+        nbdkit.debug(msg)
 
 
 def config_complete():
@@ -70,7 +81,7 @@ def thread_model():
 def open(readonly):
     """Open backup files and return FD for each"""
     fd = os.open(image, os.O_RDONLY)
-    nbdkit.debug(f"File descriptors: {fd}")
+    log(f"File descriptors: {fd}")
     return fd
 
 
@@ -87,7 +98,7 @@ def get_size(h):
         # use only size from full backup image
         if m["file"] == image:
             size += m["length"]
-    nbdkit.debug(f"DISK SIZE: {size}")
+    log(f"DISK SIZE: {size}")
     return size
 
 
@@ -109,7 +120,7 @@ def pread(h, buf, offset, flags):
     """
     global blockMap
 
-    nbdkit.debug(f"Handle: {h}")
+    log(f"Handle: {h}")
 
     # get block where offset sort of matches
     data = bytearray()
@@ -118,17 +129,17 @@ def pread(h, buf, offset, flags):
             lambda x: x["originalOffset"] <= offset and x["inc"] is not True, blockMap
         )
     )
-    nbdkit.debug("-------------------------------------------")
-    nbdkit.debug(f"matching blocklist from full backup: {blockListFull}")
-    nbdkit.debug("-------------------------------------------")
+    log("-------------------------------------------")
+    log(f"matching blocklist from full backup: {blockListFull}")
+    log("-------------------------------------------")
     if len(blockListFull) == 1:
-        nbdkit.debug("using first block from blocklist")
+        log("using first block from blocklist")
         block = blockListFull[0]
     else:
-        nbdkit.debug("Using block from full backup")
+        log("Using block from full backup")
         block = blockListFull[-1]
 
-    nbdkit.debug(f"Processing block: {block}")
+    log(f"Processing block: {block}")
 
     fileOffset = block["offset"] - block["originalOffset"] + offset
 
@@ -137,20 +148,20 @@ def pread(h, buf, offset, flags):
     dataRange = fileOffset + len(buf)
     blockRange = fileOffset + block["length"]
     isData = block["data"]
-    nbdkit.debug(f"READ FROM: {dataFile}")
-    nbdkit.debug(f"READ AT: {fileOffset}")
-    nbdkit.debug(f"READ: {len(buf)}")
-    nbdkit.debug(f"DATA-RANGE: {dataRange}")
-    nbdkit.debug(f"BLOCK-RANGE: {blockRange}")
+    log(f"READ FROM: {dataFile}")
+    log(f"READ AT: {fileOffset}")
+    log(f"READ: {len(buf)}")
+    log(f"DATA-RANGE: {dataRange}")
+    log(f"BLOCK-RANGE: {blockRange}")
 
     if dataRange < blockRange:
         if isData is False:
-            nbdkit.debug("handle zero")
+            log("handle zero")
             data += b"\0" * len(buf)
         else:
-            nbdkit.debug("can read everything")
+            log("can read everything")
             data += os.pread(h, len(buf), fileOffset)
-            nbdkit.debug(f"received: {len(data)}")
+            log(f"received: {len(data)}")
     else:
         raise RuntimeError("Unexpected block range size.")
 
