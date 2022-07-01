@@ -24,6 +24,7 @@ Vagrant.configure("2") do |config|
     set +x
     python3.6 setup.py bdist_rpm
     cp dist/* /vagrant
+    yum install -y dist/*.rpm
    SHELL
    config.vm.synced_folder "./", "/vagrant", type: "virtiofs"
 end
