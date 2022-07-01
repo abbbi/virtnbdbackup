@@ -82,7 +82,7 @@ class client:
         by default without the domain XML including the capability
         statement.
         """
-        if self.libvirtVersion >= 8002000:
+        if self.libvirtVersion >= 7006000:
             return True
 
         tree = self._getTree(domObj.XMLDesc(0))
