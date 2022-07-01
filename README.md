@@ -88,7 +88,7 @@ project: https://github.com/abbbi/qmpbackup
   Debian bullseye or Ubuntu 20.x include libvirt versions supporting this
   feature already.
 
-* Virtual machines running on libvirt versions < 8.2.0 **must enable
+* Virtual machines running on libvirt versions < 7.6.0 **must enable
   incremental backup feature** by including the capability statement and using
   the extended schema (the first line must be changed, too) in its
   configuration as shown below:
