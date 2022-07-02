@@ -25,6 +25,7 @@ of your `kvm/qemu` virtual machines.
 * [Backup concurrency](#backup-concurrency)
 * [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
 * [Backup Examples](#backup-examples)
+   * [Rotating backups](#rotating-backups)
    * [Excluding disks](#excluding-disks)
    * [Estimating backup size](#estimating-backup-size)
    * [Compression](#compression)
