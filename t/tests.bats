@@ -557,7 +557,25 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-
+@test "Backup: create backup in auto mode to empty directory: full backup must be executed" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l auto -o ${TMPDIR}/autotest
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    [[ "${output}" =~  "Backup mode auto, target folder is empty: executing full backup" ]]
+    [[ "${output}" =~  "" ]]
+    run ls ${TMPDIR}/autotest/*full.data
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create backup in auto mode to existing directory: incremental backup must be executed" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l auto -o ${TMPDIR}/autotest
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    [[ "${output}" =~  "Backup mode auto: executing incremental backup" ]]
+    run ls ${TMPDIR}/autotest/*inc*.data
+    [ "$status" -eq 0 ]
+}
 
 @test "Map: Map full backup to nbd block device, check device size and partitions, mount filesystem" {
     [ -f /.dockerenv ] && skip "wont work inside docker image"
