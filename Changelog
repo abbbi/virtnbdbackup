@@ -5,6 +5,9 @@ libvirt versions >= 7.6.0, the feature is enabled by default
 now: https://github.com/libvirt/libvirt/blob/master/NEWS.rst#v760-2021-08-02
 * Fix dependencies for rpm package: nbdkit-plugin-python3 -> nbdkit-plugin-python
 * Fix documentation regards build on almalinux
+* virtnbdbackup: introduce backup mode "auto": automatically execute full
+backup if target folder is empty. If full backup exists in target folder,
+switch to incremental backup mode automatically. (#52)
 
 Version 0.66
 ---------

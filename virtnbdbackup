@@ -233,7 +233,7 @@ def main():
         "-l",
         "--level",
         default="copy",
-        choices=["copy", "full", "inc", "diff"],
+        choices=["copy", "full", "inc", "diff", "auto"],
         type=str,
         help="Backup level. (default: %(default)s)",
     )
@@ -406,7 +406,19 @@ def main():
         logging.error("Output type raw not supported to stdout")
         sys.exit(1)
 
-    if not args.stdout and not args.startonly and not args.killonly:
+    if lib.targetIsEmpty(args) and args.level == "auto":
+        logging.info("Backup mode auto, target folder is empty: executing full backup.")
+        args.level = "full"
+    elif not lib.targetIsEmpty(args) and args.level == "auto":
+        if not lib.hasFullBackup(args):
+            logging.error(
+                "Cant execute switch to auto incremental backup: "
+                "target folder seems not to include full backup."
+            )
+            sys.exit(1)
+        logging.info("Backup mode auto: executing incremental backup.")
+        args.level = "inc"
+    elif not args.stdout and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
             logging.error("Target directory must empty for full or copy backup.")
             sys.exit(1)
