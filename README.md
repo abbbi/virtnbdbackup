@@ -272,7 +272,7 @@ machine, including logfiles that can be used for analyzing backup issues:
 
 ## Rotating backups
 
-With backup mode `auto` it is possible to have a montly rotation/retention.  If
+With backup mode `auto` it is possible to have a monthly rotation/retention.  If
 the target folder is empty, backup mode auto will create an full backup. On the
 following executions, it will automatically switch to backup mode incremental,
 if the target folder already includes an full backup. Example:
