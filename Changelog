@@ -1,3 +1,6 @@
+Version 0.68
+---------
+
 Version 0.67
 ---------
 * Disable xml based check if incremental backup is enabled for
