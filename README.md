@@ -25,6 +25,7 @@ of your `kvm/qemu` virtual machines.
 * [Backup concurrency](#backup-concurrency)
 * [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
 * [Backup Examples](#backup-examples)
+   * [Rotating backups](#rotating-backups)
    * [Excluding disks](#excluding-disks)
    * [Estimating backup size](#estimating-backup-size)
    * [Compression](#compression)
@@ -117,6 +118,12 @@ project: https://github.com/abbbi/qmpbackup
 python3 setup.py install
 ```
 
+`Note`:
+> Do not install the "nbd" package available on PyPI, it does not provide the
+> required nbd bindings (unfortunately has the same name). You have to
+> additionally install the provided python3-libnbd packages by your
+> distribution.
+
 ## RPM package
 
 To create an RPM package from source suitable for installation:
@@ -184,6 +191,10 @@ Following backup modes can be used:
 
 * `diff`: Perform differencial backup: saves the current delta to the last
   incremental or full backup.
+
+* `auto`: If the target folder is empty, attempt to execute full backup,
+  otherwise switch to backup mode incremental: allows rotation of backup
+  into monthly folders.
 
 All required information for restore is stored to the same directory,
 including the latest virtual machine configuration, checkpoint information,
@@ -257,6 +268,21 @@ machine, including logfiles that can be used for analyzing backup issues:
 ├── vmconfig.virtnbdbackup.0.xml
 ├── vmconfig.virtnbdbackup.1.xml
 └── vmconfig.virtnbdbackup.2.xml
+```
+
+## Rotating backups
+
+With backup mode `auto` it is possible to have a monthly rotation/retention.  If
+the target folder is empty, backup mode auto will create an full backup. On the
+following executions, it will automatically switch to backup mode incremental,
+if the target folder already includes an full backup. Example:
+
+```
+virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates full backup
+virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates inc backup
+virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates inc backup
+virtnbdbackup -d vm1 -l auto -o /tmp/2022-07 -> creates full backup
+virtnbdbackup -d vm1 -l auto -o /tmp/2022-07 -> creates inc backup
 ```
 
 ## Excluding disks

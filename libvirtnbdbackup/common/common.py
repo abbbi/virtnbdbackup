@@ -67,9 +67,18 @@ class Common:
         return False
 
     @staticmethod
+    def hasFullBackup(args):
+        """Check if full backup file exists in target directory"""
+        partialFiles = glob.glob(f"{args.output}/*.full.data")
+        if len(partialFiles) > 0:
+            return True
+
+        return False
+
+    @staticmethod
     def targetIsEmpty(args):
-        """Check if target directory is empty"""
-        if os.path.exists(args.output) and args.level in ("full", "copy"):
+        """Check if target directory is empty based on backup mode"""
+        if os.path.exists(args.output) and args.level in ("full", "copy", "auto"):
             dirList = [
                 f
                 for f in glob.glob(f"{args.output}/*")
