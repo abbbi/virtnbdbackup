@@ -522,7 +522,6 @@ def main():
         logging.info("Started backup job for debugging, exiting.")
         sys.exit(0)
 
-    error = False
     try:
         with ThreadPoolExecutor(max_workers=args.worker) as executor:
             futures = {
@@ -542,17 +541,15 @@ def main():
     except exceptions.BackupException as e:
         logging.error("Unable to backup Disk: %s", e)
         logging.exception(e)
-        error = True
     except Exception as e:
         logging.fatal("Unknown Exception during backup: %s", e)
         logging.exception(e)
-        error = True
 
     if args.offline is False:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
-    if error is True:
+    if counter.count.errors > 0:
         logging.error("Error during backup")
         sys.exit(1)
 
