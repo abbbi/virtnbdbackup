@@ -173,11 +173,11 @@ def main():
         epilog=(
             "Examples:\n"
             "   # Map full backup to device /dev/nbd0:\n"
-            f"\t%(prog)s -f /backup/sda.full.data\n"
+            "\t%(prog)s -f /backup/sda.full.data\n"
             "   # Map full backup to device /dev/nbd2:\n"
-            f"\t%(prog)s -f /backup/sda.full.data -d /dev/nbd2\n"
+            "\t%(prog)s -f /backup/sda.full.data -d /dev/nbd2\n"
             "   # Map sequence of full and incremental to device /dev/nbd2:\n"
-            f"\t%(prog)s -f /backup/sda.full.data,/backup/sda.inc.1.data -d /dev/nbd2\n"
+            "\t%(prog)s -f /backup/sda.full.data,/backup/sda.inc.1.data -d /dev/nbd2\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
     )

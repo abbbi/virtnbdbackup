@@ -190,19 +190,19 @@ def main():
         epilog=(
             "Examples:\n"
             "   # full backup of domain 'webvm' with all attached disks:\n"
-            f"\t%(prog)s -d webvm -l full -o /backup/\n"
+            "\t%(prog)s -d webvm -l full -o /backup/\n"
             "   # incremental backup:\n"
-            f"\t%(prog)s -d webvm -l inc -o /backup/\n"
+            "\t%(prog)s -d webvm -l inc -o /backup/\n"
             "   # differencial backup:\n"
-            f"\t%(prog)s -d webvm -l diff -o /backup/\n"
+            "\t%(prog)s -d webvm -l diff -o /backup/\n"
             "   # full backup, exclude disk 'vda':\n"
-            f"\t%(prog)s -d webvm -l full -x vda -o /backup/\n"
+            "\t%(prog)s -d webvm -l full -x vda -o /backup/\n"
             "   # full backup, backup only disk 'vdb':\n"
-            f"\t%(prog)s -d webvm -l full -i vdb -o /backup/\n"
+            "\t%(prog)s -d webvm -l full -i vdb -o /backup/\n"
             "   # full backup, compression enabled:\n"
-            f"\t%(prog)s -d webvm -l full -z -o /backup/\n"
+            "\t%(prog)s -d webvm -l full -z -o /backup/\n"
             "   # full backup, create archive:\n"
-            f"\t%(prog)s -d webvm -l full -o - > backup.zip\n"
+            "\t%(prog)s -d webvm -l full -o - > backup.zip\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
