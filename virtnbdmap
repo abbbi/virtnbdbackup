@@ -30,6 +30,7 @@ import subprocess
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup import qemuhelper
+from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import exceptions
@@ -40,7 +41,6 @@ def checkRequirements():
     for exe in ("nbdkit", "qemu-nbd"):
         if not shutil.which(exe):
             logging.error("Please install required [%s] utility.", exe)
-            sys.exit(1)
 
 
 def checkDevice(device):
@@ -48,13 +48,11 @@ def checkDevice(device):
     nbd module isnt loaded on the system"""
     if not device.startswith("/dev/nbd"):
         logging.error("Target device [%s] seems not to be a ndb device?", device)
-        sys.exit(1)
 
     if not os.path.exists(device):
         logging.error(
             "Target device [%s] does not exist, nbd module not loaded?", device
         )
-        sys.exit(1)
 
 
 def locatePlugin():
@@ -66,7 +64,6 @@ def locatePlugin():
 
     if not os.path.exists(nbdkitModule):
         logging.error("Unable to locate nbdkit plugin: %s", pluginFileName)
-        sys.exit(1)
 
     return nbdkitModule
 
@@ -266,9 +263,10 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
+    counter = logCount()
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
-        handlers=[logging.FileHandler(args.logfile), logging.StreamHandler()],
+        handlers=[logging.FileHandler(args.logfile), logging.StreamHandler(), counter],
         format=lib.logFormat,
         datefmt=lib.logDateFormat,
     )
@@ -284,9 +282,10 @@ def main():
 
     if len(dataFiles) > 1 and not "full.data" in dataFiles[0]:
         logging.error("Sequence must start with a full backup")
-        sys.exit(1)
     if len(dataFiles) > 1 and args.readonly:
         logging.error("Device mapping with incrementals doesn't work in readonly mode")
+
+    if counter.count.errors > 0:
         sys.exit(1)
 
     fullImage = os.path.abspath(dataFiles[0])
