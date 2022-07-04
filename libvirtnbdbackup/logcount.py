@@ -17,6 +17,7 @@
 """
 import logging
 
+
 class logCount(logging.Handler):
     """Custom log handler keeping track of issued log messages"""
 
