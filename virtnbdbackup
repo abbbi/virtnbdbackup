@@ -36,29 +36,9 @@ from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import outputhelper
 from libvirtnbdbackup import exceptions
+from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
-
-
-class logCount(logging.Handler):
-    """Custom log handler keeping track of issued log messages"""
-
-    class LogType:
-        """Log message type"""
-
-        def __init__(self):
-            self.warnings = 0
-            self.errors = 0
-
-    def __init__(self):
-        super().__init__()
-        self.count = self.LogType()
-
-    def emit(self, record):
-        if record.levelname == "WARNING":
-            self.count.warnings += 1
-        if record.levelname == "ERROR":
-            self.count.errors += 1
 
 
 def handleSignal(args, domObj, virtClient, log, signum, _):
