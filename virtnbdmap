@@ -298,7 +298,6 @@ def main():
     logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
 
     dataRanges = []
-    dataFiles = args.file.split(",")
     for file in dataFiles:
         try:
             reader = open(file, "rb")
