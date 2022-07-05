@@ -51,10 +51,10 @@ class outputHelper:
                     log.error("Unable to create target directory: %s", e)
                     raise SystemExit(1) from e
 
-        def open(self, targetFile):
+        def open(self, targetFile, mode="wb"):
             """Open target file"""
             try:
-                self.fileHandle = open(targetFile, "wb")
+                self.fileHandle = open(targetFile, mode)
                 return self.fileHandle
             except OSError as e:
                 raise RuntimeError(
@@ -89,7 +89,7 @@ class outputHelper:
                 log.error("Error setting up zip stream: %s", e)
                 raise
 
-        def open(self, fileName):
+        def open(self, fileName, mode="w"):
             """Open wrapper"""
             zipFile = zipfile.ZipInfo(
                 filename=fileName,
@@ -99,7 +99,9 @@ class outputHelper:
             zipFile.compress_type = zipfile.ZIP_STORED
 
             try:
-                self.zipFileStream = self.zipStream.open(zipFile, "w", force_zip64=True)
+                self.zipFileStream = self.zipStream.open(
+                    zipFile, mode, force_zip64=True
+                )
                 return self.zipFileStream
             except zipfile.error as e:
                 raise RuntimeError(f"Unable to open zip stream: {e}") from e
