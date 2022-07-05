@@ -113,6 +113,15 @@ project: https://github.com/abbbi/qmpbackup
  * The virtual machine should use qcow version 3 images to support the full feature set.
  
 # Installation
+
+There are several ways to install the utility, below you will find an short
+description for each of them.
+
+`Note`:
+> Please consider to check [past issues related to
+> installation](https://github.com/abbbi/virtnbdbackup/issues?q=is%3Aissue+is%3Aclosed+label%3Ainstallation)
+> if you face any troubles before opening a new issue.
+
 ## Python package
 ```
 python3 setup.py install
