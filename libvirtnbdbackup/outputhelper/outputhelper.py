@@ -28,19 +28,18 @@ class outputHelper:
     """Directs output stream to either regular directory or
     zipfile. If other formats are added class should be
     used as generic wrapper for open()/write()/close() functions.
-
-    Currently only used for zip file creation and creating
-    the target output directory.
     """
 
     class Directory:
-        """Backup target directory"""
+        """Backup to target directory"""
 
         def __init__(self, targetDir):
             self.targetDir = targetDir
+            self.fileHandle = None
             self._makeDir()
 
         def _makeDir(self):
+            """Create output directoy on init"""
             if os.path.exists(self.targetDir):
                 if not os.path.isdir(self.targetDir):
                     log.error("Specified target is a file, not a directory")
@@ -51,6 +50,28 @@ class outputHelper:
                 except OSError as e:
                     log.error("Unable to create target directory: %s", e)
                     raise SystemExit(1) from e
+
+        def open(self, targetFile):
+            """Open target file"""
+            try:
+                self.fileHandle = open(targetFile, "wb")
+                return self.fileHandle
+            except OSError as e:
+                raise RuntimeError(
+                    f"Unable to open target file: [{targetFile}]: {e}"
+                ) from e
+
+        def write(self, data):
+            """Write wrapper"""
+            return self.fileHandle.write(data)
+
+        def flush(self):
+            """Flush wrapper"""
+            return self.fileHandle.flush()
+
+        def close(self):
+            """Write wrapper"""
+            return self.fileHandle.close()
 
     class Zip:
         """Backup to zip file"""

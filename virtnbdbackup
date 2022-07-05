@@ -349,11 +349,10 @@ def main():
 
     args.stdout = args.output == "-"
 
-    zipStream = None
     if args.stdout is False:
-        outHelper.Directory(args.output)
+        fileStream = outHelper.Directory(args.output)
     else:
-        zipStream = outHelper.Zip()
+        fileStream = outHelper.Zip()
         args.output = "./"
         args.worker = 1
         args.raw = False
@@ -531,7 +530,7 @@ def main():
                     disk,
                     count,
                     lib,
-                    zipStream,
+                    fileStream,
                 ): disk
                 for count, disk in enumerate(disks)
             }
@@ -560,7 +559,7 @@ def main():
     backupBootConfig(args, lib)
 
     if args.stdout is True and args.printonly is False:
-        addFiles(args, configFile, zipStream, logFile)
+        addFiles(args, configFile, fileStream, logFile)
 
     if counter.count.warnings > 0 and args.strict is True:
         logging.info(
@@ -680,22 +679,15 @@ def setTargetFile(args, disk):
     return targetFile, targetFilePartial
 
 
-def getWriter(args, zipStream, targetFile, targetFilePartial):
+def getWriter(args, fileStream, targetFile, targetFilePartial):
     """Open target file based on output writer"""
     if args.stdout is True:
         targetFile = os.path.basename(targetFile)
-        writer = zipStream.open(targetFile)
         logging.info("Write data to zip archive")
-
-        return writer
-
-    logging.info("Write data to target file: %s", targetFilePartial)
-    try:
-        writer = open(targetFilePartial, "wb")
-    except OSError as e:
-        raise exceptions.DiskBackupWriterException(
-            f"Unable to open target file: {e}"
-        ) from e
+        writer = fileStream.open(targetFile)
+    else:
+        logging.info("Write data to target file: %s", targetFilePartial)
+        writer = fileStream.open(targetFilePartial)
 
     return writer
 
@@ -714,7 +706,7 @@ def backupDisk(
     disk,
     count,
     lib,
-    zipStream,
+    fileStream,
 ):
     """Backup domain disk data."""
 
@@ -777,7 +769,7 @@ def backupDisk(
         args.noprogress = True
 
     targetFile, targetFilePartial = setTargetFile(args, disk)
-    writer = getWriter(args, zipStream, targetFile, targetFilePartial)
+    writer = getWriter(args, fileStream, targetFile, targetFilePartial)
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")

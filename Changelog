@@ -1,6 +1,6 @@
 Version 0.68
 ---------
-* Code cleanup.
+* Code cleanup at different places. Make the output helper wrapping.
 * Use Elementree from lxml for easier access via xpath, adjust dependencies
 * Adjust pylintrc
 * virtnbdrestore: add option -c: attempts to change pathes within restored
