@@ -469,7 +469,7 @@ toOut() {
     run virsh define ${TMPDIR}/RESTORECONFIG/vmconfig*.xml
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    run virsh undefine restore_$VM
+    run virsh undefine restore_$VM --keep-nvram --checkpoints-metadata
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
