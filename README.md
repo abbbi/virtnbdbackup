@@ -34,6 +34,7 @@ of your `kvm/qemu` virtual machines.
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
    * [Complete restore](#complete-restore)
+   * [Restore with modified virtual machine config](#restore-with-modified-virtual-machine-config)
    * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
    * [Point in time recovery](#point-in-time-recovery)
    * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
