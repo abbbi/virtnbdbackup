@@ -3,12 +3,12 @@ Version 0.68
 * Code cleanup at different places. Make the output helper wrapping.
 * Use Elementree from lxml for easier access via xpath, adjust dependencies
 * Adjust pylintrc
-* virtnbdrestore: add option -c: attempts to change pathes within restored
-virtual machine config (#54)
+* virtnbdrestore: add option -c: adjusts required pathes within restored
+virtual machine config so it can be defined using virsh. (#54)
 * virtnbdrestore: add option -D: in combination with option -c can be used to
 register virtual machine on libvirt daemon after restore.
 * virtnbdrestore: add option -N: redefine domain with specified name, if not
-passed, prefix "restore_" is appended.
+passed, prefix "restore_" is added.
 
 Version 0.67
 ---------
