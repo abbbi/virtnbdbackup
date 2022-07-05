@@ -179,13 +179,12 @@ def restoreSequence(lib, args, dataFiles):
         if not meta:
             return False
 
-        targetFile = f"{args.output}/{meta['diskName']}"
+        diskName = meta["diskName"]
+        targetFile = f"{args.output}/{diskName}"
 
         if not os.path.exists(targetFile):
             if not createDiskFile(meta, targetFile=targetFile):
                 return False
-
-        diskName = meta["diskName"]
 
         qFh = qemuhelper.qemuHelper(diskName)
 
