@@ -34,7 +34,7 @@ of your `kvm/qemu` virtual machines.
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
    * [Complete restore](#complete-restore)
-   * [Restore with modified virtual machine config](#restore-with-modified-virtual-machine-config)
+   * [Restore with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
    * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
    * [Point in time recovery](#point-in-time-recovery)
    * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
@@ -494,7 +494,7 @@ example:
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
 ```
 
-## Restore with modified virtual machine config
+## Restoring with modified virtual machine config
 
 Option `-c` can be used to adjust the virtual machine configuration during
 restore accordingly, the following changes are done:
