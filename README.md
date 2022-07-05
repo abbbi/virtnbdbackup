@@ -512,7 +512,7 @@ A restored virtual machine can then been defined and started right from the
 restored directory:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
+virtnbdrestore -c -i /tmp/backupset/ -a restore -o /tmp/restore
 [..]
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Adjusted config placed in: [/tmp/restore/vmconfig.virtnbdbackup.0.xml]
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Use 'virsh define /tmp/restore/vmconfig.virtnbdbackup.0.xml' to define VM
