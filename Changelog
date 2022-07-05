@@ -1,8 +1,10 @@
 Version 0.68
 ---------
 * Code cleanup.
-* Use Elementree from lxml for easier access via xpath, adjust dependencies *
+* Use Elementree from lxml for easier access via xpath, adjust dependencies
 * Adjust pylintrc
+* virtnbdrestore: add option -c: attempts to change pathes within restored
+virtual machine config (#54)
 
 Version 0.67
 ---------

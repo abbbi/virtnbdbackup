@@ -34,6 +34,7 @@ of your `kvm/qemu` virtual machines.
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
    * [Complete restore](#complete-restore)
+   * [Restore with modified virtual machine config](#restore-with-modified-virtual-machine-config)
    * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
    * [Point in time recovery](#point-in-time-recovery)
    * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
@@ -491,6 +492,30 @@ example:
 
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
+```
+
+## Restore with modified virtual machine config
+
+Option `-c` can be used to adjust the virtual machine configuration during
+restore accordingly, the following changes are done:
+
+ * UUID of the virtual machine is removed from the config file
+ * Name of the virtual machine is prefixed with "restore_"
+ * The disk pathes to the virtual machine are changed to the new target directory.
+ * Raw devices are removed from VM config if `--raw` is not specified, aswell
+   floppy or cdrom devices which arent part of the backup.
+
+`Note:`
+> Kernel, UEFI or NVRAM files are not handled at the moment.
+
+A restored virtual machine can then been defined and started right from the
+restored directory:
+
+```
+virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
+[..]
+[..] INFO virtnbdrestore - restoreConfig [MainThread]: Adjusted config placed in: [/tmp/restore/vmconfig.virtnbdbackup.0.xml]
+[..] INFO virtnbdrestore - restoreConfig [MainThread]: Use 'virsh define /tmp/restore/vmconfig.virtnbdbackup.0.xml' to define VM
 ```
 
 # Single file restore and instant recovery
