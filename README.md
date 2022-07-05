@@ -518,6 +518,10 @@ virtnbdrestore -c -i /tmp/backupset/ -a restore -o /tmp/restore
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Use 'virsh define /tmp/restore/vmconfig.virtnbdbackup.0.xml' to define VM
 ```
 
+`Note:`
+> If option `-D` is used in combination with option `-c`, `virtnbdrestore` will
+> automatically redefine the virtual machine after successful disk restore.
+
 # Single file restore and instant recovery
 
 The `virtnbdmap` utility can be used to map uncompressed backup images from the

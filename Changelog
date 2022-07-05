@@ -5,6 +5,8 @@ Version 0.68
 * Adjust pylintrc
 * virtnbdrestore: add option -c: attempts to change pathes within restored
 virtual machine config (#54)
+* virtnbdrestore: add option -D: in combination with option -c can be used
+to register virtual machine on libvirt daemon after restore.
 
 Version 0.67
 ---------

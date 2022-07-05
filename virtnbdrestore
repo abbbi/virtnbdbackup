@@ -384,7 +384,8 @@ def restoreConfig(args, vmConfig, adjustedConfig):
         with open(targetFile, "wb") as cnf:
             cnf.write(adjustedConfig)
         logging.info("Adjusted config placed in: [%s]", targetFile)
-        logging.info("Use 'virsh define %s' to define VM", targetFile)
+        if args.define is False:
+            logging.info("Use 'virsh define %s' to define VM", targetFile)
     else:
         shutil.copy(vmConfig, args.output)
         logging.info("Copied original vm config to [%s]", targetFile)
@@ -401,6 +402,8 @@ def main():
             "\t%(prog)s -i /backup/ -a dump -o /target\n"
             "   # Complete restore with all disks:\n"
             "\t%(prog)s -i /backup/ -a restore -o /target\n"
+            "   # Complete restore, adjust config and redefine vm after restore:\n"
+            "\t%(prog)s -cD -i /backup/ -a restore -o /target\n"
             "   # Restore only disk 'vda':\n"
             "\t%(prog)s -i /backup/ -a restore -o /target -d vda\n"
             "   # Point in time restore:\n"
@@ -482,7 +485,13 @@ def main():
         action="store_true",
         help="Adjust vm configuration during restore. (default: %(default)s)",
     )
-
+    opt.add_argument(
+        "-D",
+        "--define",
+        default=False,
+        action="store_true",
+        help="Register/define VM after restore. (default: %(default)s)",
+    )
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-v",
@@ -517,6 +526,9 @@ def main():
 
     if args.sequence is not None:
         logging.info("Using manual specified sequence of files.")
+        logging.info("Disabling redefine and config adjust options.")
+        args.define = False
+        args.adjust_config = False
         dataFiles = args.sequence.split(",")
 
         if "full" not in dataFiles[0]:
@@ -559,8 +571,15 @@ def main():
         checkAdditional(args, lib, vmConfig)
 
         if ret is True:
+            if args.define is True and args.adjust_config is False:
+                logging.warning(
+                    "Redefine domain needs adjusted config, please "
+                    "use --adjust-config option. Skipping.."
+                )
             restoreConfig(args, vmConfig, restConfig)
-            sys.exit(0)
+            if args.define is True and args.adjust_config is True:
+                if not libvirthelper.client().defineDomain(restConfig):
+                    sys.exit(1)
         else:
             sys.exit(1)
 

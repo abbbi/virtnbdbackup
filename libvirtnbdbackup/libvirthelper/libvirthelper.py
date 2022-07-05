@@ -101,6 +101,18 @@ class client:
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
+    def defineDomain(self, vmConfig):
+        """Define domain based on restored config"""
+        try:
+            logging.info("Redefining domain based on adjusted config.")
+            self._conn.defineXMLFlags(vmConfig.decode(), 0)
+            logging.info("Successfully redefined domain.")
+        except libvirt.libvirtError as errmsg:
+            log.error("Unable to define domain: [%s]", errmsg)
+            return False
+
+        return True
+
     def getDomainInfo(self, vmConfig):
         """Return object with general vm information relevant
         for backup"""
