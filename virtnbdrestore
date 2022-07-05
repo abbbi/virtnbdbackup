@@ -551,6 +551,7 @@ def main():
 
         ret = False
         if args.sequence is not None:
+            restConfig = None
             ret = restoreSequence(lib, args, dataFiles)
         else:
             ret, restConfig = restore(lib, args, vmConfig)
