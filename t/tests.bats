@@ -473,6 +473,17 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Restore: restore vm, adjust vm config, register VM" {
+    [ -z $INCTEST ] && skip "skipping"
+    rm -rf ${TMPDIR}/RESTORECONFIG/
+    run ../virtnbdrestore -a restore -Dc --name restoretest -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECONFIG/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run virsh undefine restoretest --keep-nvram
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+
 
 # differencial backup
 
