@@ -122,9 +122,9 @@ class client:
         return settings
 
     def adjustDomainConfig(self, args, restoreDisk, vmConfig, targetFile):
-        """Adjust virtual machine configuration after restooring. Changes
+        """Adjust virtual machine configuration after restoring. Changes
         the pathes to the virtual machine disks and attempts to remove
-        disks excluded during restore."""
+        components excluded during restore."""
         tree = self._getTree(vmConfig)
 
         logging.info("Removing uuid setting from vm config.")
