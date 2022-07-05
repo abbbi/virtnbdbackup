@@ -17,6 +17,11 @@ class RedefineCheckpointError(CheckpointException):
     vm relocate, an error occured"""
 
 
+class RemoveCheckpointError(CheckpointException):
+    """During removal of existing checkpoints after
+    an error occured"""
+
+
 class SaveCheckpointError(CheckpointException):
     """Unable to append checkpoint to checkpoint
     file"""

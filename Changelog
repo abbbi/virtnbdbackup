@@ -1,6 +1,8 @@
 Version 0.69
 ---------
-
+* Code cleanup
+* virtnbdbackup: exit early if removing checkpoints fails during full
+backup.
 
 Version 0.68
 ---------

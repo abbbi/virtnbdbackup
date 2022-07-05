@@ -130,11 +130,15 @@ def handleCheckpoints(args, virtClient, domObj, lib):
     logging.info("Checkpoint handling")
     if args.level == "full" and checkpoints:
         logging.info("Removing all existent checkpoints before full backup")
-        virtClient.removeAllCheckpoints(domObj, checkpoints, args, lib.checkpointName)
+        if not virtClient.removeAllCheckpoints(
+            domObj, checkpoints, args, lib.checkpointName
+        ):
+            raise exceptions.RemoveCheckpointError("Error during checkpoint removal.")
         os.remove(cptFile)
         checkpoints = []
     elif args.level == "full" and len(checkpoints) < 1:
-        virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName)
+        if not virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName):
+            raise exceptions.RemoveCheckpointError("Error during checkpoint removal.")
         checkpoints = []
 
     if checkpoints and args.level in ("inc", "diff"):

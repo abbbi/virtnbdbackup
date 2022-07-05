@@ -183,6 +183,25 @@ class client:
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
+    @staticmethod
+    def getBackingStores(disk):
+        """Get list of backing store files defined for disk, usually
+        the case if virtual machine has external snapshots."""
+        backingStoreFiles = []
+        backingStore = disk.find("backingStore")
+        while backingStore is not None:
+            backingStoreSource = backingStore.find("source")
+
+            if backingStoreSource is not None:
+                backingStoreFiles.append(backingStoreSource.get("file"))
+
+            if backingStore.find("backingStore") is not None:
+                backingStore = backingStore.find("backingStore")
+            else:
+                backingStore = None
+
+        return backingStoreFiles
+
     def getDomainDisks(self, args, vmConfig):
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
@@ -245,18 +264,7 @@ class client:
                 )
                 continue
 
-            backingStoreFiles = []
-            backingStore = disk.find("backingStore")
-            while backingStore is not None:
-                backingStoreSource = backingStore.find("source")
-
-                if backingStoreSource is not None:
-                    backingStoreFiles.append(backingStoreSource.get("file"))
-
-                if backingStore.find("backingStore"):
-                    backingStore = backingStore.find("backingStore")
-                else:
-                    backingStore = None
+            backingStoreFiles = self.getBackingStores(disk)
 
             devices.append(
                 DomainDisk(dev, diskFormat, diskFileName, diskPath, backingStoreFiles)
