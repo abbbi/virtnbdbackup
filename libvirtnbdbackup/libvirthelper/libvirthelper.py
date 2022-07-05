@@ -150,11 +150,18 @@ class client:
                 )
                 disk.xpath("source")[0].set("file", targetFile)
             device = disk.get("device")
+            driver = disk.xpath("driver")[0].get("type")
             if device in ("lun", "cdrom", "floppy"):
                 logging.info("Removing [%s] device from vm config", device)
                 disk.getparent().remove(disk)
             if args.disk is not None and dev not in args.disk:
                 logging.info("Removing excluded disk [%s] from xml config")
+                disk.getparent().remove(disk)
+            if driver == "raw" and args.raw is False:
+                log.warning(
+                    "Removing raw disk [%s] from vm config.",
+                    dev,
+                )
                 disk.getparent().remove(disk)
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
