@@ -460,6 +460,17 @@ toOut() {
     [ "$status" -eq 0 ]
     run virsh start $VM
 }
+@test "Restore: restore vm and adjust vm config" {
+    [ -z $INCTEST ] && skip "skipping"
+    rm -rf ${TMPDIR}/RESTORECONFIG/
+    run ../virtnbdrestore -a restore -c -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECONFIG/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run virsh define ${TMPDIR}/RESTORECONFIG/vmconfig*.xml
+    [ "$status" -eq 0 ]
+    run virsh undefine restore_$VM
+    [ "$status" -eq 0 ]
+}
 
 # differencial backup
 

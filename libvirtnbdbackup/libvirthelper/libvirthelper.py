@@ -134,7 +134,7 @@ class client:
         name = tree.xpath("name")[0]
         if name is not None:
             logging.info(
-                "Changing name from [%s] to restore_[%s]", name.text, name.text
+                "Changing name from [%s] to [restore_%s]", name.text, name.text
             )
             name.text = f"restore_{name.text}"
 
@@ -149,7 +149,10 @@ class client:
                     targetFile,
                 )
                 disk.xpath("source")[0].set("file", targetFile)
-
+            device = disk.get("device")
+            if device in ("lun", "cdrom", "floppy"):
+                logging.info("Removing [%s] device from vm config", device)
+                disk.getparent().remove(disk)
             if args.disk is not None and dev not in args.disk:
                 logging.info("Removing excluded disk [%s] from xml config")
                 disk.getparent().remove(disk)
