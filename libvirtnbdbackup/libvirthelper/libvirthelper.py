@@ -144,11 +144,13 @@ class client:
         if uuid is not None:
             tree.remove(uuid)
         name = tree.xpath("name")[0]
-        if name is not None:
-            logging.info(
-                "Changing name from [%s] to [restore_%s]", name.text, name.text
-            )
-            name.text = f"restore_{name.text}"
+
+        if args.name is None:
+            domainName = f"restore_{name.text}"
+        else:
+            domainName = args.name
+        logging.info("Changing name from [%s] to [%s]", name.text, domainName)
+        name.text = domainName
 
         for disk in tree.xpath("devices/disk"):
             dev = disk.xpath("target")[0].get("dev")

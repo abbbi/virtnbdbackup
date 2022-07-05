@@ -404,6 +404,8 @@ def main():
             "\t%(prog)s -i /backup/ -a restore -o /target\n"
             "   # Complete restore, adjust config and redefine vm after restore:\n"
             "\t%(prog)s -cD -i /backup/ -a restore -o /target\n"
+            "   # Complete restore, adjust config and redefine vm with name 'foo':\n"
+            "\t%(prog)s -cD --name foo -i /backup/ -a restore -o /target\n"
             "   # Restore only disk 'vda':\n"
             "\t%(prog)s -i /backup/ -a restore -o /target -d vda\n"
             "   # Point in time restore:\n"
@@ -492,6 +494,14 @@ def main():
         action="store_true",
         help="Register/define VM after restore. (default: %(default)s)",
     )
+    opt.add_argument(
+        "-N",
+        "--name",
+        default=None,
+        type=str,
+        help="Define restored domain with specified name",
+    )
+
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-v",

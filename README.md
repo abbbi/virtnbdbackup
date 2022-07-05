@@ -500,7 +500,8 @@ Option `-c` can be used to adjust the virtual machine configuration during
 restore accordingly, the following changes are done:
 
  * UUID of the virtual machine is removed from the config file
- * Name of the virtual machine is prefixed with "restore_"
+ * Name of the virtual machine is prefixed with "restore_" if option `--name`
+   is not specified, otherwise passed name is used.
  * The disk pathes to the virtual machine are changed to the new target directory.
  * Raw devices are removed from VM config if `--raw` is not specified, aswell
    floppy or cdrom devices which arent part of the backup.
