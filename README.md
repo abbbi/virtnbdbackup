@@ -508,8 +508,8 @@ restore accordingly, the following changes are done:
 `Note:`
 > Kernel, UEFI or NVRAM files are not handled at the moment.
 
-A restored virtual machine can then been executed right from the restored
-directory:
+A restored virtual machine can then been defined and started right from the
+restored directory:
 
 ```
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
