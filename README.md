@@ -124,6 +124,7 @@ description for each of them.
 
 ## Python package
 ```
+pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
@@ -131,7 +132,7 @@ python3 setup.py install
 > Do not install the "nbd" package available on PyPI, it does not provide the
 > required nbd bindings (unfortunately has the same name). You have to
 > additionally install the provided python3-libnbd packages by your
-> distribution.
+> distribution, or compile the libnbd bindings by yourself.
 
 ## RPM package
 
