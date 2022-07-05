@@ -493,6 +493,30 @@ example:
 virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
 ```
 
+## Restore with modified virtual machine config
+
+Option `-c` can be used to adjust the virtual machine configuration during
+restore accordingly, the following changes are done:
+
+ * UUID of the virtual machine is removed from the config file
+ * Name of the virtual machine is prefixed with "restore_"
+ * The disk pathes to the virtual machine are changed to the new target directory.
+ * Raw devices are removed from VM config if `--raw` is not specified, aswell
+   floppy or cdrom devices which arent part of the backup.
+
+`Note:`
+> Kernel, UEFI or NVRAM files are not handled at the moment.
+
+A restored virtual machine can then been executed right from the restored
+directory:
+
+```
+virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
+[..]
+[..] INFO virtnbdrestore - restoreConfig [MainThread]: Adjusted config placed in: [/tmp/restore/vmconfig.virtnbdbackup.0.xml]
+[..] INFO virtnbdrestore - restoreConfig [MainThread]: Use 'virsh define /tmp/restore/vmconfig.virtnbdbackup.0.xml' to define VM
+```
+
 # Single file restore and instant recovery
 
 The `virtnbdmap` utility can be used to map uncompressed backup images from the
