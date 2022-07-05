@@ -286,7 +286,7 @@ def checkAdditional(args, lib, vmConfig):
     config = readConfig(vmConfig)
     info = libvirthelper.client().getDomainInfo(config)
 
-    for setting in info.keys():
+    for setting in info:
         if info[setting] is not None:
             s = os.path.basename(info[setting])
             f = lib.getLatest(args.input, f"*{s}*", -1)
