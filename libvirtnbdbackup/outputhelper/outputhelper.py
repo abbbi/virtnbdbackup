@@ -70,7 +70,7 @@ class outputHelper:
             return self.fileHandle.flush()
 
         def close(self):
-            """Write wrapper"""
+            """Close wrapper"""
             return self.fileHandle.close()
 
     class Zip:
