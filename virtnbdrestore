@@ -368,7 +368,27 @@ def restore(lib, args, vmConfig):
             except baseexception.RestoreError:
                 result = False
                 break
-    return result
+
+        restConfig = libvirthelper.client().adjustDomainConfig(
+            args, disk, readConfig(vmConfig), targetFile
+        )
+
+    return result, restConfig
+
+
+def restoreConfig(args, vmConfig, adjustedConfig):
+    """Restore either original or adjusted vm configuration
+    to new directory"""
+    targetFile = f"{args.output}/{os.path.basename(vmConfig)}"
+    if args.adjust_config is True:
+        with open(targetFile, "wb") as cnf:
+            cnf.write(adjustedConfig)
+        logging.info("Adjusted config placed in: [%s]", targetFile)
+        logging.info("Use 'virsh define %s' to define VM", targetFile)
+    else:
+        shutil.copy(vmConfig, args.output)
+        logging.info("Copied original vm config to [%s]", targetFile)
+        logging.info("Note: virtual machine config must be adjusted manually.")
 
 
 def main():
@@ -455,6 +475,14 @@ def main():
         action="store_true",
         help="Copy raw images as is during restore. (default: %(default)s)",
     )
+    opt.add_argument(
+        "-c",
+        "--adjust-config",
+        default=False,
+        action="store_true",
+        help="Adjust vm configuration during restore. (default: %(default)s)",
+    )
+
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-v",
@@ -525,16 +553,12 @@ def main():
         if args.sequence is not None:
             ret = restoreSequence(lib, args, dataFiles)
         else:
-            ret = restore(lib, args, vmConfig)
+            ret, restConfig = restore(lib, args, vmConfig)
 
         checkAdditional(args, lib, vmConfig)
 
         if ret is True:
-            shutil.copy(vmConfig, args.output)
-            logging.info(
-                "Copied vm config to [%s/%s]", args.output, os.path.basename(vmConfig)
-            )
-            logging.info("Note: virtual machine config must be adjusted manually.")
+            restoreConfig(args, vmConfig, restConfig)
             sys.exit(0)
         else:
             sys.exit(1)

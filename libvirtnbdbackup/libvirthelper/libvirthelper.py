@@ -121,6 +121,41 @@ class client:
         logging.debug("Domain Info: [%s]", settings)
         return settings
 
+    def adjustDomainConfig(self, args, restoreDisk, vmConfig, targetFile):
+        """Adjust virtual machine configuration after restooring. Changes
+        the pathes to the virtual machine disks and attempts to remove
+        disks excluded during restore."""
+        tree = self._getTree(vmConfig)
+
+        logging.info("Removing uuid setting from vm config.")
+        uuid = tree.xpath("uuid")[0]
+        if uuid is not None:
+            tree.remove(uuid)
+        name = tree.xpath("name")[0]
+        if name is not None:
+            logging.info(
+                "Changing name from [%s] to restore_[%s]", name.text, name.text
+            )
+            name.text = f"restore_{name.text}"
+
+        for disk in tree.xpath("devices/disk"):
+            dev = disk.xpath("target")[0].get("dev")
+            originalFile = disk.xpath("source")[0].get("file")
+            if dev == restoreDisk.target:
+                logging.info(
+                    "Change target file for disk [%s] from [%s] to [%s]",
+                    restoreDisk.target,
+                    originalFile,
+                    targetFile,
+                )
+                disk.xpath("source")[0].set("file", targetFile)
+
+            if args.disk is not None and dev not in args.disk:
+                logging.info("Removing excluded disk [%s] from xml config")
+                disk.getparent().remove(disk)
+
+        return ElementTree.tostring(tree, encoding="utf8", method="xml")
+
     def getDomainDisks(self, args, vmConfig):
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
