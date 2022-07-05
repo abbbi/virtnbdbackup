@@ -14,15 +14,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 import string
 import random
 import glob
-import os
-from xml.etree import ElementTree
-from collections import namedtuple
 import logging
+from collections import namedtuple
 import libvirt
-
+from lxml import etree as ElementTree
 from libvirtnbdbackup.libvirthelper import exceptions
 
 
@@ -137,55 +136,44 @@ class client:
         if args.exclude is not None:
             excludeList = args.exclude.split(",")
 
-        driver = None
-        device = None
-        diskFileName = None
-        diskPath = None
-        for target in tree.findall("devices/disk"):
-            for src in target.findall("target"):
-                dev = src.get("dev")
+        for disk in tree.xpath("devices/disk"):
+            dev = disk.xpath("target")[0].get("dev")
 
             if excludeList is not None and dev in excludeList:
                 log.warning("Excluding Disks %s from backup as requested", dev)
                 continue
 
             # ignore attached lun or direct access block devices
-            if target.get("type") == "block":
+            if disk.xpath("target")[0].get("type") == "block":
                 log.warning(
                     "Ignoring device %s does not support changed block tracking.", dev
                 )
                 continue
 
-            device = target.get("device")
-            if device is not None:
-                if device == "lun":
-                    log.warning(
-                        "Ignoring lun disk %s does not support changed block tracking.",
-                        dev,
-                    )
-                    continue
-                if device in ("cdrom", "floppy"):
-                    log.info("Skipping attached CDROM / Floppy: [%s]", dev)
-                    continue
+            device = disk.get("device")
+            if device == "lun":
+                log.warning(
+                    "Ignoring lun disk %s does not support changed block tracking.",
+                    dev,
+                )
+                continue
+            if device in ("cdrom", "floppy"):
+                log.info("Skipping attached CDROM / Floppy: [%s]", dev)
+                continue
 
             # ignore disk which use raw format, they do not support CBT
-            driver = target.find("driver")
-            if driver is not None:
-                diskFormat = driver.get("type")
-                if diskFormat == "raw" and args.raw is False:
-                    log.warning(
-                        "Raw disk %s excluded by default, use option --raw to include.",
-                        dev,
-                    )
-                    continue
+            diskFormat = disk.xpath("driver")[0].get("type")
+            if diskFormat == "raw" and args.raw is False:
+                log.warning(
+                    "Raw disk %s excluded by default, use option --raw to include.",
+                    dev,
+                )
+                continue
 
             # attempt to get original disk file name
-            source = target.find("source")
-            if source is not None:
-                diskSrc = source.get("file")
-                if diskSrc:
-                    diskFileName = os.path.basename(diskSrc)
-                    diskPath = diskSrc
+            diskSrc = disk.xpath("source")[0].get("file")
+            diskFileName = os.path.basename(diskSrc)
+            diskPath = diskSrc
 
             if args.include is not None and dev != args.include:
                 log.info(
@@ -196,7 +184,7 @@ class client:
                 continue
 
             backingStoreFiles = []
-            backingStore = target.find("backingStore")
+            backingStore = disk.find("backingStore")
             while backingStore is not None:
                 backingStoreSource = backingStore.find("source")
 

@@ -1,3 +1,4 @@
 libvirt-python>=6.0.0
 tqdm
 lz4>=2.1.2
+lxml

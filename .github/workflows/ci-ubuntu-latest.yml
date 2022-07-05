@@ -37,6 +37,7 @@ jobs:
           python3-tqdm \
           python3-lz4 \
           python3-libvirt \
+          python3-lxml \
           nbdkit \
           nbdkit-plugin-python \
           unzip \

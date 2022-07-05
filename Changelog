@@ -1,6 +1,8 @@
 Version 0.68
 ---------
 * Code cleanup.
+* Use Elementree from lxml for easier access via xpath, adjust dependencies *
+* Adjust pylintrc
 
 Version 0.67
 ---------
