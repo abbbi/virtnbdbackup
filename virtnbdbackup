@@ -700,6 +700,22 @@ def getWriter(args, fileStream, targetFile, targetFilePartial):
     return writer
 
 
+def getExtendHandler(args, disk, connection, metaContext):
+    """Query dirty blocks either via qemu client or self
+    implemented extend handler"""
+    if args.qemu:
+        logging.info("Using qemu tools to query extents")
+        extentHandler = extenthandler.ExtentHandler(
+            qemuhelper.qemuHelper(disk.target), metaContext, args.socketfile
+        )
+    else:
+        extentHandler = extenthandler.ExtentHandler(
+            connection, metaContext, args.socketfile
+        )
+
+    return extentHandler
+
+
 def renamePartial(targetFilePartial, targetFile):
     """After backup, move .partial file to real
     target file"""
@@ -747,15 +763,7 @@ def backupDisk(
             f"NBD endpoint: {args.socketfile}: connection failed: {e}"
         )
 
-    if args.qemu:
-        logging.info("Using qemu tools to query extents")
-        extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(disk.target), metaContext, args.socketfile
-        )
-    else:
-        extentHandler = extenthandler.ExtentHandler(
-            connection, metaContext, args.socketfile
-        )
+    extentHandler = getExtendHandler(args, disk, connection, metaContext)
     extents = extentHandler.queryBlockStatus()
     diskSize = connection.get_size()
 
