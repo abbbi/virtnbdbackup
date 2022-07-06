@@ -503,6 +503,8 @@ restore accordingly, the following changes are done:
  * Name of the virtual machine is prefixed with "restore_" (use option
    `--name` to specify desired vm name)
  * The disk pathes to the virtual machine are changed to the new target directory.
+ * If virtual machine was operating on snapshots/backing store images, the
+   references to the configured backing stores will be removed.
  * Raw devices are removed from VM config if `--raw` is not specified, aswell
    as floppy or cdrom devices (which arent part of the backup).
 
