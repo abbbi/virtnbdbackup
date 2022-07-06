@@ -763,7 +763,7 @@ def backupDisk(
         logging.error("No extents found")
         return True
 
-    thinBackupSize = sum([extent.length for extent in extents if extent.data is True])
+    thinBackupSize = sum(extent.length for extent in extents if extent.data is True)
     logging.info("Got %s extents to backup.", len(extents))
     logging.debug("%s", lib.dumpExtentJson(extents))
     logging.info("%s bytes disk size", diskSize)
