@@ -105,11 +105,13 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
             logging.error("Cant read stream at pos: %s: %s", reader.tell(), err)
             raise baseexception.RestoreError from err
         if kind == sTypes.ZERO:
-            logging.debug("Write zero segment from %s length: %s", start, length)
+            logging.debug("Detected zero segment from %s length: %s", start, length)
             if length >= nbdClient.maxRequestSize:
-                logging.debug("Chunked zero, start: %s, len: %s", start, length)
+                logging.debug(
+                    "Detected Chunked zero, start: %s, len: %s", start, length
+                )
         elif kind == sTypes.DATA:
-            logging.debug("Process data segment from %s length: %s", start, length)
+            logging.debug("Processing data segment from %s length: %s", start, length)
 
             originalSize = length
             if trailer:
