@@ -7,6 +7,10 @@ backup.
 resulting zeroed regions are then reported as beeing "data": this would result
 in further backups of the virtual machine to be thick provisioned, as even
 zeroed regions are saved. (#56)
+* virtnbdrestore: dont adjust vm config if option -c is missing.
+* virtnbdrestore: now removes existant backing stores if adjust setting is
+enabled: usually the case if virtual machine operated on snapshot during
+backup.
 
 Version 0.68
 ---------

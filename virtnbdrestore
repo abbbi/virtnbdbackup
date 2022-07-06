@@ -268,11 +268,11 @@ def getDisksFromConfig(args, vmConfig):
     return libvirthelper.client().getDomainDisks(args, config)
 
 
-def checkBackingStore(disk):
+def checkBackingStore(args, disk):
     """If an virtual machine was running on an snapshot image,
     warn user, the virtual machine configuration has to be
     adjusted before starting the VM is possible"""
-    if len(disk.backingstores) > 0:
+    if len(disk.backingstores) > 0 and not args.adjust_config:
         logging.warning(
             "Target image [%s] seems to be a snapshot image.", disk.filename
         )
@@ -316,10 +316,11 @@ def restore(lib, args, vmConfig):
         return False
 
     for disk in vmDisks:
-        checkBackingStore(disk)
         if args.disk not in (None, disk.target):
             logging.info("Skipping disk %s for restore", disk.target)
             continue
+
+        checkBackingStore(args, disk)
 
         restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
         logging.debug("Restoring disk: %s", restoreDisk)
@@ -368,9 +369,12 @@ def restore(lib, args, vmConfig):
                 result = False
                 break
 
-        restConfig = libvirthelper.client().adjustDomainConfig(
-            args, disk, readConfig(vmConfig), targetFile
-        )
+        if args.adjust_config is True:
+            restConfig = libvirthelper.client().adjustDomainConfig(
+                args, disk, readConfig(vmConfig), targetFile
+            )
+        else:
+            restConfig = vmConfig
 
     return result, restConfig
 

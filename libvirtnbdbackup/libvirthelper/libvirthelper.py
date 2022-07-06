@@ -180,6 +180,10 @@ class client:
                 )
                 disk.getparent().remove(disk)
                 continue
+            backingStore = disk.xpath("backingStore")
+            if backingStore:
+                logging.info("Removing existant backing store settings")
+                disk.remove(backingStore[0])
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
