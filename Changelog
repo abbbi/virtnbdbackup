@@ -3,6 +3,10 @@ Version 0.69
 * Code cleanup
 * virtnbdbackup: exit early if removing checkpoints fails during full
 backup.
+* virtnbdrestore: do not write zeroes during restore of image, as the
+resulting zeroed regions are then reported as beeing "data": this would result
+in further backups of the virtual machine to be thick provisioned, as even
+zeroed regions are saved. (#56)
 
 Version 0.68
 ---------

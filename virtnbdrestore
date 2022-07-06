@@ -108,9 +108,6 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
             logging.debug("Write zero segment from %s length: %s", start, length)
             if length >= nbdClient.maxRequestSize:
                 logging.debug("Chunked zero, start: %s, len: %s", start, length)
-                lib.zeroChunk(start, length, nbdClient.maxRequestSize, connection)
-            else:
-                connection.zero(length, start)
         elif kind == sTypes.DATA:
             logging.debug("Process data segment from %s length: %s", start, length)
 

@@ -454,6 +454,10 @@ def main():
         sys.exit(1)
 
     setOfflineArguments(args, virtClient, domObj)
+    if args.offline is True and args.startonly is True:
+        logging.error("Virtual machine is currently offline")
+        logging.error("Virtual machine must be running required for this function.")
+        sys.exit(1)
 
     signal.signal(
         signal.SIGINT, partial(handleSignal, args, domObj, virtClient, logging)
