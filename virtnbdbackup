@@ -187,6 +187,20 @@ def saveCheckpointFile(args):
         raise exceptions.SaveCheckpointError from e
 
 
+def getFileStream(args, outHelper):
+    """Get filehandle for output files based on output
+    mode"""
+    if args.stdout is False:
+        fileStream = outHelper.Directory(args.output)
+    else:
+        fileStream = outHelper.Zip()
+        args.output = "./"
+        args.worker = 1
+        args.raw = False
+
+    return fileStream
+
+
 def main():
     """Handle backup operation"""
     parser = argparse.ArgumentParser(
@@ -353,13 +367,11 @@ def main():
 
     args.stdout = args.output == "-"
 
-    if args.stdout is False:
-        fileStream = outHelper.Directory(args.output)
-    else:
-        fileStream = outHelper.Zip()
-        args.output = "./"
-        args.worker = 1
-        args.raw = False
+    try:
+        fileStream = getFileStream(args, outHelper)
+    except outputhelper.exceptions.OutputException as e:
+        logging.error("Cant open output file: [%s]", e)
+        sys.exit(1)
 
     if args.worker is not None and args.worker < 1:
         args.worker = 1
