@@ -31,6 +31,10 @@ Vagrant.configure("2") do |config|
     set +x
     python3 setup.py --command-packages=stdeb.command bdist_deb
     cp -a deb_dist/*.* /vagrant
+    apt install -y ./deb_dist/virtnbdbackup*_all.deb
+    virtnbdbackup -h
+    virtnbdrestore -h
+    virtnbdmap -h
    SHELL
    config.vm.synced_folder "./", "/vagrant", type: "virtiofs"
 end
