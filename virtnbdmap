@@ -263,18 +263,12 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
-    fileLog = lib.getLogFile("virtnbdrestore.log")
+    fileLog = lib.getLogFile(args.logfile)
     if not fileLog:
         sys.exit(1)
 
     counter = logCount()
-    logging.basicConfig(
-        level=lib.setLogLevel(args.verbose),
-        handlers=[fileLog, logging.StreamHandler(), counter],
-        format=lib.logFormat,
-        datefmt=lib.logDateFormat,
-    )
-
+    lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
     nbdkitModule = locatePlugin()
     logging.info("Logfile: [%s]", args.logfile)

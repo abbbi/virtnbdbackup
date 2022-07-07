@@ -29,6 +29,7 @@ from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import outputhelper
 from libvirtnbdbackup import exceptions as baseexception
+from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import exceptions
@@ -345,16 +346,16 @@ def restore(lib, args, vmConfig):
             logging.error(
                 "%s Unable to locate base full or copy backup.", restoreDisk[0]
             )
-            return False
+            return False, False
 
         meta = getHeader(lib, restoreDisk[0], stream)
         if not meta:
             logging.error("Reading metadata from %s failed", restoreDisk[0])
-            return False
+            return False, False
 
         qFh = qemuhelper.qemuHelper(meta["diskName"])
         if not createDiskFile(meta, targetFile, disk.format):
-            return False
+            return False, False
 
         socketFile = lib.getSocketFile(args.socketfile)
         nbdClient, connection = startNbd(qFh, meta["diskName"], targetFile, socketFile)
@@ -532,13 +533,8 @@ def main():
     if not fileLog:
         sys.exit(1)
 
-    logging.basicConfig(
-        level=lib.setLogLevel(args.verbose),
-        handlers=[fileLog, logging.StreamHandler()],
-        format=lib.logFormat,
-        datefmt=lib.logDateFormat,
-    )
-
+    counter = logCount()
+    lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
 
     if not os.path.exists(args.input):

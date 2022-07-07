@@ -383,16 +383,7 @@ def main():
         sys.exit(1)
 
     counter = logCount()
-    logging.basicConfig(
-        level=lib.setLogLevel(args.verbose),
-        format=lib.logFormat,
-        datefmt=lib.logDateFormat,
-        handlers=[
-            fileLog,
-            logging.StreamHandler(stream=sys.stderr),
-            counter,
-        ],
-    )
+    lib.configLogger(args, fileLog, counter)
 
     lib.printVersion(__version__)
 

@@ -57,6 +57,19 @@ class Common:
             logging.error("Unable to open logfile: [%s]", e)
             return None
 
+    def configLogger(self, args, fileLog, counter):
+        """Setup logging"""
+        logging.basicConfig(
+            level=self.setLogLevel(args.verbose),
+            format=self.logFormat,
+            datefmt=self.logDateFormat,
+            handlers=[
+                fileLog,
+                logging.StreamHandler(stream=sys.stderr),
+                counter,
+            ],
+        )
+
     @staticmethod
     def getSocketFile(arg):
         """Return used socket file name"""
