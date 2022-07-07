@@ -156,7 +156,7 @@ yum install dist/virtnbdbackup-<version>-.noarch.rpm
 To create a Debian package (Debian bullseye required) use:
 
 ```
-sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-tqdm python3-lz4
+sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-tqdm python3-lz4 python3-lxml
 python3 setup.py --command-packages=stdeb.command bdist_deb
 ```
 
