@@ -102,8 +102,6 @@ class nbdClient:
             logging.info("Waiting for NBD Server, Retry: %s", retry)
             retry = retry + 1
 
-        return False
-
     def disconnect(self):
         """Close nbd connection handle"""
         self._nbdHandle.shutdown()
