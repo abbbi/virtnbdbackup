@@ -434,7 +434,7 @@ As a first start, the `dump` parameter can be used to dump the saveset
 information of an existing backupset:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -a dump -o /tmp/restore 
+virtnbdrestore -i /tmp/backupset/ -o dump
 INFO:root:Dumping saveset meta information
 {'checkpointName': 'virtnbdbackup',
  'dataSize': 704643072,
@@ -455,7 +455,7 @@ To restore all disks within the backupset into a usable qcow image use
 command:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore
+virtnbdrestore -i /tmp/backupset/ -o /tmp/restore
 ```
 
 All incremental backups found will be applied to the target images
@@ -472,7 +472,7 @@ A single disk can be restored by using the option `-d`, the disk name has
 to match the virtual disks target name, for example:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore -d sda
+virtnbdrestore -i /tmp/backupset/ -o /tmp/restore -d sda
 ```
 
 ## Point in time recovery
@@ -482,7 +482,7 @@ checkpoint. The checkpoint name has to be specified as reported by the
 dump output (field `checkpointName`), for example:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --until virtnbdbackup.2
+virtnbdrestore -i /tmp/backupset/ -o /tmp/restore --until virtnbdbackup.2
 ```
 
 It is also possible to specify the source data files specifically used for the
@@ -491,7 +491,7 @@ apply has the right order, otherwise the restored image might be errnous,
 example:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -a restore -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
+virtnbdrestore -i /tmp/backupset/ -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
 ```
 
 ## Restoring with modified virtual machine config
@@ -515,7 +515,7 @@ A restored virtual machine can then been defined and started right from the
 restored directory:
 
 ```
-virtnbdrestore -c -i /tmp/backupset/ -a restore -o /tmp/restore
+virtnbdrestore -c -i /tmp/backupset/ -o /tmp/restore
 [..]
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Adjusted config placed in: [/tmp/restore/vmconfig.virtnbdbackup.0.xml]
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Use 'virsh define /tmp/restore/vmconfig.virtnbdbackup.0.xml' to define VM

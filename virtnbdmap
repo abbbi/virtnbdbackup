@@ -263,10 +263,14 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
+    fileLog = lib.getLogFile("virtnbdrestore.log")
+    if not fileLog:
+        sys.exit(1)
+
     counter = logCount()
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
-        handlers=[logging.FileHandler(args.logfile), logging.StreamHandler(), counter],
+        handlers=[fileLog, logging.StreamHandler(), counter],
         format=lib.logFormat,
         datefmt=lib.logDateFormat,
     )

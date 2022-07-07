@@ -209,7 +209,7 @@ toOut() {
     [[ "$output" =~ "$VIRTUAL_SIZE" ]]
 }
 @test "Restore stream format"  {
-    run ../virtnbdrestore -a restore $OPT -i $BACKUPSET -o $RESTORESET
+    run ../virtnbdrestore $OPT -i $BACKUPSET -o $RESTORESET
     echo "output = ${output}"
     [[ "$output" =~ "End of stream" ]]
     [ "$status" -eq 0 ]
@@ -258,11 +258,11 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 
-    run ../virtnbdrestore -a restore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR -n -v
+    run ../virtnbdrestore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR -n -v
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 
-    run ../virtnbdrestore -a restore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR_COMPRESSED -n -v
+    run ../virtnbdrestore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR_COMPRESSED -n -v
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 
@@ -374,7 +374,7 @@ toOut() {
 @test "Incremental Restore: restore data and check if file from incremental backup exists" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
-    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
+    run ../virtnbdrestore  -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     FILENAME=$(basename ${VM_IMAGE})
@@ -389,7 +389,7 @@ toOut() {
 @test "Incremental Restore: restore data until first incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
-    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --until virtnbdbackup.1 -o ${TMPDIR}/RESTOREINC/
+    run ../virtnbdrestore -i ${TMPDIR}/inctest/ --until virtnbdbackup.1 -o ${TMPDIR}/RESTOREINC/
     echo "output = ${output}"
     [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
     echo "output = ${output}"
@@ -398,7 +398,7 @@ toOut() {
 @test "Incremental Restore: restore with --sequence option" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
-    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ --sequence sda.full.data,sda.inc.virtnbdbackup.1.data -o ${TMPDIR}/SEQUENCE
+    run ../virtnbdrestore  -i ${TMPDIR}/inctest/ --sequence sda.full.data,sda.inc.virtnbdbackup.1.data -o ${TMPDIR}/SEQUENCE
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     [ -e ${TMPDIR}/SEQUENCE/sda ]
@@ -446,7 +446,7 @@ toOut() {
 @test "Restore: restore data and check if file from offline incremental backup exists" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
-    run ../virtnbdrestore -a restore -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
+    run ../virtnbdrestore -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTOREINC/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     FILENAME=$(basename ${VM_IMAGE})
@@ -463,7 +463,7 @@ toOut() {
 @test "Restore: restore vm and adjust vm config" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTORECONFIG/
-    run ../virtnbdrestore -a restore -c -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECONFIG/
+    run ../virtnbdrestore -c -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECONFIG/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run virsh define ${TMPDIR}/RESTORECONFIG/vmconfig*.xml
@@ -476,7 +476,7 @@ toOut() {
 @test "Restore: restore vm, adjust vm config, register VM" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTORECONFIG/
-    run ../virtnbdrestore -a restore -Dc --name restoretest -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECONFIG/
+    run ../virtnbdrestore -Dc --name restoretest -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECONFIG/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run virsh undefine restoretest --keep-nvram
@@ -568,7 +568,7 @@ toOut() {
 @test "Differencial Restore: restore data and check if both files from differencial backup exists" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
-    run ../virtnbdrestore -a restore -i ${TMPDIR}/difftest/ -o ${TMPDIR}/RESTOREDIFF/
+    run ../virtnbdrestore -i ${TMPDIR}/difftest/ -o ${TMPDIR}/RESTOREDIFF/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     FILENAME=$(basename ${VM_IMAGE})

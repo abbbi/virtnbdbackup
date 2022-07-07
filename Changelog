@@ -1,6 +1,10 @@
 Version 0.70
 ---------
 * Code cleanup
+* Exit gracefully if setting up the logfile already fails.
+* virtnbdrestore: make option `-a restore` default, if output directory
+is named "dump" or `-a dump` is specified, stream information is dumped.
+* Update README, examples and tests accordingly
 
 Version 0.69
 ---------

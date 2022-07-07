@@ -405,19 +405,19 @@ def main():
         epilog=(
             "Examples:\n"
             "   # Dump backup metadata:\n"
-            "\t%(prog)s -i /backup/ -a dump -o /target\n"
+            "\t%(prog)s -i /backup/ -o dump\n"
             "   # Complete restore with all disks:\n"
-            "\t%(prog)s -i /backup/ -a restore -o /target\n"
+            "\t%(prog)s -i /backup/ -o /target\n"
             "   # Complete restore, adjust config and redefine vm after restore:\n"
-            "\t%(prog)s -cD -i /backup/ -a restore -o /target\n"
+            "\t%(prog)s -cD -i /backup/ -o /target\n"
             "   # Complete restore, adjust config and redefine vm with name 'foo':\n"
-            "\t%(prog)s -cD --name foo -i /backup/ -a restore -o /target\n"
+            "\t%(prog)s -cD --name foo -i /backup/ -o /target\n"
             "   # Restore only disk 'vda':\n"
-            "\t%(prog)s -i /backup/ -a restore -o /target -d vda\n"
+            "\t%(prog)s -i /backup/ -o /target -d vda\n"
             "   # Point in time restore:\n"
-            "\t%(prog)s -i /backup/ -a restore -o /target --until virtnbdbackup.2\n"
+            "\t%(prog)s -i /backup/ -o /target --until virtnbdbackup.2\n"
             "   # Restore and process specific file sequence:\n"
-            "\t%(prog)s -i /backup/ -a restore -o /target "
+            "\t%(prog)s -i /backup/ -o /target "
             "--sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
@@ -426,10 +426,11 @@ def main():
     opt.add_argument(
         "-a",
         "--action",
-        required=True,
+        required=False,
         type=str,
         choices=["dump", "restore"],
-        help="Action to perform",
+        default="restore",
+        help="Action to perform: (default: %(default)s)",
     )
     opt.add_argument(
         "-i",
@@ -527,9 +528,13 @@ def main():
 
     stream = streamer.SparseStream(types)
 
+    fileLog = lib.getLogFile("virtnbdrestore.log")
+    if not fileLog:
+        sys.exit(1)
+
     logging.basicConfig(
         level=lib.setLogLevel(args.verbose),
-        handlers=[logging.FileHandler("virtnbdrestore.log"), logging.StreamHandler()],
+        handlers=[fileLog, logging.StreamHandler()],
         format=lib.logFormat,
         datefmt=lib.logDateFormat,
     )
@@ -556,6 +561,9 @@ def main():
         if not dataFiles:
             logging.error("No data files found in directory: %s", args.input)
             sys.exit(1)
+
+    if args.output == "dump":
+        args.action = "dump"
 
     if args.action == "dump":
         dump(lib, args, stream, dataFiles)

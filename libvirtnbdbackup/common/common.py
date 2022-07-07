@@ -48,6 +48,16 @@ class Common:
         return level
 
     @staticmethod
+    def getLogFile(fileName):
+        """Try setup log handler, if this fails, something is already
+        wrong, but we can at least provide correct error message."""
+        try:
+            return logging.FileHandler(fileName)
+        except OSError as e:
+            logging.error("Unable to open logfile: [%s]", e)
+            return None
+
+    @staticmethod
     def getSocketFile(arg):
         """Return used socket file name"""
         if not arg:

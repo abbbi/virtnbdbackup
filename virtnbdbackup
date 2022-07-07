@@ -378,6 +378,9 @@ def main():
 
     now = datetime.now().strftime("%m%d%Y%H%M%S")
     logFile = f"{args.output}/backup.{args.level}.{now}.log"
+    fileLog = lib.getLogFile(logFile)
+    if not fileLog:
+        sys.exit(1)
 
     counter = logCount()
     logging.basicConfig(
@@ -385,13 +388,19 @@ def main():
         format=lib.logFormat,
         datefmt=lib.logDateFormat,
         handlers=[
-            logging.FileHandler(logFile),
+            fileLog,
             logging.StreamHandler(stream=sys.stderr),
             counter,
         ],
     )
 
     lib.printVersion(__version__)
+
+    try:
+        fileStream = getFileStream(args, outHelper)
+    except outputhelper.exceptions.OutputException as e:
+        logging.error("Cant open output file: [%s]", e)
+        sys.exit(1)
 
     logging.info("Backup level: [%s]", args.level)
     if args.compress:
