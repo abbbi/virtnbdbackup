@@ -33,8 +33,6 @@ class outputHelper:
     class Directory:
         """Backup to target directory"""
 
-        fileHandle = None
-
         def __init__(self, targetDir):
             self.targetDir = targetDir
             self.fileHandle = None
