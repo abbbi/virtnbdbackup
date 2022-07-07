@@ -187,16 +187,13 @@ def restoreSequence(lib, args, dataFiles):
             if not createDiskFile(meta, targetFile=targetFile):
                 return False
 
-        qFh = qemuhelper.qemuHelper(diskName)
-
-        socketFile = lib.getSocketFile(args.socketfile)
-        nbdClient, connection = startNbd(qFh, diskName, targetFile, socketFile)
+        nbdClient = nbdhelper.nbdClient(diskName, None, None)
+        connection = startNbd(diskName, targetFile)
 
         result = writeData(
             lib, args, stream, sourceFile, targetFile, nbdClient, connection
         )
-
-        nbdClient.disconnect()
+        connection.shutdown()
 
     return result
 
@@ -239,16 +236,11 @@ def getHeader(lib, diskFile, stream):
         return False
 
 
-def startNbd(qFh, exportName, targetFile, socketFile):
+def startNbd(exportName, targetFile):
     """Start NBD service for restore"""
-    logging.info("Starting NBD server on socket: [%s]", socketFile)
-    err = qFh.startRestoreNbdServer(targetFile, socketFile)
-    if err.err is not None:
-        logging.error("Unable to start NBD server: [%s]", err)
-        return False
-
-    nbdClient = nbdhelper.nbdClient(exportName, None, socketFile)
-    return nbdClient, nbdClient.waitForServer()
+    logging.info("Starting NBD server on socket.")
+    nbdClient = nbdhelper.nbdClient(exportName, None, None)
+    return nbdClient.startRestoreNbdServer(targetFile)
 
 
 def readConfig(vmConfig):
@@ -353,12 +345,11 @@ def restore(lib, args, vmConfig):
             logging.error("Reading metadata from %s failed", restoreDisk[0])
             return False, False
 
-        qFh = qemuhelper.qemuHelper(meta["diskName"])
         if not createDiskFile(meta, targetFile, disk.format):
             return False, False
 
-        socketFile = lib.getSocketFile(args.socketfile)
-        nbdClient, connection = startNbd(qFh, meta["diskName"], targetFile, socketFile)
+        nbdClient = nbdhelper.nbdClient(meta["diskName"], None, None)
+        connection = startNbd(meta["diskName"], targetFile)
 
         result = False
         for dataFile in restoreDisk:
@@ -548,8 +539,8 @@ def main():
         args.adjust_config = False
         dataFiles = args.sequence.split(",")
 
-        if "full" not in dataFiles[0]:
-            logging.error("Sequence must start with full backup.")
+        if "full" not in dataFiles[0] and "copy" not in dataFiles[0]:
+            logging.error("Sequence must start with full or copy backup.")
             sys.exit(1)
     else:
         dataFiles = lib.getLatest(args.input, "*.data")

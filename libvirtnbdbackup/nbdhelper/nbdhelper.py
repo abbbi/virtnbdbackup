@@ -77,6 +77,18 @@ class nbdClient:
 
         return self._nbdHandle
 
+    def startRestoreNbdServer(self, targetFile):
+        """Start nbd server process for restore operation using
+        libnbd's builtin socket activation method'"""
+        cmd = [
+            "qemu-nbd",
+            "--discard=unmap",
+            "--format=qcow2",
+            f"{targetFile}",
+        ]
+        self._nbdHandle.connect_systemd_socket_activation(cmd)
+        return self._nbdHandle
+
     def waitForServer(self):
         """Wait until NBD endpoint connection can be established"""
         logging.info("Waiting until NBD server on socket [%s] is up.", self._socket)

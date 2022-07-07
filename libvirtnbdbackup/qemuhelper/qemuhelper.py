@@ -71,21 +71,6 @@ class qemuHelper:
             stdout=subprocess.PIPE,
         )
 
-    def startRestoreNbdServer(self, targetFile, socketFile):
-        """Start nbd server process for restore operation"""
-        cmd = [
-            "qemu-nbd",
-            "--discard=unmap",
-            "--format=qcow2",
-            "-x",
-            f"{self.exportName}",
-            f"{targetFile}",
-            "-k",
-            f"{socketFile}",
-            "--fork",
-        ]
-        return self._runcmd(cmd)
-
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
         """Execute nbdkit process for virtnbdmap"""
         debug = "0"
