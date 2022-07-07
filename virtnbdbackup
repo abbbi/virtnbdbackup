@@ -725,6 +725,24 @@ def renamePartial(targetFilePartial, targetFile):
         raise exceptions.DiskBackupFailed(f"Unable to rename file: {e}") from e
 
 
+def startOfflineNBD(args, disk):
+    """Start background qemu-nbd process used during backup
+    if domain is offline"""
+    bitMap = None
+    if args.level in ("inc", "diff"):
+        bitMap = args.cpt.name
+    args.socketfile = f"{args.socketfile}.{disk.target}"
+    logging.info("Offline backup, starting NDB Service")
+    try:
+        nbdProc = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
+            disk.format, disk.path, args.socketfile, bitMap
+        )
+        logging.info("NDB Service started, PID: [%s]", nbdProc.pid)
+        return nbdProc
+    except qemuhelper.exceptions.QemuHelperError as e:
+        raise exceptions.DiskBackupFailed(e)
+
+
 def backupDisk(
     args,
     disk,
@@ -742,18 +760,7 @@ def backupDisk(
     metaContext = setMetaContext(args, disk)
 
     if args.offline is True:
-        bitMap = None
-        if args.level in ("inc", "diff"):
-            bitMap = args.cpt.name
-        args.socketfile = f"{args.socketfile}.{disk.target}"
-        logging.info("Offline backup, starting NDB Service")
-        try:
-            nbdProc = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
-                disk.format, disk.path, args.socketfile, bitMap
-            )
-            logging.info("NDB Service started, PID: [%s]", nbdProc.pid)
-        except qemuhelper.exceptions.QemuHelperError as e:
-            raise exceptions.DiskBackupFailed(e)
+        nbdProc = startOfflineNBD(args, disk)
 
     nbdClient = nbdhelper.nbdClient(disk.target, metaContext, args.socketfile)
     try:
