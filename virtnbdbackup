@@ -633,10 +633,11 @@ def backupConfig(args, vmConfig):
     configFile = f"{args.output}/vmconfig.{ident}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
-        outputhelper.outputHelper.Directory(None).open(configFile, "w").write(vmConfig)
+        with outputhelper.outputHelper.Directory(None).open(configFile, "w") as fh:
+            fh.write(vmConfig)
         return configFile
     except:
-        logging.error("Error saving VM config")
+        logging.error("Error saving VM config.")
         raise
 
 
