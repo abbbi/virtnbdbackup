@@ -27,6 +27,7 @@ from libvirtnbdbackup import common
 from libvirtnbdbackup import nbdhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import qemuhelper
+from libvirtnbdbackup import outputhelper
 from libvirtnbdbackup import exceptions as baseexception
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
@@ -252,12 +253,15 @@ def startNbd(qFh, exportName, targetFile, socketFile):
 def readConfig(vmConfig):
     """Read saved virtual machine config'"""
     try:
-        with open(vmConfig, "rb") as vmConf:
-            config = vmConf.read().decode()
-        return config
-    except OSError as errmsg:
-        logging.error("Cant open config file: [%s]: [%s]", vmConfig, errmsg)
-        return False
+        return (
+            outputhelper.outputHelper.Directory(None)
+            .open(vmConfig, "rb")
+            .read()
+            .decode()
+        )
+    except:
+        logging.error("Cant read config file: [%s]", vmConfig)
+        raise
 
 
 def getDisksFromConfig(args, vmConfig):
@@ -285,10 +289,9 @@ def checkAdditional(args, lib, vmConfig):
     config = readConfig(vmConfig)
     info = libvirthelper.client().getDomainInfo(config)
 
-    for setting in info:
-        if info[setting] is not None:
-            s = os.path.basename(info[setting])
-            f = lib.getLatest(args.input, f"*{s}*", -1)
+    for setting, val in info.items():
+        if val is not None:
+            f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
             logging.warning(
                 "Domain config includes additional boot option: [%s]: "
                 "File [%s] must be copied manually.",

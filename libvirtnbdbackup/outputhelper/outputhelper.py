@@ -20,6 +20,7 @@ import zipfile
 import logging
 
 from datetime import datetime
+from libvirtnbdbackup.outputhelper import exceptions
 
 log = logging.getLogger(__name__)
 
@@ -43,14 +44,16 @@ class outputHelper:
             """Create output directoy on init"""
             if os.path.exists(self.targetDir):
                 if not os.path.isdir(self.targetDir):
-                    log.error("Specified target is a file, not a directory")
-                    raise SystemExit(1)
+                    raise exceptions.OutputCreateDirectory(
+                        "Specified target is a file, not a directory"
+                    )
             if not os.path.exists(self.targetDir):
                 try:
                     os.makedirs(self.targetDir)
                 except OSError as e:
-                    log.error("Unable to create target directory: %s", e)
-                    raise SystemExit(1) from e
+                    raise exceptions.OutputCreateDirectory(
+                        "Cant create target directory:", e
+                    )
 
         def open(self, targetFile, mode="wb"):
             """Open target file"""
@@ -58,7 +61,7 @@ class outputHelper:
                 self.fileHandle = open(targetFile, mode)
                 return self.fileHandle
             except OSError as e:
-                raise RuntimeError(
+                raise exceptions.OutputOpenException(
                     f"Unable to open target file: [{targetFile}]: {e}"
                 ) from e
 
@@ -87,8 +90,9 @@ class outputHelper:
                     sys.stdout.buffer, "x", zipfile.ZIP_STORED
                 )
             except zipfile.error as e:
-                log.error("Error setting up zip stream: %s", e)
-                raise
+                raise exceptions.OutputOpenException(
+                    f"Unable to open zip stream: {e}"
+                ) from e
 
         def open(self, fileName, mode="w"):
             """Open wrapper"""
@@ -105,7 +109,9 @@ class outputHelper:
                 )
                 return self.zipFileStream
             except zipfile.error as e:
-                raise RuntimeError(f"Unable to open zip stream: {e}") from e
+                raise exceptions.OutputOpenException(
+                    f"Unable to open zip stream: {e}"
+                ) from e
 
             return False
 
