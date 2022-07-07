@@ -100,13 +100,13 @@ def hasPartial(args, lib):
     return False
 
 
-def readCheckpointFile(cptFile):
+def readCheckpointFile(cFile):
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints = []
-    if os.path.exists(cptFile):
-        with open(cptFile, "rb") as cptFh:
-            checkpoints = json.loads(cptFh.read().decode())
+    if os.path.exists(cFile):
+        with outputhelper.outputHelper.Directory(None).open(cFile, "rb") as fh:
+            checkpoints = json.loads(fh.read().decode())
 
     return checkpoints
 
@@ -121,7 +121,12 @@ def handleCheckpoints(args, virtClient, domObj, lib):
     checkpointName = f"{lib.checkpointName}.0"
     parentCheckpoint = False
     cptFile = f"{args.output}/{args.domain}.cpt"
-    checkpoints = readCheckpointFile(cptFile)
+    try:
+        checkpoints = readCheckpointFile(cptFile)
+    except outputhelper.exceptions.OutputException as e:
+        raise exceptions.ReadCheckpointsError(f"Unable to read checkpoint file: {e}")
+    except json.decoder.JSONDecodeError as e:
+        raise exceptions.ReadCheckpointsError(f"Error loading checkpoint file: {e}")
 
     if args.offline is False:
         if virtClient.redefineCheckpoints(domObj, args) is False:

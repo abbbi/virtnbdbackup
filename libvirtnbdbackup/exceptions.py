@@ -16,6 +16,8 @@ class RedefineCheckpointError(CheckpointException):
     """During redefining existing checkpoints after
     vm relocate, an error occured"""
 
+class ReadCheckpointsError(CheckpointException):
+    """Cant read checkpoint file"""
 
 class RemoveCheckpointError(CheckpointException):
     """During removal of existing checkpoints after
