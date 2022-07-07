@@ -622,13 +622,11 @@ def backupConfig(args, vmConfig):
     configFile = f"{args.output}/vmconfig.{ident}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
-        with open(configFile, "w") as configFh:
-            configFh.write(vmConfig)
+        outputhelper.outputHelper.Directory(None).open(configFile, "w").write(vmConfig)
         return configFile
-    except OSError as errmsg:
-        logging.error("Unable to save VM config: %s", errmsg)
-        logging.exception(errmsg)
-        sys.exit(1)
+    except:
+        logging.error("Error saving VM config")
+        raise
 
 
 def backupBootConfig(args, lib):

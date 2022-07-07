@@ -33,10 +33,13 @@ class outputHelper:
     class Directory:
         """Backup to target directory"""
 
+        fileHandle = None
+
         def __init__(self, targetDir):
             self.targetDir = targetDir
             self.fileHandle = None
-            self._makeDir()
+            if self.targetDir is not None:
+                self._makeDir()
 
         def _makeDir(self):
             """Create output directoy on init"""
