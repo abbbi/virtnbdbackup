@@ -396,12 +396,6 @@ def main():
 
     lib.printVersion(__version__)
 
-    try:
-        fileStream = getFileStream(args, outHelper)
-    except outputhelper.exceptions.OutputException as e:
-        logging.error("Cant open output file: [%s]", e)
-        sys.exit(1)
-
     logging.info("Backup level: [%s]", args.level)
     if args.compress:
         logging.info("Compression enabled")
