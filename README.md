@@ -106,8 +106,7 @@ project: https://github.com/abbbi/qmpbackup
  ```
 
 `Note`:
-> It is mandatory to restart the virtual machine once you have altered
-> its configuration to make the featureset available.
+> You must restart the virtual machine after enabling the feature!
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
  * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5` (yum install python3-libnbd)
