@@ -220,7 +220,7 @@ def createDiskFile(meta, targetFile, diskFormat="qcow2"):
 
     try:
         qFh.create(targetFile, meta["virtualSize"], diskFormat)
-    except Exception as e:
+    except qemuhelper.exceptions.ProcessError as e:
         logging.error("Cant create restore target: %s", e)
         return False
 
@@ -324,8 +324,6 @@ def restore(lib, args, vmConfig):
             logging.info("Skipping disk %s for restore", disk.target)
             continue
 
-        checkBackingStore(args, disk)
-
         restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
         logging.debug("Restoring disk: %s", restoreDisk)
         if len(restoreDisk) < 1:
@@ -373,6 +371,7 @@ def restore(lib, args, vmConfig):
                 result = False
                 break
 
+        checkBackingStore(args, disk)
         if args.adjust_config is True:
             restConfig = libvirthelper.client().adjustDomainConfig(
                 args, disk, readConfig(vmConfig), targetFile
@@ -588,9 +587,8 @@ def main():
         else:
             ret, restConfig = restore(lib, args, vmConfig)
 
-        checkAdditional(args, lib, vmConfig)
-
         if ret is True:
+            checkAdditional(args, lib, vmConfig)
             if args.define is True and args.adjust_config is False:
                 logging.warning(
                     "Redefine domain needs adjusted config, please "
