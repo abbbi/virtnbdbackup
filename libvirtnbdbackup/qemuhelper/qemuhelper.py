@@ -61,15 +61,17 @@ class qemuHelper:
 
         return json.loads(extentMap.stdout)
 
-    @staticmethod
-    def create(targetFile, fileSize, diskFormat):
+    def create(self, targetFile, fileSize, diskFormat):
         """Create the target qcow image"""
-        subprocess.run(
-            f"qemu-img create -f {diskFormat} '{targetFile}' {fileSize}",
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-        )
+        cmd = [
+            "qemu-img",
+            "create",
+            "-f",
+            f"{diskFormat}",
+            f"{targetFile}",
+            f"{fileSize}",
+        ]
+        return self._runcmd(cmd)
 
     def startRestoreNbdServer(self, targetFile, socketFile):
         """Start nbd server process for restore operation"""
