@@ -30,6 +30,7 @@ import subprocess
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup import qemuhelper
+from libvirtnbdbackup import outputhelper
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
@@ -86,7 +87,9 @@ def replayChanges(dataRanges, args, lib):
                 logging.info(
                     "Replaying offset %s from %s", extent["offset"], extent["file"]
                 )
-            with open(os.path.abspath(extent["file"]), "rb") as replaySrc:
+            with outputhelper.openfile(
+                os.path.abspath(extent["file"]), "rb"
+            ) as replaySrc:
                 replaySrc.seek(extent["offset"])
                 replayDevice.seek(extent["originalOffset"])
                 replayDevice.write(replaySrc.read(extent["length"]))
@@ -100,11 +103,7 @@ def replayChanges(dataRanges, args, lib):
 def handleSignal(lib, nbdkitProcess, device, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
-    disconnectDevice = subprocess.run(
-        ["qemu-nbd", "-d", f"{device}"], stdout=subprocess.PIPE, check=True
-    )
-    if disconnectDevice.returncode == 0:
-        log.info("Disconnected nbd device [%s]", device)
+    qemuhelper.qemuHelper(None).disconnect(device)
     log.info("Removing temporary blockmap file: [%s]", blockMap.name)
     os.remove(blockMap.name)
     log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
@@ -263,9 +262,7 @@ def main():
     lib = common.Common()
     args = lib.argparse(parser)
 
-    fileLog = lib.getLogFile(args.logfile)
-    if not fileLog:
-        sys.exit(1)
+    fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
 
     counter = logCount()
     lib.configLogger(args, fileLog, counter)
@@ -297,9 +294,9 @@ def main():
     dataRanges = []
     for file in dataFiles:
         try:
-            reader = open(file, "rb")
-        except OSError as e:
-            logging.fatal("Unable to open backup file: [%s]", e)
+            reader = outputhelper.openfile(file, "rb")
+        except outputhelper.exceptions.OutputException as e:
+            logging.error("[%s]: [%s]", file, e)
             sys.exit(1)
 
         ranges, meta = getDataRanges(lib, stream, sTypes, reader)
@@ -314,7 +311,7 @@ def main():
             logging.info(
                 "Parsed [%s] block offsets from file [%s]", len(dataRanges), file
             )
-    reader.close()
+        reader.close()
 
     dumpBlockMap(blockMap, dataRanges)
     blockMap.flush()

@@ -56,7 +56,7 @@ def dump(lib, args, stream, dataFiles):
         pprint.pprint(meta)
 
         if lib.isCompressed(meta):
-            logging.info("Compressed stream found: %s", meta["compressionMethod"])
+            logging.info("Compressed stream found: [%s].", meta["compressionMethod"])
 
     return True
 
@@ -66,7 +66,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
     try:
         reader = open(dataFile, "rb")
     except OSError as errmsg:
-        logging.critical("Unable to open backup file for reading: %s", errmsg)
+        logging.critical("Unable to open backup file for reading: [%s].", errmsg)
         return False
 
     sTypes = types.SparseStreamTypes()
@@ -80,17 +80,17 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
 
     if lib.isCompressed(meta) is True:
         trailer = stream.readCompressionTrailer(reader)
-        logging.info("Found compression trailer")
+        logging.info("Found compression trailer.")
         logging.debug("%s", trailer)
     else:
         trailer = None
 
     if meta["dataSize"] == 0:
-        logging.info("Saveset %s contains no dirty blocks, skipping", dataFile)
+        logging.info("File [%s] contains no dirty blocks, skipping.", dataFile)
         return True
 
     logging.info(
-        "Applying data from backup file [%s] to target file [%s]", dataFile, targetFile
+        "Applying data from backup file [%s] to target file [%s].", dataFile, targetFile
     )
     pprint.pprint(meta)
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
@@ -107,11 +107,7 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
             logging.error("Cant read stream at pos: %s: %s", reader.tell(), err)
             raise baseexception.RestoreError from err
         if kind == sTypes.ZERO:
-            logging.debug("Detected zero segment from %s length: %s", start, length)
-            if length >= nbdClient.maxRequestSize:
-                logging.debug(
-                    "Detected Chunked zero, start: %s, len: %s", start, length
-                )
+            logging.debug("Zero segment from %s length: %s", start, length)
         elif kind == sTypes.DATA:
             logging.debug("Processing data segment from %s length: %s", start, length)
 
@@ -220,7 +216,7 @@ def createDiskFile(meta, targetFile, diskFormat="qcow2"):
 
     try:
         qFh.create(targetFile, meta["virtualSize"], diskFormat)
-    except Exception as e:
+    except qemuhelper.exceptions.ProcessError as e:
         logging.error("Cant create restore target: %s", e)
         return False
 
@@ -254,12 +250,7 @@ def startNbd(qFh, exportName, targetFile, socketFile):
 def readConfig(vmConfig):
     """Read saved virtual machine config'"""
     try:
-        return (
-            outputhelper.outputHelper.Directory(None)
-            .open(vmConfig, "rb")
-            .read()
-            .decode()
-        )
+        return outputhelper.openfile(vmConfig, "rb").read().decode()
     except:
         logging.error("Cant read config file: [%s]", vmConfig)
         raise
@@ -317,14 +308,12 @@ def restore(lib, args, vmConfig):
     stream = streamer.SparseStream(types)
     vmDisks = getDisksFromConfig(args, vmConfig)
     if not vmDisks:
-        return False
+        return False, False
 
     for disk in vmDisks:
         if args.disk not in (None, disk.target):
             logging.info("Skipping disk %s for restore", disk.target)
             continue
-
-        checkBackingStore(args, disk)
 
         restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
         logging.debug("Restoring disk: %s", restoreDisk)
@@ -373,6 +362,7 @@ def restore(lib, args, vmConfig):
                 result = False
                 break
 
+        checkBackingStore(args, disk)
         if args.adjust_config is True:
             restConfig = libvirthelper.client().adjustDomainConfig(
                 args, disk, readConfig(vmConfig), targetFile
@@ -388,7 +378,7 @@ def restoreConfig(args, vmConfig, adjustedConfig):
     to new directory"""
     targetFile = f"{args.output}/{os.path.basename(vmConfig)}"
     if args.adjust_config is True:
-        with open(targetFile, "wb") as cnf:
+        with outputhelper.openfile(targetFile, "wb") as cnf:
             cnf.write(adjustedConfig)
         logging.info("Adjusted config placed in: [%s]", targetFile)
         if args.define is False:
@@ -529,16 +519,14 @@ def main():
 
     stream = streamer.SparseStream(types)
 
-    fileLog = lib.getLogFile("virtnbdrestore.log")
-    if not fileLog:
-        sys.exit(1)
+    fileLog = lib.getLogFile("virtnbdrestore.log") or sys.exit(1)
 
     counter = logCount()
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
 
     if not os.path.exists(args.input):
-        logging.error("Backup set directory does not exist.")
+        logging.error("Directory [%s] does not exist.", args.input)
         sys.exit(1)
 
     if args.sequence is not None:
@@ -552,11 +540,10 @@ def main():
             logging.error("Sequence must start with full backup.")
             sys.exit(1)
     else:
-        dataFiles = lib.getLatest(args.input, "*.data")
-
-        if not dataFiles:
-            logging.error("No data files found in directory: %s", args.input)
-            sys.exit(1)
+        dataFiles = lib.getLatest(args.input, "*.data") or (
+            logging.error("No data files found in directory: %s", args.input),
+            sys.exit(1),
+        )
 
     if args.output == "dump":
         args.action = "dump"
@@ -565,12 +552,11 @@ def main():
         dump(lib, args, stream, dataFiles)
 
     if args.action == "restore":
-        vmConfig = lib.getLatest(args.input, "vmconfig*.xml", -1)
+        vmConfig = lib.getLatest(args.input, "vmconfig*.xml", -1) or (
+            logging.error("No domain config file found"),
+            sys.exit(1),
+        )
         logging.info("Latest config file found: %s", vmConfig)
-        if not vmConfig:
-            logging.error("No domain config file found")
-            sys.exit(1)
-
         logging.info("Using latest config file: [%s]", vmConfig)
 
         args.level = "full"
@@ -588,9 +574,8 @@ def main():
         else:
             ret, restConfig = restore(lib, args, vmConfig)
 
-        checkAdditional(args, lib, vmConfig)
-
         if ret is True:
+            checkAdditional(args, lib, vmConfig)
             if args.define is True and args.adjust_config is False:
                 logging.warning(
                     "Redefine domain needs adjusted config, please "

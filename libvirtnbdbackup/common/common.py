@@ -54,7 +54,7 @@ class Common:
         try:
             return logging.FileHandler(fileName)
         except OSError as e:
-            logging.error("Unable to open logfile: [%s]", e)
+            logging.error("Unable to open logfile: [%s].", e)
             return None
 
     def configLogger(self, args, fileLog, counter):
@@ -282,11 +282,6 @@ class Common:
             data = self.lz4CompressFrame(data)
 
         return writer.write(data)
-
-    def zeroChunk(self, offset, length, maxRequestSize, nbdCon):
-        """Write zeroes using libnbd zero function"""
-        for zeroLen, zeroOffset in self.blockStep(offset, length, maxRequestSize):
-            nbdCon.zero(zeroLen, zeroOffset)
 
     def readChunk(self, reader, offset, length, maxRequestSize, nbdCon, compression):
         """Read data from reader and write to nbd connection

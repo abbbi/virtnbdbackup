@@ -21,6 +21,7 @@ import tempfile
 import subprocess
 from dataclasses import dataclass
 from libvirtnbdbackup.qemuhelper import exceptions
+from libvirtnbdbackup.outputhelper import openfile
 
 log = logging.getLogger(__name__)
 
@@ -61,15 +62,17 @@ class qemuHelper:
 
         return json.loads(extentMap.stdout)
 
-    @staticmethod
-    def create(targetFile, fileSize, diskFormat):
+    def create(self, targetFile, fileSize, diskFormat):
         """Create the target qcow image"""
-        subprocess.run(
-            f"qemu-img create -f {diskFormat} '{targetFile}' {fileSize}",
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-        )
+        cmd = [
+            "qemu-img",
+            "create",
+            "-f",
+            f"{diskFormat}",
+            f"{targetFile}",
+            f"{fileSize}",
+        ]
+        return self._runcmd(cmd)
 
     def startRestoreNbdServer(self, targetFile, socketFile):
         """Start nbd server process for restore operation"""
@@ -143,16 +146,21 @@ class qemuHelper:
         ]
         return self._runcmd(cmd, pidFile=pidFile)
 
+    def disconnect(self, device):
+        """Disconnect device"""
+        logging.info("Disconnecting device [%s]", device)
+        cmd = ["qemu-nbd", "-d", f"{device}"]
+        return self._runcmd(cmd)
+
     @staticmethod
     def _readlog(logFile, cmd):
         try:
-            err = open(logFile, "r").read().strip()
-        except OSError as errmsg:
+            with openfile(logFile, "rb") as fh:
+                return fh.read().decode().strip()
+        except Exception as errmsg:
             raise exceptions.ProcessError(
                 f"Error executing [{cmd}] Unable to get error message: {errmsg}"
             )
-
-        return err
 
     def _runcmd(self, cmdLine, pidFile=None):
         """Execute passed command"""
@@ -161,30 +169,29 @@ class qemuHelper:
         )
 
         log.debug("CMD: %s", " ".join(cmdLine))
-        p = subprocess.Popen(
+        with subprocess.Popen(
             cmdLine,
             close_fds=True,
             stderr=logFile,
             stdout=logFile,
-        )
-
-        p.wait(5)
-        log.debug("Return code: %s", p.returncode)
-        err = None
-        if p.returncode != 0:
+        ) as p:
             p.wait(5)
-            log.info("CMD: %s", " ".join(cmdLine))
-            log.debug("Read error messages from logfile")
-            err = self._readlog(logFile.name, cmdLine[0])
-            raise exceptions.ProcessError(
-                f"Unable to start {cmdLine[0]} process: {err}"
-            )
+            log.debug("Return code: %s", p.returncode)
+            err = None
+            if p.returncode != 0:
+                p.wait(5)
+                log.info("CMD: %s", " ".join(cmdLine))
+                log.debug("Read error messages from logfile")
+                err = self._readlog(logFile.name, cmdLine[0])
+                raise exceptions.ProcessError(
+                    f"Unable to start {cmdLine[0]} process: {err}"
+                )
 
-        if pidFile is not None:
-            realPid = int(self._readlog(pidFile, ""))
-        else:
-            realPid = p.pid
+            if pidFile is not None:
+                realPid = int(self._readlog(pidFile, ""))
+            else:
+                realPid = p.pid
 
-        process = processInfo(realPid, logFile.name, err)
-        log.debug("Started [%s] process, returning: %s", cmdLine[0], err)
+            process = processInfo(realPid, logFile.name, err)
+            log.debug("Started [%s] process, returning: %s", cmdLine[0], err)
         return process

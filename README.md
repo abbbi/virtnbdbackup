@@ -88,12 +88,12 @@ project: https://github.com/abbbi/qmpbackup
   ```
 
   Debian bullseye or Ubuntu 20.x include libvirt versions supporting this
-  feature already.
+  feature already, but the virtual machine configuration must be adopted
+  for it to be usable.
 
-* Virtual machines running on libvirt versions < 7.6.0 **must enable
-  incremental backup feature** by including the capability statement and using
-  the extended schema (the first line must be changed, too) in its
-  configuration as shown below:
+  To activate the incremental backup feature on libvirt versions <= 7.6.0 
+  change the virtual machine config using `virsh edit <vm>` like so: (the
+  first line must be changed too!):
 
  ```
   <domain type='kvm' id='1' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
@@ -106,8 +106,7 @@ project: https://github.com/abbbi/qmpbackup
  ```
 
 `Note`:
-> It is mandatory to restart the virtual machine once you have altered
-> its configuration to make the featureset available.
+> You must restart the virtual machine after enabling the feature!
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
  * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5` (yum install python3-libnbd)

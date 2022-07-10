@@ -77,9 +77,9 @@ def setOfflineArguments(args, virtClient, domObj):
     args.offline = False
     if virtClient.domainOffline(domObj) is True:
         if args.level == "full":
-            logging.warning("Domain is offline, resetting backup options")
+            logging.warning("Domain is offline, resetting backup options.")
             args.level = "copy"
-            logging.info("Backup level: [%s]", args.level)
+            logging.info("Backup level: [%s].", args.level)
         args.offline = True
 
 
@@ -92,7 +92,7 @@ def hasPartial(args, lib):
         and args.stdout is False
         and lib.partialBackup(args) is True
     ):
-        logging.error("Partial backup found in target directory: %s", args.output)
+        logging.error("Partial backup found in target directory: [%s]", args.output)
         logging.error("One of the last backups seems to have failed.")
         logging.error("Consider re-executing full backup.")
         return True
@@ -105,7 +105,7 @@ def readCheckpointFile(cFile):
     information"""
     checkpoints = []
     if os.path.exists(cFile):
-        with outputhelper.outputHelper.Directory(None).open(cFile, "rb") as fh:
+        with outputhelper.openfile(cFile, "rb") as fh:
             checkpoints = json.loads(fh.read().decode())
 
     return checkpoints
@@ -132,9 +132,9 @@ def handleCheckpoints(args, virtClient, domObj, lib):
         if virtClient.redefineCheckpoints(domObj, args) is False:
             raise exceptions.RedefineCheckpointError("Unable to redefine checkpoints.")
 
-    logging.info("Checkpoint handling")
+    logging.info("Checkpoint handling.")
     if args.level == "full" and checkpoints:
-        logging.info("Removing all existent checkpoints before full backup")
+        logging.info("Removing all existent checkpoints before full backup.")
         if not virtClient.removeAllCheckpoints(
             domObj, checkpoints, args, lib.checkpointName
         ):
@@ -150,16 +150,16 @@ def handleCheckpoints(args, virtClient, domObj, lib):
         nextCpt = len(checkpoints)
         checkpointName = f"{lib.checkpointName}.{nextCpt}"
         parentCheckpoint = checkpoints[-1]
-        logging.info("Next checkpoint id: [%s]", nextCpt)
-        logging.info("Parent checkpoint name [%s]", parentCheckpoint)
+        logging.info("Next checkpoint id: [%s].", nextCpt)
+        logging.info("Parent checkpoint name [%s].", parentCheckpoint)
 
         if args.offline is True:
-            logging.info("Offline backup, use last known checkpoint, save only delta.")
+            logging.info("Offline backup, using latest checkpoint, saving only delta.")
             checkpointName = parentCheckpoint
 
     if args.level == "diff":
         logging.info(
-            "Diff backup: saving delta since checkpoint: [%s]", parentCheckpoint
+            "Diff backup: saving delta since checkpoint: [%s].", parentCheckpoint
         )
 
     if args.level in ("inc", "diff") and len(checkpoints) < 1:
@@ -168,14 +168,14 @@ def handleCheckpoints(args, virtClient, domObj, lib):
         )
 
     if args.level in ("full", "inc"):
-        logging.info("Using checkpoint name: %s", checkpointName)
+        logging.info("Using checkpoint name: [%s].", checkpointName)
 
     args.cpt = Namespace()
     args.cpt.name = checkpointName
     args.cpt.parent = parentCheckpoint
     args.cpt.file = cptFile
 
-    logging.debug("Checkpoint info: %s", vars(args.cpt))
+    logging.debug("Checkpoint info: [%s].", vars(args.cpt))
 
 
 def saveCheckpointFile(args):
@@ -184,11 +184,11 @@ def saveCheckpointFile(args):
     try:
         checkpoints = readCheckpointFile(args.cpt.file)
         checkpoints.append(args.cpt.name)
-        with open(args.cpt.file, "wb") as cFw:
+        with outputhelper.openfile(args.cpt.file, "wb") as cFw:
             cFw.write(json.dumps(checkpoints).encode())
     except exceptions.CheckpointException as e:
         raise exceptions.CheckpointException from e
-    except OSError as e:
+    except outputhelper.exceptions.OutputException as e:
         raise exceptions.SaveCheckpointError from e
 
 
@@ -383,9 +383,7 @@ def main():
 
     now = datetime.now().strftime("%m%d%Y%H%M%S")
     logFile = f"{args.output}/backup.{args.level}.{now}.log"
-    fileLog = lib.getLogFile(logFile)
-    if not fileLog:
-        sys.exit(1)
+    fileLog = lib.getLogFile(logFile) or sys.exit(1)
 
     counter = logCount()
     lib.configLogger(args, fileLog, counter)
@@ -475,15 +473,14 @@ def main():
     )
 
     vmConfig = virtClient.getDomainConfig(domObj)
-    disks = virtClient.getDomainDisks(args, vmConfig)
-    args.info = virtClient.getDomainInfo(vmConfig)
-
-    if not disks:
+    disks = virtClient.getDomainDisks(args, vmConfig) or (
         logging.error(
             "Domain has no disks attached which support changed block tracking."
-        )
-        sys.exit(1)
+        ),
+        sys.exit(1),
+    )
 
+    args.info = virtClient.getDomainInfo(vmConfig)
     logging.info(
         "Domain has %s disks attached which support changed block tracking.", len(disks)
     )
@@ -633,7 +630,7 @@ def backupConfig(args, vmConfig):
     configFile = f"{args.output}/vmconfig.{ident}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
-        with outputhelper.outputHelper.Directory(None).open(configFile, "w") as fh:
+        with outputhelper.openfile(configFile, "w") as fh:
             fh.write(vmConfig)
         return configFile
     except:
