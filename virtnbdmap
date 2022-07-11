@@ -25,7 +25,6 @@ import json
 import time
 import argparse
 import logging
-import subprocess
 
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
@@ -355,28 +354,20 @@ def main():
     logging.debug(nbdCmd)
     while True:
         try:
-            subprocess.run(
-                nbdCmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-            )
+            qemuhelper.runcmd(cmdLine=nbdCmd, toPipe=True)
             break
-        except subprocess.CalledProcessError as e:
+        except qemuhelper.exceptions.ProcessError as e:
             if retryCnt >= maxRetry:
-                logging.info(
-                    "Unable to connect device after service start: %s",
-                    e.stderr.decode(),
-                )
+                logging.info("Unable to connect device after service start: %s", e)
                 lib.killProc(nbdkitProcess.pid)
-            errMsg = e.stderr.decode()
-            if "Connection refused" in errMsg:
+                break
+            if "Connection refused" in str(e):
                 logging.info("Nbd server refused connection, retry [%s]", retryCnt)
                 time.sleep(1)
                 retryCnt += 1
             else:
                 logging.error("Unable to map device:")
-                logging.error("Stderr: [%s]", errMsg)
+                logging.error("Stderr: [%s]", str(e))
                 lib.killProc(nbdkitProcess.pid)
 
     if len(dataFiles) > 1:

@@ -33,6 +33,7 @@ class processInfo:
     pid: int
     logFile: str
     err: str
+    out: str
 
 
 class qemuHelper:
@@ -72,7 +73,7 @@ class qemuHelper:
             f"{targetFile}",
             f"{fileSize}",
         ]
-        return self._runcmd(cmd)
+        return self.runcmd(cmd)
 
     def startRestoreNbdServer(self, targetFile, socketFile):
         """Start nbd server process for restore operation"""
@@ -87,7 +88,7 @@ class qemuHelper:
             f"{socketFile}",
             "--fork",
         ]
-        return self._runcmd(cmd)
+        return self.runcmd(cmd)
 
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
         """Execute nbdkit process for virtnbdmap"""
@@ -119,7 +120,7 @@ class qemuHelper:
             "-t",
             f"{args.threads}",
         ]
-        return self._runcmd(cmd, pidFile=pidFile)
+        return self.runcmd(cmd, pidFile=pidFile)
 
     def startBackupNbdServer(self, diskFormat, diskFile, socketFile, bitMap):
         """Start nbd server process for offline backup operation"""
@@ -144,13 +145,13 @@ class qemuHelper:
             f"--pid-file={pidFile}",
             bitmapOpt,
         ]
-        return self._runcmd(cmd, pidFile=pidFile)
+        return self.runcmd(cmd, pidFile=pidFile)
 
     def disconnect(self, device):
         """Disconnect device"""
         logging.info("Disconnecting device [%s]", device)
         cmd = ["qemu-nbd", "-d", f"{device}"]
-        return self._runcmd(cmd)
+        return self.runcmd(cmd)
 
     @staticmethod
     def _readlog(logFile, cmd):
@@ -162,11 +163,22 @@ class qemuHelper:
                 f"Error executing [{cmd}] Unable to get error message: {errmsg}"
             )
 
-    def _runcmd(self, cmdLine, pidFile=None):
+    @staticmethod
+    def _readpipe(p):
+        out = p.stdout.read().decode().strip()
+        err = p.stderr.read().decode().strip()
+        return out, err
+
+    def runcmd(self, cmdLine, pidFile=None, toPipe=False):
         """Execute passed command"""
-        logFile = tempfile.NamedTemporaryFile(
-            delete=False, prefix=cmdLine[0], suffix=".log"
-        )
+        logFileName = None
+        if toPipe is True:
+            logFile = subprocess.PIPE
+        else:
+            logFile = tempfile.NamedTemporaryFile(
+                delete=False, prefix=cmdLine[0], suffix=".log"
+            )
+            logFileName = logFile.name
 
         log.debug("CMD: %s", " ".join(cmdLine))
         with subprocess.Popen(
@@ -178,20 +190,27 @@ class qemuHelper:
             p.wait(5)
             log.debug("Return code: %s", p.returncode)
             err = None
+            out = None
             if p.returncode != 0:
                 p.wait(5)
                 log.info("CMD: %s", " ".join(cmdLine))
                 log.debug("Read error messages from logfile")
-                err = self._readlog(logFile.name, cmdLine[0])
+                if toPipe is True:
+                    out, err = self._readpipe(p)
+                else:
+                    err = self._readlog(logFile.name, cmdLine[0])
                 raise exceptions.ProcessError(
-                    f"Unable to start {cmdLine[0]} process: {err}"
+                    f"Unable to start [{cmdLine[0]}] error: [{err}]"
                 )
+
+            if toPipe is True:
+                out, err = self._readpipe(p)
 
             if pidFile is not None:
                 realPid = int(self._readlog(pidFile, ""))
             else:
                 realPid = p.pid
 
-            process = processInfo(realPid, logFile.name, err)
+            process = processInfo(realPid, logFileName, err, out)
             log.debug("Started [%s] process, returning: %s", cmdLine[0], err)
         return process

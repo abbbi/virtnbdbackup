@@ -812,14 +812,13 @@ def backupDisk(
         writer.seek(0)
     else:
         logging.info("Creating thin provisioned stream backup image")
-        inc = args.level in ("inc", "diff")
         metadata = stream.dumpMetadata(
             diskSize,
             thinBackupSize,
             disk,
             args.cpt.name,
             args.cpt.parent,
-            inc,
+            (args.level in ("inc", "diff")),
             args.compress,
         )
         stream.writeFrame(writer, sTypes.META, 0, len(metadata))

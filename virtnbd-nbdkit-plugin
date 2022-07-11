@@ -63,13 +63,13 @@ def config_complete():
     global blockMapFile
     if image is None or blockMap is None:
         raise RuntimeError(
-            "Missing parameter: path to block list file and disk required."
+            "Missing parameter: path to blockmap and disk files required."
         )
 
     if not os.path.exists(image):
-        raise RuntimeError(f"Cant find images file: {image}")
+        raise RuntimeError(f"Specified image file: [{image}] does not exist.")
     if not os.path.exists(blockMapFile):
-        raise RuntimeError(f"Cant find blockmap file: {blockMapFile}")
+        raise RuntimeError(f"Specified blockmap file: [{blockMapFile}] does not exit.")
 
     pprint.pprint(blockMap)
 
