@@ -484,7 +484,7 @@ def main():
     logging.info(
         "Domain has %s disks attached which support changed block tracking.", len(disks)
     )
-    if args.worker is None:
+    if args.worker is None or args.worker > int(len(disks)):
         args.worker = int(len(disks))
     logging.info("Concurrent backup processes: [%s]", args.worker)
 

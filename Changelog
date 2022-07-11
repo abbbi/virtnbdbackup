@@ -1,3 +1,9 @@
+Version 0.73
+---------
+* virtnbdbackup: limit the amount of concurrent workers to the amount of
+disks detected, so users cannot specify an higher amount of workers than
+disks are attached to the virtual machine.
+
 Version 0.72
 ---------
 * Code cleanup
