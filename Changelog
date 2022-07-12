@@ -1,8 +1,12 @@
+Version 0.75
+---------
+* virtnbdbackup: report amount of thawed/freezed filesystems during backup.
+* Update README
+
 Version 0.74
 ---------
 * virtnbdbackup: add some more debug messages around freezing/thwaing
 filesytems and backup job operation.
-
 
 Version 0.73
 ---------

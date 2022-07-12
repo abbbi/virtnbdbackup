@@ -49,6 +49,7 @@ of your `kvm/qemu` virtual machines.
    * [High memory usage during backup](#high-memory-usage-during-backup)
 * [Links](#links)
 * [Test your backups!](#test-your-backups)
+* [Contributing](#contributing)
 
 # About
 
@@ -782,3 +783,9 @@ an issue.
 Backup howto for Debian Bullseye: https://abbbi.github.io/debian/
 
 Short video: https://youtu.be/dOE0iB-CEGM
+
+## Contributing
+
+Active development happens in the [development
+branch](https://github.com/abbbi/virtnbdbackup/tree/dev) please base your pull
+requests on this branch.

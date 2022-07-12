@@ -351,8 +351,8 @@ class client:
         """Attempt to freeze domain filesystems using qemu guest agent"""
         log.debug("Attempting to freeze filesystems.")
         try:
-            domObj.fsFreeze()
-            log.info("Freezed filesystems.")
+            frozen = domObj.fsFreeze()
+            log.info("Freezed [%s] filesystems.", frozen)
             return True
         except libvirt.libvirtError as errmsg:
             log.warning(errmsg)
@@ -363,8 +363,8 @@ class client:
         """Thaw freeze filesystems"""
         log.debug("Attempting to thaw filesystems.")
         try:
-            domObj.fsThaw()
-            log.info("Thawed filesystems.")
+            thawed = domObj.fsThaw()
+            log.info("Thawed [%s] filesystems.", thawed)
             return True
         except libvirt.libvirtError as errmsg:
             log.warning(errmsg)
