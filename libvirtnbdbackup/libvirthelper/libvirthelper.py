@@ -349,9 +349,10 @@ class client:
     @staticmethod
     def fsFreeze(domObj):
         """Attempt to freeze domain filesystems using qemu guest agent"""
+        log.debug("Attempting to freeze filesystems.")
         try:
             domObj.fsFreeze()
-            log.info("Freeze filesystems.")
+            log.info("Freezed filesystems.")
             return True
         except libvirt.libvirtError as errmsg:
             log.warning(errmsg)
@@ -360,6 +361,7 @@ class client:
     @staticmethod
     def fsThaw(domObj):
         """Thaw freeze filesystems"""
+        log.debug("Attempting to thaw filesystems.")
         try:
             domObj.fsThaw()
             log.info("Thawed filesystems.")
@@ -388,7 +390,9 @@ class client:
                     diskList, args.cpt.parent, args.cpt.name
                 )
             freezed = self.fsFreeze(domObj)
+            log.debug("Starting backup job via libvirt API.")
             domObj.backupBegin(backupXml, checkpointXml)
+            log.debug("Started backup job via libvirt API.")
             if freezed is True:
                 self.fsThaw(domObj)
         except Exception as errmsg:

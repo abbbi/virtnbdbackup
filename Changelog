@@ -1,3 +1,9 @@
+Version 0.74
+---------
+* virtnbdbackup: add some more debug messages around freezing/thwaing
+filesytems and backup job operation.
+
+
 Version 0.73
 ---------
 * virtnbdbackup: limit the amount of concurrent workers to the amount of
