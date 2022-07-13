@@ -257,6 +257,14 @@ def main():
         action="store_true",
         help="Map image readonly (default: %(default)s)",
     )
+    debopt.add_argument(
+        "-V",
+        "--version",
+        default=False,
+        help="Show version and exit",
+        action="version",
+        version=__version__,
+    )
 
     lib = common.Common()
     args = lib.argparse(parser)

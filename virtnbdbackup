@@ -320,6 +320,16 @@ def main():
         ),
     )
     opt.add_argument(
+        "-F",
+        "--freeze-mountpoint",
+        type=str,
+        default=None,
+        help=(
+            "If qemu agent available, freeze only filesystems on specified mountpoints within"
+            " virtual machine (default: all)"
+        ),
+    )
+    opt.add_argument(
         "-e",
         "--strict",
         default=False,
@@ -364,6 +374,14 @@ def main():
         default=False,
         help="Enable debug output",
         action="store_true",
+    )
+    debopt.add_argument(
+        "-V",
+        "--version",
+        default=False,
+        help="Show version and exit",
+        action="version",
+        version=__version__,
     )
 
     outHelper = outputhelper.outputHelper()

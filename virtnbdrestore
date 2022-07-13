@@ -307,6 +307,7 @@ def restore(lib, args, vmConfig):
     """Handle restore operation"""
     stream = streamer.SparseStream(types)
     vmDisks = getDisksFromConfig(args, vmConfig)
+    vmConfig = readConfig(vmConfig)
     if not vmDisks:
         return False, False
 
@@ -318,7 +319,14 @@ def restore(lib, args, vmConfig):
         restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
         logging.debug("Restoring disk: %s", restoreDisk)
         if len(restoreDisk) < 1:
-            logging.warning("No backup file for disk [%s] found.", disk.target)
+            logging.warning(
+                "No backup file for disk [%s] found, assuming it has been excluded.",
+                disk.target,
+            )
+            if args.adjust_config is True:
+                restConfig = libvirthelper.client().adjustDomainConfigRemoveDisk(
+                    vmConfig, disk.target
+                )
             continue
 
         targetFile = setTargetFile(args, disk)
@@ -365,8 +373,9 @@ def restore(lib, args, vmConfig):
         checkBackingStore(args, disk)
         if args.adjust_config is True:
             restConfig = libvirthelper.client().adjustDomainConfig(
-                args, disk, readConfig(vmConfig), targetFile
+                args, disk, vmConfig, targetFile
             )
+            vmConfig = restConfig
         else:
             restConfig = vmConfig
 
@@ -508,6 +517,14 @@ def main():
         action="store_true",
         default=False,
         help="Enable debug output",
+    )
+    debopt.add_argument(
+        "-V",
+        "--version",
+        default=False,
+        help="Show version and exit",
+        action="version",
+        version=__version__,
     )
 
     lib = common.Common()

@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Version used**
-Which virtnbdbackup version did you use?
+Provide output of `virtnbdbackup -V`
 
 **Describe the bug**
 A clear and concise description of what the bug is.

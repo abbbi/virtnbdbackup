@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
     set -xe
     YUM="yum -yq"
     $YUM install git rpm-build
-    $YUM reinstall epel-release # epel-release is installed, but files removed
+    $YUM reinstall epel-release || true # epel-release is installed, but files removed
     rm -rf virtnbdbackup;
     git clone https://github.com/abbbi/virtnbdbackup
     cd virtnbdbackup
@@ -25,6 +25,9 @@ Vagrant.configure("2") do |config|
     python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
     cp dist/* /vagrant
     yum install -y dist/*noarch*.rpm
+    virtnbdbackup -h
+    virtnbdrestore -h
+    virtnbdmap -h
    SHELL
    config.vm.synced_folder "./", "/vagrant", type: "virtiofs"
 end

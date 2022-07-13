@@ -1,3 +1,17 @@
+Version 0.76
+---------
+* virtnbdbackup:
+ + Change some log messages: more detailed report on skipped devices during backup.
+ + Add option --freeze-mountpoint: during backup, only filesystems of
+ specified mountpoints are freezed and thawed. (#60)
+* virtnbdrestore:
+ + Option -c would only adjust virtual machine config for the first disk.
+ + Option -c now correctly removes exluded disks from the adjusted virtual
+ machine configuration.
+* Add --version option for all utilities.
+* Vagrant scripts: test installation/execution after creating rpm packages.
+* Update README
+
 Version 0.75
 ---------
 * virtnbdbackup: report amount of thawed/freezed filesystems during backup.

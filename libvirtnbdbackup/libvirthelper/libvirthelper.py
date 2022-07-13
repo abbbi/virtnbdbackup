@@ -133,18 +133,36 @@ class client:
         logging.debug("Domain Info: [%s]", settings)
         return settings
 
+    def adjustDomainConfigRemoveDisk(self, vmConfig, excluded):
+        """Remove disk from config, in case it has been excluded
+        from the backup."""
+        tree = self._getTree(vmConfig)
+        logging.info("Removing excluded disk [%s] from vm config.", excluded)
+        try:
+            target = tree.xpath(f"devices/disk/target[@dev='{excluded}']")[0]
+            disk = target.getparent()
+            disk.getparent().remove(disk)
+        except IndexError:
+            logging.warning(
+                "Unable to remove excluded disk from config: no object found."
+            )
+
+        return ElementTree.tostring(tree, encoding="utf8", method="xml")
+
     def adjustDomainConfig(self, args, restoreDisk, vmConfig, targetFile):
         """Adjust virtual machine configuration after restoring. Changes
         the pathes to the virtual machine disks and attempts to remove
         components excluded during restore."""
         tree = self._getTree(vmConfig)
 
-        logging.info("Removing uuid setting from vm config.")
-        uuid = tree.xpath("uuid")[0]
-        if uuid is not None:
+        try:
+            logging.info("Removing uuid setting from vm config.")
+            uuid = tree.xpath("uuid")[0]
             tree.remove(uuid)
-        name = tree.xpath("name")[0]
+        except IndexError:
+            pass
 
+        name = tree.xpath("name")[0]
         if args.name is None:
             domainName = f"restore_{name.text}"
         else:
@@ -167,10 +185,6 @@ class client:
             driver = disk.xpath("driver")[0].get("type")
             if device in ("lun", "cdrom", "floppy"):
                 logging.info("Removing [%s] device from vm config", device)
-                disk.getparent().remove(disk)
-                continue
-            if args.disk is not None and dev not in args.disk:
-                logging.info("Removing excluded disk [%s] from xml config")
                 disk.getparent().remove(disk)
                 continue
             if driver == "raw" and args.raw is False:
@@ -238,19 +252,19 @@ class client:
             device = disk.get("device")
             if device == "lun":
                 log.warning(
-                    "Ignoring lun disk %s does not support changed block tracking.",
+                    "Skipping direct attached lun [%s]: does not support changed block tracking.",
                     dev,
                 )
                 continue
             if device in ("cdrom", "floppy"):
-                log.info("Skipping attached CDROM / Floppy: [%s]", dev)
+                log.info("Skipping attached [%s] device: [%s].", device, dev)
                 continue
 
             # ignore disk which use raw format, they do not support CBT
             diskFormat = disk.xpath("driver")[0].get("type")
             if diskFormat == "raw" and args.raw is False:
                 log.warning(
-                    "Raw disk %s excluded by default, use option --raw to include.",
+                    "Raw disk [%s] excluded by default, use option --raw to include.",
                     dev,
                 )
                 continue
@@ -262,7 +276,7 @@ class client:
 
             if args.include is not None and dev != args.include:
                 log.info(
-                    "Skipping disk: %s as requested: does not match disk %s",
+                    "Skipping disk: [%s] as requested: does not match disk [%s]",
                     dev,
                     args.include,
                 )
@@ -347,11 +361,14 @@ class client:
         return xml
 
     @staticmethod
-    def fsFreeze(domObj):
+    def fsFreeze(domObj, mountpoints):
         """Attempt to freeze domain filesystems using qemu guest agent"""
         log.debug("Attempting to freeze filesystems.")
         try:
-            frozen = domObj.fsFreeze()
+            if mountpoints is not None:
+                frozen = domObj.fsFreeze(mountpoints.split(","))
+            else:
+                frozen = domObj.fsFreeze()
             log.info("Freezed [%s] filesystems.", frozen)
             return True
         except libvirt.libvirtError as errmsg:
@@ -389,7 +406,7 @@ class client:
                 checkpointXml = self._createCheckpointXml(
                     diskList, args.cpt.parent, args.cpt.name
                 )
-            freezed = self.fsFreeze(domObj)
+            freezed = self.fsFreeze(domObj, args.freeze_mountpoint)
             log.debug("Starting backup job via libvirt API.")
             domObj.backupBegin(backupXml, checkpointXml)
             log.debug("Started backup job via libvirt API.")

@@ -25,6 +25,7 @@ of your `kvm/qemu` virtual machines.
 * [Backup concurrency](#backup-concurrency)
 * [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
 * [Backup Examples](#backup-examples)
+   * [Application consistent backups](#application-consistent-backups)
    * [Rotating backups](#rotating-backups)
    * [Excluding disks](#excluding-disks)
    * [Estimating backup size](#estimating-backup-size)
@@ -42,7 +43,6 @@ of your `kvm/qemu` virtual machines.
 * [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
 * [FAQ](#faq)
    * [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
-   * [Is the backup application consistent?](#is-the-backup-application-consistent)
    * [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
    * [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
    * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
@@ -280,6 +280,34 @@ machine, including logfiles that can be used for analyzing backup issues:
 ├── vmconfig.virtnbdbackup.1.xml
 └── vmconfig.virtnbdbackup.2.xml
 ```
+
+
+## Application consistent backups
+
+During backup `virtnbdbackup` attempts to freeze all file systems within the
+domain using the qemu guest agent filesystem freeze and thaw functions.  In
+case no qemu agent is installed or filesystem freeze fails, a warning is issued
+during backup:
+
+```
+WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
+```
+
+In case you receive this warning, check if the qemu agent is installed and
+running with in the domain.
+
+It is also possible to specify one or multiple mountpoints used within
+the virtual machine to freeze only specific filesystems, like so:
+
+`virtnbdbackup -d vm1 -l inc -o /tmp/backupset -F /mnt,/var`
+
+this way only the underlying filesystems on */mnt* and */var* are frozen
+and thawed.
+
+`Note:`
+> It is highly recommended to have an qemu agent running within the virtual
+> domain to ensure file system consistency during backup!
+
 
 ## Rotating backups
 
@@ -681,24 +709,6 @@ will be at least as big as the used data within the virtual machine.
 You can use the `--compress` option or other tools to compress the backup
 images in order to save storage space or consider using a deduplication capable
 target file system.
-
-## Is the backup application consistent?
-
-During backup `virtnbdbackup` attempts to freeze the file systems within the
-domain using the qemu guest agent filesystem freeze and thaw functions.  In
-case no qemu agent is installed or filesystem freeze fails, a warning is issued
-during backup:
-
-```
-WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
-```
-
-In case you receive this warning, check if the qemu agent is installed and
-running with in the domain.
-
-`Note:`
-> It is highly recommended to have an qemu agent running within the virtual
-> domain to have a consistent file system during backup!
 
 ## Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"
 
