@@ -1,3 +1,10 @@
+Version 0.77
+---------
+* Code cleanup
+* virtnbdbackup
+ + detect if there is an active backup operation running and fail accordingly
+ instead of running into "Cannot acquire state change lock" timeout exception.
+
 Version 0.76
 ---------
 * virtnbdbackup:

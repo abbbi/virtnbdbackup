@@ -71,11 +71,11 @@ def checkForeign(args, virtClient, domObj, lib):
     raise exceptions.ForeignCeckpointError
 
 
-def setOfflineArguments(args, virtClient, domObj):
+def setOfflineArguments(args, domObj):
     """Check if to be saved VM is offline and set
     propper options/overwrite backup mode"""
     args.offline = False
-    if virtClient.domainOffline(domObj) is True:
+    if domObj.isActive() == 0:
         if args.level == "full":
             logging.warning("Domain is offline, resetting backup options.")
             args.level = "copy"
@@ -430,7 +430,7 @@ def main():
         args.level = "inc"
     elif not args.stdout and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
-            logging.error("Target directory must empty for full or copy backup.")
+            logging.error("Target directory must be empty for full or copy backup.")
             sys.exit(1)
 
     if args.raw and args.level in ("inc", "diff"):
@@ -480,10 +480,10 @@ def main():
     except exceptions.CheckpointException:
         sys.exit(1)
 
-    setOfflineArguments(args, virtClient, domObj)
+    setOfflineArguments(args, domObj)
     if args.offline is True and args.startonly is True:
         logging.error("Virtual machine is currently offline")
-        logging.error("Virtual machine must be running for this function.")
+        logging.error("Virtual machine must be active for this function.")
         sys.exit(1)
 
     signal.signal(
@@ -497,6 +497,14 @@ def main():
         ),
         sys.exit(1),
     )
+    if (
+        not args.killonly
+        and not args.offline
+        and virtClient.blockJobActive(domObj, disks)
+    ):
+        logging.error("Detected an active backup operation for running domain.")
+        logging.error("Check with [virsh domjobinfo %s]", args.domain)
+        sys.exit(1)
 
     args.info = virtClient.getDomainInfo(vmConfig)
     logging.info(

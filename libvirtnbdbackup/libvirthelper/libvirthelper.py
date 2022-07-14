@@ -66,12 +66,16 @@ class client:
         except libvirt.libvirtError as e:
             raise exceptions.domainNotFound(e) from e
 
-    @staticmethod
-    def domainOffline(domObj):
-        """Returns true if domain is not in running state"""
-        state, _ = domObj.state()
-        log.debug("Domain state returned by libvirt: [%s]", state)
-        return state != libvirt.VIR_DOMAIN_RUNNING
+    def blockJobActive(self, domObj, disks):
+        """Check if there is already an active block job for this virtual
+        machine, which might block"""
+        for disk in disks:
+            blockInfo = domObj.blockJobInfo(disk.target)
+            if blockInfo and blockInfo["type"] == 5:
+                logging.debug("Running block jobs for disk [%s]", disk.target)
+                logging.debug(blockInfo)
+                return True
+        return False
 
     def hasIncrementalEnabled(self, domObj):
         """Check if virtual machine has enabled required capabilities

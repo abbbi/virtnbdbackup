@@ -78,12 +78,11 @@ def restoreData(lib, args, stream, dataFile, targetFile, nbdClient, connection):
         logging.fatal(errmsg)
         raise baseexception.RestoreError from errmsg
 
+    trailer = None
     if lib.isCompressed(meta) is True:
         trailer = stream.readCompressionTrailer(reader)
         logging.info("Found compression trailer.")
         logging.debug("%s", trailer)
-    else:
-        trailer = None
 
     if meta["dataSize"] == 0:
         logging.info("File [%s] contains no dirty blocks, skipping.", dataFile)
@@ -179,9 +178,8 @@ def restoreSequence(lib, args, dataFiles):
         diskName = meta["diskName"]
         targetFile = f"{args.output}/{diskName}"
 
-        if not os.path.exists(targetFile):
-            if not createDiskFile(meta, targetFile=targetFile):
-                return False
+        if not createDiskFile(meta, targetFile=targetFile):
+            return False
 
         qFh = qemuhelper.qemuHelper(diskName)
 
@@ -578,11 +576,10 @@ def main():
 
         args.level = "full"
         if not lib.targetIsEmpty(args):
-            logging.error("Target directory is not empty.")
+            logging.error("Target directory must be empty.")
             sys.exit(1)
 
-        if not os.path.exists(args.output):
-            os.makedirs(args.output)
+        os.makedirs(args.output, exist_ok=True)
 
         ret = False
         if args.sequence is not None:
@@ -591,19 +588,20 @@ def main():
         else:
             ret, restConfig = restore(lib, args, vmConfig)
 
-        if ret is True:
-            checkAdditional(args, lib, vmConfig)
-            if args.define is True and args.adjust_config is False:
-                logging.warning(
-                    "Redefine domain needs adjusted config, please "
-                    "use --adjust-config option. Skipping.."
-                )
-            restoreConfig(args, vmConfig, restConfig)
-            if args.define is True and args.adjust_config is True:
-                if not libvirthelper.client().defineDomain(restConfig):
-                    sys.exit(1)
-        else:
+        if ret is False:
+            logging.fatal("Disk restore failed.")
             sys.exit(1)
+
+        checkAdditional(args, lib, vmConfig)
+        if args.define is True and args.adjust_config is False:
+            logging.warning(
+                "Redefine domain needs adjusted config, please "
+                "use --adjust-config option. Skipping.."
+            )
+        restoreConfig(args, vmConfig, restConfig)
+        if args.define is True and args.adjust_config is True:
+            if not libvirthelper.client().defineDomain(restConfig):
+                sys.exit(1)
 
 
 if __name__ == "__main__":

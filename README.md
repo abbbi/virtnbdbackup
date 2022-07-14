@@ -294,7 +294,7 @@ WARNING [..] Guest agent is not responding: QEMU guest agent is not connected
 ```
 
 In case you receive this warning, check if the qemu agent is installed and
-running with in the domain.
+running in the domain.
 
 It is also possible to specify one or multiple mountpoints used within
 the virtual machine to freeze only specific filesystems, like so:
@@ -305,7 +305,7 @@ this way only the underlying filesystems on */mnt* and */var* are frozen
 and thawed.
 
 `Note:`
-> It is highly recommended to have an qemu agent running within the virtual
+> It is highly recommended to have an qemu agent running in the virtual
 > domain to ensure file system consistency during backup!
 
 
