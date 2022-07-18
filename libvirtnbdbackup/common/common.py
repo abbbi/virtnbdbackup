@@ -40,10 +40,9 @@ class Common:
     @staticmethod
     def setLogLevel(verbose):
         """Set loglevel"""
+        level = logging.INFO
         if verbose is True:
             level = logging.DEBUG
-        else:
-            level = logging.INFO
 
         return level
 

@@ -66,7 +66,8 @@ class client:
         except libvirt.libvirtError as e:
             raise exceptions.domainNotFound(e) from e
 
-    def blockJobActive(self, domObj, disks):
+    @staticmethod
+    def blockJobActive(domObj, disks):
         """Check if there is already an active block job for this virtual
         machine, which might block"""
         for disk in disks:
