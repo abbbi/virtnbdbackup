@@ -81,11 +81,17 @@ class client:
             raise exceptions.connectionFailed(e) from e
 
     @staticmethod
-    def _useAuth(args):
+    def _useAuthFile(uri):
+        if "authfile" in uri:
+            return True
+
+        return False
+
+    def _useAuth(self, args):
         """Check wether we want to use advanced auth method"""
         if args.uri.startswith("qemu+"):
             return True
-        if "authfile" in args.uri:
+        if self._useAuthFile(args.uri):
             return True
         if args.user or args.password:
             return True
@@ -99,7 +105,7 @@ class client:
             logging.debug(
                 "Login information specified, connect libvirtd using openAuth function."
             )
-            if not args.user or not args.password:
+            if not self._useAuthFile(args.uri) and not args.user and not args.password:
                 raise exceptions.connectionFailed(
                     "Username (--user) and password (--password) required."
                 )
