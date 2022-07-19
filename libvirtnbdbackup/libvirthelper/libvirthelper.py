@@ -80,12 +80,29 @@ class client:
         except libvirt.libvirtError as e:
             raise exceptions.connectionFailed(e) from e
 
+    @staticmethod
+    def _useAuth(args):
+        """Check wether we want to use advanced auth method"""
+        if args.uri.startswith("qemu+"):
+            return True
+        if "authfile" in args.uri:
+            return True
+        if args.user or args.password:
+            return True
+
+        return False
+
     def _connect(self, args):
         """return libvirt connection handle"""
-        if "authfile" in args.uri or args.user or args.password:
+        logging.debug("Libvirt URI: [%s]", args.uri)
+        if self._useAuth(args):
             logging.debug(
                 "Login information specified, connect libvirtd using openAuth function."
             )
+            if not args.user or not args.password:
+                raise exceptions.connectionFailed(
+                    "Username (--user) and password (--password) required."
+                )
             return self._connectAuth(args.uri, args.user, args.password)
 
         logging.debug("Connect libvirt using open function.")

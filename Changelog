@@ -1,6 +1,7 @@
 Version 0.80
 ---------
 * Fix debug output
+* Further work on remote connections to libvirtd.
 
 Version 0.79
 ---------
