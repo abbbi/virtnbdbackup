@@ -40,19 +40,56 @@ log = logging.getLogger(__name__)
 class client:
     """Libvirt related functions"""
 
-    def __init__(self):
-        self._conn = self._connect()
+    def __init__(self, uri):
+        self._conn = self._connect(uri)
         self._domObj = None
         self.libvirtVersion = self._conn.getLibVersion()
 
     @staticmethod
-    def _connect():
-        """return libvirt connection handle"""
-        URI = "qemu:///system"
+    def _connectAuth(uri, user, password):
+        """Use openAuth if connection string includes authfile or
+        username/password are set"""
+
+        def _cred(credentials, user_data):
+            for credential in credentials:
+                if credential[0] == libvirt.VIR_CRED_AUTHNAME:
+                    credential[4] = user_data[0]
+                elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
+                    credential[4] = user_data[1]
+            return 0
+
+        logging.debug("Username: %s", user)
+        logging.debug("Password: %s", user)
+
         try:
-            return libvirt.open(URI)
+            auth = [[libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]]
+            if user is not None and password is not None:
+                user_data = [user, password]
+                auth.append(_cred)
+                auth.append(user_data)
+
+            return libvirt.openAuth(uri, auth, 0)
         except libvirt.libvirtError as e:
             raise exceptions.connectionFailed(e) from e
+
+    @staticmethod
+    def _connectOpen(uri):
+        """Open connection with regular libvirt URI for local authentication"""
+        try:
+            return libvirt.open(uri)
+        except libvirt.libvirtError as e:
+            raise exceptions.connectionFailed(e) from e
+
+    def _connect(self, args):
+        """return libvirt connection handle"""
+        if "authfile" in args.uri or args.user or args.password:
+            logging.debug(
+                "Login information specified, connect libvirtd using openAuth function."
+            )
+            return self._connectAuth(args.uri, args.user, args.password)
+
+        logging.debug("Connect libvirt using open function.")
+        return self._connectOpen(args.uri)
 
     @staticmethod
     def _getTree(vmConfig):

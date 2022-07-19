@@ -259,7 +259,7 @@ def getDisksFromConfig(args, vmConfig):
     contained in the backup directory
     """
     config = readConfig(vmConfig)
-    return libvirthelper.client().getDomainDisks(args, config)
+    return libvirthelper.client(args).getDomainDisks(args, config)
 
 
 def checkBackingStore(args, disk):
@@ -277,7 +277,7 @@ def checkBackingStore(args, disk):
 def checkAdditional(args, lib, vmConfig):
     """Notice user if backed up vm had loader / nvram"""
     config = readConfig(vmConfig)
-    info = libvirthelper.client().getDomainInfo(config)
+    info = libvirthelper.client(args).getDomainInfo(config)
 
     for setting, val in info.items():
         if val is not None:
@@ -322,7 +322,7 @@ def restore(lib, args, vmConfig):
                 disk.target,
             )
             if args.adjust_config is True:
-                restConfig = libvirthelper.client().adjustDomainConfigRemoveDisk(
+                restConfig = libvirthelper.client(args).adjustDomainConfigRemoveDisk(
                     vmConfig, disk.target
                 )
             continue
@@ -370,7 +370,7 @@ def restore(lib, args, vmConfig):
 
         checkBackingStore(args, disk)
         if args.adjust_config is True:
-            restConfig = libvirthelper.client().adjustDomainConfig(
+            restConfig = libvirthelper.client(args).adjustDomainConfig(
                 args, disk, vmConfig, targetFile
             )
             vmConfig = restConfig
@@ -506,7 +506,28 @@ def main():
         type=str,
         help="Define restored domain with specified name",
     )
-
+    opt.add_argument(
+        "-U",
+        "--uri",
+        default="qemu:///system",
+        required=False,
+        type=str,
+        help="Libvirt connection URI. (default: %(default)s)",
+    )
+    opt.add_argument(
+        "--user",
+        default=None,
+        required=False,
+        type=str,
+        help="User used to authenticate against libvirtd. (default: %(default)s)",
+    )
+    opt.add_argument(
+        "--password",
+        default=None,
+        required=False,
+        type=str,
+        help="Password used to authenticate against libvirtd. (default: %(default)s)",
+    )
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-v",
@@ -600,7 +621,7 @@ def main():
             )
         restoreConfig(args, vmConfig, restConfig)
         if args.define is True and args.adjust_config is True:
-            if not libvirthelper.client().defineDomain(restConfig):
+            if not libvirthelper.client(args).defineDomain(restConfig):
                 sys.exit(1)
 
 

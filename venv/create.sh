@@ -6,13 +6,18 @@ LIBNBD_MAJ="1.12-stable"
 LIBNBD_VERSION="libnbd-1.12.4.tar.gz"
 
 set -e
+
+BRANCH="master"
+if [ ! -z $1 ]; then
+    BRANCH="$1"
+fi
 rm -rf virtnbdbackup
 rm -rf ${VENVDIR}
 rm -f ${LIBNBD_VERSION}
 rm -rf libnbd-*
 
 virtualenv -p $(which python3) ${VENVDIR}
-git clone https://github.com/abbbi/virtnbdbackup.git 
+git clone https://github.com/abbbi/virtnbdbackup.git -b ${BRANCH}
 source ${VENVDIR}/bin/activate
 curl https://download.libguestfs.org/libnbd/${LIBNBD_MAJ}/${LIBNBD_VERSION}  > ${LIBNBD_VERSION}
 tar xzf ${LIBNBD_VERSION}

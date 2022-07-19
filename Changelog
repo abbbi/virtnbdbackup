@@ -1,8 +1,15 @@
+Version 0.79
+---------
+* Add -U/--uri option: can be used to specifiy libvirt connection URI, if
+authfile is specified, use openAuth to authenticate against libvirt daemon.
+* Add --user and --password options: can be used to authenticate against
+libvirt daemon.
+* Update README, add notes about ovirt/rhev etc.
+
 Version 0.78
 ---------
 * Code cleanup
 * Update README
-
 
 Version 0.77
 ---------

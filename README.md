@@ -41,6 +41,10 @@ of your `kvm/qemu` virtual machines.
    * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
 * [Extents](#extents)
 * [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
+* [Hypervisors](#hypervisors)
+    * [Ovirt or RHEV](#ovirt-or-rhev)
+    * [OpenNebula](#opennebula)
+* [Authentication](#authentication)
 * [FAQ](#faq)
    * [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
    * [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
@@ -698,6 +702,60 @@ redefineCheckpoints: Redefine missing checkpoint virtnbdbackup.0
 ```
 
 See also: https://github.com/abbbi/virtnbdbackup/pull/10
+
+# Hypervisors
+
+`virtnbdbackup` uses the lowest layer on top of libvirt to allow its
+functionality, you can also use it with more advanced hypervisors solutions
+such as [ovirt](https://www.ovirt.org/), RHEV or OpenNebula, but please bear in
+mind that it was not developed to target all of those solutions specifically!
+
+## Ovirt or RHEV
+
+If you are using the ovirt node based hypervisor hosts you should consider
+creating a virtualenv via the [venv scripts](venv/) and transferring it to the
+node system.
+
+On regular centos/alma/rhel based nodes, installation via RPM package should be
+preferred. The incremental backup functionality can be enabled via ovirt
+management interface.
+
+Usually ovirt restricts access to the libvirt daemon via different
+authentication methods. Use the `-U` parameter in order to specify an
+authentication file:
+
+```
+virtnbdbackup -U qemu:///system?authfile=/etc/ovirt-hosted-engine/virsh_auth.conf -d src -o /tmp/backupset
+```
+
+
+`Note:`
+> `virtnbdrestore` has not been adopted to cope with the ovirt specific
+> domain xml format, so redefining and virtual machine on the node might not
+> work.
+
+## OpenNebula
+
+See [past issues](https://github.com/abbbi/virtnbdbackup/issues?q=label%3Aopennebula)
+
+# Authentication
+
+Both `virtnbdbackup` and `virtnbdrestore` commands support authenticating
+against libvirtd with the usual URIs. Consider using the following options:
+
+ `-U`: Specify an arbitary connection URI to use against libvirt
+
+ `--user`: Username to use for the specified connection URI
+
+ `--password`: Password to use for the specified connection URI.
+
+It is also possible to specifiy the credentials stored as authentication file
+like it would be possible using the `virsh -c` option:
+
+```
+ -U qemu:///system?authfile=/etc/virsh_auth.conf ..
+```
+
 
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images
