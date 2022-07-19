@@ -1,3 +1,6 @@
+Version 0.80
+---------
+
 Version 0.79
 ---------
 * Add -U/--uri option: can be used to specifiy libvirt connection URI, if
