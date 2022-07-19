@@ -59,7 +59,7 @@ class client:
             return 0
 
         logging.debug("Username: %s", user)
-        logging.debug("Password: %s", user)
+        logging.debug("Password: %s", password)
 
         try:
             auth = [[libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]]
