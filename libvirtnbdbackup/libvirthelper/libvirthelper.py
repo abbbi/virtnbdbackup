@@ -19,6 +19,7 @@ import string
 import random
 import glob
 import logging
+from socket import gethostname
 from collections import namedtuple
 import libvirt
 from lxml import etree as ElementTree
@@ -44,6 +45,11 @@ class client:
         self._conn = self._connect(uri)
         self._domObj = None
         self.libvirtVersion = self._conn.getLibVersion()
+        self.remoteHost = None
+
+        if gethostname() != self._conn.getHostname():
+            logging.debug("Connected to remote host: [%s]", self._conn.getHostname())
+            self.remoteHost = self._conn.getHostname()
 
     @staticmethod
     def _connectAuth(uri, user, password):
@@ -378,9 +384,15 @@ class client:
     ):
         """Create XML file for starting an backup task using libvirt API."""
         top = ElementTree.Element("domainbackup", {"mode": "pull"})
-        ElementTree.SubElement(
-            top, "server", {"transport": "unix", "socket": f"{socketFilePath}"}
-        )
+        if self.remoteHost is None:
+            ElementTree.SubElement(
+                top, "server", {"transport": "unix", "socket": f"{socketFilePath}"}
+            )
+        else:
+            ElementTree.SubElement(
+                top, "server", {"name": f"{self.remoteHost}", "port": "10809"}
+            )
+
         disks = ElementTree.SubElement(top, "disks")
 
         if parentCheckpoint is not False:

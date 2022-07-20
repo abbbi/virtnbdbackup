@@ -48,9 +48,10 @@ class nbdConnTCP(nbdConn):
 
     hostname: str
     port: int = 10809
+    backupSocket: str = None
 
     def __post_init__(self):
-        self.uri = f"nbd://{self.hostname}:{self.port}"
+        self.uri = f"nbd://{self.hostname}:{self.port}/{self.exportName}"
 
 
 class nbdClient:
@@ -65,6 +66,7 @@ class nbdClient:
         self._uri = cType.uri
 
         self._exportName = cType.exportName
+
         self._socket = cType.backupSocket
 
         if cType.metaContext is None:
@@ -113,7 +115,7 @@ class nbdClient:
 
     def waitForServer(self):
         """Wait until NBD endpoint connection can be established"""
-        logging.info("Waiting until NBD server on socket [%s] is up.", self._socket)
+        logging.info("Waiting until NBD server at [%s] is up.", self._uri)
         retry = 0
         maxRetry = 20
         sleepTime = 1
@@ -124,7 +126,7 @@ class nbdClient:
                     "Timeout during connection to NBD server backend."
                 )
 
-            if not os.path.exists(self._socket):
+            if self._socket and not os.path.exists(self._socket):
                 logging.info("Waiting for NBD Server, Retry: %s", retry)
                 retry = retry + 1
 
