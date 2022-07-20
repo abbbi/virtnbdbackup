@@ -42,15 +42,15 @@ class qemuHelper:
     def __init__(self, exportName):
         self.exportName = exportName
 
-    def map(self, backupSocket, metaContext):
+    def map(self, cType):
         """Read extent map using nbdinfo utility"""
         metaOpt = ""
-        if metaContext is not None:
-            metaOpt = f"--map={metaContext}"
+        if cType.metaContext is not None:
+            metaOpt = f"--map={cType.metaContext}"
 
         cmd = (
             f"nbdinfo --json {metaOpt} "
-            f"'nbd+unix:///{self.exportName}?socket={backupSocket}'"
+            f"'{cType.uri}'"
         )
         log.debug("Starting CMD: [%s]", cmd)
         extentMap = subprocess.run(

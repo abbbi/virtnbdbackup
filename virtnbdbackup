@@ -756,10 +756,10 @@ def getExtentHandler(args, cType, connection):
     if args.qemu:
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(cType.uri)
+            qemuhelper.qemuHelper(cType.exportName), cType
         )
     else:
-        extentHandler = extenthandler.ExtentHandler(cType.uri)
+        extentHandler = extenthandler.ExtentHandler(connection, cType)
 
     return extentHandler
 
