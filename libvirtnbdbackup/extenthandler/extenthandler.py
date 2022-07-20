@@ -54,7 +54,7 @@ class ExtentHandler:
 
         self._socket = cType.backupSocket
         self._nbdFh = nbdFh
-        self._uri = cType.uri
+        self._cType = cType
         self._extentEntries = []
         if cType.metaContext is None:
             self._metaContext = CONTEXT_BASE_ALLOCATION
@@ -100,7 +100,7 @@ class ExtentHandler:
         server
         """
         extents = []
-        for extent in self._nbdFh.map(self._uri):
+        for extent in self._nbdFh.map(self._cType):
             extentObj = Extent()
             extentObj.data = self.setBlockType(extent["type"])
             extentObj.offset = extent["offset"]

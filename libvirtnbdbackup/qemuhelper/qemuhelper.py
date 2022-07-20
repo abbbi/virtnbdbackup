@@ -44,7 +44,7 @@ class qemuHelper:
 
     def map(self, cType):
         """Read extent map using nbdinfo utility"""
-        metaOpt = ""
+        metaOpt = "--map"
         if cType.metaContext is not None:
             metaOpt = f"--map={cType.metaContext}"
 
