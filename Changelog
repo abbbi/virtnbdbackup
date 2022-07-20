@@ -2,6 +2,8 @@ Version 0.80
 ---------
 * Fix debug output
 * Further work on remote connections to libvirtd.
+* First steps in implementing remote backup feature, add layer around
+nbdclient.
 
 Version 0.79
 ---------

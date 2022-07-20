@@ -817,7 +817,8 @@ def backupDisk(
     if args.offline is True:
         nbdProc = startOfflineNBD(args, disk)
 
-    nbdClient = nbdhelper.nbdClient(disk.target, metaContext, args.socketfile)
+    cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
+    nbdClient = nbdhelper.nbdClient(cType)
     try:
         connection = nbdClient.waitForServer()
     except nbdhelper.exceptions.NbdClientException as e:

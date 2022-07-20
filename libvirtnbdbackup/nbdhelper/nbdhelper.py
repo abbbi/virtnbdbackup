@@ -17,26 +17,60 @@
 import os
 import logging
 from time import sleep
+from dataclasses import dataclass
 import nbd
 from libvirtnbdbackup.nbdhelper import exceptions
 
 log = logging.getLogger(__name__)
 
 
+@dataclass
+class nbdConn:
+    """NBD connection"""
+
+    exportName: str
+    metaContext: str
+
+
+@dataclass
+class nbdConnUnix(nbdConn):
+    """NBD connection type unix"""
+
+    backupSocket: str
+
+    def __post_init__(self):
+        self.uri = f"nbd+unix:///{self.exportName}?socket={self.backupSocket}"
+
+
+@dataclass
+class nbdConnTCP(nbdConn):
+    """NBD connection type tcp"""
+
+    hostname: str
+    port: int = 10809
+
+    def __post_init__(self):
+        self.uri = f"nbd://{self.hostname}:{self.port}"
+
+
 class nbdClient:
     """Helper functions for NBD"""
 
-    def __init__(self, exportName, metaContext, backupSocket):
-        """Parameters:
-        :exportName: name of nbd export
-        :backupSocket: ndb server endpoint
+    def __init__(self, cType):
         """
-        self._socket = backupSocket
-        self._exportName = exportName
-        if metaContext is None:
+        Connect NBD backend, currently only unix type socket
+        communication implemented. Should be extended to support
+        TCP based remote backup too (#65)
+        """
+        self._uri = cType.uri
+
+        self._exportName = cType.exportName
+        self._socket = cType.backupSocket
+
+        if cType.metaContext is None:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         else:
-            self._metaContext = metaContext
+            self._metaContext = cType.metaContext
 
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
@@ -69,7 +103,7 @@ class nbdClient:
         try:
             self._nbdHandle.add_meta_context(self._metaContext)
             self._nbdHandle.set_export_name(self._exportName)
-            self._nbdHandle.connect_unix(self._socket)
+            self._nbdHandle.connect_uri(self._uri)
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")
 

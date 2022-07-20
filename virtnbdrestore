@@ -241,7 +241,8 @@ def startNbd(qFh, exportName, targetFile, socketFile):
         logging.error("Unable to start NBD server: [%s]", err)
         return False
 
-    nbdClient = nbdhelper.nbdClient(exportName, None, socketFile)
+    cType = nbdhelper.nbdConnUnix(exportName, None, socketFile)
+    nbdClient = nbdhelper.nbdClient(cType)
     return nbdClient, nbdClient.waitForServer()
 
 
