@@ -48,10 +48,7 @@ class qemuHelper:
         if cType.metaContext is not None:
             metaOpt = f"--map={cType.metaContext}"
 
-        cmd = (
-            f"nbdinfo --json {metaOpt} "
-            f"'{cType.uri}'"
-        )
+        cmd = f"nbdinfo --json {metaOpt} " f"'{cType.uri}'"
         log.debug("Starting CMD: [%s]", cmd)
         extentMap = subprocess.run(
             cmd,
