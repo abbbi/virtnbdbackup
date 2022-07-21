@@ -552,8 +552,9 @@ def main():
 
     outHelper.Directory(args.scratchdir)
 
-    args.socketfile = lib.getSocketFile(args.socketfile)
-    logging.info("NDB Endpoint socket: %s", args.socketfile)
+    if not virtClient.remoteHost:
+        args.socketfile = lib.getSocketFile(args.socketfile)
+        logging.info("NDB Endpoint socket: %s", args.socketfile)
 
     if args.offline is not True:
         try:

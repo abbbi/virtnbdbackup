@@ -190,7 +190,6 @@ class ExtentHandler:
             case 1: ("dirty")
         """
         data = None
-        log.debug("Setting block type, allocation: %s", self._metaContext)
         if self._metaContext == CONTEXT_BASE_ALLOCATION:
             assert blockType in (0, 1, 2, 3)
             if blockType == 0:

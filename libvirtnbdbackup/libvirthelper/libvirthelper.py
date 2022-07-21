@@ -42,14 +42,10 @@ class client:
     """Libvirt related functions"""
 
     def __init__(self, uri):
+        self.remoteHost = None
         self._conn = self._connect(uri)
         self._domObj = None
         self.libvirtVersion = self._conn.getLibVersion()
-        self.remoteHost = None
-
-        if gethostname() != self._conn.getHostname():
-            logging.debug("Connected to remote host: [%s]", self._conn.getHostname())
-            self.remoteHost = self._conn.getHostname()
 
     @staticmethod
     def _connectAuth(uri, user, password):
@@ -115,9 +111,19 @@ class client:
                 raise exceptions.connectionFailed(
                     "Username (--user) and password (--password) required."
                 )
-            return self._connectAuth(args.uri, args.user, args.password)
+            conn = self._connectAuth(args.uri, args.user, args.password)
+            if gethostname() != conn.getHostname():
+                logging.info(
+                    "Connected to remote host: [%s], local host: [%s]",
+                    conn.getHostname(),
+                    gethostname(),
+                )
+                self.remoteHost = conn.getHostname()
+
+            return conn
 
         logging.debug("Connect libvirt using open function.")
+
         return self._connectOpen(args.uri)
 
     @staticmethod
