@@ -83,17 +83,26 @@ class client:
             raise exceptions.connectionFailed(e) from e
 
     @staticmethod
-    def _useAuthFile(uri):
+    def _reqAuth(uri):
+        """If authentication file is passed or qemu+ssh is used,
+        no user and password are required."""
         if "authfile" in uri:
             return True
+        return False
 
+    @staticmethod
+    def _isSsh(uri):
+        """If authentication file is passed or qemu+ssh is used,
+        no user and password are required."""
+        if uri.startswith("qemu+ssh"):
+            return True
         return False
 
     def _useAuth(self, args):
         """Check wether we want to use advanced auth method"""
         if args.uri.startswith("qemu+"):
             return True
-        if self._useAuthFile(args.uri):
+        if self._reqAuth(args.uri):
             return True
         if args.user or args.password:
             return True
@@ -107,11 +116,19 @@ class client:
             logging.debug(
                 "Login information specified, connect libvirtd using openAuth function."
             )
-            if not self._useAuthFile(args.uri) and not args.user and not args.password:
+            if (
+                not self._reqAuth(args.uri)
+                and not args.user
+                and not args.password
+                and not self._isSsh(args.uri)
+            ):
                 raise exceptions.connectionFailed(
                     "Username (--user) and password (--password) required."
                 )
-            conn = self._connectAuth(args.uri, args.user, args.password)
+            if not self._isSsh(args.uri):
+                conn = self._connectAuth(args.uri, args.user, args.password)
+            else:
+                conn = self._connectOpen(args.uri)
             if gethostname() != conn.getHostname():
                 logging.info(
                     "Connected to remote host: [%s], local host: [%s]",
