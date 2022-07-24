@@ -418,9 +418,6 @@ See also: [Authentication](#authentication)
 > directly. TLS Support will be added in future releases as not all libvirt
 > versions shipped in current distributions support it.
 
-`Note Also:`
-> Backing up offline domains does currently not work remotely.
-
 ### Pipe data to other hosts
 
 If the output target points to standard out (`-`), `virtnbdbackup` puts the
