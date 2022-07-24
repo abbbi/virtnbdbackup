@@ -17,26 +17,62 @@
 import os
 import logging
 from time import sleep
+from dataclasses import dataclass
 import nbd
 from libvirtnbdbackup.nbdhelper import exceptions
 
 log = logging.getLogger(__name__)
 
 
+@dataclass
+class nbdConn:
+    """NBD connection"""
+
+    exportName: str
+    metaContext: str
+
+
+@dataclass
+class nbdConnUnix(nbdConn):
+    """NBD connection type unix"""
+
+    backupSocket: str
+
+    def __post_init__(self):
+        self.uri = f"nbd+unix:///{self.exportName}?socket={self.backupSocket}"
+
+
+@dataclass
+class nbdConnTCP(nbdConn):
+    """NBD connection type tcp"""
+
+    hostname: str
+    port: int = 10809
+    backupSocket: str = None
+
+    def __post_init__(self):
+        self.uri = f"nbd://{self.hostname}:{self.port}/{self.exportName}"
+
+
 class nbdClient:
     """Helper functions for NBD"""
 
-    def __init__(self, exportName, metaContext, backupSocket):
-        """Parameters:
-        :exportName: name of nbd export
-        :backupSocket: ndb server endpoint
+    def __init__(self, cType):
         """
-        self._socket = backupSocket
-        self._exportName = exportName
-        if metaContext is None:
+        Connect NBD backend, currently only unix type socket
+        communication implemented. Should be extended to support
+        TCP based remote backup too (#65)
+        """
+        self._uri = cType.uri
+
+        self._exportName = cType.exportName
+
+        self._socket = cType.backupSocket
+
+        if cType.metaContext is None:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         else:
-            self._metaContext = metaContext
+            self._metaContext = cType.metaContext
 
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
@@ -69,7 +105,7 @@ class nbdClient:
         try:
             self._nbdHandle.add_meta_context(self._metaContext)
             self._nbdHandle.set_export_name(self._exportName)
-            self._nbdHandle.connect_unix(self._socket)
+            self._nbdHandle.connect_uri(self._uri)
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")
 
@@ -79,7 +115,7 @@ class nbdClient:
 
     def waitForServer(self):
         """Wait until NBD endpoint connection can be established"""
-        logging.info("Waiting until NBD server on socket [%s] is up.", self._socket)
+        logging.info("Waiting until NBD server at [%s] is up.", self._uri)
         retry = 0
         maxRetry = 20
         sleepTime = 1
@@ -90,7 +126,7 @@ class nbdClient:
                     "Timeout during connection to NBD server backend."
                 )
 
-            if not os.path.exists(self._socket):
+            if self._socket and not os.path.exists(self._socket):
                 logging.info("Waiting for NBD Server, Retry: %s", retry)
                 retry = retry + 1
 

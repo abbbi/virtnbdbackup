@@ -12,6 +12,8 @@ import pprint
 import lz4.frame
 from tqdm import tqdm
 
+from libvirtnbdbackup import sshutil
+
 log = logging.getLogger(__name__)
 
 
@@ -132,12 +134,17 @@ class Common:
             return None
 
     @staticmethod
-    def copy(source, target):
+    def copy(source, target, remoteCopy=None):
         """Copy file, handle exceptions"""
         try:
-            shutil.copyfile(source, target)
+            if remoteCopy:
+                remoteCopy(source, target)
+            else:
+                shutil.copyfile(source, target)
         except OSError as e:
             log.warning("Unable to copy [%s] to [%s]: [%s]", source, target, e)
+        except sshutil.exceptions.sshutilError as e:
+            log.warning("Unable to remote copy [%s] to [%s]: [%s]", source, target, e)
 
     @staticmethod
     def progressBar(total, desc, args, count=0):

@@ -30,7 +30,7 @@ of your `kvm/qemu` virtual machines.
    * [Excluding disks](#excluding-disks)
    * [Estimating backup size](#estimating-backup-size)
    * [Compression](#compression)
-   * [Pipe data to other hosts](#pipe-data-to-other-hosts)
+   * [Remote Backup operation](#remote-backup-operation)
 * [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
@@ -38,6 +38,7 @@ of your `kvm/qemu` virtual machines.
    * [Restore with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
    * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
    * [Point in time recovery](#point-in-time-recovery)
+   * [Remote restore](#remote-restore)
    * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
 * [Extents](#extents)
 * [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
@@ -389,7 +390,38 @@ backup streams and attempts to decompress saved blocks accordingly.
 Using compression will come with some CPU overhead, both lz4 checksums for
 block and original data are enabled.
 
-## Pipe data to other hosts
+## Remote Backup operation
+
+### Remote backup via qemu+ssh
+
+It is also possible to backup remote libvirt systems.
+
+The most convinient way is to use ssh for initiating the libvirt connection
+(key authentication mandatory). If the virtual machine has additional files
+configured, as described in [Kernel/initrd and additional
+files](#kernelinitrd-and-additional-files), these files will be copied from the
+remote system via SSH, too.
+
+The following example saves the virtual machine `src` from the remote libvirt
+host `hypervisor` to the local directory `/tmp/backupset`, it uses the `root` user
+for both the libvirt and ssh authentication:
+
+```
+virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d src -o  /tmp/backupset
+```
+
+See also: [Authentication](#authentication)
+
+`Note:`
+> Currently the data is received via plain NDB protocol without TLS, if you
+> are in security sensitive environments, consider setup on the host system
+> directly. TLS Support will be added in future releases as not all libvirt
+> versions shipped in current distributions support it.
+
+`Note Also:`
+> Backing up offline domains does currently not work remotely.
+
+### Pipe data to other hosts
 
 If the output target points to standard out (`-`), `virtnbdbackup` puts the
 resulting backup data into an uncompessed zip archive.
@@ -553,9 +585,18 @@ virtnbdrestore -c -i /tmp/backupset/ -o /tmp/restore
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Use 'virsh define /tmp/restore/vmconfig.virtnbdbackup.0.xml' to define VM
 ```
 
+## Remote Restore
+
+Restoring to a remote host is possible too:
+
+```
+virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset -o /remote/target
+```
+
 `Note:`
-> If option `-D` is used in combination with option `-c`, `virtnbdrestore` will
-> automatically redefine the virtual machine after successful disk restore.
+> By default `virtnbdrestore` will overwrite already existing files on the
+> remote host.
+
 
 # Single file restore and instant recovery
 

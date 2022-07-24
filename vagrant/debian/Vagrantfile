@@ -24,6 +24,8 @@ Vagrant.configure("2") do |config|
       python3-lz4 \
       python3-libvirt \
       python3-lxml \
+      python3-scp \
+      python3-paramiko
       git
     rm -rf virtnbdbackup;
     git clone https://github.com/abbbi/virtnbdbackup

@@ -18,6 +18,7 @@
 import os
 import sys
 import json
+import getpass
 import signal
 import logging
 import argparse
@@ -36,6 +37,7 @@ from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import outputhelper
 from libvirtnbdbackup import exceptions
+from libvirtnbdbackup import sshutil
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
@@ -226,6 +228,9 @@ def main():
             "\t%(prog)s -d webvm -l full -z -o /backup/\n"
             "   # full backup, create archive:\n"
             "\t%(prog)s -d webvm -l full -o - > backup.zip\n"
+            "   # full backup of vm operating on remote libvirtd:\n"
+            "\t%(prog)s -U qemu+ssh://root@remotehost/system "
+            "--ssh-user root -d webvm -l full -o /backup/\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
@@ -273,28 +278,6 @@ def main():
         required=False,
         type=str,
         help="Target dir for temporary scratch file. (default: %(default)s)",
-    )
-    opt.add_argument(
-        "-U",
-        "--uri",
-        default="qemu:///system",
-        required=False,
-        type=str,
-        help="Libvirt connection URI. (default: %(default)s)",
-    )
-    opt.add_argument(
-        "--user",
-        default=None,
-        required=False,
-        type=str,
-        help="User used to authenticate against libvirtd. (default: %(default)s)",
-    )
-    opt.add_argument(
-        "--password",
-        default=None,
-        required=False,
-        type=str,
-        help="Password used to authenticate against libvirtd. (default: %(default)s)",
     )
     opt.add_argument(
         "-i",
@@ -360,6 +343,50 @@ def main():
             "(default: %(default)s)"
         ),
         action="store_true",
+    )
+    remopt = parser.add_argument_group("Remote Backup options")
+    remopt.add_argument(
+        "-U",
+        "--uri",
+        default="qemu:///system",
+        required=False,
+        type=str,
+        help="Libvirt connection URI. (default: %(default)s)",
+    )
+    remopt.add_argument(
+        "--user",
+        default=None,
+        required=False,
+        type=str,
+        help="User to authenticate against libvirtd. (default: %(default)s)",
+    )
+    remopt.add_argument(
+        "--ssh-user",
+        default=getpass.getuser() or None,
+        required=False,
+        type=str,
+        help=(
+            "User to authenticate against remote sshd: "
+            "used for remote copy of files. (default: %(default)s)"
+        ),
+    )
+    remopt.add_argument(
+        "--password",
+        default=None,
+        required=False,
+        type=str,
+        help="Password to authenticate against libvirtd. (default: %(default)s)",
+    )
+    remopt.add_argument(
+        "-P",
+        "--nbd-port",
+        type=int,
+        default=10809,
+        required=False,
+        help=(
+            "Remote NBD port to start backup on, should be unique for each"
+            " started backup. (default: %(default)s)"
+        ),
     )
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
@@ -552,8 +579,9 @@ def main():
 
     outHelper.Directory(args.scratchdir)
 
-    args.socketfile = lib.getSocketFile(args.socketfile)
-    logging.info("NDB Endpoint socket: %s", args.socketfile)
+    if not virtClient.remoteHost:
+        args.socketfile = lib.getSocketFile(args.socketfile)
+        logging.info("NDB Endpoint socket: %s", args.socketfile)
 
     if args.offline is not True:
         try:
@@ -563,7 +591,7 @@ def main():
                 domObj,
                 disks,
             )
-            logging.debug("Backup job started, using socket: %s", args.socketfile)
+            logging.debug("Backup job started.")
         except Exception as e:
             logging.error(e)
             logging.exception(e)
@@ -589,12 +617,7 @@ def main():
         with ThreadPoolExecutor(max_workers=args.worker) as executor:
             futures = {
                 executor.submit(
-                    backupDisk,
-                    args,
-                    disk,
-                    count,
-                    lib,
-                    fileStream,
+                    backupDisk, args, disk, count, lib, fileStream, virtClient
                 ): disk
                 for count, disk in enumerate(disks)
             }
@@ -620,7 +643,7 @@ def main():
     if args.printonly is False:
         configFile = backupConfig(args, vmConfig)
 
-    backupBootConfig(args, lib)
+    backupBootConfig(args, lib, virtClient)
 
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, fileStream, logFile)
@@ -686,9 +709,30 @@ def backupConfig(args, vmConfig):
         raise
 
 
-def backupBootConfig(args, lib):
+def sshSession(args, remoteHost):
+    """Use ssh to copy remote files"""
+    try:
+        return sshutil.Client(remoteHost, args.ssh_user)
+    except sshutil.exceptions.sshutilError as err:
+        logging.warning("Unable to setup SSH connection: [%s]", err)
+
+    return None
+
+
+def backupBootConfig(args, lib, virtClient):
     """Save domain nvram and loader"""
     ident = getIdent(args)
+    sshClient = None
+    remoteCopy = None
+
+    if virtClient.remoteHost:
+        sshClient = sshSession(args, virtClient.remoteHost)
+        if not sshClient:
+            logging.warning(
+                "Saving additional boot config failed: cant setup ssh session."
+            )
+            return
+        remoteCopy = sshClient.copyFrom
 
     for setting in args.info.keys():
         if args.info[setting] is not None:
@@ -697,7 +741,10 @@ def backupBootConfig(args, lib):
             logging.info(
                 "Save additional boot config file [%s] to: [%s]", setting, tfile
             )
-            lib.copy(args.info[setting], tfile)
+            lib.copy(args.info[setting], tfile, remoteCopy)
+
+    if sshClient:
+        sshClient.disconnect()
 
 
 def setMetaContext(args, disk):
@@ -746,27 +793,25 @@ def getWriter(args, fileStream, targetFile, targetFilePartial):
     """Open target file based on output writer"""
     if args.stdout is True:
         targetFile = os.path.basename(targetFile)
-        logging.info("Write data to zip archive")
+        logging.info("Writing data to zip archive.")
         writer = fileStream.open(targetFile)
     else:
-        logging.info("Write data to target file: %s", targetFilePartial)
+        logging.info("Write data to target file: [%s].", targetFilePartial)
         writer = fileStream.open(targetFilePartial)
 
     return writer
 
 
-def getExtendHandler(args, disk, connection, metaContext):
+def getExtentHandler(args, cType, connection):
     """Query dirty blocks either via qemu client or self
     implemented extend handler"""
     if args.qemu:
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(disk.target), metaContext, args.socketfile
+            qemuhelper.qemuHelper(cType.exportName), cType
         )
     else:
-        extentHandler = extenthandler.ExtentHandler(
-            connection, metaContext, args.socketfile
-        )
+        extentHandler = extenthandler.ExtentHandler(connection, cType)
 
     return extentHandler
 
@@ -780,14 +825,25 @@ def renamePartial(targetFilePartial, targetFile):
         raise exceptions.DiskBackupFailed(f"Unable to rename file: {e}") from e
 
 
-def startOfflineNBD(args, disk):
+def startOfflineNBD(args, disk, remoteHost):
     """Start background qemu-nbd process used during backup
-    if domain is offline"""
+    if domain is offline, in case of remote backup, initiate
+    ssh session and start process on remote system."""
     bitMap = None
     if args.level in ("inc", "diff"):
         bitMap = args.cpt.name
     args.socketfile = f"{args.socketfile}.{disk.target}"
-    logging.info("Offline backup, starting NDB Service")
+    logging.info("Offline backup, starting NDB Service.")
+    if remoteHost:
+        sshClient = sshSession(args, remoteHost)
+        if not sshClient:
+            raise exceptions.DiskBackupFailed("Unable to start remote NBD Service.")
+        nbdProc = qemuhelper.qemuHelper(disk.target).startRemoteBackupNbdServer(
+            args, disk.format, disk.path, bitMap, sshClient
+        )
+        logging.info("Remote NDB Service started.")
+        sshClient.disconnect()
+        return nbdProc
     try:
         nbdProc = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
             disk.format, disk.path, args.socketfile, bitMap
@@ -798,39 +854,38 @@ def startOfflineNBD(args, disk):
         raise exceptions.DiskBackupFailed(e)
 
 
-def backupDisk(
-    args,
-    disk,
-    count,
-    lib,
-    fileStream,
-):
+def backupDisk(args, disk, count, lib, fileStream, virtClient):
     """Backup domain disk data."""
-
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
-
     current_thread().name = disk.target
     streamType = setStreamType(args, disk)
     metaContext = setMetaContext(args, disk)
 
     if args.offline is True:
-        nbdProc = startOfflineNBD(args, disk)
+        nbdProc = startOfflineNBD(args, disk, virtClient.remoteHost)
 
-    nbdClient = nbdhelper.nbdClient(disk.target, metaContext, args.socketfile)
+    cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
+    if virtClient.remoteHost is not None:
+        cType = nbdhelper.nbdConnTCP(
+            disk.target, metaContext, virtClient.remoteHost, port=args.nbd_port
+        )
+    else:
+        cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
+    nbdClient = nbdhelper.nbdClient(cType)
     try:
         connection = nbdClient.waitForServer()
     except nbdhelper.exceptions.NbdClientException as e:
         raise exceptions.DiskBackupFailed(
-            f"NBD endpoint: {args.socketfile}: connection failed: {e}"
+            f"NBD endpoint: {cType}: connection failed: {e}"
         )
 
-    extentHandler = getExtendHandler(args, disk, connection, metaContext)
+    extentHandler = getExtentHandler(args, cType, connection)
     extents = extentHandler.queryBlockStatus()
     diskSize = connection.get_size()
 
     if extents is None:
-        logging.error("No extents found")
+        logging.error("No extents found.")
         return True
 
     thinBackupSize = sum(extent.length for extent in extents if extent.data is True)
@@ -942,13 +997,13 @@ def backupDisk(
     logging.debug("Closing write handle.")
     writer.close()
     nbdClient.disconnect()
-    if args.offline is True:
-        logging.info("Stopping NBD Service")
+    if args.offline is True and not virtClient.remoteHost:
+        logging.info("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)
     if args.stdout is False:
         if args.noprogress is True:
             logging.info(
-                "Backup of disk %s finished, file: %s", disk.target, targetFile
+                "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
         renamePartial(targetFilePartial, targetFile)
 

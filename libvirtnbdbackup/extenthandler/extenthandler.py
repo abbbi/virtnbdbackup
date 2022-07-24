@@ -47,18 +47,19 @@ class ExtentHandler:
     extent information as nbdinfo or qemu-img map
     """
 
-    def __init__(self, nbdFh, metaContext, backupSocket):
+    def __init__(self, nbdFh, cType):
         self.useQemu = False
         if nbdFh.__class__.__name__ == "qemuHelper":
             self.useQemu = True
 
-        self._socket = backupSocket
+        self._socket = cType.backupSocket
         self._nbdFh = nbdFh
+        self._cType = cType
         self._extentEntries = []
-        if metaContext is None:
+        if cType.metaContext is None:
             self._metaContext = CONTEXT_BASE_ALLOCATION
         else:
-            self._metaContext = metaContext
+            self._metaContext = cType.metaContext
 
         log.debug("Meta context: %s", self._metaContext)
         self._maxRequestBlock = 4294967295
@@ -99,7 +100,7 @@ class ExtentHandler:
         server
         """
         extents = []
-        for extent in self._nbdFh.map(self._socket, self._metaContext):
+        for extent in self._nbdFh.map(self._cType):
             extentObj = Extent()
             extentObj.data = self.setBlockType(extent["type"])
             extentObj.offset = extent["offset"]
@@ -189,7 +190,6 @@ class ExtentHandler:
             case 1: ("dirty")
         """
         data = None
-        log.debug("Setting block type, allocation: %s", self._metaContext)
         if self._metaContext == CONTEXT_BASE_ALLOCATION:
             assert blockType in (0, 1, 2, 3)
             if blockType == 0:

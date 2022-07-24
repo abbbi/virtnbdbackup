@@ -20,7 +20,9 @@ import logging
 import tempfile
 import subprocess
 from dataclasses import dataclass
+
 from libvirtnbdbackup.qemuhelper import exceptions
+from libvirtnbdbackup.sshutil import exceptions as sshexceptions
 from libvirtnbdbackup.outputhelper import openfile
 
 log = logging.getLogger(__name__)
@@ -42,16 +44,14 @@ class qemuHelper:
     def __init__(self, exportName):
         self.exportName = exportName
 
-    def map(self, backupSocket, metaContext):
+    @staticmethod
+    def map(cType):
         """Read extent map using nbdinfo utility"""
-        metaOpt = ""
-        if metaContext is not None:
-            metaOpt = f"--map={metaContext}"
+        metaOpt = "--map"
+        if cType.metaContext is not None:
+            metaOpt = f"--map={cType.metaContext}"
 
-        cmd = (
-            f"nbdinfo --json {metaOpt} "
-            f"'nbd+unix:///{self.exportName}?socket={backupSocket}'"
-        )
+        cmd = f"nbdinfo --json {metaOpt} " f"'{cType.uri}'"
         log.debug("Starting CMD: [%s]", cmd)
         extentMap = subprocess.run(
             cmd,
@@ -63,7 +63,7 @@ class qemuHelper:
 
         return json.loads(extentMap.stdout)
 
-    def create(self, targetFile, fileSize, diskFormat):
+    def create(self, targetFile, fileSize, diskFormat, sshClient=None):
         """Create the target qcow image"""
         cmd = [
             "qemu-img",
@@ -73,10 +73,13 @@ class qemuHelper:
             f"{targetFile}",
             f"{fileSize}",
         ]
-        return self.runcmd(cmd)
+        if not sshClient:
+            return self.runcmd(cmd)
+
+        return sshClient.run(" ".join(cmd))
 
     def startRestoreNbdServer(self, targetFile, socketFile):
-        """Start nbd server process for restore operation"""
+        """Start local nbd server process for restore operation"""
         cmd = [
             "qemu-nbd",
             "--discard=unmap",
@@ -89,6 +92,34 @@ class qemuHelper:
             "--fork",
         ]
         return self.runcmd(cmd)
+
+    def startRemoteRestoreNbdServer(self, args, sshClient, targetFile):
+        """Start nbd server process remotely over ssh for restore operation"""
+        pidFile = tempfile.NamedTemporaryFile(
+            delete=False, prefix="qemu-nbd-restore", suffix=".pid"
+        ).name
+        logFile = tempfile.NamedTemporaryFile(
+            delete=False, prefix="qemu-nbd-restore", suffix=".log"
+        ).name
+        cmd = [
+            "qemu-nbd",
+            "--discard=unmap",
+            "--format=qcow2",
+            "-x",
+            f"{self.exportName}",
+            f"{targetFile}",
+            "-p",
+            f"{args.nbd_port}",
+            "--pid-file",
+            f"{pidFile}",
+            "--fork",
+            f"> {logFile} 2>&1",
+        ]
+        try:
+            return sshClient.run(" ".join(cmd))
+        except sshexceptions.sshutilError:
+            logging.error("Executing command failed: check [{logFile}] for errors.")
+            raise
 
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
         """Execute nbdkit process for virtnbdmap"""
@@ -146,6 +177,41 @@ class qemuHelper:
             bitmapOpt,
         ]
         return self.runcmd(cmd, pidFile=pidFile)
+
+    def startRemoteBackupNbdServer(
+        self, args, diskFormat, targetFile, bitMap, sshClient
+    ):
+        """Start nbd server process remotely over ssh for restore operation"""
+        pidFile = tempfile.NamedTemporaryFile(
+            delete=False, prefix="qemu-nbd-backup", suffix=".pid"
+        ).name
+        logFile = tempfile.NamedTemporaryFile(
+            delete=False, prefix="qemu-nbd-backup", suffix=".log"
+        ).name
+        bitmapOpt = "--"
+        if bitMap is not None:
+            bitmapOpt = f"--bitmap={bitMap}"
+
+        cmd = [
+            "qemu-nbd",
+            "-r",
+            f"--format={diskFormat}",
+            "-x",
+            f"{self.exportName}",
+            f"{targetFile}",
+            "-p",
+            f"{args.nbd_port}",
+            "--pid-file",
+            f"{pidFile}",
+            "--fork",
+            bitmapOpt,
+            f"> {logFile} 2>&1",
+        ]
+        try:
+            return sshClient.run(" ".join(cmd))
+        except sshexceptions.sshutilError:
+            logging.error("Executing command failed: check [{logFile}] for errors.")
+            raise
 
     def disconnect(self, device):
         """Disconnect device"""

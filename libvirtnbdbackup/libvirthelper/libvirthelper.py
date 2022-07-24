@@ -19,6 +19,7 @@ import string
 import random
 import glob
 import logging
+from socket import gethostname
 from collections import namedtuple
 import libvirt
 from lxml import etree as ElementTree
@@ -41,6 +42,7 @@ class client:
     """Libvirt related functions"""
 
     def __init__(self, uri):
+        self.remoteHost = None
         self._conn = self._connect(uri)
         self._domObj = None
         self.libvirtVersion = self._conn.getLibVersion()
@@ -59,7 +61,7 @@ class client:
             return 0
 
         logging.debug("Username: %s", user)
-        logging.debug("Password: %s", user)
+        logging.debug("Password: %s", password)
 
         try:
             auth = [[libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]]
@@ -80,15 +82,65 @@ class client:
         except libvirt.libvirtError as e:
             raise exceptions.connectionFailed(e) from e
 
+    @staticmethod
+    def _reqAuth(uri):
+        """If authentication file is passed or qemu+ssh is used,
+        no user and password are required."""
+        if "authfile" in uri:
+            return True
+        return False
+
+    @staticmethod
+    def _isSsh(uri):
+        """If authentication file is passed or qemu+ssh is used,
+        no user and password are required."""
+        if uri.startswith("qemu+ssh"):
+            return True
+        return False
+
+    def _useAuth(self, args):
+        """Check wether we want to use advanced auth method"""
+        if args.uri.startswith("qemu+"):
+            return True
+        if self._reqAuth(args.uri):
+            return True
+        if args.user or args.password:
+            return True
+
+        return False
+
     def _connect(self, args):
         """return libvirt connection handle"""
-        if "authfile" in args.uri or args.user or args.password:
+        logging.debug("Libvirt URI: [%s]", args.uri)
+        if self._useAuth(args):
             logging.debug(
                 "Login information specified, connect libvirtd using openAuth function."
             )
-            return self._connectAuth(args.uri, args.user, args.password)
+            if (
+                not self._reqAuth(args.uri)
+                and not args.user
+                and not args.password
+                and not self._isSsh(args.uri)
+            ):
+                raise exceptions.connectionFailed(
+                    "Username (--user) and password (--password) required."
+                )
+            if not self._isSsh(args.uri):
+                conn = self._connectAuth(args.uri, args.user, args.password)
+            else:
+                conn = self._connectOpen(args.uri)
+            if gethostname() != conn.getHostname():
+                logging.info(
+                    "Connected to remote host: [%s], local host: [%s]",
+                    conn.getHostname(),
+                    gethostname(),
+                )
+                self.remoteHost = conn.getHostname()
+
+            return conn
 
         logging.debug("Connect libvirt using open function.")
+
         return self._connectOpen(args.uri)
 
     @staticmethod
@@ -350,25 +402,33 @@ class client:
 
         return xml
 
-    def _createBackupXml(
-        self, diskList, parentCheckpoint, scratchFilePath, socketFilePath
-    ):
+    #            diskList, args.cpt.parent, args.scratchdir, args.socketfile
+
+    def _createBackupXml(self, args, diskList):
         """Create XML file for starting an backup task using libvirt API."""
         top = ElementTree.Element("domainbackup", {"mode": "pull"})
-        ElementTree.SubElement(
-            top, "server", {"transport": "unix", "socket": f"{socketFilePath}"}
-        )
+        if self.remoteHost is None:
+            ElementTree.SubElement(
+                top, "server", {"transport": "unix", "socket": f"{args.socketfile}"}
+            )
+        else:
+            ElementTree.SubElement(
+                top,
+                "server",
+                {"name": f"{self.remoteHost}", "port": f"{args.nbd_port}"},
+            )
+
         disks = ElementTree.SubElement(top, "disks")
 
-        if parentCheckpoint is not False:
+        if args.cpt.parent is not False:
             inc = ElementTree.SubElement(top, "incremental")
-            inc.text = parentCheckpoint
+            inc.text = args.cpt.parent
 
         for disk in diskList:
             scratchId = "".join(
                 random.choices(string.ascii_uppercase + string.digits, k=5)
             )
-            scratchFile = f"{scratchFilePath}/backup.{scratchId}.{disk.target}"
+            scratchFile = f"{args.scratchdir}/backup.{scratchId}.{disk.target}"
             log.debug("Using scratch file: %s", scratchFile)
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.target})
             ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
@@ -436,9 +496,7 @@ class client:
         diskList,
     ):
         """Attempt to start pull based backup task using  XMl description"""
-        backupXml = self._createBackupXml(
-            diskList, args.cpt.parent, args.scratchdir, args.socketfile
-        )
+        backupXml = self._createBackupXml(args, diskList)
         checkpointXml = None
         freezed = False
         try:
