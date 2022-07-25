@@ -51,8 +51,6 @@ class ExtentHandler:
         self.useQemu = False
         if nbdFh.__class__.__name__ == "qemuHelper":
             self.useQemu = True
-
-        self._socket = cType.backupSocket
         self._nbdFh = nbdFh
         self._cType = cType
         self._extentEntries = []
