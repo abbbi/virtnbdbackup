@@ -116,9 +116,9 @@ class qemuHelper:
             f"> {logFile} 2>&1",
         ]
         try:
-            return sshClient.run(" ".join(cmd))
+            return sshClient.run(" ".join(cmd), pidFile, logFile)
         except sshexceptions.sshutilError:
-            logging.error("Executing command failed: check [{logFile}] for errors.")
+            logging.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
@@ -208,9 +208,9 @@ class qemuHelper:
             f"> {logFile} 2>&1",
         ]
         try:
-            return sshClient.run(" ".join(cmd))
+            return sshClient.run(" ".join(cmd), pidFile, logFile)
         except sshexceptions.sshutilError:
-            logging.error("Executing command failed: check [{logFile}] for errors.")
+            logging.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
     def disconnect(self, device):

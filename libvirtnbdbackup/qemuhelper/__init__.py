@@ -19,5 +19,6 @@ __title__ = "nbdhelper"
 __version__ = "0.1"
 
 from .qemuhelper import qemuHelper
+from .qemuhelper import processInfo
 
 runcmd = qemuHelper(None).runcmd

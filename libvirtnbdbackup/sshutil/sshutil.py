@@ -20,6 +20,7 @@ from paramiko.auth_handler import AuthenticationException
 from scp import SCPClient, SCPException
 
 from libvirtnbdbackup.sshutil import exceptions
+from libvirtnbdbackup.qemuhelper import processInfo
 
 log = logging.getLogger(__name__)
 
@@ -79,19 +80,32 @@ class Client:
         except SCPException as e:
             logging.warning("Error during file copy: [%s]", e)
 
-    def run(self, cmd: str):
+    def _execute(self, cmd):
+        _, stdout, stderr = self.connection.exec_command(cmd)
+        ret = stdout.channel.recv_exit_status()
+        err = stderr.read().strip().decode()
+        out = stdout.read().strip().decode()
+        return ret, err, out
+
+    def run(self, cmd: str, pidFile: str = None, logFile: str = None):
         """
         Execute command
         """
         logging.debug("Executing command: [%s]", cmd)
-        _, stdout, stderr = self.connection.exec_command(cmd)
-        ret = stdout.channel.recv_exit_status()
-        err = stderr.readlines()
-        # TODO: get PID of started process??
+        ret, err, out = self._execute(cmd)
         if ret != 0:
+            if logFile:
+                _, _, err = self._execute(f"cat {logFile}")
             raise exceptions.sshutilError(
                 f"Error during remote command: [{cmd}]: [{err}]"
             )
+
+        if pidFile:
+            logging.debug("PIDfile: [%s]", pidFile)
+            _, _, pid = self._execute(f"cat {pidFile}")
+            logging.debug("PID: [%s]", pid)
+
+        return processInfo(pid, logFile, err, out)
 
     def disconnect(self):
         """Disconnect"""
