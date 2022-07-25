@@ -93,14 +93,18 @@ class qemuHelper:
         ]
         return self.runcmd(cmd)
 
+    @staticmethod
+    def _gt(prefix, suffix, delete=False):
+        """Create named temporary file."""
+        with tempfile.NamedTemporaryFile(
+            delete=delete, prefix=prefix, suffix=suffix
+        ) as tf1:
+            return tf1.name
+
     def startRemoteRestoreNbdServer(self, args, sshClient, targetFile):
         """Start nbd server process remotely over ssh for restore operation"""
-        pidFile = tempfile.NamedTemporaryFile(
-            delete=False, prefix="qemu-nbd-restore", suffix=".pid"
-        ).name
-        logFile = tempfile.NamedTemporaryFile(
-            delete=False, prefix="qemu-nbd-restore", suffix=".log"
-        ).name
+        pidFile = self._gt("qemu-nbd-restore", ".pid")
+        logFile = self._gt("qemu-nbd-restore", ".log")
         cmd = [
             "qemu-nbd",
             "--discard=unmap",
@@ -124,9 +128,7 @@ class qemuHelper:
     def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
         """Execute nbdkit process for virtnbdmap"""
         debug = "0"
-        pidFile = tempfile.NamedTemporaryFile(
-            delete=False, prefix="nbdkit", suffix=".pid"
-        ).name
+        pidFile = self._gt("nbdkit", ".pid")
         if args.verbose:
             debug = "1"
         cmd = [
@@ -182,12 +184,8 @@ class qemuHelper:
         self, args, diskFormat, targetFile, bitMap, sshClient
     ):
         """Start nbd server process remotely over ssh for restore operation"""
-        pidFile = tempfile.NamedTemporaryFile(
-            delete=False, prefix="qemu-nbd-backup", suffix=".pid"
-        ).name
-        logFile = tempfile.NamedTemporaryFile(
-            delete=False, prefix="qemu-nbd-backup", suffix=".log"
-        ).name
+        pidFile = self._gt("qemu-nbd-backup", ".pid")
+        logFile = self._gt("qemu-nbd-backup", ".log")
         bitmapOpt = "--"
         if bitMap is not None:
             bitmapOpt = f"--bitmap={bitMap}"
