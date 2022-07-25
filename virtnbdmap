@@ -28,9 +28,9 @@ import logging
 
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
-from libvirtnbdbackup import common
 from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import outputhelper
+from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
@@ -69,7 +69,7 @@ def locatePlugin():
     return nbdkitModule
 
 
-def replayChanges(dataRanges, args, lib):
+def replayChanges(dataRanges, args):
     """Replay the changes from an incremental or differencial
     backup file to the NBD device"""
     logging.info("Replaying changes from incremental backups")
@@ -100,7 +100,7 @@ def replayChanges(dataRanges, args, lib):
     progressBar.close()
 
 
-def handleSignal(lib, nbdkitProcess, device, blockMap, log, signum, _):
+def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
     qemuhelper.qemuHelper(None).disconnect(device)
@@ -112,7 +112,7 @@ def handleSignal(lib, nbdkitProcess, device, blockMap, log, signum, _):
     sys.exit(0)
 
 
-def getDataRanges(lib, stream, sTypes, reader):
+def getDataRanges(stream, sTypes, reader):
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
@@ -253,7 +253,6 @@ def main():
     )
     argopt.addDebugArgs(debopt)
 
-    lib = common.Common()
     args = lib.argparse(parser)
 
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
@@ -293,7 +292,7 @@ def main():
             logging.error("[%s]: [%s]", file, e)
             sys.exit(1)
 
-        ranges, meta = getDataRanges(lib, stream, sTypes, reader)
+        ranges, meta = getDataRanges(stream, sTypes, reader)
         dataRanges.extend(ranges)
         if ranges is False or meta is False:
             logging.error("Unable to read meta header from backup file.")
@@ -329,7 +328,7 @@ def main():
     )
     signal.signal(
         signal.SIGINT,
-        partial(handleSignal, lib, nbdkitProcess, args.device, blockMap, logging),
+        partial(handleSignal, nbdkitProcess, args.device, blockMap, logging),
     )
 
     maxRetry = 10
@@ -367,7 +366,7 @@ def main():
 
     if len(dataFiles) > 1:
         try:
-            replayChanges(dataRanges, args, lib)
+            replayChanges(dataRanges, args)
         except Exception as e:
             logging.error("Unable to replay changes: %s", e)
             logging.exception(e)

@@ -19,23 +19,13 @@ import json
 import logging
 import tempfile
 import subprocess
-from dataclasses import dataclass
 
 from libvirtnbdbackup.qemuhelper import exceptions
 from libvirtnbdbackup.sshutil import exceptions as sshexceptions
 from libvirtnbdbackup.outputhelper import openfile
+from libvirtnbdbackup.common.common import processInfo
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class processInfo:
-    """Process info object"""
-
-    pid: int
-    logFile: str
-    err: str
-    out: str
 
 
 class qemuHelper:

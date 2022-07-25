@@ -15,10 +15,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__title__ = "nbdhelper"
+__title__ = "qemuhelper"
 __version__ = "0.1"
 
 from .qemuhelper import qemuHelper
-from .qemuhelper import processInfo
 
 runcmd = qemuHelper(None).runcmd

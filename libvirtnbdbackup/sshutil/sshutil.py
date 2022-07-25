@@ -20,7 +20,7 @@ from paramiko.auth_handler import AuthenticationException
 from scp import SCPClient, SCPException
 
 from libvirtnbdbackup.sshutil import exceptions
-from libvirtnbdbackup.qemuhelper import processInfo
+from libvirtnbdbackup.common.common import processInfo
 
 log = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ class Client:
         """
         Execute command
         """
+        pid = None
         logging.debug("Executing command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         if ret != 0:

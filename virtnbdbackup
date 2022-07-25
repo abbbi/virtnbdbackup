@@ -30,7 +30,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
-from libvirtnbdbackup import common
 from libvirtnbdbackup import nbdhelper
 from libvirtnbdbackup import extenthandler
 from libvirtnbdbackup import qemuhelper
@@ -38,6 +37,7 @@ from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import outputhelper
 from libvirtnbdbackup import exceptions
 from libvirtnbdbackup import sshutil
+from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
@@ -52,7 +52,7 @@ def handleSignal(args, domObj, virtClient, log, signum, _):
     sys.exit(1)
 
 
-def checkForeign(args, virtClient, domObj, lib):
+def checkForeign(args, virtClient, domObj):
     """Check and warn user if virtual machine has checkpoints
     not originating from this utility"""
     foreign = None
@@ -85,7 +85,7 @@ def setOfflineArguments(args, domObj):
         args.offline = True
 
 
-def hasPartial(args, lib):
+def hasPartial(args):
     """Check if target directory has an partial backup,
     makes backup utility exit errnous in case backup
     type is full or inc"""
@@ -113,7 +113,7 @@ def readCheckpointFile(cFile):
     return checkpoints
 
 
-def handleCheckpoints(args, virtClient, domObj, lib):
+def handleCheckpoints(args, virtClient, domObj):
     """Checkpoint handling for different backup modes
     to be executed.
 
@@ -378,7 +378,6 @@ def main():
     argopt.addDebugArgs(debopt)
 
     outHelper = outputhelper.outputHelper()
-    lib = common.Common()
     args = lib.argparse(parser)
 
     args.stdout = args.output == "-"
@@ -442,7 +441,7 @@ def main():
         logging.info("Printing only extend information: enforce level copy")
         args.level = "copy"
 
-    if hasPartial(args, lib):
+    if hasPartial(args):
         sys.exit(1)
 
     if not args.checkpointdir:
@@ -469,7 +468,7 @@ def main():
         sys.exit(1)
 
     try:
-        checkForeign(args, virtClient, domObj, lib)
+        checkForeign(args, virtClient, domObj)
     except exceptions.CheckpointException:
         sys.exit(1)
 
@@ -514,7 +513,7 @@ def main():
         sys.exit(0)
 
     try:
-        handleCheckpoints(args, virtClient, domObj, lib)
+        handleCheckpoints(args, virtClient, domObj)
     except exceptions.CheckpointException as errmsg:
         logging.error(errmsg)
         sys.exit(1)
@@ -561,7 +560,7 @@ def main():
         with ThreadPoolExecutor(max_workers=args.worker) as executor:
             futures = {
                 executor.submit(
-                    backupDisk, args, disk, count, lib, fileStream, virtClient
+                    backupDisk, args, disk, count, fileStream, virtClient
                 ): disk
                 for count, disk in enumerate(disks)
             }
@@ -587,7 +586,7 @@ def main():
     if args.printonly is False:
         configFile = backupConfig(args, vmConfig)
 
-    backupBootConfig(args, lib, virtClient)
+    backupBootConfig(args, virtClient)
 
     if args.stdout is True and args.printonly is False:
         addFiles(args, configFile, fileStream, logFile)
@@ -663,7 +662,7 @@ def sshSession(args, remoteHost):
     return None
 
 
-def backupBootConfig(args, lib, virtClient):
+def backupBootConfig(args, virtClient):
     """Save domain uefi/nvram/kernel and loader if configured."""
     ident = getIdent(args)
     sshClient = None
@@ -798,7 +797,7 @@ def startOfflineNBD(args, disk, remoteHost):
         raise exceptions.DiskBackupFailed(e)
 
 
-def backupDisk(args, disk, count, lib, fileStream, virtClient):
+def backupDisk(args, disk, count, fileStream, virtClient):
     """Backup domain disk data."""
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()

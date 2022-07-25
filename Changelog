@@ -1,3 +1,9 @@
+Version 0.83
+---------
+* Code reorg
+* Fix remote restore: UnboundLocalError: local variable 'pid' referenced
+before assignment
+
 Version 0.82
 ---------
 * Move common arguments to seperate file.
