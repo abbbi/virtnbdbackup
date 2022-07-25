@@ -841,7 +841,7 @@ def startOfflineNBD(args, disk, remoteHost):
         nbdProc = qemuhelper.qemuHelper(disk.target).startRemoteBackupNbdServer(
             args, disk.format, disk.path, bitMap, sshClient
         )
-        logging.info("Remote NDB Service started.")
+        logging.info("Remote NDB Service started, PID: [%s].", nbdProc.pid)
         sshClient.disconnect()
         return nbdProc
     try:
