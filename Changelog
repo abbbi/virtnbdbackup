@@ -1,3 +1,7 @@
+Version 0.82
+---------
+* Move common arguments to seperate file.
+
 Version 0.81
 ---------
 * Report PID and errors of commands executed on remote system.

@@ -17,12 +17,12 @@
 """
 import os
 import sys
-import getpass
 import tempfile
 import logging
 import argparse
 import pprint
 
+from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup import nbdhelper
@@ -532,67 +532,9 @@ def main():
         help="Define restored domain with specified name",
     )
     remopt = parser.add_argument_group("Remote Restore options")
-    remopt.add_argument(
-        "-U",
-        "--uri",
-        default="qemu:///system",
-        required=False,
-        type=str,
-        help="Libvirt connection URI. (default: %(default)s)",
-    )
-    remopt.add_argument(
-        "--user",
-        default=None,
-        required=False,
-        type=str,
-        help="User to authenticate against libvirtd. (default: %(default)s)",
-    )
-    remopt.add_argument(
-        "--ssh-user",
-        default=getpass.getuser() or None,
-        required=False,
-        type=str,
-        help=(
-            "User to authenticate against remote sshd: "
-            "used for remote copy of files. (default: %(default)s)"
-        ),
-    )
-    remopt.add_argument(
-        "--password",
-        default=None,
-        required=False,
-        type=str,
-        help="Password used to authenticate against libvirtd. (default: %(default)s)",
-    )
-    remopt.add_argument(
-        "-P",
-        "--nbd-port",
-        type=int,
-        default=10809,
-        required=False,
-        help=(
-            "Remote NBD port to start backup on, should be unique for each"
-            " started backup. (default: %(default)s)"
-        ),
-    )
-
+    argopt.addRemoteArgs(remopt)
     debopt = parser.add_argument_group("Debug options")
-    debopt.add_argument(
-        "-v",
-        "--verbose",
-        required=False,
-        action="store_true",
-        default=False,
-        help="Enable debug output",
-    )
-    debopt.add_argument(
-        "-V",
-        "--version",
-        default=False,
-        help="Show version and exit",
-        action="version",
-        version=__version__,
-    )
+    argopt.addDebugArgs(debopt)
 
     lib = common.Common()
     args = lib.argparse(parser)

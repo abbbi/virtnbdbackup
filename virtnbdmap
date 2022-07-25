@@ -26,6 +26,7 @@ import time
 import argparse
 import logging
 
+from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup import qemuhelper
@@ -237,13 +238,6 @@ def main():
 
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
-        "-v",
-        "--verbose",
-        required=False,
-        action="store_true",
-        help="Enable debug output",
-    )
-    debopt.add_argument(
         "-L",
         "--logfile",
         default="virtnbdmap.log",
@@ -257,14 +251,7 @@ def main():
         action="store_true",
         help="Map image readonly (default: %(default)s)",
     )
-    debopt.add_argument(
-        "-V",
-        "--version",
-        default=False,
-        help="Show version and exit",
-        action="version",
-        version=__version__,
-    )
+    argopt.addDebugArgs(debopt)
 
     lib = common.Common()
     args = lib.argparse(parser)

@@ -18,7 +18,6 @@
 import os
 import sys
 import json
-import getpass
 import signal
 import logging
 import argparse
@@ -29,6 +28,7 @@ from functools import partial
 from threading import current_thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import common
 from libvirtnbdbackup import nbdhelper
@@ -345,49 +345,7 @@ def main():
         action="store_true",
     )
     remopt = parser.add_argument_group("Remote Backup options")
-    remopt.add_argument(
-        "-U",
-        "--uri",
-        default="qemu:///system",
-        required=False,
-        type=str,
-        help="Libvirt connection URI. (default: %(default)s)",
-    )
-    remopt.add_argument(
-        "--user",
-        default=None,
-        required=False,
-        type=str,
-        help="User to authenticate against libvirtd. (default: %(default)s)",
-    )
-    remopt.add_argument(
-        "--ssh-user",
-        default=getpass.getuser() or None,
-        required=False,
-        type=str,
-        help=(
-            "User to authenticate against remote sshd: "
-            "used for remote copy of files. (default: %(default)s)"
-        ),
-    )
-    remopt.add_argument(
-        "--password",
-        default=None,
-        required=False,
-        type=str,
-        help="Password to authenticate against libvirtd. (default: %(default)s)",
-    )
-    remopt.add_argument(
-        "-P",
-        "--nbd-port",
-        type=int,
-        default=10809,
-        required=False,
-        help=(
-            "Remote NBD port to start backup on, should be unique for each"
-            " started backup. (default: %(default)s)"
-        ),
-    )
+    argopt.addRemoteArgs(remopt)
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-q",
@@ -417,21 +375,7 @@ def main():
         help="Quit after printing extent information",
         action="store_true",
     )
-    debopt.add_argument(
-        "-v",
-        "--verbose",
-        default=False,
-        help="Enable debug output",
-        action="store_true",
-    )
-    debopt.add_argument(
-        "-V",
-        "--version",
-        default=False,
-        help="Show version and exit",
-        action="version",
-        version=__version__,
-    )
+    argopt.addDebugArgs(debopt)
 
     outHelper = outputhelper.outputHelper()
     lib = common.Common()
