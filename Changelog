@@ -1,6 +1,7 @@
 Version 0.81
 ---------
 * Report PID and errors of commands executed on remote system.
+* Initiate ssh session for backup of boot config only if required.
 * Update README
 
 Version 0.80
