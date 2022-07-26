@@ -82,7 +82,7 @@ def addRemoteArgs(opt):
         required=False,
         help=(
             "Enable and use TLS for NBD connection."
-            " (default: hostname returned by libvirtd)"
+            " (default: %(default)s)"
         ),
     )
 
