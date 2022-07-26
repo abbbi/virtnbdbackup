@@ -585,6 +585,9 @@ def main():
             except sshutil.exceptions.sshutilError as e:
                 logging.error("Unable to setup ssh connection: [%s]", e)
                 sys.exit(1)
+        if args.tls:
+            logging.info("Restore operation does not support TLS.")
+            args.tls = False
 
         vmConfig = lib.getLatest(args.input, "vmconfig*.xml", -1) or (
             logging.error("No domain config file found"),
