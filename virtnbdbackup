@@ -106,7 +106,7 @@ def readCheckpointFile(cFile):
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints = []
-    if os.path.exists(cFile):
+    if lib.exists(cFile):
         with outputhelper.openfile(cFile, "rb") as fh:
             checkpoints = json.loads(fh.read().decode())
 
@@ -796,6 +796,17 @@ def startOfflineNBD(args, disk, remoteHost):
         raise exceptions.DiskBackupFailed(e)
 
 
+def truncate(writer, size):
+    """Truncate raw image"""
+    try:
+        writer.truncate(size)
+        writer.seek(0)
+    except OSError as e:
+        raise exceptions.DiskBackupWriterException(
+            f"Unable to truncate target file: {e}"
+        ) from e
+
+
 def backupDisk(args, disk, count, fileStream, virtClient):
     """Backup domain disk data."""
     stream = streamer.SparseStream(types)
@@ -849,13 +860,7 @@ def backupDisk(args, disk, count, fileStream, virtClient):
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
-        try:
-            writer.truncate(diskSize)
-        except OSError as e:
-            raise exceptions.DiskBackupWriterException(
-                f"Unable to truncate target file: {e}"
-            ) from e
-        writer.seek(0)
+        truncate(writer, diskSize)
     else:
         logging.info("Creating thin provisioned stream backup image")
         metadata = stream.dumpMetadata(
@@ -903,8 +908,7 @@ def backupDisk(args, disk, count, fileStream, virtClient):
             else:
                 size = lib.writeBlock(
                     writer,
-                    save.offset,
-                    save.length,
+                    save,
                     connection,
                     streamType,
                     args.compress,

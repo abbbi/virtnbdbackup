@@ -1,3 +1,11 @@
+Version 0.85
+---------
+* virtnbdrestore: check if target files exist during remote operation and
+fail accordingly.
+* Remote backup: use paramikos built in sftp client to copy files instead
+of third party scp module.
+
+
 Version 0.84
 ---------
 * Add --nbd-ip option: can be used to bind nbd service for backup task

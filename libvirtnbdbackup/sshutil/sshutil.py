@@ -15,9 +15,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from paramiko import AutoAddPolicy, SSHClient
+from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException
 from paramiko.auth_handler import AuthenticationException
-from scp import SCPClient, SCPException
 
 from libvirtnbdbackup.sshutil import exceptions
 from libvirtnbdbackup.common.common import processInfo
@@ -56,9 +55,19 @@ class Client:
             raise exceptions.sshutilError(f"Unknown exception occured: {e}")
 
     @property
-    def scp(self) -> SCPClient:
+    def sftp(self) -> SFTPClient:
         """Copy file"""
-        return SCPClient(self.connection.get_transport())
+        return SFTPClient.from_transport(self.connection.get_transport())
+
+    def exists(self, filepath: str):
+        """
+        Check if remote file exists
+        """
+        try:
+            self.sftp.stat(filepath)
+            return True
+        except IOError:
+            return False
 
     def copyFrom(self, filepath: str, localpath: str):
         """
@@ -66,8 +75,8 @@ class Client:
         """
         log.info("Downloading file [%s] to [%s]", filepath, localpath)
         try:
-            self.scp.get(filepath, localpath)
-        except SCPException as e:
+            self.sftp.get(filepath, localpath)
+        except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
     def copyTo(self, localpath: str, remotepath: str):
@@ -76,8 +85,8 @@ class Client:
         """
         log.info("Uploading file [%s] to [%s]", localpath, remotepath)
         try:
-            self.scp.put(localpath, remotepath)
-        except SCPException as e:
+            self.sftp.put(localpath, remotepath)
+        except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
     def _execute(self, cmd):
@@ -110,7 +119,7 @@ class Client:
 
     def disconnect(self):
         """Disconnect"""
-        if self.scp:
-            self.scp.close()
+        if self.sftp:
+            self.sftp.close()
         if self.connection:
             self.connection.close()

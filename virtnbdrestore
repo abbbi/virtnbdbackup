@@ -180,7 +180,9 @@ def restoreSequence(args, dataFiles, virtClient, sshClient):
         diskName = meta["diskName"]
         targetFile = f"{args.output}/{diskName}"
 
-        if not createDiskFile(meta, targetFile, sshClient):
+        if not lib.exists(targetFile) and not createDiskFile(
+            meta, targetFile, sshClient
+        ):
             return False
 
         socketFile = lib.getSocketFile(args.socketfile)
@@ -209,11 +211,16 @@ def writeData(args, stream, disk, targetFile, nbdClient, connection):
 def createDiskFile(meta, targetFile, sshClient):
     """Create target image file"""
     logging.info(
-        "Create virtual Disk [%s] format: [%s]", targetFile, meta["diskFormat"]
+        "Create virtual disk [%s] format: [%s] size: [%s]",
+        targetFile,
+        meta["diskFormat"],
+        meta["virtualSize"],
     )
-    logging.info("Virtual Size: [%s]", meta["virtualSize"])
-    qFh = qemuhelper.qemuHelper(meta["diskName"])
 
+    if lib.exists(targetFile, sshClient):
+        logging.error("Target file already exists: [%s], wont overwrite.", targetFile)
+        return False
+    qFh = qemuhelper.qemuHelper(meta["diskName"])
     try:
         qFh.create(targetFile, meta["virtualSize"], meta["diskFormat"], sshClient)
     except qemuhelper.exceptions.ProcessError as e:
@@ -546,7 +553,7 @@ def main():
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
 
-    if not os.path.exists(args.input):
+    if not lib.exists(args.input):
         logging.error("Backup source [%s] does not exist.", args.input)
         sys.exit(1)
 

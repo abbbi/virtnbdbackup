@@ -400,11 +400,11 @@ The most convinient way is to use ssh for initiating the libvirt connection
 (key authentication mandatory). If the virtual machine has additional files
 configured, as described in [Kernel/initrd and additional
 files](#kernelinitrd-and-additional-files), these files will be copied from the
-remote system via SSH, too.
+remote system via SSH(SFTP), too.
 
 The following example saves the virtual machine `src` from the remote libvirt
-host `hypervisor` to the local directory `/tmp/backupset`, it uses the `root` user
-for both the libvirt and ssh authentication:
+host `hypervisor` to the local directory `/tmp/backupset`, it uses the `root`
+user for both the libvirt and ssh authentication:
 
 ```
 virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d src -o  /tmp/backupset
@@ -589,11 +589,6 @@ Restoring to a remote host is possible too:
 ```
 virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset -o /remote/target
 ```
-
-`Note:`
-> By default `virtnbdrestore` will overwrite already existing files on the
-> remote host.
-
 
 # Single file restore and instant recovery
 

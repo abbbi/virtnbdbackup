@@ -15,6 +15,15 @@ from tqdm import tqdm
 
 from libvirtnbdbackup.sshutil import exceptions as sshexception
 
+log = logging.getLogger(__name__)
+
+logFormat = (
+    "%(asctime)s %(levelname)s %(module)s - %(funcName)s"
+    " [%(threadName)s]: %(message)s"
+)
+logDateFormat = "[%Y-%m-%d %H:%M:%S]"
+checkpointName = "virtnbdbackup"
+
 
 @dataclass
 class processInfo:
@@ -24,16 +33,6 @@ class processInfo:
     logFile: str
     err: str
     out: str
-
-
-log = logging.getLogger(__name__)
-
-logFormat = (
-    "%(asctime)s %(levelname)s %(module)s - %(funcName)s"
-    " [%(threadName)s]: %(message)s"
-)
-logDateFormat = "[%Y-%m-%d %H:%M:%S]"
-checkpointName = "virtnbdbackup"
 
 
 def argparse(parser):
@@ -107,9 +106,17 @@ def hasFullBackup(args):
     return False
 
 
+def exists(filePath, sshClient=None):
+    """Check if file exists either remotely or locally."""
+    if sshClient:
+        return sshClient.exists(filePath)
+
+    return os.path.exists(filePath)
+
+
 def targetIsEmpty(args):
     """Check if target directory is empty based on backup mode"""
-    if os.path.exists(args.output) and args.level in ("full", "copy", "auto"):
+    if exists(args.output) and args.level in ("full", "copy", "auto"):
         dirList = [
             f
             for f in glob.glob(f"{args.output}/*")
@@ -282,14 +289,14 @@ def writeChunk(writer, offset, length, maxRequestSize, nbdCon, btype, compress):
     return wSize, cSizes
 
 
-def writeBlock(writer, offset, length, nbdCon, btype, compress):
+def writeBlock(writer, block, nbdCon, btype, compress):
     """Write single block that does not exceed nbd maxRequestSize
     setting. In case compression is enabled, single blocks are
     compressed using lz4.block.
     """
     if btype == "raw":
-        writer.seek(offset)
-    data = nbdCon.pread(length, offset)
+        writer.seek(block.offset)
+    data = nbdCon.pread(block.length, block.offset)
 
     if compress is True and btype != "raw":
         data = lz4CompressFrame(data)

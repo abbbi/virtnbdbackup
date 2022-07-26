@@ -50,7 +50,7 @@ def checkDevice(device):
     if not device.startswith("/dev/nbd"):
         logging.error("Target device [%s] seems not to be a ndb device?", device)
 
-    if not os.path.exists(device):
+    if not lib.exists(device):
         logging.error(
             "Target device [%s] does not exist, nbd module not loaded?", device
         )
@@ -63,7 +63,7 @@ def locatePlugin():
     installDir = os.path.dirname(sys.argv[0])
     nbdkitModule = f"{installDir}/{pluginFileName}"
 
-    if not os.path.exists(nbdkitModule):
+    if not lib.exists(nbdkitModule):
         logging.error("Unable to locate nbdkit plugin: %s", pluginFileName)
 
     return nbdkitModule
