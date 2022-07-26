@@ -823,7 +823,9 @@ def backupDisk(args, disk, count, fileStream, virtClient):
 
     cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
     if virtClient.remoteHost is not None:
-        cType = nbdhelper.nbdConnTCP(disk.target, metaContext, remoteIP, args.nbd_port)
+        cType = nbdhelper.nbdConnTCP(
+            disk.target, metaContext, remoteIP, args.tls, args.nbd_port
+        )
     else:
         cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
     nbdClient = nbdhelper.nbdClient(cType)

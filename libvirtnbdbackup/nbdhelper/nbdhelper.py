@@ -47,11 +47,16 @@ class nbdConnTCP(nbdConn):
     """NBD connection type tcp"""
 
     hostname: str
+    tls: bool
     port: int = 10809
     backupSocket: str = None
+    uri_prefix = "nbd://"
 
     def __post_init__(self):
-        self.uri = f"nbd://{self.hostname}:{self.port}/{self.exportName}"
+        print(self.tls)
+        if self.tls:
+            self.uri_prefix = "nbds://"
+        self.uri = f"{self.uri_prefix}{self.hostname}:{self.port}/{self.exportName}"
 
 
 class nbdClient:
@@ -64,9 +69,7 @@ class nbdClient:
         TCP based remote backup too (#65)
         """
         self._uri = cType.uri
-
         self._exportName = cType.exportName
-
         self._socket = cType.backupSocket
 
         if cType.metaContext is None:
@@ -76,11 +79,8 @@ class nbdClient:
 
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
-
         self._connectionHandle = None
-
         self._nbdHandle = nbd.NBD()
-
         self.version()
 
     @staticmethod
@@ -105,6 +105,8 @@ class nbdClient:
         try:
             self._nbdHandle.add_meta_context(self._metaContext)
             self._nbdHandle.set_export_name(self._exportName)
+            if self._uri.startswith("nbds"):
+                self._nbdHandle.set_tls(nbd.TLS_ALLOW)
             self._nbdHandle.connect_uri(self._uri)
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")

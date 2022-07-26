@@ -410,12 +410,15 @@ class client:
             )
         else:
             listen = self.remoteHost
+            tls = "no"
+            if args.tls:
+                tls = "yes"
             if args.nbd_ip is not None:
                 listen = args.nbd_ip
             ElementTree.SubElement(
                 top,
                 "server",
-                {"name": f"{listen}", "port": f"{args.nbd_port}"},
+                {"tls": f"{tls}", "name": f"{listen}", "port": f"{args.nbd_port}"},
             )
 
         disks = ElementTree.SubElement(top, "disks")

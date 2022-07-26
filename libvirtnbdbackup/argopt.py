@@ -75,6 +75,16 @@ def addRemoteArgs(opt):
             " (default: hostname returned by libvirtd)"
         ),
     )
+    opt.add_argument(
+        "-T",
+        "--tls",
+        action="store_true",
+        required=False,
+        help=(
+            "Enable and use TLS for NBD connection."
+            " (default: hostname returned by libvirtd)"
+        ),
+    )
 
 
 def addDebugArgs(opt):
