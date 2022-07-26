@@ -37,6 +37,7 @@ class nbdConnUnix(nbdConn):
     """NBD connection type unix"""
 
     backupSocket: str
+    tls: bool = False
 
     def __post_init__(self):
         self.uri = f"nbd+unix:///{self.exportName}?socket={self.backupSocket}"
@@ -69,6 +70,7 @@ class nbdClient:
         TCP based remote backup too (#65)
         """
         self._uri = cType.uri
+        self._tls = cType.tls
         self._exportName = cType.exportName
         self._socket = cType.backupSocket
 
@@ -105,7 +107,7 @@ class nbdClient:
         try:
             self._nbdHandle.add_meta_context(self._metaContext)
             self._nbdHandle.set_export_name(self._exportName)
-            if self._uri.startswith("nbds"):
+            if self._tls:
                 self._nbdHandle.set_tls(nbd.TLS_ALLOW)
             self._nbdHandle.connect_uri(self._uri)
         except nbd.Error as e:
@@ -141,5 +143,8 @@ class nbdClient:
             retry = retry + 1
 
     def disconnect(self):
-        """Close nbd connection handle"""
-        self._nbdHandle.shutdown()
+        """Close nbd connection handle if no TLS is used.
+        Otherwise error is received:
+        https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1195779138"""
+        if not self._tls:
+            self._nbdHandle.shutdown()
