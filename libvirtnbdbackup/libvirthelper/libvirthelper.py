@@ -402,8 +402,6 @@ class client:
 
         return xml
 
-    #            diskList, args.cpt.parent, args.scratchdir, args.socketfile
-
     def _createBackupXml(self, args, diskList):
         """Create XML file for starting an backup task using libvirt API."""
         top = ElementTree.Element("domainbackup", {"mode": "pull"})
@@ -412,10 +410,13 @@ class client:
                 top, "server", {"transport": "unix", "socket": f"{args.socketfile}"}
             )
         else:
+            listen = self.remoteHost
+            if args.nbd_ip is not None:
+                listen = args.nbd_ip
             ElementTree.SubElement(
                 top,
                 "server",
-                {"name": f"{self.remoteHost}", "port": f"{args.nbd_port}"},
+                {"name": f"{listen}", "port": f"{args.nbd_port}"},
             )
 
         disks = ElementTree.SubElement(top, "disks")

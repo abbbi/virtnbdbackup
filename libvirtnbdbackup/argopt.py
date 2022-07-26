@@ -60,8 +60,19 @@ def addRemoteArgs(opt):
         default=10809,
         required=False,
         help=(
-            "Remote NBD port to start backup on, should be unique for each"
+            "Port used by remote NDB Service, should be unique for each"
             " started backup. (default: %(default)s)"
+        ),
+    )
+    opt.add_argument(
+        "-I",
+        "--nbd-ip",
+        type=str,
+        default=None,
+        required=False,
+        help=(
+            "IP used to bind remote NBD service on"
+            " (default: hostname returned by libvirtd)"
         ),
     )
 

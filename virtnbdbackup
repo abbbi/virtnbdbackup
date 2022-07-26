@@ -569,7 +569,6 @@ def main():
                     raise exceptions.DiskBackupFailed("Backup of one disk failed")
     except exceptions.BackupException as e:
         logging.error("Unable to backup Disk: %s", e)
-        logging.exception(e)
     except Exception as e:
         logging.fatal("Unknown Exception during backup: %s", e)
         logging.exception(e)
@@ -804,15 +803,16 @@ def backupDisk(args, disk, count, fileStream, virtClient):
     current_thread().name = disk.target
     streamType = setStreamType(args, disk)
     metaContext = setMetaContext(args, disk)
+    remoteIP = virtClient.remoteHost
+    if args.nbd_ip is not None:
+        remoteIP = args.nbd_ip
 
     if args.offline is True:
         nbdProc = startOfflineNBD(args, disk, virtClient.remoteHost)
 
     cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
     if virtClient.remoteHost is not None:
-        cType = nbdhelper.nbdConnTCP(
-            disk.target, metaContext, virtClient.remoteHost, port=args.nbd_port
-        )
+        cType = nbdhelper.nbdConnTCP(disk.target, metaContext, remoteIP, args.nbd_port)
     else:
         cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
     nbdClient = nbdhelper.nbdClient(cType)

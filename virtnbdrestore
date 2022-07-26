@@ -246,10 +246,11 @@ def startNbd(args, exportName, targetFile, socketFile, virtClient, sshClient):
             return False
         cType = nbdhelper.nbdConnUnix(exportName, None, socketFile)
     else:
+        remoteIP = virtClient.remoteHost
+        if args.nbd_ip is not None:
+            remoteIP = args.nbd_ip
         err = qFh.startRemoteRestoreNbdServer(args, sshClient, targetFile)
-        cType = nbdhelper.nbdConnTCP(
-            exportName, None, virtClient.remoteHost, port=args.nbd_port
-        )
+        cType = nbdhelper.nbdConnTCP(exportName, None, remoteIP, args.nbd_port)
 
     nbdClient = nbdhelper.nbdClient(cType)
     return nbdClient, nbdClient.waitForServer()

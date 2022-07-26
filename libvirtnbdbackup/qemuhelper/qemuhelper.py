@@ -176,10 +176,6 @@ class qemuHelper:
         """Start nbd server process remotely over ssh for restore operation"""
         pidFile = self._gt("qemu-nbd-backup", ".pid")
         logFile = self._gt("qemu-nbd-backup", ".log")
-        bitmapOpt = "--"
-        if bitMap is not None:
-            bitmapOpt = f"--bitmap={bitMap}"
-
         cmd = [
             "qemu-nbd",
             "-r",
@@ -192,9 +188,15 @@ class qemuHelper:
             "--pid-file",
             f"{pidFile}",
             "--fork",
-            bitmapOpt,
-            f"> {logFile} 2>&1",
         ]
+        if args.nbd_ip is not None:
+            cmd.append("-b")
+            cmd.append(args.nbd_ip)
+
+        if bitMap is not None:
+            cmd.append(f"--bitmap={bitMap}")
+
+        cmd.append(f"> {logFile} 2>&1")
         try:
             return sshClient.run(" ".join(cmd), pidFile, logFile)
         except sshexceptions.sshutilError:
