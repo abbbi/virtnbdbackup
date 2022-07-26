@@ -80,10 +80,7 @@ def addRemoteArgs(opt):
         "--tls",
         action="store_true",
         required=False,
-        help=(
-            "Enable and use TLS for NBD connection."
-            " (default: %(default)s)"
-        ),
+        help="Enable and use TLS for NBD connection. (default: %(default)s)",
     )
 
 
