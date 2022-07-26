@@ -118,9 +118,9 @@ class client:
             )
             if (
                 not self._reqAuth(args.uri)
-                and not args.user
-                and not args.password
                 and not self._isSsh(args.uri)
+                and (not args.user
+                or not args.password)
             ):
                 raise exceptions.connectionFailed(
                     "Username (--user) and password (--password) required."

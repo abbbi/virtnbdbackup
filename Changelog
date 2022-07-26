@@ -1,5 +1,7 @@
 Version 0.86
 ---------
+* libvirt uri: both user and password parameters are mandatory if no qemu+ssh
+session is specified.
 
 
 Version 0.85
