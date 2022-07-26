@@ -1,3 +1,7 @@
+Version 0.86
+---------
+
+
 Version 0.85
 ---------
 * virtnbdrestore: check if target files exist during remote operation and
