@@ -86,7 +86,10 @@ def addRemoteArgs(opt):
         type=str,
         default="/etc/pki/qemu/",
         required=False,
-        help="Path to TLS client certificates. (default: %(default)s)",
+        help=(
+            "Path to TLS certificates used during offline backup"
+            " and restore. (default: %(default)s)"
+        ),
     )
 
 

@@ -30,7 +30,7 @@ of your `kvm/qemu` virtual machines.
    * [Excluding disks](#excluding-disks)
    * [Estimating backup size](#estimating-backup-size)
    * [Compression](#compression)
-   * [Remote Backup operation](#remote-backup-operation)
+   * [Remote Backup](#remote-backup)
 * [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
 * [Restore examples](#restore-examples)
    * [Dumping backup information](#dumping-backup-information)
@@ -390,17 +390,20 @@ backup streams and attempts to decompress saved blocks accordingly.
 Using compression will come with some CPU overhead, both lz4 checksums for
 block and original data are enabled.
 
-## Remote Backup operation
+## Remote Backup
 
-### Remote backup via qemu+ssh
+It is also possible to backup remote libvirt systems.  The most convinient way
+is to use ssh for initiating the libvirt connection (key authentication
+mandatory).
 
-It is also possible to backup remote libvirt systems.
+If the virtual machine has additional files configured, as described in
+[Kernel/initrd and additional files](#kernelinitrd-and-additional-files), these
+files will be copied from the remote system via SSH(SFTP).
 
-The most convinient way is to use ssh for initiating the libvirt connection
-(key authentication mandatory). If the virtual machine has additional files
-configured, as described in [Kernel/initrd and additional
-files](#kernelinitrd-and-additional-files), these files will be copied from the
-remote system via SSH(SFTP), too.
+### QEMU Sessions
+
+In order to backup virtual machines from a remote host, you must specify an
+libvirt URI to the remote system.
 
 The following example saves the virtual machine `src` from the remote libvirt
 host `hypervisor` to the local directory `/tmp/backupset`, it uses the `root`
@@ -428,8 +431,13 @@ instructions how setup:
 > You should have installed at least version 1.12.6 of the libnbd library
 > which makes the transfer via NBDS more stable [full background](https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1196813750)
 
+### Remote IP for NBD Transfer
 
-### Pipe data to other hosts
+In case you want to use a dedicated network for the NBD transfer, you
+can specify an specific IP address to bind the remote NBD service to 
+via `--nbd-ip` option.
+
+### Piping data to other hosts
 
 If the output target points to standard out (`-`), `virtnbdbackup` puts the
 resulting backup data into an uncompessed zip archive.
