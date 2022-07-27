@@ -64,23 +64,15 @@ class nbdClient:
         TCP based remote backup too (#65)
         """
         self._uri = cType.uri
-
         self._exportName = cType.exportName
-
         self._socket = cType.backupSocket
-
         if cType.metaContext is None:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         else:
             self._metaContext = cType.metaContext
-
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
-
-        self._connectionHandle = None
-
-        self._nbdHandle = nbd.NBD()
-
+        self.nbd = nbd.NBD()
         self.version()
 
     @staticmethod
@@ -92,7 +84,7 @@ class nbdClient:
         """Read maximum request/block size as advertised by the nbd
         server. This is the value which will then be used by default
         """
-        maxSize = self._nbdHandle.get_block_size(nbd.SIZE_MAXIMUM)
+        maxSize = self.nbd.get_block_size(nbd.SIZE_MAXIMUM)
         if maxSize != 0:
             self.maxRequestSize = maxSize
 
@@ -103,15 +95,15 @@ class nbdClient:
         connection handle
         """
         try:
-            self._nbdHandle.add_meta_context(self._metaContext)
-            self._nbdHandle.set_export_name(self._exportName)
-            self._nbdHandle.connect_uri(self._uri)
+            self.nbd.add_meta_context(self._metaContext)
+            self.nbd.set_export_name(self._exportName)
+            self.nbd.connect_uri(self._uri)
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")
 
         self.getBlockInfo()
 
-        return self._nbdHandle
+        return self.nbd
 
     def waitForServer(self):
         """Wait until NBD endpoint connection can be established"""
@@ -140,4 +132,4 @@ class nbdClient:
 
     def disconnect(self):
         """Close nbd connection handle"""
-        self._nbdHandle.shutdown()
+        self.nbd.shutdown()
