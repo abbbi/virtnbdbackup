@@ -1,3 +1,11 @@
+Version 0.88
+---------
+* virtnbdrestore: Allow restore into non-empty directories, so one can
+restore the disk files into an existing libvirt managed volume directory.
+If the restore target path is an libvirt managed pool, refresh the
+pool contents. (#67)
+* virtnbdrestore: dont continue with restore if -o dump is specified.
+
 Version 0.87
 ---------
 * Code cleanup

@@ -154,6 +154,24 @@ class client:
         except libvirt.libvirtError as e:
             raise exceptions.domainNotFound(e) from e
 
+    def refreshPool(self, path):
+        """Check if specified path matches an existing
+        storage pool and refresh its contents"""
+        try:
+            pool = self._conn.storagePoolLookupByTargetPath(path)
+        except libvirt.libvirtError:
+            logging.warning(
+                "Restore path [%s] seems not to be an libvirt managed pool, skipping refresh.",
+                path,
+            )
+            return
+
+        try:
+            pool.refresh()
+            logging.info("Refreshed contents of libvirt pool [%s]", pool.name())
+        except libvirt.libvirtError as e:
+            logging.warning("Unable to refresh libvirt pool [%s]: [%s]", pool.name(), e)
+
     @staticmethod
     def blockJobActive(domObj, disks):
         """Check if there is already an active block job for this virtual
@@ -170,7 +188,7 @@ class client:
         """Check if virtual machine has enabled required capabilities
         for incremental backup
 
-        Libvirt version >= 8002000 seems to have the feature enabled
+        Libvirt version >= 7006000  have the feature enabled
         by default without the domain XML including the capability
         statement.
         """

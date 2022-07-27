@@ -577,6 +577,7 @@ def main():
 
     if args.action == "dump" or args.output == "dump":
         dump(args, stream, dataFiles)
+        sys.exit(0)
 
     if args.action == "restore":
         virtClient = libvirthelper.client(args)
@@ -596,9 +597,6 @@ def main():
         logging.info("Using latest config file: [%s]", vmConfig)
 
         args.level = "full"
-        if not lib.targetIsEmpty(args) and not virtClient.remoteHost:
-            logging.error("Target directory must be empty.")
-            sys.exit(1)
 
         if not virtClient.remoteHost:
             os.makedirs(args.output, exist_ok=True)
@@ -623,6 +621,7 @@ def main():
                 "use --adjust-config option. Skipping.."
             )
         restoreConfig(args, vmConfig, restConfig, sshClient)
+        virtClient.refreshPool(args.output)
         if args.define is True and args.adjust_config is True:
             if not virtClient.defineDomain(restConfig):
                 sys.exit(1)
