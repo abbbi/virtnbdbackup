@@ -1,9 +1,17 @@
+![ci](https://github.com/abbbi/virtnbdbackup/actions/workflows/ci-ubuntu-latest.yml/badge.svg)
+
+# virtnbdbackup
+
+Backup utility for `libvirt`, using the latest changed block tracking features.
+Create online, thin provisioned full and incremental or differencial backups
+of your `kvm/qemu` virtual machines.
+
+![Alt text](screenshot.jpg?raw=true "Title")
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [virtnbdbackup](#virtnbdbackup)
-- [](#)
 - [About](#about)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -22,7 +30,7 @@
   - [Rotating backups](#rotating-backups)
   - [Excluding disks](#excluding-disks)
   - [Estimating backup size](#estimating-backup-size)
-- [Backup concurrency](#backup-concurrency)
+  - [Backup concurrency](#backup-concurrency)
   - [Compression](#compression)
   - [Remote Backup](#remote-backup)
     - [QEMU Sessions](#qemu-sessions)
@@ -56,63 +64,6 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-![ci](https://github.com/abbbi/virtnbdbackup/actions/workflows/ci-ubuntu-latest.yml/badge.svg)
-
-# virtnbdbackup
-
-Backup utility for `libvirt`, using the latest changed block tracking features.
-Create online, thin provisioned full and incremental or differencial backups
-of your `kvm/qemu` virtual machines.
-
-![Alt text](screenshot.jpg?raw=true "Title")
-
-# 
-
-* [About](#about)
-* [Prerequisites/Requirements](#prerequisites)
-* [Installation](#installation)
-   * [Python package](#python-package)
-   * [RPM package](#rpm-package)
-      * [Redhat/Centos/Alma](#centosalmalinux-8)
-   * [Debian package](#debian-package)
-   * [Vagrant](#vagrant)
-   * [Venv](#virtualenv)
-   * [Docker images](#docker-images)
-* [Backup Format](#backup-format)
-* [Backup Operation](#backup-operation)
-* [Backup concurrency](#backup-concurrency)
-* [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
-* [Backup Examples](#backup-examples)
-   * [Application consistent backups](#application-consistent-backups)
-   * [Rotating backups](#rotating-backups)
-   * [Excluding disks](#excluding-disks)
-   * [Estimating backup size](#estimating-backup-size)
-   * [Compression](#compression)
-   * [Remote Backup](#remote-backup)
-* [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
-* [Restore examples](#restore-examples)
-   * [Dumping backup information](#dumping-backup-information)
-   * [Complete restore](#complete-restore)
-   * [Restore with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
-   * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
-   * [Point in time recovery](#point-in-time-recovery)
-   * [Remote restore](#remote-restore)
-   * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
-* [Extents](#extents)
-* [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
-* [Hypervisors](#hypervisors)
-    * [Ovirt or RHEV](#ovirt-or-rhev)
-    * [OpenNebula](#opennebula)
-* [Authentication](#authentication)
-* [FAQ](#faq)
-   * [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
-   * [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
-   * [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
-   * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
-   * [High memory usage during backup](#high-memory-usage-during-backup)
-* [Links](#links)
-* [Test your backups!](#test-your-backups)
-* [Contributing](#contributing)
 
 # About
 
@@ -422,7 +373,7 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
 2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 1394147328 bytes of data extents to backup
 ```
 
-# Backup concurrency
+## Backup concurrency
 
 If `virtnbdbackup` saves data to a regular target directory, it starts one
 thread for each disk it detects to speed up the backup operation.
