@@ -27,6 +27,13 @@ from libvirtnbdbackup.common.common import processInfo
 
 log = logging.getLogger(__name__)
 
+"""TLS:
+
+TODO:
+     qemu-nbd needs to be started with:
+         --object tls-creds-x509,id=tls0,endpoint=server,dir=<certpath>,verify-peer=false --tls-creds tls0
+"""
+
 
 class qemuHelper:
     """Wrapper for qemu executables"""
