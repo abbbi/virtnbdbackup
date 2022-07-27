@@ -257,7 +257,9 @@ def startNbd(args, exportName, targetFile, socketFile, virtClient, sshClient):
         if args.nbd_ip is not None:
             remoteIP = args.nbd_ip
         err = qFh.startRemoteRestoreNbdServer(args, sshClient, targetFile)
-        cType = nbdhelper.nbdConnTCP(exportName, None, remoteIP, args.nbd_port)
+        cType = nbdhelper.nbdConnTCP(
+            exportName, None, remoteIP, args.tls, args.nbd_port
+        )
 
     nbdClient = nbdhelper.nbdClient(cType)
     return nbdClient, nbdClient.waitForServer()
@@ -585,9 +587,6 @@ def main():
             except sshutil.exceptions.sshutilError as e:
                 logging.error("Unable to setup ssh connection: [%s]", e)
                 sys.exit(1)
-        if args.tls:
-            logging.info("Restore operation does not support TLS.")
-            args.tls = False
 
         vmConfig = lib.getLatest(args.input, "vmconfig*.xml", -1) or (
             logging.error("No domain config file found"),

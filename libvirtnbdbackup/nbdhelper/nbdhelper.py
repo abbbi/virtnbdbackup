@@ -54,7 +54,6 @@ class nbdConnTCP(nbdConn):
     uri_prefix = "nbd://"
 
     def __post_init__(self):
-        print(self.tls)
         if self.tls:
             self.uri_prefix = "nbds://"
         self.uri = f"{self.uri_prefix}{self.hostname}:{self.port}/{self.exportName}"

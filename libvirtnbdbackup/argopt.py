@@ -76,11 +76,17 @@ def addRemoteArgs(opt):
         ),
     )
     opt.add_argument(
-        "-T",
         "--tls",
         action="store_true",
         required=False,
         help="Enable and use TLS for NBD connection. (default: %(default)s)",
+    )
+    opt.add_argument(
+        "--tls-cert",
+        type=str,
+        default="/etc/pki/qemu/",
+        required=False,
+        help="Path to TLS client certificates. (default: %(default)s)",
     )
 
 

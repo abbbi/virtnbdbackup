@@ -412,11 +412,22 @@ virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d src -o  /t
 
 See also: [Authentication](#authentication)
 
+### NBD with TLS
+
+By default disk data received from a remote system will be transferred via
+regular NBD protocol. You can enable TLS for this connection, using the `--tls`
+option. Before beeing able to use TLS, you *must* configure the required
+certificates on both sides.
+
+See the following documentation by the libvirt project for detailed
+instructions how setup:
+
+ https://wiki.libvirt.org/page/TLSCreateCACert
+
 `Note:`
-> Currently the data is received via plain NDB protocol without TLS, if you
-> are in security sensitive environments, consider setup on the host system
-> directly. TLS Support will be added in future releases as not all libvirt
-> versions shipped in current distributions support it.
+> You should have installed at least version 1.12.6 of the libnbd library
+> which makes the transfer via NBDS more stable [full background](https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1196813750)
+
 
 ### Pipe data to other hosts
 

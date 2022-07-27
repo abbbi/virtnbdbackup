@@ -27,13 +27,6 @@ from libvirtnbdbackup.common.common import processInfo
 
 log = logging.getLogger(__name__)
 
-"""TLS:
-
-TODO:
-     qemu-nbd needs to be started with:
-         --object tls-creds-x509,id=tls0,endpoint=server,dir=<certpath>,verify-peer=false --tls-creds tls0
-"""
-
 
 class qemuHelper:
     """Wrapper for qemu executables"""
@@ -98,6 +91,16 @@ class qemuHelper:
         ) as tf1:
             return tf1.name
 
+    @staticmethod
+    def _addTls(cmd, certpath):
+        """Add required tls related options to qemu-nbd command
+        line."""
+        cmd.append("--object")
+        cmd.append(
+            f"tls-creds-x509,id=tls0,endpoint=server,dir={certpath},verify-peer=false"
+        )
+        cmd.append("--tls-creds tls0")
+
     def startRemoteRestoreNbdServer(self, args, sshClient, targetFile):
         """Start nbd server process remotely over ssh for restore operation"""
         pidFile = self._gt("qemu-nbd-restore", ".pid")
@@ -114,8 +117,10 @@ class qemuHelper:
             "--pid-file",
             f"{pidFile}",
             "--fork",
-            f"> {logFile} 2>&1",
         ]
+        if args.tls is True:
+            self._addTls(cmd, args.tls_cert)
+        cmd.append(f"> {logFile} 2>&1")
         try:
             return sshClient.run(" ".join(cmd), pidFile, logFile)
         except sshexceptions.sshutilError:
@@ -203,6 +208,8 @@ class qemuHelper:
         if bitMap is not None:
             cmd.append(f"--bitmap={bitMap}")
 
+        if args.tls is True:
+            self._addTls(cmd, args.tls_cert)
         cmd.append(f"> {logFile} 2>&1")
         try:
             return sshClient.run(" ".join(cmd), pidFile, logFile)
