@@ -3,7 +3,7 @@
 # required libnbd bindings.
 VENVDIR=$(pwd)/virtnbdbackup-venv
 LIBNBD_MAJ="1.12-stable"
-LIBNBD_VERSION="libnbd-1.12.4.tar.gz"
+LIBNBD_VERSION="libnbd-1.12.6"
 
 set -e
 
@@ -19,9 +19,9 @@ rm -rf libnbd-*
 virtualenv -p $(which python3) ${VENVDIR}
 git clone https://github.com/abbbi/virtnbdbackup.git -b ${BRANCH}
 source ${VENVDIR}/bin/activate
-curl https://download.libguestfs.org/libnbd/${LIBNBD_MAJ}/${LIBNBD_VERSION}  > ${LIBNBD_VERSION}
-tar xzf ${LIBNBD_VERSION}
-cd libnbd-1.12.4 
+curl https://download.libguestfs.org/libnbd/${LIBNBD_MAJ}/${LIBNBD_VERSION}.tar.gz  > ${LIBNBD_VERSION}.tar.gz
+tar xzf ${LIBNBD_VERSION}.tar.gz
+cd ${LIBNBD_VERSION}
 export bashcompdir=/tmp
 ./configure --prefix=${VENVDIR} --exec-prefix=${VENVDIR} \
     --disable-ocaml \
