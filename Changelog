@@ -1,8 +1,13 @@
+Version 0.87
+---------
+* Code cleanup
+* Add support for remote backup via NBD+TLS (#66)
+* Update README
+
 Version 0.86
 ---------
 * libvirt uri: both user and password parameters are mandatory if no qemu+ssh
 session is specified.
-
 
 Version 0.85
 ---------
@@ -10,7 +15,6 @@ Version 0.85
 fail accordingly.
 * Remote backup: use paramikos built in sftp client to copy files instead
 of third party scp module.
-
 
 Version 0.84
 ---------

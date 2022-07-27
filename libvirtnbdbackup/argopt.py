@@ -75,6 +75,22 @@ def addRemoteArgs(opt):
             " (default: hostname returned by libvirtd)"
         ),
     )
+    opt.add_argument(
+        "--tls",
+        action="store_true",
+        required=False,
+        help="Enable and use TLS for NBD connection. (default: %(default)s)",
+    )
+    opt.add_argument(
+        "--tls-cert",
+        type=str,
+        default="/etc/pki/qemu/",
+        required=False,
+        help=(
+            "Path to TLS certificates used during offline backup"
+            " and restore. (default: %(default)s)"
+        ),
+    )
 
 
 def addDebugArgs(opt):

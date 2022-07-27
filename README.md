@@ -8,53 +8,62 @@ of your `kvm/qemu` virtual machines.
 
 ![Alt text](screenshot.jpg?raw=true "Title")
 
-# 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-* [About](#about)
-* [Prerequisites/Requirements](#prerequisites)
-* [Installation](#installation)
-   * [Python package](#python-package)
-   * [RPM package](#rpm-package)
-      * [Redhat/Centos/Alma](#centosalmalinux-8)
-   * [Debian package](#debian-package)
-   * [Vagrant](#vagrant)
-   * [Venv](#virtualenv)
-   * [Docker images](#docker-images)
-* [Backup Format](#backup-format)
-* [Backup Operation](#backup-operation)
-* [Backup concurrency](#backup-concurrency)
-* [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
-* [Backup Examples](#backup-examples)
-   * [Application consistent backups](#application-consistent-backups)
-   * [Rotating backups](#rotating-backups)
-   * [Excluding disks](#excluding-disks)
-   * [Estimating backup size](#estimating-backup-size)
-   * [Compression](#compression)
-   * [Remote Backup operation](#remote-backup-operation)
-* [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
-* [Restore examples](#restore-examples)
-   * [Dumping backup information](#dumping-backup-information)
-   * [Complete restore](#complete-restore)
-   * [Restore with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
-   * [Process only specific disks during restore](#process-only-specific-disks-during-restore)
-   * [Point in time recovery](#point-in-time-recovery)
-   * [Remote restore](#remote-restore)
-   * [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
-* [Extents](#extents)
-* [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
-* [Hypervisors](#hypervisors)
-    * [Ovirt or RHEV](#ovirt-or-rhev)
-    * [OpenNebula](#opennebula)
-* [Authentication](#authentication)
-* [FAQ](#faq)
-   * [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
-   * [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
-   * [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
-   * [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
-   * [High memory usage during backup](#high-memory-usage-during-backup)
-* [Links](#links)
-* [Test your backups!](#test-your-backups)
-* [Contributing](#contributing)
+- [About](#about)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Python package](#python-package)
+  - [RPM package](#rpm-package)
+    - [Centos/Almalinux 8](#centosalmalinux-8)
+  - [Debian package](#debian-package)
+  - [Vagrant](#vagrant)
+  - [Virtualenv](#virtualenv)
+  - [Docker images](#docker-images)
+- [Backup Format](#backup-format)
+- [Backup Operation](#backup-operation)
+- [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
+- [Backup Examples](#backup-examples)
+  - [Local backups](#local-backups)
+  - [Application consistent backups](#application-consistent-backups)
+  - [Rotating backups](#rotating-backups)
+  - [Excluding disks](#excluding-disks)
+  - [Estimating backup size](#estimating-backup-size)
+  - [Backup concurrency](#backup-concurrency)
+  - [Compression](#compression)
+  - [Remote Backup](#remote-backup)
+    - [QEMU Sessions](#qemu-sessions)
+    - [NBD with TLS](#nbd-with-tls)
+    - [Remote IP for NBD Transfer](#remote-ip-for-nbd-transfer)
+    - [Piping data to other hosts](#piping-data-to-other-hosts)
+  - [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
+- [Restore examples](#restore-examples)
+  - [Dumping backup information](#dumping-backup-information)
+  - [Complete restore](#complete-restore)
+  - [Process only specific disks during restore](#process-only-specific-disks-during-restore)
+  - [Point in time recovery](#point-in-time-recovery)
+  - [Restoring with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
+  - [Remote Restore](#remote-restore)
+- [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
+- [Extents](#extents)
+- [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
+- [Hypervisors](#hypervisors)
+  - [Ovirt or RHEV](#ovirt-or-rhev)
+  - [OpenNebula](#opennebula)
+- [Authentication](#authentication)
+- [FAQ](#faq)
+  - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
+  - [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
+  - [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
+  - [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
+  - [High memory usage during backup](#high-memory-usage-during-backup)
+  - [Test your backups!](#test-your-backups)
+  - [Links](#links)
+  - [Contributing](#contributing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 # About
 
@@ -252,6 +261,8 @@ must not be processed using `virtnbdrestore`.
 
 # Backup Examples
 
+## Local backups
+
 * Start full backup of domain `vm1`, save data to `/tmp/backupset`:
 
 ```
@@ -364,7 +375,7 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
 2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 1394147328 bytes of data extents to backup
 ```
 
-# Backup concurrency
+## Backup concurrency
 
 If `virtnbdbackup` saves data to a regular target directory, it starts one
 thread for each disk it detects to speed up the backup operation.
@@ -390,17 +401,20 @@ backup streams and attempts to decompress saved blocks accordingly.
 Using compression will come with some CPU overhead, both lz4 checksums for
 block and original data are enabled.
 
-## Remote Backup operation
+## Remote Backup
 
-### Remote backup via qemu+ssh
+It is also possible to backup remote libvirt systems.  The most convinient way
+is to use ssh for initiating the libvirt connection (key authentication
+mandatory).
 
-It is also possible to backup remote libvirt systems.
+If the virtual machine has additional files configured, as described in
+[Kernel/initrd and additional files](#kernelinitrd-and-additional-files), these
+files will be copied from the remote system via SSH(SFTP).
 
-The most convinient way is to use ssh for initiating the libvirt connection
-(key authentication mandatory). If the virtual machine has additional files
-configured, as described in [Kernel/initrd and additional
-files](#kernelinitrd-and-additional-files), these files will be copied from the
-remote system via SSH(SFTP), too.
+### QEMU Sessions
+
+In order to backup virtual machines from a remote host, you must specify an
+[libvirt URI](https://libvirt.org/uri.html) to the remote system.
 
 The following example saves the virtual machine `src` from the remote libvirt
 host `hypervisor` to the local directory `/tmp/backupset`, it uses the `root`
@@ -412,13 +426,29 @@ virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d src -o  /t
 
 See also: [Authentication](#authentication)
 
-`Note:`
-> Currently the data is received via plain NDB protocol without TLS, if you
-> are in security sensitive environments, consider setup on the host system
-> directly. TLS Support will be added in future releases as not all libvirt
-> versions shipped in current distributions support it.
+### NBD with TLS
 
-### Pipe data to other hosts
+By default disk data received from a remote system will be transferred via
+regular NBD protocol. You can enable TLS for this connection, using the `--tls`
+option. Before beeing able to use TLS, you *must* configure the required
+certificates on both sides.
+
+See the following documentation by the libvirt project for detailed
+instructions how setup:
+
+ https://wiki.libvirt.org/page/TLSCreateCACert
+
+`Note:`
+> You should have installed at least version 1.12.6 of the libnbd library
+> which makes the transfer via NBDS more stable [full background](https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1196813750)
+
+### Remote IP for NBD Transfer
+
+In case you want to use a dedicated network for the NBD transfer, you
+can specify an specific IP address to bind the remote NBD service to 
+via `--nbd-ip` option.
+
+### Piping data to other hosts
 
 If the output target points to standard out (`-`), `virtnbdbackup` puts the
 resulting backup data into an uncompessed zip archive.
@@ -584,7 +614,10 @@ virtnbdrestore -c -i /tmp/backupset/ -o /tmp/restore
 
 ## Remote Restore
 
-Restoring to a remote host is possible too:
+Restoring to a remote host is possible too, same options as during backup
+apply. The following example will restore the virtual machine from the local
+directory `/tmp/backupset` to the remote system "hypervisor", alter its
+configuration and register the virtual machine:
 
 ```
 virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset -o /remote/target
@@ -788,6 +821,11 @@ like it would be possible using the `virsh -c` option:
 ```
  -U qemu:///system?authfile=/etc/virsh_auth.conf ..
 ```
+
+`Note:`
+> The default connection URI used is `qemu:///system` which is usually the 
+> case if virtual machines operate as root user. Use the `qemu:///session` URI
+> to backup virtual machines as regular user.
 
 
 # FAQ

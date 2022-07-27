@@ -37,6 +37,7 @@ class nbdConnUnix(nbdConn):
     """NBD connection type unix"""
 
     backupSocket: str
+    tls: bool = False
 
     def __post_init__(self):
         self.uri = f"nbd+unix:///{self.exportName}?socket={self.backupSocket}"
@@ -47,11 +48,15 @@ class nbdConnTCP(nbdConn):
     """NBD connection type tcp"""
 
     hostname: str
+    tls: bool
     port: int = 10809
     backupSocket: str = None
+    uri_prefix = "nbd://"
 
     def __post_init__(self):
-        self.uri = f"nbd://{self.hostname}:{self.port}/{self.exportName}"
+        if self.tls:
+            self.uri_prefix = "nbds://"
+        self.uri = f"{self.uri_prefix}{self.hostname}:{self.port}/{self.exportName}"
 
 
 class nbdClient:
@@ -64,23 +69,16 @@ class nbdClient:
         TCP based remote backup too (#65)
         """
         self._uri = cType.uri
-
+        self._tls = cType.tls
         self._exportName = cType.exportName
-
         self._socket = cType.backupSocket
-
         if cType.metaContext is None:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         else:
             self._metaContext = cType.metaContext
-
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
-
-        self._connectionHandle = None
-
-        self._nbdHandle = nbd.NBD()
-
+        self.nbd = nbd.NBD()
         self.version()
 
     @staticmethod
@@ -92,7 +90,7 @@ class nbdClient:
         """Read maximum request/block size as advertised by the nbd
         server. This is the value which will then be used by default
         """
-        maxSize = self._nbdHandle.get_block_size(nbd.SIZE_MAXIMUM)
+        maxSize = self.nbd.get_block_size(nbd.SIZE_MAXIMUM)
         if maxSize != 0:
             self.maxRequestSize = maxSize
 
@@ -103,15 +101,17 @@ class nbdClient:
         connection handle
         """
         try:
-            self._nbdHandle.add_meta_context(self._metaContext)
-            self._nbdHandle.set_export_name(self._exportName)
-            self._nbdHandle.connect_uri(self._uri)
+            if self._tls:
+                self.nbd.set_tls(nbd.TLS_ALLOW)
+            self.nbd.add_meta_context(self._metaContext)
+            self.nbd.set_export_name(self._exportName)
+            self.nbd.connect_uri(self._uri)
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")
 
         self.getBlockInfo()
 
-        return self._nbdHandle
+        return self.nbd
 
     def waitForServer(self):
         """Wait until NBD endpoint connection can be established"""
@@ -139,5 +139,8 @@ class nbdClient:
             retry = retry + 1
 
     def disconnect(self):
-        """Close nbd connection handle"""
-        self._nbdHandle.shutdown()
+        """Close nbd connection handle if no TLS is used.
+        Otherwise error is received:
+        https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1195779138"""
+        if not self._tls:
+            self.nbd.shutdown()
