@@ -25,6 +25,7 @@ of your `kvm/qemu` virtual machines.
 - [Backup Operation](#backup-operation)
 - [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
 - [Backup Examples](#backup-examples)
+  - [Local backups](#local-backups)
   - [Application consistent backups](#application-consistent-backups)
   - [Rotating backups](#rotating-backups)
   - [Excluding disks](#excluding-disks)
@@ -259,6 +260,8 @@ During restore, these files can be copied "as is" from the backup folder and
 must not be processed using `virtnbdrestore`.
 
 # Backup Examples
+
+## Local backups
 
 * Start full backup of domain `vm1`, save data to `/tmp/backupset`:
 
