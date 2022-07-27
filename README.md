@@ -414,7 +414,7 @@ files will be copied from the remote system via SSH(SFTP).
 ### QEMU Sessions
 
 In order to backup virtual machines from a remote host, you must specify an
-libvirt URI to the remote system.
+[libvirt URI](https://libvirt.org/uri.html) to the remote system.
 
 The following example saves the virtual machine `src` from the remote libvirt
 host `hypervisor` to the local directory `/tmp/backupset`, it uses the `root`
@@ -614,7 +614,10 @@ virtnbdrestore -c -i /tmp/backupset/ -o /tmp/restore
 
 ## Remote Restore
 
-Restoring to a remote host is possible too:
+Restoring to a remote host is possible too, same options as during backup
+apply. The following example will restore the virtual machine from the local
+directory `/tmp/backupset` to the remote system "hypervisor", alter its
+configuration and register the virtual machine:
 
 ```
 virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset -o /remote/target
