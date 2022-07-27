@@ -822,6 +822,11 @@ like it would be possible using the `virsh -c` option:
  -U qemu:///system?authfile=/etc/virsh_auth.conf ..
 ```
 
+`Note:`
+> The default connection URI used is `qemu:///system` which is usually the 
+> case if virtual machines operate as root user. Use the `> qemu:///session` URI
+> to backup virtual machines as regular.
+
 
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images

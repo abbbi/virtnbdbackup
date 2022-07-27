@@ -1,6 +1,7 @@
 Version 0.87
 ---------
 * Code cleanup
+* Add support for remote backup via NBD+TLS (#66)
 
 Version 0.86
 ---------
