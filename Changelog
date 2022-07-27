@@ -1,8 +1,11 @@
+Version 0.87
+---------
+* Code cleanup
+
 Version 0.86
 ---------
 * libvirt uri: both user and password parameters are mandatory if no qemu+ssh
 session is specified.
-
 
 Version 0.85
 ---------
@@ -10,7 +13,6 @@ Version 0.85
 fail accordingly.
 * Remote backup: use paramikos built in sftp client to copy files instead
 of third party scp module.
-
 
 Version 0.84
 ---------
