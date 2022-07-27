@@ -20,7 +20,7 @@ fi
 
 
 setup() {
- aa-teardown >/dev/null
+ aa-teardown >/dev/null || true
  DISKS=$(virsh -q domblklist ${VM} | grep -v cdrom | awk '{print $1}' | wc -l)
  export DISK_COUNT=$DISKS
 
