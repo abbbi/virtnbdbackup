@@ -257,7 +257,7 @@ def lz4CompressFrame(data):
     return lz4.frame.compress(data, content_checksum=True, block_checksum=True)
 
 
-def writeChunk(writer, offset, length, maxRequestSize, nbdCon, btype, compress):
+def writeChunk(writer, block, maxRequestSize, nbdCon, btype, compress):
     """During extent processing, consecutive blocks with
     the same type(data or zeroed) are unified into one big chunk.
     This helps to reduce requests to the NBD Server.
@@ -273,7 +273,7 @@ def writeChunk(writer, offset, length, maxRequestSize, nbdCon, btype, compress):
     """
     wSize = 0
     cSizes = []
-    for blocklen, blockOffset in blockStep(offset, length, maxRequestSize):
+    for blocklen, blockOffset in blockStep(block.offset, block.length, maxRequestSize):
         if btype == "raw":
             writer.seek(blockOffset)
 

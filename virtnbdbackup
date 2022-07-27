@@ -898,8 +898,7 @@ def backupDisk(args, disk, count, fileStream, virtClient):
                 )
                 size, cSizes = lib.writeChunk(
                     writer,
-                    save.offset,
-                    save.length,
+                    save,
                     nbdClient.maxRequestSize,
                     connection,
                     streamType,
