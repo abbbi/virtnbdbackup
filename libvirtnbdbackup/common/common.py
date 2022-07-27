@@ -80,9 +80,8 @@ def configLogger(args, fileLog, counter):
 
 def getSocketFile(arg):
     """Return used socket file name"""
-    if not arg:
-        socketFile = f"/var/tmp/virtnbdbackup.{os.getpid()}"
-    else:
+    socketFile = f"/var/tmp/virtnbdbackup.{os.getpid()}"
+    if arg:
         socketFile = arg
 
     return socketFile
