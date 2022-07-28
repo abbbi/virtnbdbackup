@@ -13,3 +13,7 @@ class domainNotFound(virtHelperError):
 
 class connectionFailed(virtHelperError):
     """Cant connect libvirtd domain"""
+
+
+class startBackupFailed(virtHelperError):
+    """Cant start backup operation"""

@@ -208,6 +208,25 @@ def getFileStream(args, outHelper):
     return fileStream
 
 
+def startBackupJob(args, virtClient, domObj, disks):
+    """Start backup job via libvirt API"""
+    try:
+        logging.info("Starting backup job.")
+        virtClient.startBackup(
+            args,
+            domObj,
+            disks,
+        )
+        logging.debug("Backup job started.")
+        return True
+    except libvirthelper.exceptions.startBackupFailed as e:
+        logging.error(e)
+    except Exception as e:
+        logging.exception(e)
+
+    return False
+
+
 def main():
     """Handle backup operation"""
     parser = argparse.ArgumentParser(
@@ -527,17 +546,7 @@ def main():
         logging.info("NDB Endpoint socket: %s", args.socketfile)
 
     if args.offline is not True:
-        try:
-            logging.info("Starting backup job.")
-            virtClient.startBackup(
-                args,
-                domObj,
-                disks,
-            )
-            logging.debug("Backup job started.")
-        except Exception as e:
-            logging.error(e)
-            logging.exception(e)
+        if not startBackupJob(args, virtClient, domObj, disks):
             sys.exit(1)
 
     if args.level not in ("copy", "diff") and args.offline is False:

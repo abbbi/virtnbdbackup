@@ -520,25 +520,29 @@ class client:
         backupXml = self._createBackupXml(args, diskList)
         checkpointXml = None
         freezed = False
+
+        # do not create checkpoint during copy/diff backup.
+        # backup saves delta until the last checkpoint
+        if args.level not in ("copy", "diff"):
+            checkpointXml = self._createCheckpointXml(
+                diskList, args.cpt.parent, args.cpt.name
+            )
+        freezed = self.fsFreeze(domObj, args.freeze_mountpoint)
         try:
-            # do not create checkpoint during copy/diff backup.
-            # backup saves delta until the last checkpoint
-            if args.level not in ("copy", "diff"):
-                checkpointXml = self._createCheckpointXml(
-                    diskList, args.cpt.parent, args.cpt.name
-                )
-            freezed = self.fsFreeze(domObj, args.freeze_mountpoint)
             log.debug("Starting backup job via libvirt API.")
             domObj.backupBegin(backupXml, checkpointXml)
             log.debug("Started backup job via libvirt API.")
-            if freezed is True:
-                self.fsThaw(domObj)
-        except Exception as errmsg:
+        except libvirt.libvirtError as errmsg:
+            raise exceptions.startBackupFailed(f"Unable to start backup: [{errmsg}]")
+        except Exception as e:
+            raise exceptions.startBackupFailed(
+                f"Unknown exception during backup start: [{e}]"
+            )
+        finally:
             # check if filesystem is freezed and thaw
             # in case creating checkpoint fails.
             if freezed is True:
                 self.fsThaw(domObj)
-            raise errmsg
 
     @staticmethod
     def checkpointExists(domObj, checkpointName):
