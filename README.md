@@ -503,10 +503,6 @@ If an domain has configured custom kernel, initrd, loader or nvram images
 (usually the case if the domain boots from OVM UEFI BIOS), these files will be
 saved to the backup folder aswell.
 
-As the virtual domain might depend on certain UEFI settings or vars to
-correctly boot, you must take care to copy these files to your restore target
-manually.
-
 # Restore examples
 
 For restoring, `virtnbdrestore` can be used. It reconstructs the streamed
@@ -600,7 +596,8 @@ restore accordingly, the following changes are done:
    as floppy or cdrom devices (which arent part of the backup).
 
 `Note:`
-> Kernel, UEFI or NVRAM files are not handled at the moment.
+> If missing, Kernel, UEFI or NVRAM files are restored to their original
+> location as set in the virtual machine configuration.
 
 A restored virtual machine can then been defined and started right from the
 restored directory:

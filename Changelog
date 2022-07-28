@@ -1,3 +1,9 @@
+Version 0.89
+---------
+* virtnbdrestore: check if additional boot files such as nvram/kernel images
+exist and if not, restore them to the original path instead of just warning
+the user about manual steps beeing required.
+
 Version 0.88
 ---------
 * virtnbdrestore: Allow restore into non-empty directories, so one can

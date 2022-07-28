@@ -294,7 +294,7 @@ def checkBackingStore(args, disk):
         logging.warning("Configured backing store images must be changed.")
 
 
-def checkAdditional(args, vmConfig, virtClient):
+def restoreFiles(args, vmConfig, virtClient, sshClient):
     """Notice user if backed up vm had loader / nvram"""
     config = readConfig(vmConfig)
     info = virtClient.getDomainInfo(config)
@@ -302,12 +302,22 @@ def checkAdditional(args, vmConfig, virtClient):
     for setting, val in info.items():
         if val is not None:
             f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
-            logging.warning(
-                "Domain config includes additional boot option: [%s]: "
-                "File [%s] must be copied manually.",
-                setting,
-                f,
+            if lib.exists(val, sshClient):
+                logging.info(
+                    "File [%s]: for boot option [%s] already exists, skipping.",
+                    val,
+                    setting,
+                )
+                continue
+
+            logging.info(
+                "Restoring configured file [%s] for boot option [%s]", val, setting
             )
+            if sshClient:
+                lib.copy(f, val, sshClient.copyTo)
+                continue
+
+            lib.copy(f, val)
 
 
 def setTargetFile(args, disk):
@@ -353,8 +363,8 @@ def restore(args, vmConfig, virtClient, sshClient):
             logging.info("Restoring raw image to %s", targetFile)
             if sshClient:
                 lib.copy(restoreDisk[0], targetFile, sshClient.copyTo)
-            else:
-                lib.copy(restoreDisk[0], targetFile)
+                continue
+            lib.copy(restoreDisk[0], targetFile)
             continue
 
         if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
@@ -614,7 +624,7 @@ def main():
             logging.fatal("Disk restore failed.")
             sys.exit(1)
 
-        checkAdditional(args, vmConfig, virtClient)
+        restoreFiles(args, vmConfig, virtClient, sshClient)
         if args.define is True and args.adjust_config is False:
             logging.warning(
                 "Redefine domain needs adjusted config, please "
