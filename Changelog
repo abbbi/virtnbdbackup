@@ -1,3 +1,7 @@
+Version 0.90
+---------
+* Code cleanup
+
 Version 0.89
 ---------
 * virtnbdrestore: check if additional boot files such as nvram/kernel images

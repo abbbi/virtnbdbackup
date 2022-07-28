@@ -313,11 +313,7 @@ def restoreFiles(args, vmConfig, virtClient, sshClient):
             logging.info(
                 "Restoring configured file [%s] for boot option [%s]", val, setting
             )
-            if sshClient:
-                lib.copy(f, val, sshClient.copyTo)
-                continue
-
-            lib.copy(f, val)
+            lib.copy(f, val, sshClient)
 
 
 def setTargetFile(args, disk):
@@ -361,10 +357,7 @@ def restore(args, vmConfig, virtClient, sshClient):
 
         if args.raw and disk.format == "raw":
             logging.info("Restoring raw image to %s", targetFile)
-            if sshClient:
-                lib.copy(restoreDisk[0], targetFile, sshClient.copyTo)
-                continue
-            lib.copy(restoreDisk[0], targetFile)
+            lib.copy(restoreDisk[0], targetFile, sshClient)
             continue
 
         if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
@@ -418,7 +411,7 @@ def restoreConfig(args, vmConfig, adjustedConfig, sshClient):
         if sshClient:
             with tempfile.NamedTemporaryFile(delete=True) as fh:
                 fh.write(adjustedConfig)
-                lib.copy(fh.name, targetFile, sshClient.copyTo)
+                lib.copy(fh.name, targetFile, sshClient)
         else:
             with outputhelper.openfile(targetFile, "wb") as cnf:
                 cnf.write(adjustedConfig)
@@ -426,11 +419,7 @@ def restoreConfig(args, vmConfig, adjustedConfig, sshClient):
         if args.define is False:
             logging.info("Use 'virsh define %s' to define VM", targetFile)
     else:
-        if sshClient:
-            srcFile = f"{args.input}/{os.path.basename(vmConfig)}"
-            lib.copy(srcFile, targetFile, sshClient.copyTo)
-        else:
-            lib.copy(vmConfig, targetFile)
+        lib.copy(vmConfig, targetFile, sshClient)
         logging.info("Copied original vm config to [%s]", targetFile)
         logging.info("Note: virtual machine config must be adjusted manually.")
 
@@ -594,7 +583,9 @@ def main():
         sshClient = None
         if virtClient.remoteHost:
             try:
-                sshClient = sshutil.Client(virtClient.remoteHost, args.ssh_user)
+                sshClient = sshutil.Client(
+                    virtClient.remoteHost, args.ssh_user, sshutil.Mode.UPLOAD
+                )
             except sshutil.exceptions.sshutilError as e:
                 logging.error("Unable to setup ssh connection: [%s]", e)
                 sys.exit(1)

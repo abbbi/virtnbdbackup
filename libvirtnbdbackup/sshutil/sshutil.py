@@ -15,6 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+from enum import Enum
 from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException
 from paramiko.auth_handler import AuthenticationException
 
@@ -24,14 +25,24 @@ from libvirtnbdbackup.common.common import processInfo
 log = logging.getLogger(__name__)
 
 
+class Mode(Enum):
+    """Up or download mode"""
+
+    UPLOAD = 1
+    DOWNLOAD = 2
+
+
 class Client:
-    """Wrapper around paramiko/scp put and get functions, to be able to
+    """Wrapper around paramiko/sftp put and get functions, to be able to
     remote copy files from hypervisor host"""
 
-    def __init__(self, host: str, user: str):
+    def __init__(self, host: str, user: str, mode: Mode = Mode.DOWNLOAD):
         self.client = None
         self.host = host
         self.user = user
+        self.copy = self.copyFrom
+        if mode == Mode.UPLOAD:
+            self.copy = self.copyTo
         self.connection = self.connect()
 
     def connect(self):

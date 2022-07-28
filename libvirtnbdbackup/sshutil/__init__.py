@@ -18,4 +18,4 @@
 __title__ = "sshutil"
 __version__ = "0.1"
 
-from .sshutil import Client
+from .sshutil import Client, Mode

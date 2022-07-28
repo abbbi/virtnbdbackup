@@ -147,11 +147,11 @@ def getLatest(targetDir, search, key=None):
         return None
 
 
-def copy(source, target, remoteCopy=None):
+def copy(source, target, sshClient=None):
     """Copy file, handle exceptions"""
     try:
-        if remoteCopy:
-            remoteCopy(source, target)
+        if sshClient:
+            sshClient.copy(source, target)
         else:
             shutil.copyfile(source, target)
     except OSError as e:
