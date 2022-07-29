@@ -221,8 +221,6 @@ def startBackupJob(args, virtClient, domObj, disks):
         return True
     except libvirthelper.exceptions.startBackupFailed as e:
         logging.error(e)
-    except Exception as e:
-        logging.exception(e)
 
     return False
 
@@ -816,6 +814,23 @@ def truncate(writer, size):
         ) from e
 
 
+def connectNbd(args, disk, metaContext, remoteIP, virtClient):
+    """Connect to started nbd endpoint"""
+    if virtClient.remoteHost is not None:
+        cType = nbdhelper.nbdConnTCP(
+            disk.target, metaContext, remoteIP, args.tls, args.nbd_port
+        )
+    else:
+        cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
+    nbdClient = nbdhelper.nbdClient(cType)
+    try:
+        return nbdClient.waitForServer(), nbdClient
+    except nbdhelper.exceptions.NbdClientException as e:
+        raise exceptions.DiskBackupFailed(
+            f"NBD endpoint: {cType}: connection failed: {e}"
+        )
+
+
 def backupDisk(args, disk, count, fileStream, virtClient):
     """Backup domain disk data."""
     stream = streamer.SparseStream(types)
@@ -830,22 +845,9 @@ def backupDisk(args, disk, count, fileStream, virtClient):
     if args.offline is True:
         nbdProc = startOfflineNBD(args, disk, virtClient.remoteHost)
 
-    cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
-    if virtClient.remoteHost is not None:
-        cType = nbdhelper.nbdConnTCP(
-            disk.target, metaContext, remoteIP, args.tls, args.nbd_port
-        )
-    else:
-        cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
-    nbdClient = nbdhelper.nbdClient(cType)
-    try:
-        connection = nbdClient.waitForServer()
-    except nbdhelper.exceptions.NbdClientException as e:
-        raise exceptions.DiskBackupFailed(
-            f"NBD endpoint: {cType}: connection failed: {e}"
-        )
+    connection, nbdClient = connectNbd(args, disk, metaContext, remoteIP, virtClient)
 
-    extentHandler = getExtentHandler(args, cType, connection)
+    extentHandler = getExtentHandler(args, nbdClient.cType, connection)
     extents = extentHandler.queryBlockStatus()
     diskSize = connection.get_size()
 

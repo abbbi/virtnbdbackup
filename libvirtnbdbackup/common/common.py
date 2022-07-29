@@ -114,13 +114,10 @@ def exists(filePath, sshClient=None):
 
 
 def targetIsEmpty(args):
-    """Check if target directory is empty based on backup mode"""
+    """Check if target directory does not include an backup
+    already (no .data or .data.partial files)"""
     if exists(args.output) and args.level in ("full", "copy", "auto"):
-        dirList = [
-            f
-            for f in glob.glob(f"{args.output}/*")
-            if not os.path.basename(f).endswith(".log")
-        ]
+        dirList = glob.glob(f"{args.output}/*.data*")
         if len(dirList) > 0:
             return False
 

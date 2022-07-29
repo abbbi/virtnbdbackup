@@ -68,10 +68,8 @@ class nbdClient:
         communication implemented. Should be extended to support
         TCP based remote backup too (#65)
         """
-        self._uri = cType.uri
-        self._tls = cType.tls
+        self.cType = cType
         self._exportName = cType.exportName
-        self._socket = cType.backupSocket
         if cType.metaContext is None:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         else:
@@ -101,11 +99,11 @@ class nbdClient:
         connection handle
         """
         try:
-            if self._tls:
+            if self.cType.tls:
                 self.nbd.set_tls(nbd.TLS_ALLOW)
             self.nbd.add_meta_context(self._metaContext)
             self.nbd.set_export_name(self._exportName)
-            self.nbd.connect_uri(self._uri)
+            self.nbd.connect_uri(self.cType.uri)
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")
 
@@ -115,7 +113,7 @@ class nbdClient:
 
     def waitForServer(self):
         """Wait until NBD endpoint connection can be established"""
-        logging.info("Waiting until NBD server at [%s] is up.", self._uri)
+        logging.info("Waiting until NBD server at [%s] is up.", self.cType.uri)
         retry = 0
         maxRetry = 20
         sleepTime = 1
@@ -126,7 +124,7 @@ class nbdClient:
                     "Timeout during connection to NBD server backend."
                 )
 
-            if self._socket and not os.path.exists(self._socket):
+            if self.cType.backupSocket and not os.path.exists(self.cType.backupSocket):
                 logging.info("Waiting for NBD Server, Retry: %s", retry)
                 retry = retry + 1
 
@@ -142,5 +140,5 @@ class nbdClient:
         """Close nbd connection handle if no TLS is used.
         Otherwise error is received:
         https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1195779138"""
-        if not self._tls:
+        if not self.cType.tls:
             self.nbd.shutdown()

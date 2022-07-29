@@ -1,3 +1,9 @@
+Version 0.92
+---------
+* Code cleanup
+* virtnbdbackup: Relax check for empty target directory: now only fails if
+already an backup (partial or not) exists within the target directory.
+
 Version 0.91
 ---------
 * Code cleanup
