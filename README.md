@@ -3,7 +3,7 @@
 # virtnbdbackup
 
 Backup utility for `libvirt`, using the latest changed block tracking features.
-Create online, thin provisioned full and incremental or differencial backups
+Create online, thin provisioned full and incremental or differential backups
 of your `kvm/qemu` virtual machines.
 
 ![Alt text](screenshot.jpg?raw=true "Title")
@@ -76,7 +76,7 @@ capabilities that allow to create online (full and incremental) backups, by
 using so called `dirty bitmaps` (or changed block tracking).
 
 `virtnbdbackup` uses these features to create online full and incremental
-or differencial backups.
+or differential backups.
 
 `virtnbdrestore` can be used to re-construct the complete image from the
 thin provisioned backups.
@@ -214,7 +214,7 @@ Following backup modes can be used:
 * `inc`: Perform incremental backup, based on the last full or incremental
   backup. A checkpoint for each incremental backup is created and saved.
 
-* `diff`: Perform differencial backup: saves the current delta to the last
+* `diff`: Perform differential backup: saves the current delta to the last
   incremental or full backup.
 
 * `auto`: If the target folder is empty, attempt to execute full backup,
@@ -235,7 +235,7 @@ finishes, the job is stopped and the nbd server quits operation.
 
 `Note`:
 > If the virtual domain is not in running state (powered off) `virtnbdbackup` 
-> supports `copy` and `inc/diff` backup modes. Incremental and differencial backups
+> supports `copy` and `inc/diff` backup modes. Incremental and differential backups
 > will then save the changed blocks since last created checkpoint. As no new
 > checkpoints can be defined for offline domains, the Backup mode `full` is
 > changed to mode `copy`.
