@@ -235,7 +235,7 @@ def main():
             "\t%(prog)s -d webvm -l full -o /backup/\n"
             "   # incremental backup:\n"
             "\t%(prog)s -d webvm -l inc -o /backup/\n"
-            "   # differencial backup:\n"
+            "   # differential backup:\n"
             "\t%(prog)s -d webvm -l diff -o /backup/\n"
             "   # full backup, exclude disk 'vda':\n"
             "\t%(prog)s -d webvm -l full -x vda -o /backup/\n"
@@ -444,13 +444,13 @@ def main():
 
     if args.raw and args.level in ("inc", "diff"):
         logging.error(
-            "Raw disks cant be included during incremental or differencial backup."
+            "Raw disks cant be included during incremental or differential backup."
         )
         sys.exit(1)
 
     if args.type == "raw" and args.level in ("inc", "diff"):
         logging.error(
-            "Backup format raw does not support incremental or differencial backup"
+            "Backup format raw does not support incremental or differential backup."
         )
         sys.exit(1)
 

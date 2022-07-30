@@ -209,7 +209,7 @@ backups on the same system concurrently.
 Version 0.62
 ---------
 * Add script to create virtualenv with required dependencies.
-* virtnbdmap now supports mounting of full->incremental (or differencial)
+* virtnbdmap now supports mounting of full->incremental (or differential)
 chains: the current approach is to use the nbdkit COW (copy on write) filter
 to replay the data blocks against the mapped nbd device.
 
@@ -263,7 +263,7 @@ notice to user during restore that files must be copied manually.
 Version 0.53
 ---------
 * Cleanup codebase
-* Fix differencial backup for offline domains: apply same logic as during
+* Fix differential backup for offline domains: apply same logic as during
 incremental backup.
 
 Version 0.52
@@ -299,9 +299,9 @@ implement restore of a specified sequence.
 
 Version 0.47
 ---------
-* Fix issue #37: If an backup directory contains multiple differencial
+* Fix issue #37: If an backup directory contains multiple differential
 or incremental backups, its not possible to use the --until option for
-point in time restore, because the differencial backups defaulted to
+point in time restore, because the differential backups defaulted to
 the first checkpoint name in the metadata header. Recover would
 stop too early in such cases..
 
@@ -314,10 +314,10 @@ Version 0.46
 
 Version 0.45
 ---------
-* Adds differencial backup option: backup option -l diff now saves the
+* Adds differential backup option: backup option -l diff now saves the
 delta since the last incremental or full backup. Option -q now uses
 nbdinfo instead of qemu-img map, which supports reading specific bitmap
-information: now option -q can be used during incremental/differencial backup
+information: now option -q can be used during incremental/differential backup
 too,which might be good for debugging issues.
 * If incremental backup for offline Domain is attempted, backup would save all
 data, not just dirty extents: now saves only dirty extents.  
