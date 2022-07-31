@@ -245,6 +245,7 @@ class qemuHelper:
         if toPipe is True:
             logFile = subprocess.PIPE
         else:
+            # pylint: disable=consider-using-with
             logFile = tempfile.NamedTemporaryFile(
                 delete=False, prefix=cmdLine[0], suffix=".log"
             )

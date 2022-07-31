@@ -24,6 +24,7 @@ from collections import namedtuple
 import libvirt
 from lxml import etree as ElementTree
 from libvirtnbdbackup.libvirthelper import exceptions
+from libvirtnbdbackup import outputhelper
 
 
 def libvirt_ignore(_ignore, _err):
@@ -570,19 +571,19 @@ class client:
             cpts = domObj.listAllCheckpoints()
             if cpts:
                 for cpt in cpts:
-                    if self.deleteCheckpoint(cpt, defaultCheckpointName) is False:
+                    if self._deleteCheckpoint(cpt, defaultCheckpointName) is False:
                         return False
             return True
 
         for checkpoint in checkpointList:
             cptObj = self.checkpointExists(domObj, checkpoint)
             if cptObj:
-                if self.deleteCheckpoint(cptObj, defaultCheckpointName) is False:
+                if self._deleteCheckpoint(cptObj, defaultCheckpointName) is False:
                     return False
         return True
 
     @staticmethod
-    def deleteCheckpoint(cptObj, defaultCheckpointName):
+    def _deleteCheckpoint(cptObj, defaultCheckpointName):
         """Delete checkpoint"""
         checkpointName = cptObj.getName()
         if defaultCheckpointName not in checkpointName:
@@ -620,10 +621,10 @@ class client:
         for checkpointFile in checkpointList:
             log.debug("Loading checkpoint config from: [%s]", checkpointFile)
             try:
-                with open(checkpointFile, "rb") as f:
+                with outputhelper.openfile(checkpointFile, "rb") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
-            except OSError as e:
+            except outputhelper.exceptions.OutputException as e:
                 log.error("Unable to open checkpoint file: [%s]: %s", checkpointFile, e)
                 return False
             except ElementTree.ParseError as e:
@@ -666,11 +667,11 @@ class client:
         checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
         log.info("Saving checkpoint config to: %s", checkpointFile)
         try:
-            with open(checkpointFile, "wb") as f:
+            with outputhelper.openfile(checkpointFile, "wb") as f:
                 c = domObj.checkpointLookupByName(args.cpt.name)
                 f.write(c.getXMLDesc().encode())
                 return True
-        except OSError as errmsg:
+        except outputhelper.exceptions.OutputException as errmsg:
             log.error(
                 "Unable to save checkpoint config to file: [%s]: %s",
                 checkpointFile,

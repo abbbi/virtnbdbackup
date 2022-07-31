@@ -106,11 +106,17 @@ def readCheckpointFile(cFile):
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints = []
-    if lib.exists(cFile):
+    if not lib.exists(cFile):
+        return checkpoints
+
+    try:
         with outputhelper.openfile(cFile, "rb") as fh:
             checkpoints = json.loads(fh.read().decode())
-
-    return checkpoints
+        return checkpoints
+    except outputhelper.exceptions.OutputException as e:
+        raise exceptions.ReadCheckpointsError(f"Unable to read checkpoint file: {e}")
+    except json.decoder.JSONDecodeError as e:
+        raise exceptions.ReadCheckpointsError(f"Error loading checkpoint file: {e}")
 
 
 def handleCheckpoints(args, virtClient, domObj):
@@ -123,12 +129,7 @@ def handleCheckpoints(args, virtClient, domObj):
     checkpointName = f"{lib.checkpointName}.0"
     parentCheckpoint = False
     cptFile = f"{args.output}/{args.domain}.cpt"
-    try:
-        checkpoints = readCheckpointFile(cptFile)
-    except outputhelper.exceptions.OutputException as e:
-        raise exceptions.ReadCheckpointsError(f"Unable to read checkpoint file: {e}")
-    except json.decoder.JSONDecodeError as e:
-        raise exceptions.ReadCheckpointsError(f"Error loading checkpoint file: {e}")
+    checkpoints = readCheckpointFile(cptFile)
 
     if args.offline is False:
         if virtClient.redefineCheckpoints(domObj, args) is False:
@@ -439,7 +440,7 @@ def main():
         args.level = "inc"
     elif not args.stdout and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
-            logging.error("Target directory must be empty for full or copy backup.")
+            logging.error("Target directory already contains full or copy backup.")
             sys.exit(1)
 
     if args.raw and args.level in ("inc", "diff"):

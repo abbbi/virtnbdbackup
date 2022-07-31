@@ -86,7 +86,7 @@ block device on-the-fly, for easy single file restore or even instant
 boot from an backup image.
 
 For backing up standalone qemu virtual machines not managed by libvirt, see
-this project: https://github.com/abbbi/qmpbackup
+this project: [qmpbackup](https://github.com/abbbi/qmpbackup)
 
 # Prerequisites
 

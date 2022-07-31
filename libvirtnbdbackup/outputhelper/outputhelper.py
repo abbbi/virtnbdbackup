@@ -58,6 +58,7 @@ class outputHelper:
         def open(self, targetFile, mode="wb"):
             """Open target file"""
             try:
+                # pylint: disable=unspecified-encoding,consider-using-with
                 self.fileHandle = open(targetFile, mode)
                 return self.fileHandle
             except OSError as e:
@@ -86,6 +87,7 @@ class outputHelper:
 
             log.info("Writing zip file stream to stdout")
             try:
+                # pylint: disable=consider-using-with
                 self.zipStream = zipfile.ZipFile(
                     sys.stdout.buffer, "x", zipfile.ZIP_STORED
                 )
@@ -104,6 +106,7 @@ class outputHelper:
             zipFile.compress_type = zipfile.ZIP_STORED
 
             try:
+                # pylint: disable=consider-using-with
                 self.zipFileStream = self.zipStream.open(
                     zipFile, mode, force_zip64=True
                 )

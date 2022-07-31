@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class SparseStreamTypes:
+    # pylint: disable=too-many-instance-attributes
     """Sparse stream format
 
     META:   start of meta information header
