@@ -1,3 +1,7 @@
+Version 0.94
+---------
+* virtnbdmap: use outputhelper for replay
+
 Version 0.93
 ---------
 * Code cleanup

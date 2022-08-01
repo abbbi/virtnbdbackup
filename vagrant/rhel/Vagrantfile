@@ -29,5 +29,5 @@ Vagrant.configure("2") do |config|
     virtnbdrestore -h
     virtnbdmap -h
    SHELL
-   config.vm.synced_folder "./", "/vagrant", type: "virtiofs"
+   config.vm.synced_folder "../../dist", "/vagrant", type: "virtiofs"
 end

@@ -81,7 +81,7 @@ def replayChanges(dataRanges, args):
     )
     dataSize = sum(extent["length"] for extent in blockListInc)
     progressBar = lib.progressBar(dataSize, "replaying..", args)
-    with open(args.device, "wb", os.O_DIRECT) as replayDevice:
+    with outputhelper.openfile(args.device, "wb") as replayDevice:
         for extent in blockListInc:
             if args.noprogress:
                 logging.info(
@@ -367,9 +367,8 @@ def main():
     if len(dataFiles) > 1:
         try:
             replayChanges(dataRanges, args)
-        except Exception as e:
+        except outputhelper.exceptions.OutputException as e:
             logging.error("Unable to replay changes: %s", e)
-            logging.exception(e)
             lib.killProc(nbdkitProcess.pid)
             sys.exit(1)
 
