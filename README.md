@@ -184,7 +184,7 @@ For setup within an virtualenv see [venv scripts](venv/).
 
 ## Docker images
 
-See: https://github.com/adrianparilli/virtnbdbackup-docker
+You can build an docker image using the existing [Dockerfile](docker/)
 
 # Backup Format
 
@@ -600,7 +600,7 @@ restore accordingly, the following changes are done:
 > location as set in the virtual machine configuration.
 
 A restored virtual machine can then been defined and started right from the
-restored directory:
+restored directory (or use option `-D` to define automatically):
 
 ```
 virtnbdrestore -c -i /tmp/backupset/ -o /tmp/restore

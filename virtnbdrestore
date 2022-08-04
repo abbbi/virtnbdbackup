@@ -600,9 +600,9 @@ def main():
         args.level = "full"
 
         if not virtClient.remoteHost:
-            os.makedirs(args.output, exist_ok=True)
+            outputhelper.outputHelper.Directory(args.output)
         else:
-            sshClient.run(f"mkdir -p {args.output}")
+            sshClient.sftp.mkdir(args.output)
 
         ret = False
         if args.sequence is not None:

@@ -1,3 +1,10 @@
+Version 0.95
+---------
+* virtnbdrestore: code cleanup
+* Add updated dockerfile based on work by Adrián Parilli
+<a.parilli@staffwerke.de> to the repository.
+* Update README
+
 Version 0.94
 ---------
 * virtnbdmap: use outputhelper for replay
