@@ -185,9 +185,8 @@ def restoreSequence(args, dataFiles, virtClient, sshClient):
         ):
             return False
 
-        socketFile = lib.getSocketFile(args.socketfile)
         nbdClient, connection = startNbd(
-            args, diskName, targetFile, socketFile, virtClient, sshClient
+            args, diskName, targetFile, virtClient, sshClient
         )
 
         result = writeData(args, stream, sourceFile, targetFile, nbdClient, connection)
@@ -242,10 +241,11 @@ def getHeader(diskFile, stream):
         return False
 
 
-def startNbd(args, exportName, targetFile, socketFile, virtClient, sshClient):
+def startNbd(args, exportName, targetFile, virtClient, sshClient):
     """Start NBD service for restore"""
     qFh = qemuhelper.qemuHelper(exportName)
     if not virtClient.remoteHost:
+        socketFile = lib.getSocketFile(args.socketfile)
         logging.info("Starting NBD server on socket: [%s]", socketFile)
         err = qFh.startRestoreNbdServer(targetFile, socketFile)
         if err.err is not None:
@@ -374,9 +374,8 @@ def restore(args, vmConfig, virtClient, sshClient):
         if not createDiskFile(meta, targetFile, sshClient):
             return False, False
 
-        socketFile = lib.getSocketFile(args.socketfile)
         nbdClient, connection = startNbd(
-            args, meta["diskName"], targetFile, socketFile, virtClient, sshClient
+            args, meta["diskName"], targetFile, virtClient, sshClient
         )
 
         result = False

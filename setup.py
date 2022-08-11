@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
-import os
+"""Setup virtnbdbackup"""
 from setuptools import setup, find_packages
 
 import libvirtnbdbackup
-
-
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
-
 
 setup(
     name="virtnbdbackup",

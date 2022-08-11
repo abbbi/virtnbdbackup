@@ -87,17 +87,13 @@ class client:
     def _reqAuth(uri):
         """If authentication file is passed or qemu+ssh is used,
         no user and password are required."""
-        if "authfile" in uri:
-            return True
-        return False
+        return "authfile" in uri
 
     @staticmethod
     def _isSsh(uri):
         """If authentication file is passed or qemu+ssh is used,
         no user and password are required."""
-        if uri.startswith("qemu+ssh"):
-            return True
-        return False
+        return uri.startswith("qemu+ssh")
 
     def _useAuth(self, args):
         """Check wether we want to use advanced auth method"""

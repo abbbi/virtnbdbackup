@@ -1,3 +1,10 @@
+Version 0.96
+---------
+* Code cleanup
+* Add MANIFEST.in: add additional files like dockerfile to source dist
+package.
+* Add LICENSE and Changelog file to rpm/debian package distribution configs.
+
 Version 0.95
 ---------
 * virtnbdrestore: code cleanup
