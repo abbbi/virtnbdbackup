@@ -13,6 +13,11 @@ of your `kvm/qemu` virtual machines.
 
 - [About](#about)
 - [Prerequisites](#prerequisites)
+  - [Libvirt versions <= 7.6.0 (Debian Bullseye, Ubuntu 20.x)](#libvirt-versions--760-debian-bullseye-ubuntu-20x)
+  - [RHEL/Centos Stream, Alma](#rhelcentos-stream-alma)
+    - [Version <= 8.5](#version--85)
+    - [Version >= 8.6](#version--86)
+  - [Environment dependencies](#environment-dependencies)
 - [Installation](#installation)
   - [Python package](#python-package)
   - [RPM package](#rpm-package)
@@ -90,25 +95,18 @@ this project: [qmpbackup](https://github.com/abbbi/qmpbackup)
 
 # Prerequisites
 
-* Obviously a libvirt/qemu version that supports the incremental backup
-  features.
+Obviously you require a libvirt/qemu version that supports the incremental backup
+features. Following, you will find a short overview which distributions ship the
+required versions.
 
-  On Centos8/Almalinux, libvirt packages from the advanced virtualization
-  stream support all required features. To install libvirt from the stream use:
+## Libvirt versions <= 7.6.0 (Debian Bullseye, Ubuntu 20.x)
 
-  ```
-  yum install centos-release-advanced-virtualization
-  yum makecache
-  yum module install virt
-  ```
+If you are using Debian Bullseye or Ubuntu 20.x, the included libvirt version
+already supports the features required, but does not enable them by default!
 
-  Debian bullseye or Ubuntu 20.x include libvirt versions supporting this
-  feature already, but the virtual machine configuration must be adopted
-  for it to be usable.
-
-  To activate the incremental backup feature on libvirt versions <= 7.6.0 
-  change the virtual machine config using `virsh edit <vm>` like so: (the
-  first line must be changed too!):
+To enable the incremental backup feature on these libvirt versions 
+change the virtual machine config using `virsh edit <vm>` like so: (the
+first line must be changed, too!):
 
  ```
   <domain type='kvm' id='1' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
@@ -122,6 +120,30 @@ this project: [qmpbackup](https://github.com/abbbi/qmpbackup)
 
 `Note`:
 > You must restart the virtual machine after enabling the feature!
+ 
+## RHEL/Centos Stream, Alma
+
+### Version <= 8.5
+
+Up to RHEL/Centos8/Almalinux 8.5, libvirt packages from the advanced
+virtualization stream support all required features. To install libvirt from
+the stream use:
+
+  ```
+  yum install centos-release-advanced-virtualization
+  yum makecache
+  yum module install virt
+  ```
+
+and enable the feature by adjusting the virtual machine config.
+
+### Version >= 8.6
+
+As of RHEL 8.6, the advanced virtualization stream has been deprecated,
+and all components supporting the new feature are included in the
+virt:rhel module, the feature is enabled by default. [(Details)](https://access.redhat.com/solutions/6959344)
+
+## Environment dependencies
  
  * python libvirt module version  >= 6.0.0 (yum install python3-libvirt)
  * python libnbd bindings (https://github.com/libguestfs/libnbd) version >= `1.5.5` (yum install python3-libnbd)
