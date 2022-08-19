@@ -1,5 +1,19 @@
 """
-Sparsestream format description
+    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2020 Red Hat, Inc.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from dataclasses import dataclass
@@ -9,6 +23,11 @@ from dataclasses import dataclass
 class SparseStreamTypes:
     # pylint: disable=too-many-instance-attributes
     """Sparse stream format
+
+    Extended format based on the examples provided by the
+    ovirt-imageio project:
+
+    https://github.com/oVirt/ovirt-imageio/tree/master/examples
 
     META:   start of meta information header
     DATA:   data block marker
