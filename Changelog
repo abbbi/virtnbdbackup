@@ -1,3 +1,8 @@
+Version 0.99
+---------
+* Add python3-paramiko to debian build dependencies (#68)
+
+
 Version 0.98
 ---------
 * Add missing license/copyright headers
