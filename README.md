@@ -35,6 +35,7 @@ of your `kvm/qemu` virtual machines.
   - [Rotating backups](#rotating-backups)
   - [Excluding disks](#excluding-disks)
   - [Estimating backup size](#estimating-backup-size)
+  - [Backup threshold](#backup-threshold)
   - [Backup concurrency](#backup-concurrency)
   - [Compression](#compression)
   - [Remote Backup](#remote-backup)
@@ -385,16 +386,34 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset -i sdf
 ## Estimating backup size
 
 Sometimes it can be useful to estimate the data size prior to executing the
-next `full` or `copy` backup. This can be done by using the option `-p` which will
-query the virtual machine extents and provides a summary about the size
-of the changed extents:
+next `incremental` or `differential` backup. This can be done by using the
+option `-p` which will query the virtual machine checkpoint information for the
+current size:
 
 ```
-virtnbdbackup -d vm1 -l full -o /tmp/backupset -p
+virtnbdbackup -d vm1 -l inc -o /tmp/backupset -p
 [..]
-2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: Got 866 extents
-2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 2147483648 bytes disk size
-2021-03-29 11:32:03 INFO virtnbdbackup - backupDisk: 1394147328 bytes of data extents to backup
+[..] INFO virtnbdbackup - handleCheckpoints [MainThread]: Using checkpoint name: [virtnbdbackup.1].
+[..] INFO virtnbdbackup - main [MainThread]: Estimated checkpoint backup size: [24248320] Bytes
+```
+
+`Note:`
+> Not all libvirt versions support the flag required to read the checkpoint
+> size. If the estimated checkpoint size is allways 0, your libvirt version
+> might miss the required features.
+
+## Backup threshold
+
+If an `incremental` or `differential` backup is attempted and the virtual machine
+is active, it is possible to specify an threshold for executing the backup
+using the `--threshold` option. The backup will then only be executed if the
+amount of data changed meets the specified threshold (in bytes):
+
+```
+virtnbdbackup -d vm1 -l inc -o /tmp/backupset --threshold 3311264
+[..]
+[..] INFO virtnbdbackup - handleCheckpoints [MainThread]: Using checkpoint name: [virtnbdbackup.1].
+[..] ]virtnbdbackup - main [MainThread]: Backup size [3211264] does not meet required threshold [3311264], skipping backup.
 ```
 
 ## Backup concurrency

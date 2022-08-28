@@ -1,7 +1,13 @@
+Version 1.0
+---------
+* Code cleanup
+* (#69) Rework --printonly option: use checkpoint size as reported by libvirt
+for estimating next incremental or differential backup size.
+* (#70) Add --threshold option for incremental / differential backup 
+
 Version 0.99
 ---------
 * Add python3-paramiko to debian build dependencies (#68)
-
 
 Version 0.98
 ---------

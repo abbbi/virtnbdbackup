@@ -546,6 +546,25 @@ class client:
         """Check if an checkpoint exists"""
         return domObj.checkpointLookupByName(checkpointName)
 
+    @staticmethod
+    def getCheckpointXml(cptObj):
+        """Get Checkpoint XML including size, if possible. Flag
+        is not supported amongst all libvirt versions."""
+        try:
+            return cptObj.getXMLDesc(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
+        except libvirt.libvirtError:
+            return cptObj.getXMLDesc()
+
+    def getCheckpointSize(self, domObj, checkpointName):
+        """Return current size of checkpoint for all disks"""
+        size = 0
+        cpt = self.checkpointExists(domObj, checkpointName)
+        cptTree = self._getTree(self.getCheckpointXml(cpt))
+        for s in cptTree.xpath("disks/disk/@size"):
+            size += int(s)
+
+        return size
+
     def removeAllCheckpoints(self, domObj, checkpointList, args, defaultCheckpointName):
         """Remove all existing checkpoints for a virtual machine,
         used during FULL backup to reset checkpoint chain
@@ -606,8 +625,7 @@ class client:
             log.warning("Unable to stop backup job: [%s]", err)
             return False
 
-    @staticmethod
-    def redefineCheckpoints(domObj, args):
+    def redefineCheckpoints(self, domObj, args):
         """Redefine checkpoints from persistent storage"""
         # get list of all .xml files in checkpointdir
         log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
@@ -636,7 +654,7 @@ class client:
                 return False
 
             try:
-                _ = domObj.checkpointLookupByName(checkpointName)
+                _ = self.checkpointExists(domObj, checkpointName)
                 log.debug("Checkpoint [%s] found", checkpointName)
                 continue
             except libvirt.libvirtError as e:
@@ -657,15 +675,14 @@ class client:
 
         return True
 
-    @staticmethod
-    def backupCheckpoint(args, domObj):
+    def backupCheckpoint(self, args, domObj):
         """save checkpoint config to persistent storage"""
         checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
         log.info("Saving checkpoint config to: %s", checkpointFile)
         try:
             with outputhelper.openfile(checkpointFile, "wb") as f:
-                c = domObj.checkpointLookupByName(args.cpt.name)
-                f.write(c.getXMLDesc().encode())
+                c = self.checkpointExists(domObj, args.cpt.name)
+                f.write(self.getCheckpointXml(c).encode())
                 return True
         except outputhelper.exceptions.OutputException as errmsg:
             log.error(

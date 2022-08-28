@@ -62,11 +62,11 @@ def checkForeign(args, virtClient, domObj):
     if not foreign:
         return True
 
-    logging.fatal("VM has external checkpoint: [%s]", foreign)
+    logging.fatal("Unknown checkpoint found: [%s]", foreign)
     logging.fatal("This checkpoint has not been created by this utility.")
     logging.fatal(
-        "To ensure checkpoint chain consistency,"
-        "remove existing checkpoints,"
+        "To ensure backup chain consistency, "
+        "remove existing checkpoints "
         "and start a new backup chain by creating a full backup."
     )
 
@@ -362,6 +362,13 @@ def main():
         ),
         action="store_true",
     )
+    opt.add_argument(
+        "-T",
+        "--threshold",
+        type=int,
+        default=None,
+        help=("Execute backup only if threshold is reached."),
+    )
     remopt = parser.add_argument_group("Remote Backup options")
     argopt.addRemoteArgs(remopt)
     debopt = parser.add_argument_group("Debug options")
@@ -390,7 +397,7 @@ def main():
         "-p",
         "--printonly",
         default=False,
-        help="Quit after printing extent information",
+        help="Quit after printing estimated checkpoint size.",
         action="store_true",
     )
     argopt.addDebugArgs(debopt)
@@ -454,10 +461,6 @@ def main():
             "Backup format raw does not support incremental or differential backup."
         )
         sys.exit(1)
-
-    if args.printonly is True:
-        logging.info("Printing only extend information: enforce level copy")
-        args.level = "copy"
 
     if hasPartial(args):
         sys.exit(1)
@@ -536,6 +539,21 @@ def main():
         logging.error(errmsg)
         sys.exit(1)
 
+    if args.printonly and args.cpt.parent and not args.offline:
+        size = virtClient.getCheckpointSize(domObj, args.cpt.parent)
+        logging.info("Estimated checkpoint backup size: [%s] Bytes", size)
+        sys.exit(0)
+
+    if args.threshold and args.cpt.parent and not args.offline:
+        size = virtClient.getCheckpointSize(domObj, args.cpt.parent)
+        if size < args.threshold:
+            logging.info(
+                "Backup size [%s] does not meet required threshold [%s], skipping backup.",
+                size,
+                args.threshold,
+            )
+            sys.exit(0)
+
     logging.info("Temporary scratch file target directory: %s", args.scratchdir)
 
     outHelper.Directory(args.scratchdir)
@@ -555,10 +573,9 @@ def main():
         except exceptions.CheckpointException as e:
             logging.error("Unable to append checkpoint file: %s", e)
             sys.exit(1)
-        if args.printonly is False:
-            if not virtClient.backupCheckpoint(args, domObj):
-                virtClient.stopBackup(domObj)
-                sys.exit(1)
+        if not virtClient.backupCheckpoint(args, domObj):
+            virtClient.stopBackup(domObj)
+            sys.exit(1)
 
     if args.startonly is True:
         logging.info("Started backup job for debugging, exiting.")
@@ -590,12 +607,11 @@ def main():
         sys.exit(1)
 
     configFile = None
-    if args.printonly is False:
-        configFile = backupConfig(args, vmConfig)
+    configFile = backupConfig(args, vmConfig)
 
     backupBootConfig(args, virtClient)
 
-    if args.stdout is True and args.printonly is False:
+    if args.stdout is True:
         addFiles(args, configFile, fileStream, logFile)
 
     if counter.count.warnings > 0 and args.strict is True:
@@ -861,9 +877,6 @@ def backupDisk(args, disk, count, fileStream, virtClient):
     logging.debug("%s", lib.dumpExtentJson(extents))
     logging.info("%s bytes disk size", diskSize)
     logging.info("%s bytes of data extents to backup", thinBackupSize)
-    if args.printonly is True:
-        nbdClient.disconnect()
-        return True
 
     if args.level in ("inc", "diff") and thinBackupSize == 0:
         logging.info("No dirty blocks found")

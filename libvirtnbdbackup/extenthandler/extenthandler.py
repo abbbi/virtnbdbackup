@@ -70,9 +70,7 @@ class ExtentHandler:
         log.debug("Metacontext is: %s", metacontext)
         log.debug("Offset is: %s", offset)
         log.debug("Status is: %s", status)
-        if metacontext != self._metaContext:
-            log.error("Meta context does not match")
-            return
+        assert metacontext == self._metaContext
         for entry in entries:
             self._extentEntries.append(entry)
         log.debug("entries: %s", len(self._extentEntries))
