@@ -38,33 +38,16 @@ class SparseStream:
 
     def dumpMetadata(
         self,
+        args,
         virtualSize,
         dataSize,
         disk,
-        checkpointName,
-        parentCheckpoint,
-        incremental,
-        compressed,
     ):
         """First block in backup stream is Meta data information
-        about virtual size of the disk being backed up
-
+        about virtual size of the disk being backed up, aswell
+        as various information regarding backup.
         Dumps Metadata frame to be written at start of stream in
         json format.
-
-            Parameters:
-                virtualSize:(int)       virtual size of disk
-                dataSize:   (int)       used space of disk
-                diskName:   (str)       name of the disk backed up
-                diskFormat: (str)       disk format (raw, qcow)
-                checkpointName:   (str)  checkpoint name
-                compressionmethod:(str)  used compression method
-                compressed:   (boolean)  flag whether if data is compressed
-                parentCheckpoint: (str)  parent checkpoint
-                incremental: (boolean)   whether if backup is incremental
-
-            Returns:
-                json.dumps: (str)   json encoded meta frame
         """
         meta = {
             "virtualSize": virtualSize,
@@ -72,11 +55,11 @@ class SparseStream:
             "date": datetime.datetime.now().isoformat(),
             "diskName": disk.target,
             "diskFormat": disk.format,
-            "checkpointName": checkpointName,
-            "compressed": compressed,
+            "checkpointName": args.cpt.name,
+            "compressed": args.compress,
             "compressionMethod": self.compressionMethod,
-            "parentCheckpoint": parentCheckpoint,
-            "incremental": incremental,
+            "parentCheckpoint": args.cpt.parent,
+            "incremental": (args.level in ("inc", "diff")),
             "streamVersion": self.version,
         }
         return json.dumps(meta, indent=4).encode("utf-8")
@@ -133,13 +116,11 @@ class SparseStream:
             json.loads: (dict)  Decoded json string as python object
         """
         try:
-            meta = json.loads(s.decode("utf-8"))
+            return json.loads(s.decode("utf-8"))
         except json.decoder.JSONDecodeError as err:
             raise exceptions.MetaHeaderFormatException(
                 f"Invalid meta header format: [{err}]"
             ) from err
-
-        return meta
 
     def writeFrame(self, writer, kind, start, length):
         """Write backup frame

@@ -281,15 +281,16 @@ def main():
     stream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
 
+    # pylint: disable=consider-using-with
     blockMap = tempfile.NamedTemporaryFile(delete=False, prefix="block.", suffix=".map")
     logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
 
     dataRanges = []
-    for file in dataFiles:
+    for dFile in dataFiles:
         try:
-            reader = outputhelper.openfile(file, "rb")
+            reader = outputhelper.openfile(dFile, "rb")
         except outputhelper.exceptions.OutputException as e:
-            logging.error("[%s]: [%s]", file, e)
+            logging.error("[%s]: [%s]", dFile, e)
             sys.exit(1)
 
         ranges, meta = getDataRanges(stream, sTypes, reader)
@@ -302,7 +303,7 @@ def main():
             logging.info(json.dumps(dataRanges, indent=4))
         else:
             logging.info(
-                "Parsed [%s] block offsets from file [%s]", len(dataRanges), file
+                "Parsed [%s] block offsets from file [%s]", len(dataRanges), dFile
             )
         reader.close()
 

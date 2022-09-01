@@ -1,3 +1,8 @@
+Version 1.1
+---------
+* Code cleanup
+* Add warning if reading checkpoint information with size fails.
+
 Version 1.0
 ---------
 * Code cleanup

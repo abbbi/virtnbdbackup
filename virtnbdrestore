@@ -105,22 +105,26 @@ def restoreData(args, stream, dataFile, targetFile, nbdClient, connection):
         try:
             kind, start, length = stream.readFrame(reader)
         except exceptions.StreamFormatException as err:
-            logging.error("Cant read stream at pos: %s: %s", reader.tell(), err)
+            logging.error("Cant read stream at pos: [%s]: [%s]", reader.tell(), err)
             raise baseexception.RestoreError from err
         if kind == sTypes.ZERO:
-            logging.debug("Zero segment from %s length: %s", start, length)
+            logging.debug("Zero segment from [%s] length: [%s]", start, length)
         elif kind == sTypes.DATA:
-            logging.debug("Processing data segment from %s length: %s", start, length)
+            logging.debug(
+                "Processing data segment from [%s] length: [%s]", start, length
+            )
 
             originalSize = length
             if trailer:
-                logging.debug("Block: %s", dataBlockCnt)
-                logging.debug("Original block size: %s", length)
+                logging.debug("Block: [%s]", dataBlockCnt)
+                logging.debug("Original block size: [%s]", length)
                 length = trailer[dataBlockCnt]
-                logging.debug("Compressed block size: %s", length)
+                logging.debug("Compressed block size: [%s]", length)
 
             if originalSize >= nbdClient.maxRequestSize:
-                logging.debug("Chunked read/write, start: %s, len: %s", start, length)
+                logging.debug(
+                    "Chunked read/write, start: [%s], len: [%s]", start, length
+                )
                 try:
                     written = lib.readChunk(
                         reader,
@@ -132,7 +136,7 @@ def restoreData(args, stream, dataFile, targetFile, nbdClient, connection):
                     )
                 except Exception as e:
                     raise baseexception.RestoreError from e
-                logging.debug("Wrote: %s", written)
+                logging.debug("Wrote: [%s]", written)
             else:
                 try:
                     data = reader.read(length)
@@ -151,16 +155,16 @@ def restoreData(args, stream, dataFile, targetFile, nbdClient, connection):
             progressBar.close()
             if dataSize != meta["dataSize"]:
                 logging.error(
-                    "Error: restored data size %s != %s",
+                    "Error: restored data size [%s] != [%s]",
                     dataSize,
                     meta["dataSize"],
                 )
                 raise baseexception.RestoreError
             break
 
-    logging.info("End of stream, %s bytes of data processed", dataSize)
+    logging.info("End of stream, [%s] bytes of data processed", dataSize)
     if meta["checkpointName"] == args.until:
-        logging.info("Reached checkpoint %s, stopping", args.until)
+        logging.info("Reached checkpoint [%s], stopping", args.until)
         raise baseexception.UntilCheckpointReached
 
     return True
@@ -223,7 +227,7 @@ def createDiskFile(meta, targetFile, sshClient):
     try:
         qFh.create(targetFile, meta["virtualSize"], meta["diskFormat"], sshClient)
     except qemuhelper.exceptions.ProcessError as e:
-        logging.error("Cant create restore target: %s", e)
+        logging.error("Cant create restore target: [%s]", e)
         return False
 
     return True
@@ -234,10 +238,10 @@ def getHeader(diskFile, stream):
     try:
         return lib.dumpMetaData(diskFile, stream)
     except exceptions.StreamFormatException as errmsg:
-        logging.error("Reading metadata from %s failed: %s", diskFile, errmsg)
+        logging.error("Reading metadata from [%s] failed: [%s]", diskFile, errmsg)
         return False
     except OSError as errmsg:
-        logging.error("Reading data file %s failed: %s", diskFile, errmsg)
+        logging.error("Reading data file [%s] failed: [%s]", diskFile, errmsg)
         return False
 
 
@@ -337,11 +341,11 @@ def restore(args, vmConfig, virtClient, sshClient):
 
     for disk in vmDisks:
         if args.disk not in (None, disk.target):
-            logging.info("Skipping disk %s for restore", disk.target)
+            logging.info("Skipping disk [%s] for restore", disk.target)
             continue
 
         restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
-        logging.debug("Restoring disk: %s", restoreDisk)
+        logging.debug("Restoring disk: [%s]", restoreDisk)
         if len(restoreDisk) < 1:
             logging.warning(
                 "No backup file for disk [%s] found, assuming it has been excluded.",
@@ -356,19 +360,19 @@ def restore(args, vmConfig, virtClient, sshClient):
         targetFile = setTargetFile(args, disk)
 
         if args.raw and disk.format == "raw":
-            logging.info("Restoring raw image to %s", targetFile)
+            logging.info("Restoring raw image to [%s]", targetFile)
             lib.copy(restoreDisk[0], targetFile, sshClient)
             continue
 
         if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
             logging.error(
-                "%s Unable to locate base full or copy backup.", restoreDisk[0]
+                "[%s]: Unable to locate base full or copy backup.", restoreDisk[0]
             )
             return False, False
 
         meta = getHeader(restoreDisk[0], stream)
         if not meta:
-            logging.error("Reading metadata from %s failed", restoreDisk[0])
+            logging.error("Reading metadata from [%s] failed", restoreDisk[0])
             return False, False
 
         if not createDiskFile(meta, targetFile, sshClient):
@@ -569,7 +573,7 @@ def main():
             sys.exit(1)
     else:
         dataFiles = lib.getLatest(args.input, "*.data") or (
-            logging.error("No data files found in directory: %s", args.input),
+            logging.error("No data files found in directory: [%s]", args.input),
             sys.exit(1),
         )
 
@@ -593,10 +597,7 @@ def main():
             logging.error("No domain config file found"),
             sys.exit(1),
         )
-        logging.info("Latest config file found: %s", vmConfig)
         logging.info("Using latest config file: [%s]", vmConfig)
-
-        args.level = "full"
 
         if not virtClient.remoteHost:
             outputhelper.outputHelper.Directory(args.output)

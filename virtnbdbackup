@@ -114,9 +114,9 @@ def readCheckpointFile(cFile):
             checkpoints = json.loads(fh.read().decode())
         return checkpoints
     except outputhelper.exceptions.OutputException as e:
-        raise exceptions.ReadCheckpointsError(f"Unable to read checkpoint file: {e}")
+        raise exceptions.ReadCheckpointsError(f"Unable to read checkpoint file: [{e}]")
     except json.decoder.JSONDecodeError as e:
-        raise exceptions.ReadCheckpointsError(f"Error loading checkpoint file: {e}")
+        raise exceptions.ReadCheckpointsError(f"Error loading checkpoint file: [{e}]")
 
 
 def handleCheckpoints(args, virtClient, domObj):
@@ -468,7 +468,7 @@ def main():
     if not args.checkpointdir:
         args.checkpointdir = f"{args.output}/checkpoints"
     else:
-        logging.info("Store checkpoints in: %s", args.checkpointdir)
+        logging.info("Store checkpoints in: [%s]", args.checkpointdir)
 
     outHelper.Directory(args.checkpointdir)
 
@@ -479,10 +479,10 @@ def main():
         logging.error("%s", e)
         sys.exit(1)
     except libvirthelper.exceptions.connectionFailed as e:
-        logging.error("Cant connect libvirt daemon: %s", e)
+        logging.error("Cant connect libvirt daemon: [%s]", e)
         sys.exit(1)
 
-    logging.info("Libvirt library version: %s", virtClient.libvirtVersion)
+    logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
 
     if virtClient.hasIncrementalEnabled(domObj) is False:
         logging.error("Domain is missing required incremental-backup capability.")
@@ -521,7 +521,8 @@ def main():
 
     args.info = virtClient.getDomainInfo(vmConfig)
     logging.info(
-        "Domain has %s disks attached which support changed block tracking.", len(disks)
+        "Domain has [%s] disks attached which support changed block tracking.",
+        len(disks),
     )
     if args.worker is None or args.worker > int(len(disks)):
         args.worker = int(len(disks))
@@ -554,13 +555,13 @@ def main():
             )
             sys.exit(0)
 
-    logging.info("Temporary scratch file target directory: %s", args.scratchdir)
+    logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
 
     outHelper.Directory(args.scratchdir)
 
     if not virtClient.remoteHost:
         args.socketfile = lib.getSocketFile(args.socketfile)
-        logging.info("NDB Endpoint socket: %s", args.socketfile)
+        logging.info("NDB Endpoint socket: [%s]", args.socketfile)
 
     if args.offline is not True:
         if not startBackupJob(args, virtClient, domObj, disks):
@@ -571,7 +572,7 @@ def main():
         try:
             saveCheckpointFile(args)
         except exceptions.CheckpointException as e:
-            logging.error("Unable to append checkpoint file: %s", e)
+            logging.error("Unable to append checkpoint file: [%s]", e)
             sys.exit(1)
         if not virtClient.backupCheckpoint(args, domObj):
             virtClient.stopBackup(domObj)
@@ -593,7 +594,7 @@ def main():
                 if future.result() is not True:
                     raise exceptions.DiskBackupFailed("Backup of one disk failed")
     except exceptions.BackupException as e:
-        logging.error("Unable to backup Disk: %s", e)
+        logging.error("Unable to backup Disk: [%s]", e)
     except Exception as e:
         logging.fatal("Unknown Exception during backup: %s", e)
         logging.exception(e)
@@ -723,7 +724,7 @@ def setMetaContext(args, disk):
         else:
             metaContext = f"qemu:dirty-bitmap:backup-{disk.target}"
 
-        logging.info("INC/DIFF backup: set context to %s", metaContext)
+        logging.info("INC/DIFF backup: set context to [%s]", metaContext)
 
     return metaContext
 
@@ -788,7 +789,7 @@ def renamePartial(targetFilePartial, targetFile):
     try:
         os.rename(targetFilePartial, targetFile)
     except OSError as e:
-        raise exceptions.DiskBackupFailed(f"Unable to rename file: {e}") from e
+        raise exceptions.DiskBackupFailed(f"Unable to rename file: [{e}]") from e
 
 
 def startOfflineNBD(args, disk, remoteHost):
@@ -827,7 +828,7 @@ def truncate(writer, size):
         writer.seek(0)
     except OSError as e:
         raise exceptions.DiskBackupWriterException(
-            f"Unable to truncate target file: {e}"
+            f"Unable to truncate target file: [{e}]"
         ) from e
 
 
@@ -844,7 +845,7 @@ def connectNbd(args, disk, metaContext, remoteIP, virtClient):
         return nbdClient.waitForServer(), nbdClient
     except nbdhelper.exceptions.NbdClientException as e:
         raise exceptions.DiskBackupFailed(
-            f"NBD endpoint: {cType}: connection failed: {e}"
+            f"NBD endpoint: [{cType}]: connection failed: [{e}]"
         )
 
 
@@ -891,13 +892,10 @@ def backupDisk(args, disk, count, fileStream, virtClient):
     else:
         logging.info("Creating thin provisioned stream backup image")
         metadata = stream.dumpMetadata(
+            args,
             diskSize,
             thinBackupSize,
             disk,
-            args.cpt.name,
-            args.cpt.parent,
-            (args.level in ("inc", "diff")),
-            args.compress,
         )
         stream.writeFrame(writer, sTypes.META, 0, len(metadata))
         writer.write(metadata)

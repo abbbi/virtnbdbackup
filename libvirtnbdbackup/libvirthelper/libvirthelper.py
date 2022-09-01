@@ -552,7 +552,10 @@ class client:
         is not supported amongst all libvirt versions."""
         try:
             return cptObj.getXMLDesc(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
-        except libvirt.libvirtError:
+        except libvirt.libvirtError as e:
+            logging.warning(
+                "Unable to get checkpoint info with size information: [%s]", e
+            )
             return cptObj.getXMLDesc()
 
     def getCheckpointSize(self, domObj, checkpointName):
@@ -569,8 +572,6 @@ class client:
         """Remove all existing checkpoints for a virtual machine,
         used during FULL backup to reset checkpoint chain
         """
-
-        # clean persistent storage in args.checkpointdir
         log.debug("Cleaning up persistent storage %s", args.checkpointdir)
         try:
             for checkpointFile in glob.glob(f"{args.checkpointdir}/*.xml"):
@@ -627,7 +628,6 @@ class client:
 
     def redefineCheckpoints(self, domObj, args):
         """Redefine checkpoints from persistent storage"""
-        # get list of all .xml files in checkpointdir
         log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
         checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
         checkpointList.sort(key=os.path.getmtime)
@@ -678,7 +678,7 @@ class client:
     def backupCheckpoint(self, args, domObj):
         """save checkpoint config to persistent storage"""
         checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
-        log.info("Saving checkpoint config to: %s", checkpointFile)
+        log.info("Saving checkpoint config to: [%s]", checkpointFile)
         try:
             with outputhelper.openfile(checkpointFile, "wb") as f:
                 c = self.checkpointExists(domObj, args.cpt.name)
@@ -708,7 +708,7 @@ class client:
         if cpts:
             for cpt in cpts:
                 checkpointName = cpt.getName()
-                log.debug("Found checkpoint: [%s]", checkpointName)
+                log.debug("Found foreign checkpoint: [%s]", checkpointName)
                 if defaultCheckpointName not in checkpointName:
                     return checkpointName
         return None

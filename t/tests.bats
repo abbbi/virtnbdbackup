@@ -391,7 +391,7 @@ toOut() {
     rm -rf ${TMPDIR}/RESTOREINC/
     run ../virtnbdrestore -i ${TMPDIR}/inctest/ --until virtnbdbackup.1 -o ${TMPDIR}/RESTOREINC/
     echo "output = ${output}"
-    [[ "${output}" =~  "Reached checkpoint virtnbdbackup.1" ]]
+    [[ "${output}" =~  "Reached checkpoint [virtnbdbackup.1]" ]]
     echo "output = ${output}"
     [[ ! "${output}" =~  "Applying data from backup file.*virtnbdbackup.2.*" ]]
 }
