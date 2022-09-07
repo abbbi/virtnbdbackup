@@ -14,6 +14,7 @@ import lz4.frame
 from tqdm import tqdm
 
 from libvirtnbdbackup.sshutil import exceptions as sshexception
+from libvirtnbdbackup import outputhelper
 
 log = logging.getLogger(__name__)
 
@@ -196,7 +197,7 @@ def dumpExtentJson(extents):
 
 def dumpMetaData(dataFile, stream):
     """read metadata header"""
-    with open(dataFile, "rb") as reader:
+    with outputhelper.openfile(dataFile, "rb") as reader:
         _, _, length = stream.readFrame(reader)
         return stream.loadMetadata(reader.read(length))
 

@@ -175,7 +175,10 @@ class client:
         machine, which might block"""
         for disk in disks:
             blockInfo = domObj.blockJobInfo(disk.target)
-            if blockInfo and blockInfo["type"] == 5:
+            if (
+                blockInfo
+                and blockInfo["type"] == libvirt.VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP
+            ):
                 logging.debug("Running block jobs for disk [%s]", disk.target)
                 logging.debug(blockInfo)
                 return True
@@ -225,14 +228,9 @@ class client:
         """Return object with general vm information relevant
         for backup"""
         tree = self._getTree(vmConfig)
-        settings = {
-            "loader": None,
-            "nvram": None,
-            "kernel": None,
-            "initrd": None,
-        }
+        settings = {}
 
-        for flag in iter(settings):
+        for flag in ["loader", "nvram", "kernel", "initrd"]:
             try:
                 settings[flag] = tree.find("os").find(flag).text
             except AttributeError as e:

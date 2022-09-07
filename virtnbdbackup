@@ -607,7 +607,6 @@ def main():
         logging.error("Error during backup")
         sys.exit(1)
 
-    configFile = None
     configFile = backupConfig(args, vmConfig)
 
     backupBootConfig(args, virtClient)
@@ -638,14 +637,11 @@ def addFiles(args, configFile, zipStream, logFile):
             for filename in files:
                 zipStream.zipStream.write(os.path.join(dirname, filename))
 
-    for setting in args.info:
-        if args.info[setting] is not None:
-            logging.info(
-                "Adding additional config file [%s] to zipfile", args.info[setting]
-            )
-            zipStream.zipStream.write(
-                args.info[setting], os.path.basename(args.info[setting])
-            )
+    for setting, val in args.info.items():
+        logging.info(
+            "Adding additional [%s] setting file [%s] to zipfile", setting, val
+        )
+        zipStream.zipStream.write(val, os.path.basename(val))
 
     logging.info("Adding backup log [%s] to zipfile", logFile)
     zipStream.zipStream.write(logFile, logFile)
@@ -671,9 +667,9 @@ def backupConfig(args, vmConfig):
         with outputhelper.openfile(configFile, "w") as fh:
             fh.write(vmConfig)
         return configFile
-    except:
-        logging.error("Error saving VM config.")
-        raise
+    except outputhelper.exceptions.OutputException as e:
+        logging.error("Error saving VM config: [%s]", e)
+        return None
 
 
 def sshSession(args, remoteHost):
@@ -692,23 +688,20 @@ def backupBootConfig(args, virtClient):
     sshClient = None
     remoteCopy = None
 
-    for setting in args.info.keys():
-        if args.info[setting] is not None:
-            if virtClient.remoteHost and not sshClient:
-                sshClient = sshSession(args, virtClient.remoteHost)
-                if not sshClient:
-                    logging.warning(
-                        "Saving additional boot config failed: cant setup ssh session."
-                    )
-                    return
-                remoteCopy = sshClient.copyFrom
+    for setting, val in args.info.items():
+        if virtClient.remoteHost and not sshClient:
+            sshClient = sshSession(args, virtClient.remoteHost)
+            if not sshClient:
+                logging.warning(
+                    "Saving additional boot config failed: cant setup ssh session."
+                )
+                return
+            remoteCopy = sshClient.copyFrom
 
-            fileBase = os.path.basename(args.info[setting])
-            tfile = f"{args.output}/{fileBase}.{ident}"
-            logging.info(
-                "Save additional boot config file [%s] to: [%s]", setting, tfile
-            )
-            lib.copy(args.info[setting], tfile, remoteCopy)
+        fileBase = os.path.basename(args.info[setting])
+        tfile = f"{args.output}/{fileBase}.{ident}"
+        logging.info("Save additional boot config [%s] to: [%s]", setting, tfile)
+        lib.copy(args.info[setting], tfile, remoteCopy)
 
     if sshClient:
         sshClient.disconnect()
@@ -730,11 +723,10 @@ def setMetaContext(args, disk):
 
 
 def setStreamType(args, disk):
-    """Set target stream type"""
-    if disk.format != "raw":
+    """Set target stream type based on disk format"""
+    streamType = "raw"
+    if disk.format != streamType:
         streamType = args.type
-    else:
-        streamType = "raw"
 
     return streamType
 
@@ -742,10 +734,9 @@ def setStreamType(args, disk):
 def setTargetFile(args, disk):
     """Set Target file name to write"""
     if args.level in ("full", "copy"):
+        level = args.level
         if disk.format == "raw":
             level = "copy"
-        else:
-            level = args.level
         targetFile = f"{args.output}/{disk.target}.{level}.data"
     elif args.level in ("inc", "diff"):
         cptName = getIdent(args)
@@ -840,7 +831,9 @@ def connectNbd(args, disk, metaContext, remoteIP, virtClient):
         )
     else:
         cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
+
     nbdClient = nbdhelper.nbdClient(cType)
+
     try:
         return nbdClient.waitForServer(), nbdClient
     except nbdhelper.exceptions.NbdClientException as e:

@@ -92,7 +92,7 @@ class ExtentHandler:
         return self.queryExtentsNbd()
 
     def queryExtentsQemu(self):
-        """Use qemu-img map to query extents from nbd
+        """Use qemu utils to query extents from nbd
         server
         """
         extents = []

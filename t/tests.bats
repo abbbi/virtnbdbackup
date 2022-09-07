@@ -84,6 +84,11 @@ setup() {
         [ "$status" -eq 0 ]
     done
 }
+@test "Active backup job must be detected" {
+    run ../virtnbdbackup -d $VM -s -o -
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+}
 @test "Stop backup job and nbd endpoint" {
     run ../virtnbdbackup -t raw -d $VM -k -o $BACKUPSET
     echo "output = ${output}"

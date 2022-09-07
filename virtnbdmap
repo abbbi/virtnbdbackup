@@ -357,7 +357,7 @@ def main():
                 lib.killProc(nbdkitProcess.pid)
                 break
             if "Connection refused" in str(e):
-                logging.info("Nbd server refused connection, retry [%s]", retryCnt)
+                logging.info("NBD server refused connection, retry [%s]", retryCnt)
                 time.sleep(1)
                 retryCnt += 1
             else:

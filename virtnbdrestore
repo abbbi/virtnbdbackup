@@ -240,7 +240,7 @@ def getHeader(diskFile, stream):
     except exceptions.StreamFormatException as errmsg:
         logging.error("Reading metadata from [%s] failed: [%s]", diskFile, errmsg)
         return False
-    except OSError as errmsg:
+    except outputhelper.exceptions.OutputException as errmsg:
         logging.error("Reading data file [%s] failed: [%s]", diskFile, errmsg)
         return False
 
