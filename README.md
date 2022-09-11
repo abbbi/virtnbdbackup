@@ -153,7 +153,8 @@ virt:rhel module, the feature is enabled by default. [(Details)](https://access.
 # Installation
 
 There are several ways to install the utility, below you will find an short
-description for each of them.
+description for each of them. For Debian and RHEL based derivates see
+[releases](https://github.com/abbbi/virtnbdbackup/releases) for pre-built packages.
 
 `Note`:
 > Please consider to check [past issues related to

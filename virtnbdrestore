@@ -304,20 +304,19 @@ def restoreFiles(args, vmConfig, virtClient, sshClient):
     info = virtClient.getDomainInfo(config)
 
     for setting, val in info.items():
-        if val is not None:
-            f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
-            if lib.exists(val, sshClient):
-                logging.info(
-                    "File [%s]: for boot option [%s] already exists, skipping.",
-                    val,
-                    setting,
-                )
-                continue
-
+        f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
+        if lib.exists(val, sshClient):
             logging.info(
-                "Restoring configured file [%s] for boot option [%s]", val, setting
+                "File [%s]: for boot option [%s] already exists, skipping.",
+                val,
+                setting,
             )
-            lib.copy(f, val, sshClient)
+            continue
+
+        logging.info(
+            "Restoring configured file [%s] for boot option [%s]", val, setting
+        )
+        lib.copy(f, val, sshClient)
 
 
 def setTargetFile(args, disk):

@@ -511,7 +511,7 @@ class client:
         domObj,
         diskList,
     ):
-        """Attempt to start pull based backup task using  XMl description"""
+        """Attempt to start pull based backup task using  XML description"""
         backupXml = self._createBackupXml(args, diskList)
         checkpointXml = None
         freezed = False
