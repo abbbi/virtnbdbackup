@@ -21,10 +21,17 @@ from libvirtnbdbackup import __version__
 
 def addRemoteArgs(opt):
     """Common remote backup arguments"""
+
+    user = getuser() or None
+
+    session = "qemu:///system"
+    if user != "root":
+        session = "qemu:///session"
+
     opt.add_argument(
         "-U",
         "--uri",
-        default="qemu:///system",
+        default=session,
         required=False,
         type=str,
         help="Libvirt connection URI. (default: %(default)s)",
@@ -38,7 +45,7 @@ def addRemoteArgs(opt):
     )
     opt.add_argument(
         "--ssh-user",
-        default=getuser() or None,
+        default=user,
         required=False,
         type=str,
         help=(
