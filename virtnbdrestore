@@ -539,6 +539,12 @@ def main():
         type=str,
         help="Define restored domain with specified name",
     )
+    opt.add_argument(
+        "--logdir",
+        default=os.environ['HOME'],
+        type=str,
+        help="Directory to place our logfile into",
+    )
     remopt = parser.add_argument_group("Remote Restore options")
     argopt.addRemoteArgs(remopt)
     debopt = parser.add_argument_group("Debug options")
@@ -550,7 +556,8 @@ def main():
     args.exclude = None
     args.include = args.disk
     stream = streamer.SparseStream(types)
-    fileLog = lib.getLogFile("virtnbdrestore.log") or sys.exit(1)
+    logfile_path = os.path.abspath(os.path.join(args.logdir, "virtnbdrestore.log"))
+    fileLog = lib.getLogFile(logfile_path) or sys.exit(1)
     counter = logCount()
 
     lib.configLogger(args, fileLog, counter)
