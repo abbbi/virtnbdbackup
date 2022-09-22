@@ -235,15 +235,9 @@ def main():
         default=False,
         help="Disable progress bar",
     )
-
+    logopt = parser.add_argument_group("Logging options")
+    argopt.addLogArgs(logopt, parser.prog)
     debopt = parser.add_argument_group("Debug options")
-    debopt.add_argument(
-        "-L",
-        "--logfile",
-        default="virtnbdmap.log",
-        type=str,
-        help="Logfile (default: %(default)s)",
-    )
     debopt.add_argument(
         "-r",
         "--readonly",
@@ -252,9 +246,7 @@ def main():
         help="Map image readonly (default: %(default)s)",
     )
     argopt.addDebugArgs(debopt)
-
     args = lib.argparse(parser)
-
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
 
     counter = logCount()

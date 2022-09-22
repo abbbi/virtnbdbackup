@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 from getpass import getuser
 from libvirtnbdbackup import __version__
 
@@ -116,4 +117,16 @@ def addDebugArgs(opt):
         help="Show version and exit",
         action="version",
         version=__version__,
+    )
+
+
+def addLogArgs(opt, prog):
+    """Logfile argument"""
+    print(dir(opt))
+    opt.add_argument(
+        "-L",
+        "--logfile",
+        default=f"{os.environ['HOME']}/{prog}.log",
+        type=str,
+        help="Path to Logfile (default: %(default)s)",
     )

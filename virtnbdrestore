@@ -21,6 +21,7 @@ import tempfile
 import logging
 import argparse
 import pprint
+import json
 
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
@@ -40,6 +41,7 @@ from libvirtnbdbackup.sparsestream import exceptions
 def dump(args, stream, dataFiles):
     """Dump stream contents to json output"""
     logging.info("Dumping saveset meta information")
+    entries = []
     for dataFile in dataFiles:
         if args.disk is not None and not os.path.basename(dataFile).startswith(
             args.disk
@@ -53,12 +55,14 @@ def dump(args, stream, dataFiles):
         meta = getHeader(sourceFile, stream)
 
         if not meta:
-            return False
+            continue
 
-        pprint.pprint(meta)
+        entries.append(meta)
 
         if lib.isCompressed(meta):
             logging.info("Compressed stream found: [%s].", meta["compressionMethod"])
+
+    print(json.dumps(entries, indent=4))
 
     return True
 
@@ -541,6 +545,8 @@ def main():
     )
     remopt = parser.add_argument_group("Remote Restore options")
     argopt.addRemoteArgs(remopt)
+    logopt = parser.add_argument_group("Logging options")
+    argopt.addLogArgs(logopt, parser.prog)
     debopt = parser.add_argument_group("Debug options")
     argopt.addDebugArgs(debopt)
 
@@ -550,7 +556,7 @@ def main():
     args.exclude = None
     args.include = args.disk
     stream = streamer.SparseStream(types)
-    fileLog = lib.getLogFile("virtnbdrestore.log") or sys.exit(1)
+    fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
     counter = logCount()
 
     lib.configLogger(args, fileLog, counter)

@@ -1,3 +1,11 @@
+Version 1.5
+---------
+* virtnbdrestore:
+	+ add --logfile option (defaults to $HOME)
+	+ print actual json if dumping saveset contents
+* virtnbdmap:
+	+ add --logfile option (defaults to $HOME)
+
 Version 1.4
 ---------
 * If backup/restore is executed as regular user, set default uri to
