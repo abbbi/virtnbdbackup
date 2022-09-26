@@ -1,3 +1,9 @@
+Version 1.6
+---------
+* virtnbdbackup:
+	* add --syslog option: enable log output to system syslog
+	facility.
+
 Version 1.5
 ---------
 * virtnbdrestore:

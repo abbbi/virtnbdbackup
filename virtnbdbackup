@@ -371,6 +371,14 @@ def main():
     )
     remopt = parser.add_argument_group("Remote Backup options")
     argopt.addRemoteArgs(remopt)
+    logopt = parser.add_argument_group("Logging options")
+    logopt.add_argument(
+        "-L",
+        "--syslog",
+        default=False,
+        action="store_true",
+        help="Additionally send log messages to syslog (default: %(default)s)",
+    )
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-q",

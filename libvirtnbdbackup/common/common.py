@@ -6,6 +6,7 @@ import sys
 import glob
 import json
 import logging
+import logging.handlers
 import signal
 import shutil
 import pprint
@@ -67,15 +68,23 @@ def getLogFile(fileName):
 
 def configLogger(args, fileLog, counter):
     """Setup logging"""
+    syslog = False
+    try:
+        syslog = args.syslog is True
+    except AttributeError:
+        pass
+    handler = [
+        fileLog,
+        logging.StreamHandler(stream=sys.stderr),
+        counter,
+    ]
+    if syslog is True:
+        handler.append(logging.handlers.SysLogHandler(address="/dev/log"))
     logging.basicConfig(
         level=setLogLevel(args.verbose),
         format=logFormat,
         datefmt=logDateFormat,
-        handlers=[
-            fileLog,
-            logging.StreamHandler(stream=sys.stderr),
-            counter,
-        ],
+        handlers=handler,
     )
 
 
