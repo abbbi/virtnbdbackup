@@ -167,7 +167,7 @@ class client:
             pool.refresh()
             logging.info("Refreshed contents of libvirt pool [%s]", pool.name())
         except libvirt.libvirtError as e:
-            logging.warning("Unable to refresh libvirt pool [%s]: [%s]", pool.name(), e)
+            logging.warning("Failed to refresh libvirt pool [%s]: [%s]", pool.name(), e)
 
     @staticmethod
     def blockJobActive(domObj, disks):
@@ -219,7 +219,7 @@ class client:
             self._conn.defineXMLFlags(vmConfig.decode(), 0)
             logging.info("Successfully redefined domain.")
         except libvirt.libvirtError as errmsg:
-            log.error("Unable to define domain: [%s]", errmsg)
+            log.error("Failed to define domain: [%s]", errmsg)
             return False
 
         return True
@@ -250,7 +250,7 @@ class client:
             disk.getparent().remove(disk)
         except IndexError:
             logging.warning(
-                "Unable to remove excluded disk from config: no object found."
+                "Removing excluded disk from config failed: no object found."
             )
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
@@ -402,7 +402,7 @@ class client:
         try:
             ElementTree.indent(top)
         except ElementTree.ParseError as errmsg:
-            log.debug("Unable to parse xml: [%s]", errmsg)
+            log.debug("Failed to parse xml: [%s]", errmsg)
         except AttributeError:
             # older ElementTree verisons dont have the
             # indent method, skip silently and use
@@ -528,7 +528,7 @@ class client:
             domObj.backupBegin(backupXml, checkpointXml)
             log.debug("Started backup job via libvirt API.")
         except libvirt.libvirtError as errmsg:
-            raise exceptions.startBackupFailed(f"Unable to start backup: [{errmsg}]")
+            raise exceptions.startBackupFailed(f"Failed to start backup: [{errmsg}]")
         except Exception as e:
             raise exceptions.startBackupFailed(
                 f"Unknown exception during backup start: [{e}]"
@@ -552,7 +552,7 @@ class client:
             return cptObj.getXMLDesc(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
         except libvirt.libvirtError as e:
             logging.warning(
-                "Unable to get checkpoint info with size information: [%s]", e
+                "Failed to get checkpoint info with size information: [%s]", e
             )
             return cptObj.getXMLDesc()
 
@@ -577,7 +577,7 @@ class client:
                 os.remove(checkpointFile)
         except OSError as e:
             log.error(
-                "Unable to clean persistent storage %s: %s", args.checkpointdir, e
+                "Failed to clean persistent storage %s: %s", args.checkpointdir, e
             )
             return False
 
@@ -621,7 +621,7 @@ class client:
         try:
             return domObj.abortJob(), None
         except libvirt.libvirtError as err:
-            log.warning("Unable to stop backup job: [%s]", err)
+            log.warning("Failed to stop backup job: [%s]", err)
             return False
 
     def redefineCheckpoints(self, domObj, args):
@@ -637,18 +637,18 @@ class client:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
             except outputhelper.exceptions.OutputException as e:
-                log.error("Unable to open checkpoint file: [%s]: %s", checkpointFile, e)
+                log.error("Opening checkpoint file failed: [%s]: %s", checkpointFile, e)
                 return False
             except ElementTree.ParseError as e:
                 log.error(
-                    "Unable to load checkpoint config from [%s]: %s", checkpointFile, e
+                    "Failed to load checkpoint config from [%s]: %s", checkpointFile, e
                 )
                 return False
 
             try:
                 checkpointName = root.find("name").text
             except ElementTree.ParseError as e:
-                log.error("Unable to find checkpoint name: [%s]", e)
+                log.error("Failed to find checkpoint name: [%s]", e)
                 return False
 
             try:
@@ -668,7 +668,7 @@ class client:
                     libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE,
                 )
             except libvirt.libvirtError as e:
-                log.error("Unable to redefine checkpoint: [%s]: %s", checkpointName, e)
+                log.error("Redefining checkpoint failed: [%s]: %s", checkpointName, e)
                 return False
 
         return True
@@ -684,7 +684,7 @@ class client:
                 return True
         except outputhelper.exceptions.OutputException as errmsg:
             log.error(
-                "Unable to save checkpoint config to file: [%s]: %s",
+                "Failed to save checkpoint config to file: [%s]: %s",
                 checkpointFile,
                 errmsg,
             )

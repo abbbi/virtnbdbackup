@@ -62,7 +62,7 @@ def getLogFile(fileName):
     try:
         return logging.FileHandler(fileName)
     except OSError as e:
-        logging.error("Unable to open logfile: [%s].", e)
+        logging.error("Failed to open logfile: [%s].", e)
         return None
 
 
@@ -100,19 +100,13 @@ def getSocketFile(arg):
 def partialBackup(args):
     """Check for possible partial backup files"""
     partialFiles = glob.glob(f"{args.output}/*.partial")
-    if len(partialFiles) > 0:
-        return True
-
-    return False
+    return len(partialFiles) > 0
 
 
 def hasFullBackup(args):
     """Check if full backup file exists in target directory"""
-    partialFiles = glob.glob(f"{args.output}/*.full.data")
-    if len(partialFiles) > 0:
-        return True
-
-    return False
+    fullFiles = glob.glob(f"{args.output}/*.full.data")
+    return len(fullFiles) > 0
 
 
 def exists(filePath, sshClient=None):
@@ -162,9 +156,9 @@ def copy(source, target, sshClient=None):
         else:
             shutil.copyfile(source, target)
     except OSError as e:
-        log.warning("Unable to copy [%s] to [%s]: [%s]", source, target, e)
+        log.warning("Failed to copy [%s] to [%s]: [%s]", source, target, e)
     except sshexception.sshutilError as e:
-        log.warning("Unable to remote copy [%s] to [%s]: [%s]", source, target, e)
+        log.warning("Remote copy from [%s] to [%s] failed: [%s]", source, target, e)
 
 
 def progressBar(total, desc, args, count=0):

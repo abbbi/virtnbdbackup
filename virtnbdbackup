@@ -62,7 +62,7 @@ def checkForeign(args, virtClient, domObj):
     if not foreign:
         return True
 
-    logging.fatal("Unknown checkpoint found: [%s]", foreign)
+    logging.fatal("Foreign checkpoint found: [%s]", foreign)
     logging.fatal("This checkpoint has not been created by this utility.")
     logging.fatal(
         "To ensure backup chain consistency, "
@@ -114,9 +114,9 @@ def readCheckpointFile(cFile):
             checkpoints = json.loads(fh.read().decode())
         return checkpoints
     except outputhelper.exceptions.OutputException as e:
-        raise exceptions.ReadCheckpointsError(f"Unable to read checkpoint file: [{e}]")
+        raise exceptions.ReadCheckpointsError(f"Failed to read checkpoint file: [{e}]")
     except json.decoder.JSONDecodeError as e:
-        raise exceptions.ReadCheckpointsError(f"Error loading checkpoint file: [{e}]")
+        raise exceptions.ReadCheckpointsError(f"Invalid checkpoint file: [{e}]")
 
 
 def handleCheckpoints(args, virtClient, domObj):
@@ -133,7 +133,7 @@ def handleCheckpoints(args, virtClient, domObj):
 
     if args.offline is False:
         if virtClient.redefineCheckpoints(domObj, args) is False:
-            raise exceptions.RedefineCheckpointError("Unable to redefine checkpoints.")
+            raise exceptions.RedefineCheckpointError("Failed to redefine checkpoints.")
 
     logging.info("Checkpoint handling.")
     if args.level == "full" and checkpoints:
@@ -141,12 +141,12 @@ def handleCheckpoints(args, virtClient, domObj):
         if not virtClient.removeAllCheckpoints(
             domObj, checkpoints, args, lib.checkpointName
         ):
-            raise exceptions.RemoveCheckpointError("Error during checkpoint removal.")
+            raise exceptions.RemoveCheckpointError("Failed to remove checkpoint.")
         os.remove(cptFile)
         checkpoints = []
     elif args.level == "full" and len(checkpoints) < 1:
         if not virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName):
-            raise exceptions.RemoveCheckpointError("Error during checkpoint removal.")
+            raise exceptions.RemoveCheckpointError("Failed to remove checkpoint.")
         checkpoints = []
 
     if checkpoints and args.level in ("inc", "diff"):
@@ -580,7 +580,7 @@ def main():
         try:
             saveCheckpointFile(args)
         except exceptions.CheckpointException as e:
-            logging.error("Unable to append checkpoint file: [%s]", e)
+            logging.error("Extending checkpoint file failed: [%s]", e)
             sys.exit(1)
         if not virtClient.backupCheckpoint(args, domObj):
             virtClient.stopBackup(domObj)
@@ -602,7 +602,7 @@ def main():
                 if future.result() is not True:
                     raise exceptions.DiskBackupFailed("Backup of one disk failed")
     except exceptions.BackupException as e:
-        logging.error("Unable to backup Disk: [%s]", e)
+        logging.error("Disk backup failed: [%s]", e)
     except Exception as e:
         logging.fatal("Unknown Exception during backup: %s", e)
         logging.exception(e)
@@ -668,8 +668,7 @@ def getIdent(args):
 
 def backupConfig(args, vmConfig):
     """Save domain config file"""
-    ident = getIdent(args)
-    configFile = f"{args.output}/vmconfig.{ident}.xml"
+    configFile = f"{args.output}/vmconfig.{getIdent(args)}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
         with outputhelper.openfile(configFile, "w") as fh:
@@ -685,14 +684,13 @@ def sshSession(args, remoteHost):
     try:
         return sshutil.Client(remoteHost, args.ssh_user)
     except sshutil.exceptions.sshutilError as err:
-        logging.warning("Unable to setup SSH connection: [%s]", err)
+        logging.warning("Failed to setup SSH connection: [%s]", err)
 
     return None
 
 
 def backupBootConfig(args, virtClient):
     """Save domain uefi/nvram/kernel and loader if configured."""
-    ident = getIdent(args)
     sshClient = None
     remoteCopy = None
 
@@ -706,10 +704,9 @@ def backupBootConfig(args, virtClient):
                 return
             remoteCopy = sshClient.copyFrom
 
-        fileBase = os.path.basename(args.info[setting])
-        tfile = f"{args.output}/{fileBase}.{ident}"
-        logging.info("Save additional boot config [%s] to: [%s]", setting, tfile)
-        lib.copy(args.info[setting], tfile, remoteCopy)
+        tFile = f"{args.output}/{os.path.basename(val)}.{getIdent(args)}"
+        logging.info("Save additional boot config [%s] to: [%s]", setting, tFile)
+        lib.copy(val, tFile, remoteCopy)
 
     if sshClient:
         sshClient.disconnect()
@@ -788,7 +785,7 @@ def renamePartial(targetFilePartial, targetFile):
     try:
         os.rename(targetFilePartial, targetFile)
     except OSError as e:
-        raise exceptions.DiskBackupFailed(f"Unable to rename file: [{e}]") from e
+        raise exceptions.DiskBackupFailed(f"Failed to rename file: [{e}]") from e
 
 
 def startOfflineNBD(args, disk, remoteHost):
@@ -803,7 +800,7 @@ def startOfflineNBD(args, disk, remoteHost):
     if remoteHost:
         sshClient = sshSession(args, remoteHost)
         if not sshClient:
-            raise exceptions.DiskBackupFailed("Unable to start remote NBD Service.")
+            raise exceptions.DiskBackupFailed("Starting remote NBD Service failed.")
         nbdProc = qemuhelper.qemuHelper(disk.target).startRemoteBackupNbdServer(
             args, disk.format, disk.path, bitMap, sshClient
         )
@@ -827,7 +824,7 @@ def truncate(writer, size):
         writer.seek(0)
     except OSError as e:
         raise exceptions.DiskBackupWriterException(
-            f"Unable to truncate target file: [{e}]"
+            f"Failed to truncate target file: [{e}]"
         ) from e
 
 

@@ -52,7 +52,7 @@ class outputHelper:
                     os.makedirs(self.targetDir)
                 except OSError as e:
                     raise exceptions.OutputCreateDirectory(
-                        "Cant create target directory:", e
+                        f"Failed to create target directory: [{e}]"
                     )
 
         def open(self, targetFile, mode="wb"):
@@ -63,7 +63,7 @@ class outputHelper:
                 return self.fileHandle
             except OSError as e:
                 raise exceptions.OutputOpenException(
-                    f"Unable to open target file: [{targetFile}]: {e}"
+                    f"Opening target file [{targetFile}] failed: {e}"
                 ) from e
 
         def write(self, data):
@@ -93,7 +93,7 @@ class outputHelper:
                 )
             except zipfile.error as e:
                 raise exceptions.OutputOpenException(
-                    f"Unable to open zip stream: {e}"
+                    f"Failed to open zip file: {e}"
                 ) from e
 
         def open(self, fileName, mode="w"):
@@ -113,7 +113,7 @@ class outputHelper:
                 return self.zipFileStream
             except zipfile.error as e:
                 raise exceptions.OutputOpenException(
-                    f"Unable to open zip stream: {e}"
+                    f"Failed to open zip stream: {e}"
                 ) from e
 
             return False

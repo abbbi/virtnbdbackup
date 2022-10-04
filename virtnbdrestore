@@ -159,7 +159,7 @@ def restoreData(args, stream, dataFile, targetFile, nbdClient, connection):
             progressBar.close()
             if dataSize != meta["dataSize"]:
                 logging.error(
-                    "Error: restored data size [%s] != [%s]",
+                    "Restored data size does not match [%s] != [%s]",
                     dataSize,
                     meta["dataSize"],
                 )

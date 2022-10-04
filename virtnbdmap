@@ -64,7 +64,7 @@ def locatePlugin():
     nbdkitModule = f"{installDir}/{pluginFileName}"
 
     if not lib.exists(nbdkitModule):
-        logging.error("Unable to locate nbdkit plugin: %s", pluginFileName)
+        logging.error("Failed to locate nbdkit plugin: [%s]", pluginFileName)
 
     return nbdkitModule
 
@@ -254,7 +254,7 @@ def main():
     lib.printVersion(__version__)
     nbdkitModule = locatePlugin()
     logging.info("Logfile: [%s]", args.logfile)
-    logging.info("Using %s as nbdkit plugin", nbdkitModule)
+    logging.info("Plugin location: [%s]", nbdkitModule)
 
     checkRequirements()
     checkDevice(args.device)
@@ -311,7 +311,7 @@ def main():
             args, nbdkitModule, blockMap.name, fullImage
         )
     except qemuhelper.exceptions.QemuHelperError as e:
-        logging.error("Unable to start nbdkit Process: [%s]", e)
+        logging.error("Failed to start nbdkit process: [%s]", e)
         sys.exit(1)
 
     logging.info(
@@ -353,7 +353,7 @@ def main():
                 time.sleep(1)
                 retryCnt += 1
             else:
-                logging.error("Unable to map device:")
+                logging.error("Failed to map device:")
                 logging.error("Stderr: [%s]", str(e))
                 lib.killProc(nbdkitProcess.pid)
 
@@ -361,7 +361,7 @@ def main():
         try:
             replayChanges(dataRanges, args)
         except outputhelper.exceptions.OutputException as e:
-            logging.error("Unable to replay changes: %s", e)
+            logging.error("Failed to replay changes: %s", e)
             lib.killProc(nbdkitProcess.pid)
             sys.exit(1)
 

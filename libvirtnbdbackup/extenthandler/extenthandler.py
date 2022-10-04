@@ -15,27 +15,27 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+from dataclasses import dataclass
 from nbd import CONTEXT_BASE_ALLOCATION
 
 log = logging.getLogger(__name__)
 
 
+@dataclass
 class Extent:
     """Extent description"""
 
-    def __init__(self):
-        self.data = False
-        self.zero = False
-        self.length = 0
-        self.offset = 0
+    data: bool
+    offset: int
+    length: int
 
 
+@dataclass
 class _ExtentObj:
     """Single Extent object"""
 
-    def __init__(self):
-        self.length = None
-        self.type = None
+    length: int
+    type: int
 
 
 class ExtentHandler:
@@ -97,10 +97,9 @@ class ExtentHandler:
         """
         extents = []
         for extent in self._nbdFh.map(self._cType):
-            extentObj = Extent()
-            extentObj.data = self.setBlockType(extent["type"])
-            extentObj.offset = extent["offset"]
-            extentObj.length = extent["length"]
+            extentObj = Extent(
+                self.setBlockType(extent["type"]), extent["offset"], extent["length"]
+            )
             extents.append(extentObj)
 
         log.debug("Got %s extents from qemu command", len(extents))
@@ -117,9 +116,7 @@ class ExtentHandler:
         ct = 0
         extentList = []
         while ct < len(extentSizes):
-            extentObj = _ExtentObj()
-            extentObj.length = extentSizes[ct]
-            extentObj.type = extentTypes[ct]
+            extentObj = _ExtentObj(extentSizes[ct], extentTypes[ct])
             extentList.append(extentObj)
             ct += 1
 
@@ -213,10 +210,7 @@ class ExtentHandler:
         extentList = []
         start = 0
         for extent in self._unifyExtents(self.queryExtentsNbd()):
-            extObj = Extent()
-            extObj.data = self.setBlockType(extent.type)
-            extObj.offset = start
-            extObj.length = extent.length
+            extObj = Extent(self.setBlockType(extent.type), start, extent.length)
             extentList.append(extObj)
             start += extent.length
 
