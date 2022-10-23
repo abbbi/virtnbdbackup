@@ -7,7 +7,7 @@ import libvirtnbdbackup
 setup(
     name="virtnbdbackup",
     version=libvirtnbdbackup.__version__,
-    description="Backup via NBD",
+    description="Backup utility for libvirt",
     url="https://github.com/abbbi/virtnbdbackup/",
     author="Michael Ablassmeier",
     author_email="abi@grinser.de",

@@ -1,3 +1,8 @@
+Version 1.8.1
+---------
+ * Update manpages to be more debian compliant
+ * Add manpages to manifest file, too
+
 Version 1.8
 ---------
  * Add manpages
@@ -9,7 +14,7 @@ Version 1.7
 Version 1.6
 ---------
 * virtnbdbackup:
-	* add --syslog option: enable log output to system syslog
+	+ add --syslog option: enable log output to system syslog
 	facility.
 
 Version 1.5
