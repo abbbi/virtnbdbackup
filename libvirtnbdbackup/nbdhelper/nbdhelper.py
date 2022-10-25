@@ -64,9 +64,7 @@ class nbdClient:
 
     def __init__(self, cType):
         """
-        Connect NBD backend, currently only unix type socket
-        communication implemented. Should be extended to support
-        TCP based remote backup too (#65)
+        Connect NBD backend
         """
         self.cType = cType
         self._exportName = cType.exportName

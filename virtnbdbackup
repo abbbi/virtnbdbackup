@@ -692,21 +692,18 @@ def sshSession(args, remoteHost):
 def backupBootConfig(args, virtClient):
     """Save domain uefi/nvram/kernel and loader if configured."""
     sshClient = None
-    remoteCopy = None
+    if virtClient.remoteHost and not sshClient:
+        sshClient = sshSession(args, virtClient.remoteHost)
+        if not sshClient:
+            logging.warning(
+                "Saving additional boot config failed: cant setup ssh session."
+            )
+            return
 
     for setting, val in args.info.items():
-        if virtClient.remoteHost and not sshClient:
-            sshClient = sshSession(args, virtClient.remoteHost)
-            if not sshClient:
-                logging.warning(
-                    "Saving additional boot config failed: cant setup ssh session."
-                )
-                return
-            remoteCopy = sshClient.copyFrom
-
         tFile = f"{args.output}/{os.path.basename(val)}.{getIdent(args)}"
         logging.info("Save additional boot config [%s] to: [%s]", setting, tFile)
-        lib.copy(val, tFile, remoteCopy)
+        lib.copy(val, tFile, sshClient)
 
     if sshClient:
         sshClient.disconnect()

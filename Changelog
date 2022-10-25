@@ -1,3 +1,8 @@
+Version 1.8.2
+---------
+ * Code cleanup
+ * Fix Issue (#74): Remote backup fails to copy [loader] file
+
 Version 1.8.1
 ---------
  * Update manpages to be more debian compliant
