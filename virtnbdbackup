@@ -314,9 +314,9 @@ def main():
     opt.add_argument(
         "-f",
         "--socketfile",
-        default=None,
+        default=f"/var/tmp/virtnbdbackup.{os.getpid()}",
         type=str,
-        help="Use file for NBD Server socket instead of random file",
+        help="Use specified file for NBD Server socket (default: %(default)s)",
     )
     opt.add_argument(
         "-n",
@@ -329,8 +329,11 @@ def main():
         "-z",
         "--compress",
         default=False,
-        help="Compress with lz4. (default: %(default)s)",
-        action="store_true",
+        type=int,
+        const=2,
+        nargs="?",
+        help="Compress with lz4 compression level. (default: %(default)s)",
+        action="store",
     )
     opt.add_argument(
         "-w",
@@ -435,7 +438,7 @@ def main():
 
     logging.info("Backup level: [%s]", args.level)
     if args.compress:
-        logging.info("Compression enabled")
+        logging.info("Compression enabled, level [%s]", args.compress)
 
     if args.stdout is True and args.type == "raw":
         logging.error("Output type raw not supported to stdout")
@@ -567,9 +570,14 @@ def main():
 
     outHelper.Directory(args.scratchdir)
 
-    if not virtClient.remoteHost:
-        args.socketfile = lib.getSocketFile(args.socketfile)
-        logging.info("NDB Endpoint socket: [%s]", args.socketfile)
+    if virtClient.remoteHost:
+        logging.info(
+            "Remote: NDB Endpoint socket: [%s:%s]",
+            virtClient.remoteHost,
+            args.socketfile,
+        )
+    else:
+        logging.info("Local NDB Endpoint socket: [%s]", args.socketfile)
 
     if args.offline is not True:
         if not startBackupJob(args, virtClient, domObj, disks):
@@ -792,8 +800,8 @@ def startOfflineNBD(args, disk, remoteHost):
     bitMap = None
     if args.level in ("inc", "diff"):
         bitMap = args.cpt.name
-    args.socketfile = f"{args.socketfile}.{disk.target}"
-    logging.info("Offline backup, starting NDB Service.")
+    socket = f"{args.socketfile}.{disk.target}"
+    logging.info("Offline backup, starting NDB Service, socket: [%s]", socket)
     if remoteHost:
         sshClient = sshSession(args, remoteHost)
         if not sshClient:
@@ -806,7 +814,7 @@ def startOfflineNBD(args, disk, remoteHost):
         return nbdProc
     try:
         nbdProc = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
-            disk.format, disk.path, args.socketfile, bitMap
+            disk.format, disk.path, socket, bitMap
         )
         logging.info("NDB Service started, PID: [%s]", nbdProc.pid)
         return nbdProc
@@ -827,12 +835,16 @@ def truncate(writer, size):
 
 def connectNbd(args, disk, metaContext, remoteIP, virtClient):
     """Connect to started nbd endpoint"""
+    socket = args.socketfile
+    if args.offline is True:
+        socket = f"{args.socketfile}.{disk.target}"
+
     if virtClient.remoteHost is not None:
         cType = nbdhelper.nbdConnTCP(
             disk.target, metaContext, remoteIP, args.tls, args.nbd_port
         )
     else:
-        cType = nbdhelper.nbdConnUnix(disk.target, metaContext, args.socketfile)
+        cType = nbdhelper.nbdConnUnix(disk.target, metaContext, socket)
 
     nbdClient = nbdhelper.nbdClient(cType)
 
@@ -937,7 +949,7 @@ def backupDisk(args, disk, count, fileStream, virtClient):
 
             if streamType == "stream":
                 writer.write(sTypes.TERM)
-                if args.compress is True:
+                if args.compress:
                     logging.debug("Compressed size: %s", size)
                     if cSizes:
                         blockList = {}

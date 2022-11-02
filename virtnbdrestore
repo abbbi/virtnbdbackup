@@ -253,13 +253,12 @@ def startNbd(args, exportName, targetFile, virtClient, sshClient):
     """Start NBD service for restore"""
     qFh = qemuhelper.qemuHelper(exportName)
     if not virtClient.remoteHost:
-        socketFile = lib.getSocketFile(args.socketfile)
-        logging.info("Starting NBD server on socket: [%s]", socketFile)
-        err = qFh.startRestoreNbdServer(targetFile, socketFile)
+        logging.info("Starting NBD server on socket: [%s]", args.socketfile)
+        err = qFh.startRestoreNbdServer(targetFile, args.socketfile)
         if err.err is not None:
             logging.error("Unable to start NBD server: [%s]", err)
             return False
-        cType = nbdhelper.nbdConnUnix(exportName, None, socketFile)
+        cType = nbdhelper.nbdConnUnix(exportName, None, args.socketfile)
     else:
         remoteIP = virtClient.remoteHost
         if args.nbd_ip is not None:
@@ -511,9 +510,9 @@ def main():
     opt.add_argument(
         "-f",
         "--socketfile",
-        default=None,
+        default=f"/var/tmp/virtnbdbackup.{os.getpid()}",
         type=str,
-        help="Use specified file for NBD Server socket instead of random file",
+        help="Use specified file for NBD Server socket (default: %(default)s)",
     )
     opt.add_argument(
         "-r",

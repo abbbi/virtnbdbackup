@@ -1,3 +1,13 @@
+Version 1.9
+---------
+ * Update README
+ * Make --compress option configurable, it is now possible to set
+ compression level (--compress=X) (#77)
+ * Fix offline backup of virtual machines with multiple disks attached: nbd
+ connection would use wrong socket file. (#76)
+ * Fix offline backup of remote vms: set missing socket file parameter.
+
+
 Version 1.8.2
 ---------
  * Code cleanup

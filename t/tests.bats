@@ -261,10 +261,12 @@ toOut() {
 
     run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET_COMPRESSED --compress
     echo "output = ${output}"
+    [[ "${output}" =~  "Compression enabled" ]]
     [ "$status" -eq 0 ]
 
     run ../virtnbdrestore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR -n -v
     echo "output = ${output}"
+    [[ ! "${output}" =~  "Compression enabled" ]]
     [ "$status" -eq 0 ]
 
     run ../virtnbdrestore -i $BACKUPSET_COMPRESSED -o $RESTOREDIR_COMPRESSED -n -v

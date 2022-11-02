@@ -191,6 +191,9 @@ yum install dist/virtnbdbackup-<version>-.noarch.rpm
 
 ## Debian package
 
+Official packages are available for unstable/testing:
+[https://packages.debian.org/virtnbdbackup](http://packages.debian.org/virtnbdbackup)
+
 To create a Debian package (Debian bullseye required) use:
 
 ```
@@ -435,7 +438,10 @@ allways limited to 1, to ensure a valid Zip file format.
 It is possible to enable compression for the `stream` format via `lz4`
 algorithm by using the `--compress` option. The saved data is compressed inline
 and the saveset file is appended with compression trailer including information
-about the compressed block offsets.
+about the compressed block offsets. By default compression level `2` is set if
+no parameter is applied. Higher compression levels can be set via:
+
+ `--compress=16`
 
 During the restore, `virtnbdrestore` will automatically detect such compressed
 backup streams and attempts to decompress saved blocks accordingly.

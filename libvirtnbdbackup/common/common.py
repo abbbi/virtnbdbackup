@@ -88,15 +88,6 @@ def configLogger(args, fileLog, counter):
     )
 
 
-def getSocketFile(arg):
-    """Return used socket file name"""
-    socketFile = f"/var/tmp/virtnbdbackup.{os.getpid()}"
-    if arg:
-        socketFile = arg
-
-    return socketFile
-
-
 def partialBackup(args):
     """Check for possible partial backup files"""
     partialFiles = glob.glob(f"{args.output}/*.partial")
@@ -237,7 +228,7 @@ def isCompressed(meta):
         version = meta["streamVersion"] == 2
 
     if version:
-        if meta["compressed"] is True:
+        if meta["compressed"] is not False:
             return True
 
     return False
@@ -250,11 +241,16 @@ def lz4DecompressFrame(data):
     return lz4.frame.decompress(data)
 
 
-def lz4CompressFrame(data):
+def lz4CompressFrame(data, level):
     """Compress block with to lz4 frame, checksums
     enabled for safety
     """
-    return lz4.frame.compress(data, content_checksum=True, block_checksum=True)
+    return lz4.frame.compress(
+        data,
+        content_checksum=True,
+        block_checksum=True,
+        compression_level=level,
+    )
 
 
 def writeChunk(writer, block, maxRequestSize, nbdCon, btype, compress):
@@ -279,8 +275,8 @@ def writeChunk(writer, block, maxRequestSize, nbdCon, btype, compress):
 
         data = nbdCon.pread(blocklen, blockOffset)
 
-        if compress is True and btype != "raw":
-            compressed = lz4CompressFrame(data)
+        if compress is not False and btype != "raw":
+            compressed = lz4CompressFrame(data, compress)
             wSize += writer.write(compressed)
             cSizes.append(len(compressed))
         else:
@@ -298,8 +294,8 @@ def writeBlock(writer, block, nbdCon, btype, compress):
         writer.seek(block.offset)
     data = nbdCon.pread(block.length, block.offset)
 
-    if compress is True and btype != "raw":
-        data = lz4CompressFrame(data)
+    if compress is not False and btype != "raw":
+        data = lz4CompressFrame(data, compress)
 
     return writer.write(data)
 
