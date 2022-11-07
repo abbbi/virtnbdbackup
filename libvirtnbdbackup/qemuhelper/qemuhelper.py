@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 class qemuHelper:
     """Wrapper for qemu executables"""
 
-    def __init__(self, exportName):
+    def __init__(self, exportName: None) -> None:
         self.exportName = exportName
 
     @staticmethod

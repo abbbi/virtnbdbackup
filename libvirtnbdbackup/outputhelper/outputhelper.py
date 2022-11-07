@@ -18,7 +18,8 @@ import os
 import sys
 import zipfile
 import logging
-
+from io import TextIOWrapper
+from typing import Optional
 from datetime import datetime
 from libvirtnbdbackup.outputhelper import exceptions
 
@@ -34,13 +35,13 @@ class outputHelper:
     class Directory:
         """Backup to target directory"""
 
-        def __init__(self, targetDir):
+        def __init__(self, targetDir: Optional[str]) -> None:
             self.targetDir = targetDir
             self.fileHandle = None
             if self.targetDir is not None:
                 self._makeDir()
 
-        def _makeDir(self):
+        def _makeDir(self) -> None:
             """Create output directoy on init"""
             if os.path.exists(self.targetDir):
                 if not os.path.isdir(self.targetDir):
@@ -55,7 +56,7 @@ class outputHelper:
                         f"Failed to create target directory: [{e}]"
                     )
 
-        def open(self, targetFile, mode="wb"):
+        def open(self, targetFile: str, mode: str = "wb") -> TextIOWrapper:
             """Open target file"""
             try:
                 # pylint: disable=unspecified-encoding,consider-using-with
