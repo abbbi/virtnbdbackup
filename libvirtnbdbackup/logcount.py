@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+from logging import LogRecord
 
 
 class logCount(logging.Handler):
@@ -24,15 +25,15 @@ class logCount(logging.Handler):
     class LogType:
         """Log message type"""
 
-        def __init__(self):
+        def __init__(self) -> None:
             self.warnings = 0
             self.errors = 0
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.count = self.LogType()
 
-    def emit(self, record):
+    def emit(self, record: LogRecord) -> None:
         if record.levelname == "WARNING":
             self.count.warnings += 1
         if record.levelname in ("ERROR", "FATAL", "CRITICAL"):
