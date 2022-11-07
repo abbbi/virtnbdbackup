@@ -1,6 +1,6 @@
 Version 1.9.1
 ---------
-
+ * Code cleanup: fix pylint warning
 
 Version 1.9
 ---------

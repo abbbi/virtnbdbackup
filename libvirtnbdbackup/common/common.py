@@ -208,8 +208,8 @@ def blockStep(offset, length, maxRequestSize):
     blockOffset = offset
     if isinstance(length, dict):
         blockOffset = offset
-        item = next(iter(length))
-        for step in length[item]:
+        compressOffset = list(length.keys())[0]
+        for step in length[compressOffset]:
             blockOffset += step
             yield step, blockOffset
     else:
