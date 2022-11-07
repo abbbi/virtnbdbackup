@@ -17,10 +17,11 @@
 """
 import os
 from getpass import getuser
+from argparse import _ArgumentGroup
 from libvirtnbdbackup import __version__
 
 
-def addRemoteArgs(opt):
+def addRemoteArgs(opt: _ArgumentGroup) -> None:
     """Common remote backup arguments"""
 
     user = getuser() or None
@@ -101,7 +102,7 @@ def addRemoteArgs(opt):
     )
 
 
-def addDebugArgs(opt):
+def addDebugArgs(opt: _ArgumentGroup) -> None:
     """Common debug arguments"""
     opt.add_argument(
         "-v",
