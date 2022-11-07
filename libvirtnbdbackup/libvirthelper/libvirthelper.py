@@ -22,7 +22,8 @@ import logging
 from socket import gethostname
 from collections import namedtuple
 from argparse import Namespace
-from typing import Tuple
+from typing import Any, Dict, List, Tuple
+from lxml.etree import _Element
 from lxml import etree as ElementTree
 import libvirt
 from libvirtnbdbackup.libvirthelper import exceptions
@@ -144,11 +145,11 @@ class client:
         return self._connectOpen(args.uri)
 
     @staticmethod
-    def _getTree(vmConfig):
+    def _getTree(vmConfig: str) -> _Element:
         """Return Etree element for vm config"""
         return ElementTree.fromstring(vmConfig)
 
-    def getDomain(self, name: str):
+    def getDomain(self, name: str) -> libvirt.virDomain:
         """Lookup domain"""
         try:
             return self._conn.lookupByName(name)
@@ -188,7 +189,7 @@ class client:
                 return True
         return False
 
-    def hasIncrementalEnabled(self, domObj):
+    def hasIncrementalEnabled(self, domObj: libvirt.virDomain) -> bool:
         """Check if virtual machine has enabled required capabilities
         for incremental backup
 
@@ -212,7 +213,7 @@ class client:
         return False
 
     @staticmethod
-    def getDomainConfig(domObj):
+    def getDomainConfig(domObj: libvirt.virDomain) -> str:
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
@@ -228,7 +229,7 @@ class client:
 
         return True
 
-    def getDomainInfo(self, vmConfig):
+    def getDomainInfo(self, vmConfig: str) -> Dict[str, str]:
         """Return object with general vm information relevant
         for backup"""
         tree = self._getTree(vmConfig)
@@ -312,7 +313,7 @@ class client:
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
     @staticmethod
-    def getBackingStores(disk):
+    def getBackingStores(disk: _Element) -> List[Any]:
         """Get list of backing store files defined for disk, usually
         the case if virtual machine has external snapshots."""
         backingStoreFiles = []
@@ -401,7 +402,7 @@ class client:
         return devices
 
     @staticmethod
-    def _indentXml(top):
+    def _indentXml(top: _Element) -> str:
         """Indent xml output for debug logging"""
         try:
             ElementTree.indent(top)
@@ -483,7 +484,7 @@ class client:
         return xml
 
     @staticmethod
-    def fsFreeze(domObj, mountpoints):
+    def fsFreeze(domObj: libvirt.virDomain, mountpoints: None) -> bool:
         """Attempt to freeze domain filesystems using qemu guest agent"""
         log.debug("Attempting to freeze filesystems.")
         try:
@@ -620,7 +621,7 @@ class client:
             return False
 
     @staticmethod
-    def stopBackup(domObj):
+    def stopBackup(domObj: libvirt.virDomain) -> Tuple[int, None]:
         """Cancel the backup task using job abort"""
         try:
             return domObj.abortJob(), None
@@ -628,7 +629,7 @@ class client:
             log.warning("Failed to stop backup job: [%s]", err)
             return False
 
-    def redefineCheckpoints(self, domObj, args):
+    def redefineCheckpoints(self, domObj: libvirt.virDomain, args: Namespace) -> bool:
         """Redefine checkpoints from persistent storage"""
         log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
         checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
