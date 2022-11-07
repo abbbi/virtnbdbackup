@@ -21,13 +21,17 @@ import glob
 import logging
 from socket import gethostname
 from collections import namedtuple
-import libvirt
+from argparse import Namespace
+from typing import Tuple
 from lxml import etree as ElementTree
+import libvirt
 from libvirtnbdbackup.libvirthelper import exceptions
 from libvirtnbdbackup import outputhelper
 
 
-def libvirt_ignore(_ignore, _err):
+def libvirt_ignore(
+    _ignore: None, _err: Tuple[int, int, str, int, str, str, None, int, int]
+) -> None:
     """this is required so libvirt.py does not report errors to stderr
     which it does by default. Error messages are fetched accordingly
     using exceptions.
@@ -42,7 +46,7 @@ log = logging.getLogger(__name__)
 class client:
     """Libvirt related functions"""
 
-    def __init__(self, uri):
+    def __init__(self, uri: Namespace) -> None:
         self.remoteHost = None
         self._conn = self._connect(uri)
         self._domObj = None
@@ -76,7 +80,7 @@ class client:
             raise exceptions.connectionFailed(e) from e
 
     @staticmethod
-    def _connectOpen(uri):
+    def _connectOpen(uri: str) -> libvirt.virConnect:
         """Open connection with regular libvirt URI for local authentication"""
         try:
             return libvirt.open(uri)
@@ -84,7 +88,7 @@ class client:
             raise exceptions.connectionFailed(e) from e
 
     @staticmethod
-    def _reqAuth(uri):
+    def _reqAuth(uri: str) -> bool:
         """If authentication file is passed or qemu+ssh is used,
         no user and password are required."""
         return "authfile" in uri
@@ -95,7 +99,7 @@ class client:
         no user and password are required."""
         return uri.startswith("qemu+ssh")
 
-    def _useAuth(self, args):
+    def _useAuth(self, args: Namespace) -> bool:
         """Check wether we want to use advanced auth method"""
         if args.uri.startswith("qemu+"):
             return True
@@ -106,7 +110,7 @@ class client:
 
         return False
 
-    def _connect(self, args):
+    def _connect(self, args: Namespace) -> libvirt.virConnect:
         """return libvirt connection handle"""
         logging.debug("Libvirt URI: [%s]", args.uri)
         if self._useAuth(args):
@@ -144,7 +148,7 @@ class client:
         """Return Etree element for vm config"""
         return ElementTree.fromstring(vmConfig)
 
-    def getDomain(self, name):
+    def getDomain(self, name: str):
         """Lookup domain"""
         try:
             return self._conn.lookupByName(name)
