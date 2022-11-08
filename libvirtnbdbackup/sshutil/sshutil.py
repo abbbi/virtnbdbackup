@@ -15,6 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+from typing import Tuple
 from enum import Enum
 from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException
 from paramiko.auth_handler import AuthenticationException
@@ -45,7 +46,7 @@ class Client:
             self.copy = self.copyTo
         self.connection = self.connect()
 
-    def connect(self):
+    def connect(self) -> SSHClient:
         """Connect to remote system"""
         log.info("Connecting remote system via ssh, username: [%s]", self.user)
         try:
@@ -70,7 +71,7 @@ class Client:
         """Copy file"""
         return SFTPClient.from_transport(self.connection.get_transport())
 
-    def exists(self, filepath: str):
+    def exists(self, filepath: str) -> bool:
         """
         Check if remote file exists
         """
@@ -80,7 +81,7 @@ class Client:
         except IOError:
             return False
 
-    def copyFrom(self, filepath: str, localpath: str):
+    def copyFrom(self, filepath: str, localpath: str) -> None:
         """
         Get file from remote system
         """
@@ -90,7 +91,7 @@ class Client:
         except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
-    def copyTo(self, localpath: str, remotepath: str):
+    def copyTo(self, localpath: str, remotepath: str) -> None:
         """
         Put file to remote system
         """
@@ -100,14 +101,14 @@ class Client:
         except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
-    def _execute(self, cmd):
+    def _execute(self, cmd) -> Tuple[int, str, str]:
         _, stdout, stderr = self.connection.exec_command(cmd)
         ret = stdout.channel.recv_exit_status()
         err = stderr.read().strip().decode()
         out = stdout.read().strip().decode()
         return ret, err, out
 
-    def run(self, cmd: str, pidFile: str = None, logFile: str = None):
+    def run(self, cmd: str, pidFile: str = None, logFile: str = None) -> processInfo:
         """
         Execute command
         """
