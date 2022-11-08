@@ -82,7 +82,7 @@ class Client:
         except IOError:
             return False
 
-    def copyFrom(self, filepath: str, localpath: str):
+    def copyFrom(self, filepath: str, localpath: str) -> None:
         """
         Get file from remote system
         """
@@ -92,7 +92,7 @@ class Client:
         except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
-    def copyTo(self, localpath: str, remotepath: str):
+    def copyTo(self, localpath: str, remotepath: str) -> None:
         """
         Put file to remote system
         """
