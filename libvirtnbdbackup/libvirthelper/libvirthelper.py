@@ -80,7 +80,7 @@ class client:
         logging.debug("Password: %s", password)
 
         try:
-            auth = [[libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]]
+            auth: List = [[libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]]
             if user is not None and password is not None:
                 user_data = [user, password]
                 auth.append(_cred)
