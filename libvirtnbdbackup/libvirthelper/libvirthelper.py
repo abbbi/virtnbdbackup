@@ -38,7 +38,7 @@ class DomainDisk:
     format: str
     filename: str
     path: str
-    backingstores: list
+    backingstores: List[str]
 
 
 def libvirt_ignore(
