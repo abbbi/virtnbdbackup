@@ -166,7 +166,7 @@ class client:
         except libvirt.libvirtError as e:
             raise exceptions.domainNotFound(e) from e
 
-    def refreshPool(self, path):
+    def refreshPool(self, path: str) -> None:
         """Check if specified path matches an existing
         storage pool and refresh its contents"""
         try:
@@ -185,7 +185,7 @@ class client:
             logging.warning("Failed to refresh libvirt pool [%s]: [%s]", pool.name(), e)
 
     @staticmethod
-    def blockJobActive(domObj, disks):
+    def blockJobActive(domObj: libvirt.virDomain, disks: List[Any]) -> bool:
         """Check if there is already an active block job for this virtual
         machine, which might block"""
         for disk in disks:
@@ -227,7 +227,7 @@ class client:
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
-    def defineDomain(self, vmConfig):
+    def defineDomain(self, vmConfig: bytes) -> bool:
         """Define domain based on restored config"""
         try:
             logging.info("Redefining domain based on adjusted config.")
@@ -254,7 +254,7 @@ class client:
         logging.debug("Domain Info: [%s]", settings)
         return settings
 
-    def adjustDomainConfigRemoveDisk(self, vmConfig, excluded):
+    def adjustDomainConfigRemoveDisk(self, vmConfig: str, excluded) -> str:
         """Remove disk from config, in case it has been excluded
         from the backup."""
         tree = self._getTree(vmConfig)
@@ -270,7 +270,9 @@ class client:
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
-    def adjustDomainConfig(self, args, restoreDisk, vmConfig, targetFile):
+    def adjustDomainConfig(
+        self, args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
+    ) -> str:
         """Adjust virtual machine configuration after restoring. Changes
         the pathes to the virtual machine disks and attempts to remove
         components excluded during restore."""
