@@ -1,6 +1,6 @@
 Version 1.9.1
 ---------
- * Code cleanup: fix pylint warning
+ * Code cleanup: fix pylint warning, start adding type annotations
 
 Version 1.9
 ---------
