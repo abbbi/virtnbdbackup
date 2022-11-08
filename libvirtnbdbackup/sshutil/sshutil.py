@@ -15,9 +15,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Optional, Type
 from enum import Enum
-from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException
+from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException, Transport
 from paramiko.auth_handler import AuthenticationException
 
 from libvirtnbdbackup.sshutil import exceptions
@@ -41,7 +41,7 @@ class Client:
         self.client = None
         self.host = host
         self.user = user
-        self.copy = Callable[[str, str]]
+        self.copy = Callable[[str, str],None]
         self.copy = self.copyFrom
         if mode == Mode.UPLOAD:
             self.copy = self.copyTo
@@ -70,7 +70,7 @@ class Client:
     @property
     def sftp(self) -> SFTPClient:
         """Copy file"""
-        return SFTPClient.from_transport(self.connection.get_transport())
+        return self.connection.open_sftp()
 
     def exists(self, filepath: str) -> bool:
         """
