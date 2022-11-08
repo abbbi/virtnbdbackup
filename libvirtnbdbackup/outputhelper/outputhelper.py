@@ -34,7 +34,7 @@ class outputHelper:
     class Directory:
         """Backup to target directory"""
 
-        def __init__(self, targetDir: None) -> None:
+        def __init__(self, targetDir: str) -> None:
             self.targetDir = targetDir
             self.fileHandle = Type[IO[Any]]
             if self.targetDir is not None:
