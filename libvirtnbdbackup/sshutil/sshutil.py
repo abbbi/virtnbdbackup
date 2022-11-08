@@ -41,7 +41,7 @@ class Client:
         self.client = None
         self.host = host
         self.user = user
-        self.copy = Callable[[str, str],None]
+        self.copy = Callable[[str, str], None]
         self.copy = self.copyFrom
         if mode == Mode.UPLOAD:
             self.copy = self.copyTo
