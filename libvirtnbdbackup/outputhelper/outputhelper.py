@@ -37,7 +37,7 @@ class outputHelper:
         def __init__(self, targetDir: str) -> None:
             self.targetDir = targetDir
             self.fileHandle = Type[IO[Any]]
-            if self.targetDir is not None:
+            if self.targetDir != "":
                 self._makeDir()
 
         def _makeDir(self) -> None:
