@@ -15,7 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from typing import Tuple
+from typing import Tuple, Callable, Arg
 from enum import Enum
 from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException
 from paramiko.auth_handler import AuthenticationException
@@ -41,6 +41,7 @@ class Client:
         self.client = None
         self.host = host
         self.user = user
+        self.copy = Callable[[Arg(str), Arg(str)]]
         self.copy = self.copyFrom
         if mode == Mode.UPLOAD:
             self.copy = self.copyTo
@@ -81,7 +82,7 @@ class Client:
         except IOError:
             return False
 
-    def copyFrom(self, filepath: str, localpath: str) -> None:
+    def copyFrom(self, filepath: str, localpath: str):
         """
         Get file from remote system
         """
@@ -91,7 +92,7 @@ class Client:
         except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
-    def copyTo(self, localpath: str, remotepath: str) -> None:
+    def copyTo(self, localpath: str, remotepath: str):
         """
         Put file to remote system
         """
