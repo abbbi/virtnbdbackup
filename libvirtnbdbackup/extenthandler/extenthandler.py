@@ -16,6 +16,7 @@
 """
 import logging
 from dataclasses import dataclass
+from typing import List, Any, Generator
 from nbd import CONTEXT_BASE_ALLOCATION
 
 log = logging.getLogger(__name__)
@@ -47,23 +48,25 @@ class ExtentHandler:
     extent information as nbdinfo or qemu-img map
     """
 
-    def __init__(self, nbdFh, cType):
+    def __init__(self, nbdFh, cType) -> None:
         self.useQemu = False
         if nbdFh.__class__.__name__ == "qemuHelper":
             self.useQemu = True
         self._nbdFh = nbdFh
         self._cType = cType
-        self._extentEntries = []
+        self._extentEntries: List[Any] = []
         if cType.metaContext is None:
             self._metaContext = CONTEXT_BASE_ALLOCATION
         else:
             self._metaContext = cType.metaContext
 
         log.debug("Meta context: %s", self._metaContext)
-        self._maxRequestBlock = 4294967295
-        self._align = 512
+        self._maxRequestBlock: int = 4294967295
+        self._align: int = 512
 
-    def _getExtentCallback(self, metacontext, offset, entries, status):
+    def _getExtentCallback(
+        self, metacontext: str, offset: int, entries: List, status: str
+    ) -> None:
         """Callback function called by libnbd for each extent
         that is returned
         """
@@ -75,14 +78,14 @@ class ExtentHandler:
             self._extentEntries.append(entry)
         log.debug("entries: %s", len(self._extentEntries))
 
-    def _setRequestAligment(self):
+    def _setRequestAligment(self) -> int:
         """Align request size to nbd server"""
         align = self._nbdFh.get_block_size(0)
         if align == 0:
             align = self._align
         return self._maxRequestBlock - align + 1
 
-    def queryExtents(self):
+    def queryExtents(self) -> List[Any]:
         """Query extents either via qemu or custom extent
         handler
         """
@@ -91,7 +94,7 @@ class ExtentHandler:
 
         return self.queryExtentsNbd()
 
-    def queryExtentsQemu(self):
+    def queryExtentsQemu(self) -> List[Any]:
         """Use qemu utils to query extents from nbd
         server
         """
@@ -106,7 +109,7 @@ class ExtentHandler:
 
         return extents
 
-    def _extentsToObj(self):
+    def _extentsToObj(self) -> List[_ExtentObj]:
         """Go through extents and create a list of extent
         objects
         """
@@ -123,7 +126,7 @@ class ExtentHandler:
         return extentList
 
     @staticmethod
-    def _unifyExtents(extentObjects):
+    def _unifyExtents(extentObjects: List[_ExtentObj]) -> Generator:
         """Unify extents. If a sequence of extents has the
         same type (data or zero) it is better to unify them
         into a bigger block, so during backup, less requests
@@ -142,7 +145,7 @@ class ExtentHandler:
 
         yield cur
 
-    def queryExtentsNbd(self):
+    def queryExtentsNbd(self) -> List[_ExtentObj]:
         """Request used blocks/extents from the nbd service"""
         maxRequestLen = self._setRequestAligment()
         offset = 0
@@ -156,9 +159,7 @@ class ExtentHandler:
                 request_length = min(size - offset, maxRequestLen)
             log.debug("Block status request length: %s", request_length)
             self._nbdFh.block_status(request_length, offset, self._getExtentCallback)
-            if len(self._extentEntries) == 0:
-                log.error("No extents found")
-                return False
+            assert self._extentEntries != 0
 
             offset += sum(self._extentEntries[lastExtentLen::2])
             lastExtentLen = len(self._extentEntries)
@@ -168,7 +169,7 @@ class ExtentHandler:
 
         return self._extentsToObj()
 
-    def setBlockType(self, blockType):
+    def setBlockType(self, blockType: int) -> bool:
         """Returns block type
 
         The extent types are as follows:
@@ -200,7 +201,7 @@ class ExtentHandler:
         assert data is not None
         return data
 
-    def queryBlockStatus(self, extentList=None):
+    def queryBlockStatus(self, extentList=None) -> List[_ExtentObj]:
         """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
         """
