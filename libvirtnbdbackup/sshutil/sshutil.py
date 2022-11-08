@@ -15,9 +15,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from typing import Tuple, Callable, Optional, Type
+from typing import Tuple, Callable
 from enum import Enum
-from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException, Transport
+from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException
 from paramiko.auth_handler import AuthenticationException
 
 from libvirtnbdbackup.sshutil import exceptions
