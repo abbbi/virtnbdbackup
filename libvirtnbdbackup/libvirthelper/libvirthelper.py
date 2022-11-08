@@ -65,17 +65,16 @@ class client:
         self.libvirtVersion = self._conn.getLibVersion()
 
     @staticmethod
-    def _connectAuth(uri: str, user: str, password: str) -> None:
+    def _connectAuth(uri: str, user: str, password: str) -> libvirt.virConnect:
         """Use openAuth if connection string includes authfile or
         username/password are set"""
 
-        def _cred(credentials, user_data):
+        def _cred(credentials, user_data) -> None:
             for credential in credentials:
                 if credential[0] == libvirt.VIR_CRED_AUTHNAME:
                     credential[4] = user_data[0]
                 elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
                     credential[4] = user_data[1]
-            return 0
 
         logging.debug("Username: %s", user)
         logging.debug("Password: %s", password)
@@ -640,10 +639,11 @@ class client:
             return False
 
     @staticmethod
-    def stopBackup(domObj: libvirt.virDomain) -> Tuple[int, None]:
+    def stopBackup(domObj: libvirt.virDomain) -> bool:
         """Cancel the backup task using job abort"""
         try:
-            return domObj.abortJob(), None
+            domObj.abortJob()
+            return True
         except libvirt.libvirtError as err:
             log.warning("Failed to stop backup job: [%s]", err)
             return False

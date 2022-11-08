@@ -50,7 +50,7 @@ class nbdConnTCP(nbdConn):
     hostname: str
     tls: bool
     port: int = 10809
-    backupSocket: str = None
+    backupSocket: str = ""
     uri_prefix = "nbd://"
 
     def __post_init__(self):
@@ -78,11 +78,11 @@ class nbdClient:
         self.version()
 
     @staticmethod
-    def version():
+    def version() -> None:
         """Log libnbd version"""
         log.info("libnbd version: %s", nbd.__version__)
 
-    def getBlockInfo(self):
+    def getBlockInfo(self) -> None:
         """Read maximum request/block size as advertised by the nbd
         server. This is the value which will then be used by default
         """
@@ -92,7 +92,7 @@ class nbdClient:
 
         log.info("Using Maximum Block size supported by NBD server: [%s]", maxSize)
 
-    def connect(self):
+    def connect(self) -> nbd.NBD:
         """Setup connection to NBD server endpoint, return
         connection handle
         """
@@ -109,7 +109,7 @@ class nbdClient:
 
         return self.nbd
 
-    def waitForServer(self):
+    def waitForServer(self) -> None:
         """Wait until NBD endpoint connection can be established"""
         logging.info("Waiting until NBD server at [%s] is up.", self.cType.uri)
         retry = 0
@@ -134,7 +134,7 @@ class nbdClient:
             logging.info("Waiting for NBD Server, Retry: %s", retry)
             retry = retry + 1
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Close nbd connection handle if no TLS is used.
         Otherwise error is received:
         https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1195779138"""

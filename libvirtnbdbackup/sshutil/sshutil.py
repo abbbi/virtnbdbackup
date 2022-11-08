@@ -108,16 +108,16 @@ class Client:
         out = stdout.read().strip().decode()
         return ret, err, out
 
-    def run(self, cmd: str, pidFile: str = None, logFile: str = None) -> processInfo:
+    def run(self, cmd: str, pidFile: str = "", logFile: str = "") -> processInfo:
         """
         Execute command
         """
-        pid = None
+        pid: int = 0
         logging.debug("Executing command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         if ret != 0:
             if logFile:
-                _, _, err = self._execute(f"cat {logFile}")
+                _, _, _ = self._execute(f"cat {logFile}")
             raise exceptions.sshutilError(
                 f"Error during remote command: [{cmd}]: [{err}]"
             )
