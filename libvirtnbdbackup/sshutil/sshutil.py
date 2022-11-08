@@ -113,7 +113,7 @@ class Client:
         """
         Execute command
         """
-        pid: int = 0
+        pidOut: str
         logging.debug("Executing command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         if ret != 0:
@@ -125,7 +125,8 @@ class Client:
 
         if pidFile:
             logging.debug("PIDfile: [%s]", pidFile)
-            _, _, pid = self._execute(f"cat {pidFile}")
+            _, _, pidOut = self._execute(f"cat {pidFile}")
+            pid = int(pidOut)
             logging.debug("PID: [%s]", pid)
 
         return processInfo(pid, logFile, err, out)
