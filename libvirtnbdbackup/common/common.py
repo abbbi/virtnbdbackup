@@ -40,7 +40,7 @@ class processInfo:
     out: str
 
 
-def argparse(parser) -> object:
+def argparse(parser) -> Namespace:
     """Parse arguments"""
     return parser.parse_args()
 
