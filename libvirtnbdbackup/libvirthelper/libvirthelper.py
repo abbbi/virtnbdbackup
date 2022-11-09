@@ -325,7 +325,7 @@ class client:
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
     @staticmethod
-    def getBackingStores(disk: _Element) -> List[Any]:
+    def getBackingStores(disk: _Element) -> List[str]:
         """Get list of backing store files defined for disk, usually
         the case if virtual machine has external snapshots."""
         backingStoreFiles = []
@@ -343,7 +343,7 @@ class client:
 
         return backingStoreFiles
 
-    def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[Any]:
+    def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
