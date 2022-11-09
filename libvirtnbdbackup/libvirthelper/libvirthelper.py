@@ -325,10 +325,10 @@ class client:
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
     @staticmethod
-    def getBackingStores(disk: _Element) -> List[str]:
+    def getBackingStores(disk: _Element) -> List[Optional[str]]:
         """Get list of backing store files defined for disk, usually
         the case if virtual machine has external snapshots."""
-        backingStoreFiles = []
+        backingStoreFiles: List[Optional[str]] = []
         backingStore = disk.find("backingStore")
         while backingStore is not None:
             backingStoreSource = backingStore.find("source")
