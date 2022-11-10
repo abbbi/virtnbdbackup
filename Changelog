@@ -1,6 +1,7 @@
 Version 1.9.1
 ---------
  * Code cleanup: fix pylint warning
+ * Remove hardcoded p.wait() calls
 
 Version 1.9
 ---------
