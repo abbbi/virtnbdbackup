@@ -1,7 +1,9 @@
 Version 1.9.1
 ---------
- * Code cleanup: fix pylint warning
- * Remove hardcoded p.wait() calls
+ * Code cleanup: fix pylint warning, remove obsolete p.wait() calls with
+ hardcoded time limit
+ * Change github workflows: now use ubuntu 22.04 and add test for remote
+ backup via localhost.
 
 Version 1.9
 ---------
