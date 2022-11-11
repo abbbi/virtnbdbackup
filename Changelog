@@ -4,6 +4,7 @@ Version 1.9.1
  hardcoded time limit
  * Change github workflows: now use ubuntu 22.04 and add test for remote
  backup via localhost.
+ * Fix disk detection with volume notation (#81)
 
 Version 1.9
 ---------

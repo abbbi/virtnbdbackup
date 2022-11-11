@@ -375,10 +375,22 @@ class client:
                 )
                 continue
 
-            # attempt to get original disk file name
-            diskSrc = disk.xpath("source")[0].get("file")
-            diskFileName = os.path.basename(diskSrc)
-            diskPath = diskSrc
+            diskType = disk.get("type")
+            if diskType == "volume":
+                logging.debug("Disk config using volume notation")
+                vol = disk.xpath("source")[0].get("volume")
+                pool = disk.xpath("source")[0].get("pool")
+                diskPool = self._conn.storagePoolLookupByName(pool)
+                diskPath = diskPool.storageVolLookupByName(vol).path()
+                diskFileName = os.path.basename(diskPath)
+            elif diskType == "file":
+                logging.debug("Disk config file notation")
+                diskSrc = disk.xpath("source")[0].get("file")
+                diskFileName = os.path.basename(diskSrc)
+                diskPath = diskSrc
+            else:
+                logging.error("Unable to detect disk source")
+                continue
 
             if args.include is not None and dev != args.include:
                 log.info(
