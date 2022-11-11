@@ -258,12 +258,11 @@ class qemuHelper:
             stderr=logFile,
             stdout=logFile,
         ) as p:
-            p.wait(5)
+            p.wait()
             log.debug("Return code: %s", p.returncode)
             err = None
             out = None
             if p.returncode != 0:
-                p.wait(5)
                 log.info("CMD: %s", " ".join(cmdLine))
                 log.debug("Read error messages from logfile")
                 if toPipe is True:
