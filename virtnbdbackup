@@ -700,7 +700,7 @@ def sshSession(args, remoteHost):
 def backupBootConfig(args, virtClient):
     """Save domain uefi/nvram/kernel and loader if configured."""
     sshClient = None
-    if virtClient.remoteHost and not sshClient:
+    if virtClient.remoteHost:
         sshClient = sshSession(args, virtClient.remoteHost)
         if not sshClient:
             logging.warning(

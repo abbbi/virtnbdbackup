@@ -608,6 +608,13 @@ toOut() {
     [ "$status" -eq 0 ]
 }
 
+@test "Backup: test remote backup functionality via localhost" {
+    [ -z $GITHUB_JOB ] && skip "skip locally"
+    run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -v -o  ${TMPDIR}/remotebackup
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+
 @test "Map: Map full backup to nbd block device, check device size and partitions, mount filesystem" {
     [ -f /.dockerenv ] && skip "wont work inside docker image"
     [ -z $MAPTEST ] && skip "skipping"

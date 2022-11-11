@@ -68,6 +68,14 @@ class qemuHelper:
 
         return sshClient.run(" ".join(cmd))
 
+    def info(self, targetFile, sshClient=None):
+        """Return qemu image information"""
+        cmd = ["qemu-img", "info", f"{targetFile}", "--output", "json", "--force-share"]
+        if not sshClient:
+            return self.runcmd(cmd)
+
+        return sshClient.run(" ".join(cmd))
+
     def startRestoreNbdServer(self, targetFile, socketFile):
         """Start local nbd server process for restore operation"""
         cmd = [

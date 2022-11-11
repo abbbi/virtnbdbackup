@@ -178,28 +178,22 @@ def restoreSequence(args, dataFiles, virtClient, sshClient):
     """Reconstruct image from a given set of data files"""
     stream = streamer.SparseStream(types)
 
+    sourceFile = f"{args.input}/{dataFiles[0]}"
+    meta = getHeader(sourceFile, stream)
+    if not meta:
+        return False
+    diskName = meta["diskName"]
+    targetFile = f"{args.output}/{diskName}"
+    if not lib.exists(targetFile) and not createDiskFile(meta, targetFile, sshClient):
+        return False
+
+    nbdClient, connection = startNbd(args, diskName, targetFile, virtClient, sshClient)
+
     for disk in dataFiles:
         sourceFile = f"{args.input}/{disk}"
-
-        meta = getHeader(sourceFile, stream)
-        if not meta:
-            return False
-
-        diskName = meta["diskName"]
-        targetFile = f"{args.output}/{diskName}"
-
-        if not lib.exists(targetFile) and not createDiskFile(
-            meta, targetFile, sshClient
-        ):
-            return False
-
-        nbdClient, connection = startNbd(
-            args, diskName, targetFile, virtClient, sshClient
-        )
-
         result = writeData(args, stream, sourceFile, targetFile, nbdClient, connection)
 
-        nbdClient.disconnect()
+    nbdClient.disconnect()
 
     return result
 
