@@ -343,6 +343,22 @@ class client:
 
         return backingStoreFiles
 
+    def getDiskPathByVolume(self, disk: _Element) -> str:
+        """If virtual machine disk is configured via type='volume'
+        get path to disk via appropriate libvirt functions,
+        pool and volume setting are mandatory as by xml schema definition"""
+        vol = disk.xpath("source")[0].get("volume")
+        pool = disk.xpath("source")[0].get("pool")
+
+        try:
+            diskPool = self._conn.storagePoolLookupByName(pool)
+            diskPath = diskPool.storageVolLookupByName(vol).path()
+        except libvirt.libvirtError as errmsg:
+            logging.error("Failed to detect vm disk by volumes: [%s]", errmsg)
+            return None
+
+        return diskPath
+
     def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
@@ -388,10 +404,22 @@ class client:
                 )
                 continue
 
-            # attempt to get original disk file name
-            diskSrc = disk.xpath("source")[0].get("file")
-            diskFileName = os.path.basename(diskSrc)
-            diskPath = diskSrc
+            diskType = disk.get("type")
+            if diskType == "volume":
+                logging.debug("Disk config using volume notation")
+                diskPath = self.getDiskPathByVolume(disk)
+            elif diskType == "file":
+                logging.debug("Disk config file notation")
+                diskPath = disk.xpath("source")[0].get("file")
+            else:
+                logging.error("Unable to detect disk volume type")
+                continue
+
+            if diskPath is None:
+                logging.error("Unable to detect disk source")
+                continue
+
+            diskFileName = os.path.basename(diskPath)
 
             if args.include is not None and dev != args.include:
                 log.info(
