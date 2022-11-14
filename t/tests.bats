@@ -334,6 +334,8 @@ toOut() {
     echo "output = ${output}"
     [[ "${output}" =~  "Saved QCOW image config" ]]
     [ "$status" -eq 0 ]
+    [ -e "${TMPDIR}/inctest/sda.virtnbdbackup.0.qcow.json" ]
+    [ -e "${TMPDIR}/inctest/sda.full.data" ]
 }
 @test "Backup: incremental and differencial backup must fail if partial file found" {
     [ -z $INCTEST ] && skip "skipping"
@@ -378,12 +380,14 @@ toOut() {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
     [[ "${output}" =~  "Saved QCOW image config" ]]
+    [ -e "${TMPDIR}/inctest/sda.virtnbdbackup.1.qcow.json" ]
     [ "$status" -eq 0 ]
 }
 @test "Incremental Backup: create second incremental backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
+    [ -e "${TMPDIR}/inctest/sda.virtnbdbackup.2.qcow.json" ]
     [ "$status" -eq 0 ]
 }
 @test "Incremental Restore: restore data and check if file from incremental backup exists" {

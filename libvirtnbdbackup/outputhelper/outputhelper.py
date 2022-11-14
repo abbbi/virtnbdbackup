@@ -20,12 +20,12 @@ import zipfile
 import logging
 import time
 from typing import IO, Union, Tuple, BinaryIO
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 from libvirtnbdbackup.outputhelper import exceptions
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 log = logging.getLogger(__name__)
 

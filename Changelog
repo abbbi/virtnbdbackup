@@ -1,3 +1,12 @@
+Version 1.9.2
+---------
+ * Return function if gathering qemu disk info fails for some reason.
+ * If remote backup is saved to local zip file, backup may fail because
+ absolute path to additional loader/nvram files is wrong.
+ * Fix naming if copy backup is saved to zip file output: dont append
+ checkpoint information to created files.
+
+
 Version 1.9.1
 ---------
  * Code cleanup: fix pylint warning, remove obsolete p.wait() calls with

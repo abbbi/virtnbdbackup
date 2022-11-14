@@ -18,6 +18,11 @@ jobs:
         black --check virtnbdrestore
         black --check virtnbdmap
         black --check virtnbd-nbdkit-plugin
+    - name: Python typing tests
+      run: |
+        sudo pip3 install mypy
+        sudo pip3 install types-paramiko
+        mypy --ignore-missing libvirtnbdbackup
     - name: Set up ssh access to localhost
       run: |
         sudo ssh-keygen -f /root/.ssh/id_rsa -N ""

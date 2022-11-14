@@ -425,6 +425,7 @@ def main():
 
     args.stdout = args.output == "-"
     args.sshClient = None
+    args.diskInfo = []
 
     try:
         fileStream = getFileStream(args, outHelper)
@@ -672,6 +673,10 @@ def addFiles(args, configFile, zipStream, logFile):
         )
         zipStream.zipStream.write(val, os.path.basename(val))
 
+    for diskInfo in args.diskInfo:
+        logging.info("Adding QCOW image format file [%s] to zipfile", diskInfo)
+        zipStream.zipStream.write(diskInfo, os.path.basename(diskInfo))
+
     logging.info("Adding backup log [%s] to zipfile", logFile)
     zipStream.zipStream.write(logFile, logFile)
 
@@ -683,6 +688,8 @@ def getIdent(args):
     ident = args.cpt.name
     if args.level == "diff":
         ident = int(time())
+    if args.level == "copy":
+        ident = "copy"
 
     return ident
 
@@ -703,9 +710,13 @@ def backupConfig(args, vmConfig):
 def backupBootConfig(args):
     """Save domain uefi/nvram/kernel and loader if configured."""
     for setting, val in args.info.items():
-        tFile = f"{args.output}/{os.path.basename(val)}.{getIdent(args)}"
+        if args.level != "copy":
+            tFile = f"{args.output}/{os.path.basename(val)}.{getIdent(args)}"
+        else:
+            tFile = f"{args.output}/{os.path.basename(val)}"
         logging.info("Save additional boot config [%s] to: [%s]", setting, tFile)
         lib.copy(args, val, tFile)
+        args.info[setting] = tFile
 
 
 def backupDiskInfo(args, disk):
@@ -717,15 +728,17 @@ def backupDiskInfo(args, disk):
         sshutilError,
     ) as errmsg:
         logging.warning("Failed to read QCOW image info: [%s]", errmsg)
+        return
+
     configFile = f"{args.output}/{disk.target}.{getIdent(args)}.qcow.json"
     try:
         with outputhelper.openfile(configFile, "wb") as fh:
             fh.write(info.out.encode())
         logging.info("Saved QCOW image config to: [%s]", configFile)
         if args.stdout is True:
-            args.info[disk.target] = configFile
+            args.diskInfo.append(configFile)
     except OutputException as e:
-        logging.warning("Error saving QCOW image config: [%s]", e)
+        logging.warning("Failed to save QCOW image config: [%s]", e)
 
 
 def setMetaContext(args, disk):
