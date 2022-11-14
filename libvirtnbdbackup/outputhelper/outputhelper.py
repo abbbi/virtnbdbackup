@@ -19,7 +19,12 @@ import sys
 import zipfile
 import logging
 import time
-from typing import IO, Literal, Union, Tuple, BinaryIO
+from typing import IO, Union, Tuple, BinaryIO
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 from libvirtnbdbackup.outputhelper import exceptions
 
 log = logging.getLogger(__name__)

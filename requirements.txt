@@ -3,3 +3,4 @@ tqdm
 lz4>=2.1.2
 lxml
 paramiko
+typing_extensions
