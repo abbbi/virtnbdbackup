@@ -29,7 +29,9 @@ import logging
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import qemuhelper
+from libvirtnbdbackup.qemuhelper.exceptions import ProcessError
 from libvirtnbdbackup import outputhelper
+from libvirtnbdbackup.outputhelper.exceptions import OutputException
 from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
@@ -281,7 +283,7 @@ def main():
     for dFile in dataFiles:
         try:
             reader = outputhelper.openfile(dFile, "rb")
-        except outputhelper.exceptions.OutputException as e:
+        except OutputException as e:
             logging.error("[%s]: [%s]", dFile, e)
             sys.exit(1)
 
@@ -343,7 +345,7 @@ def main():
         try:
             qemuhelper.runcmd(cmdLine=nbdCmd, toPipe=True)
             break
-        except qemuhelper.exceptions.ProcessError as e:
+        except ProcessError as e:
             if retryCnt >= maxRetry:
                 logging.info("Unable to connect device after service start: %s", e)
                 lib.killProc(nbdkitProcess.pid)
@@ -360,7 +362,7 @@ def main():
     if len(dataFiles) > 1:
         try:
             replayChanges(dataRanges, args)
-        except outputhelper.exceptions.OutputException as e:
+        except OutputException as e:
             logging.error("Failed to replay changes: %s", e)
             lib.killProc(nbdkitProcess.pid)
             sys.exit(1)

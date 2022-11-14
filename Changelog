@@ -1,3 +1,23 @@
+Version 1.9.1
+---------
+ * Code cleanup: fix pylint warning, remove obsolete p.wait() calls with
+ hardcoded time limit, start adding type annotations, reworked imports.
+ * Fix disk detection with volume notation. (#81)
+ * Backup and restore qcow image related settings: during backup
+ qemu-img info is called on qcow based image devices and qcow specific options
+ are stored as json dump. If information is existant, on restore the
+ original settings of the qcow image (such as cluster size or other options)
+ are now applied during image creation. (#80)
+ * Fix some race conditions during restore of multiple disks and seqences: NBD
+ connection handle was not closed, following qemu-nbd calls would fail due
+ to locked files or already in use tcp ports.
+
+
+Development:
+ * Change github workflows: now use ubuntu 22.04 and add test for remote
+ backup via localhost.
+
+
 Version 1.9
 ---------
  * Update README

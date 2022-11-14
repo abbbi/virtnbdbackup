@@ -1,11 +1,11 @@
-name: Virtnbdbackup CI on ubuntu-latest
+name: virtnbdbackup CI on ubuntu-22.04
 
 on: [push, pull_request]
 
 jobs:
-  build:
+  test:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v2
@@ -18,6 +18,14 @@ jobs:
         black --check virtnbdrestore
         black --check virtnbdmap
         black --check virtnbd-nbdkit-plugin
+    - name: Set up ssh access to localhost
+      run: |
+        sudo ssh-keygen -f /root/.ssh/id_rsa -N ""
+        sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /root/.ssh/authorized_keys
+        sudo ssh-keyscan -H localhost | sudo tee -a /root/.ssh/known_hosts
+        sudo ssh -l root localhost true
+        sudo ssh-agent | sudo tee -a /root/agent
+        sudo -- bash -c 'source /root/agent; ssh-add'
     - name: Set up libvirt
       run: |
         sudo apt-get update
@@ -43,6 +51,7 @@ jobs:
           nbdkit \
           nbdkit-plugin-python \
           unzip \
+          libnbd-bin \
         ;
         # start daemon
         echo 'security_driver = "none"' | sudo tee -a /etc/libvirt/qemu.conf
@@ -51,18 +60,6 @@ jobs:
         sudo systemctl start libvirtd
         sudo systemctl restart libvirtd
         sudo modprobe nbd max_partitions=10
-    - name: Update libnbd and python3-libnbd
-      run: |
-        # ubuntu 20.x does only include libnbd 1.2.2 which is too old
-        # update package for ci testing to newer version backported.
-        # also copy nbdinfo from debian bullseye, for tests with
-        # option -q
-        wget https://abbbi.github.io/files/libnbd0_1.6.2-1_amd64.deb
-        wget https://abbbi.github.io/files/python3-libnbd_1.6.2-1_amd64.deb
-        sudo dpkg -i libnbd0_1.6.2-1_amd64.deb
-        sudo dpkg -i python3-libnbd_1.6.2-1_amd64.deb
-        wget https://abbbi.github.io/files/nbdinfo -O /usr/local/bin/nbdinfo
-        chmod +x /usr/local/bin/nbdinfo
     - name: Execute tests (vm1)
       run: cd t && sudo -E make vm1.tests && cd -
     - name: Execute tests (vm3)

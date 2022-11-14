@@ -22,20 +22,20 @@ import logging
 import argparse
 import pprint
 import json
-
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import outputhelper
-from libvirtnbdbackup import exceptions as baseexception
-from libvirtnbdbackup import sshutil
 from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
+from libvirtnbdbackup import exceptions as baseexception
 from libvirtnbdbackup.sparsestream import exceptions
+from libvirtnbdbackup.qemuhelper.exceptions import ProcessError
+from libvirtnbdbackup.outputhelper.exceptions import OutputException
 
 
 def dump(args, stream, dataFiles):
@@ -174,32 +174,28 @@ def restoreData(args, stream, dataFile, targetFile, nbdClient, connection):
     return True
 
 
-def restoreSequence(args, dataFiles, virtClient, sshClient):
+def restoreSequence(args, dataFiles, virtClient):
     """Reconstruct image from a given set of data files"""
     stream = streamer.SparseStream(types)
 
+    sourceFile = f"{args.input}/{dataFiles[0]}"
+    meta = getHeader(sourceFile, stream)
+    if not meta:
+        return False
+    diskName = meta["diskName"]
+    targetFile = f"{args.output}/{diskName}"
+    if not lib.exists(targetFile) and not createDiskFile(
+        args, meta, targetFile, args.sshClient
+    ):
+        return False
+
+    nbdClient, connection = startNbd(args, diskName, targetFile, virtClient)
+
     for disk in dataFiles:
         sourceFile = f"{args.input}/{disk}"
-
-        meta = getHeader(sourceFile, stream)
-        if not meta:
-            return False
-
-        diskName = meta["diskName"]
-        targetFile = f"{args.output}/{diskName}"
-
-        if not lib.exists(targetFile) and not createDiskFile(
-            meta, targetFile, sshClient
-        ):
-            return False
-
-        nbdClient, connection = startNbd(
-            args, diskName, targetFile, virtClient, sshClient
-        )
-
         result = writeData(args, stream, sourceFile, targetFile, nbdClient, connection)
 
-        nbdClient.disconnect()
+    nbdClient.disconnect()
 
     return result
 
@@ -215,7 +211,55 @@ def writeData(args, stream, disk, targetFile, nbdClient, connection):
     return diskState
 
 
-def createDiskFile(meta, targetFile, sshClient):
+def getQcowConfig(args, meta):
+    """Check if backup includes exported qcow config and return a list
+    of options passed to qemu-img create command"""
+    opt = []
+    qcowConfig = None
+    qcowConfigFile = lib.getLatest(args.input, f"{meta['diskName']}*.qcow.json*", -1)
+    if not qcowConfigFile:
+        logging.info("No QCOW image config found, will use default options.")
+        return opt
+
+    try:
+        with outputhelper.openfile(qcowConfigFile, "rb") as qFh:
+            qcowConfig = json.loads(qFh.read().decode())
+        logging.info("Using QCOW options from backup file: [%s]", qcowConfigFile)
+    except (
+        OutputException,
+        json.decoder.JSONDecodeError,
+    ) as errmsg:
+        logging.warning(
+            "Unable to load original QCOW image config, using defaults: [%s].",
+            errmsg,
+        )
+        return opt
+
+    try:
+        opt.append("-o")
+        opt.append(f"compat={qcowConfig['format-specific']['data']['compat']}")
+    except KeyError as errmsg:
+        logging.warning("Unable apply QCOW specific compat option: [%s]", errmsg)
+
+    try:
+        opt.append("-o")
+        opt.append(f"cluster_size={qcowConfig['cluster-size']}")
+    except KeyError as errmsg:
+        logging.warning("Unable apply QCOW specific cluster_size option: [%s]", errmsg)
+
+    try:
+        if qcowConfig["format-specific"]["data"]["lazy-refcounts"]:
+            opt.append("-o")
+            opt.append("lazy_refcounts=on")
+    except KeyError as errmsg:
+        logging.warning(
+            "Unable apply QCOW specific lazy_refcounts option: [%s]", errmsg
+        )
+
+    return opt
+
+
+def createDiskFile(args, meta, targetFile, sshClient):
     """Create target image file"""
     logging.info(
         "Create virtual disk [%s] format: [%s] size: [%s]",
@@ -224,13 +268,17 @@ def createDiskFile(meta, targetFile, sshClient):
         meta["virtualSize"],
     )
 
+    options = getQcowConfig(args, meta)
     if lib.exists(targetFile, sshClient):
         logging.error("Target file already exists: [%s], wont overwrite.", targetFile)
         return False
+
     qFh = qemuhelper.qemuHelper(meta["diskName"])
     try:
-        qFh.create(targetFile, meta["virtualSize"], meta["diskFormat"], sshClient)
-    except qemuhelper.exceptions.ProcessError as e:
+        qFh.create(
+            targetFile, meta["virtualSize"], meta["diskFormat"], options, sshClient
+        )
+    except ProcessError as e:
         logging.error("Cant create restore target: [%s]", e)
         return False
 
@@ -244,12 +292,12 @@ def getHeader(diskFile, stream):
     except exceptions.StreamFormatException as errmsg:
         logging.error("Reading metadata from [%s] failed: [%s]", diskFile, errmsg)
         return False
-    except outputhelper.exceptions.OutputException as errmsg:
+    except OutputException as errmsg:
         logging.error("Reading data file [%s] failed: [%s]", diskFile, errmsg)
         return False
 
 
-def startNbd(args, exportName, targetFile, virtClient, sshClient):
+def startNbd(args, exportName, targetFile, virtClient):
     """Start NBD service for restore"""
     qFh = qemuhelper.qemuHelper(exportName)
     if not virtClient.remoteHost:
@@ -258,15 +306,13 @@ def startNbd(args, exportName, targetFile, virtClient, sshClient):
         if err.err is not None:
             logging.error("Unable to start NBD server: [%s]", err)
             return False
-        cType = nbdhelper.nbdConnUnix(exportName, None, args.socketfile)
+        cType = nbdhelper.nbdConnUnix(exportName, "", args.socketfile)
     else:
         remoteIP = virtClient.remoteHost
         if args.nbd_ip is not None:
             remoteIP = args.nbd_ip
-        err = qFh.startRemoteRestoreNbdServer(args, sshClient, targetFile)
-        cType = nbdhelper.nbdConnTCP(
-            exportName, None, remoteIP, args.tls, args.nbd_port
-        )
+        err = qFh.startRemoteRestoreNbdServer(args, targetFile)
+        cType = nbdhelper.nbdConnTCP(exportName, "", remoteIP, args.tls, args.nbd_port)
 
     nbdClient = nbdhelper.nbdClient(cType)
     return nbdClient, nbdClient.waitForServer()
@@ -301,14 +347,14 @@ def checkBackingStore(args, disk):
         logging.warning("Configured backing store images must be changed.")
 
 
-def restoreFiles(args, vmConfig, virtClient, sshClient):
+def restoreFiles(args, vmConfig, virtClient):
     """Notice user if backed up vm had loader / nvram"""
     config = readConfig(vmConfig)
     info = virtClient.getDomainInfo(config)
 
     for setting, val in info.items():
         f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
-        if lib.exists(val, sshClient):
+        if lib.exists(val, args.sshClient):
             logging.info(
                 "File [%s]: for boot option [%s] already exists, skipping.",
                 val,
@@ -319,7 +365,7 @@ def restoreFiles(args, vmConfig, virtClient, sshClient):
         logging.info(
             "Restoring configured file [%s] for boot option [%s]", val, setting
         )
-        lib.copy(f, val, sshClient)
+        lib.copy(args, f, val)
 
 
 def setTargetFile(args, disk):
@@ -333,7 +379,7 @@ def setTargetFile(args, disk):
     return targetFile
 
 
-def restore(args, vmConfig, virtClient, sshClient):
+def restore(args, vmConfig, virtClient):
     """Handle restore operation"""
     stream = streamer.SparseStream(types)
     vmDisks = getDisksFromConfig(args, vmConfig, virtClient)
@@ -363,7 +409,7 @@ def restore(args, vmConfig, virtClient, sshClient):
 
         if args.raw and disk.format == "raw":
             logging.info("Restoring raw image to [%s]", targetFile)
-            lib.copy(restoreDisk[0], targetFile, sshClient)
+            lib.copy(args, restoreDisk[0], targetFile)
             continue
 
         if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
@@ -377,12 +423,10 @@ def restore(args, vmConfig, virtClient, sshClient):
             logging.error("Reading metadata from [%s] failed", restoreDisk[0])
             return False, False
 
-        if not createDiskFile(meta, targetFile, sshClient):
+        if not createDiskFile(args, meta, targetFile, args.sshClient):
             return False, False
 
-        nbdClient, connection = startNbd(
-            args, meta["diskName"], targetFile, virtClient, sshClient
-        )
+        nbdClient, connection = startNbd(args, meta["diskName"], targetFile, virtClient)
 
         result = False
         for dataFile in restoreDisk:
@@ -405,18 +449,20 @@ def restore(args, vmConfig, virtClient, sshClient):
         else:
             restConfig = vmConfig
 
+        nbdClient.disconnect()
+
     return result, restConfig
 
 
-def restoreConfig(args, vmConfig, adjustedConfig, sshClient):
+def restoreConfig(args, vmConfig, adjustedConfig):
     """Restore either original or adjusted vm configuration
     to new directory"""
     targetFile = f"{args.output}/{os.path.basename(vmConfig)}"
     if args.adjust_config is True:
-        if sshClient:
+        if args.sshClient:
             with tempfile.NamedTemporaryFile(delete=True) as fh:
                 fh.write(adjustedConfig)
-                lib.copy(fh.name, targetFile, sshClient)
+                lib.copy(args, fh.name, targetFile)
         else:
             with outputhelper.openfile(targetFile, "wb") as cnf:
                 cnf.write(adjustedConfig)
@@ -424,7 +470,7 @@ def restoreConfig(args, vmConfig, adjustedConfig, sshClient):
         if args.define is False:
             logging.info("Use 'virsh define %s' to define VM", targetFile)
     else:
-        lib.copy(vmConfig, targetFile, sshClient)
+        lib.copy(args, vmConfig, targetFile)
         logging.info("Copied original vm config to [%s]", targetFile)
         logging.info("Note: virtual machine config must be adjusted manually.")
 
@@ -550,7 +596,7 @@ def main():
     argopt.addDebugArgs(debopt)
 
     args = lib.argparse(parser)
-
+    args.sshClient = None
     # default values for common usage of lib.getDomainDisks
     args.exclude = None
     args.include = args.disk
@@ -587,14 +633,10 @@ def main():
 
     if args.action == "restore":
         virtClient = libvirthelper.client(args)
-        sshClient = None
         if virtClient.remoteHost:
-            try:
-                sshClient = sshutil.Client(
-                    virtClient.remoteHost, args.ssh_user, sshutil.Mode.UPLOAD
-                )
-            except sshutil.exceptions.sshutilError as e:
-                logging.error("Unable to setup ssh connection: [%s]", e)
+            args.sshClient = lib.sshSession(args, virtClient.remoteHost)
+            if not args.sshClient:
+                logging.error("Remote restore detected but ssh session setup failed")
                 sys.exit(1)
 
         vmConfig = lib.getLatest(args.input, "vmconfig*.xml", -1) or (
@@ -606,26 +648,26 @@ def main():
         if not virtClient.remoteHost:
             outputhelper.outputHelper.Directory(args.output)
         else:
-            sshClient.sftp.mkdir(args.output)
+            args.sshClient.sftp.mkdir(args.output)
 
         ret = False
         if args.sequence is not None:
             restConfig = None
-            ret = restoreSequence(args, dataFiles, virtClient, sshClient)
+            ret = restoreSequence(args, dataFiles, virtClient)
         else:
-            ret, restConfig = restore(args, vmConfig, virtClient, sshClient)
+            ret, restConfig = restore(args, vmConfig, virtClient)
 
         if ret is False:
             logging.fatal("Disk restore failed.")
             sys.exit(1)
 
-        restoreFiles(args, vmConfig, virtClient, sshClient)
+        restoreFiles(args, vmConfig, virtClient)
         if args.define is True and args.adjust_config is False:
             logging.warning(
                 "Redefine domain needs adjusted config, please "
                 "use --adjust-config option. Skipping.."
             )
-        restoreConfig(args, vmConfig, restConfig, sshClient)
+        restoreConfig(args, vmConfig, restConfig)
         virtClient.refreshPool(args.output)
         if args.define is True and args.adjust_config is True:
             if not virtClient.defineDomain(restConfig):

@@ -27,7 +27,6 @@ from datetime import datetime
 from functools import partial
 from threading import current_thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdhelper
@@ -35,12 +34,20 @@ from libvirtnbdbackup import extenthandler
 from libvirtnbdbackup import qemuhelper
 from libvirtnbdbackup import libvirthelper
 from libvirtnbdbackup import outputhelper
-from libvirtnbdbackup import exceptions
-from libvirtnbdbackup import sshutil
 from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
+from libvirtnbdbackup import exceptions
+from libvirtnbdbackup.sshutil.exceptions import sshutilError
+from libvirtnbdbackup.nbdhelper.exceptions import NbdClientException
+from libvirtnbdbackup.qemuhelper.exceptions import QemuHelperError, ProcessError
+from libvirtnbdbackup.libvirthelper.exceptions import (
+    startBackupFailed,
+    domainNotFound,
+    connectionFailed,
+)
+from libvirtnbdbackup.outputhelper.exceptions import OutputException
 
 
 def handleSignal(args, domObj, virtClient, log, signum, _):
@@ -113,7 +120,7 @@ def readCheckpointFile(cFile):
         with outputhelper.openfile(cFile, "rb") as fh:
             checkpoints = json.loads(fh.read().decode())
         return checkpoints
-    except outputhelper.exceptions.OutputException as e:
+    except OutputException as e:
         raise exceptions.ReadCheckpointsError(f"Failed to read checkpoint file: [{e}]")
     except json.decoder.JSONDecodeError as e:
         raise exceptions.ReadCheckpointsError(f"Invalid checkpoint file: [{e}]")
@@ -191,7 +198,7 @@ def saveCheckpointFile(args):
             cFw.write(json.dumps(checkpoints).encode())
     except exceptions.CheckpointException as e:
         raise exceptions.CheckpointException from e
-    except outputhelper.exceptions.OutputException as e:
+    except OutputException as e:
         raise exceptions.SaveCheckpointError from e
 
 
@@ -220,7 +227,7 @@ def startBackupJob(args, virtClient, domObj, disks):
         )
         logging.debug("Backup job started.")
         return True
-    except libvirthelper.exceptions.startBackupFailed as e:
+    except startBackupFailed as e:
         logging.error(e)
 
     return False
@@ -417,10 +424,11 @@ def main():
     args = lib.argparse(parser)
 
     args.stdout = args.output == "-"
+    args.sshClient = None
 
     try:
         fileStream = getFileStream(args, outHelper)
-    except outputhelper.exceptions.OutputException as e:
+    except OutputException as e:
         logging.error("Cant open output file: [%s]", e)
         sys.exit(1)
 
@@ -486,10 +494,10 @@ def main():
     try:
         virtClient = libvirthelper.client(args)
         domObj = virtClient.getDomain(args.domain)
-    except libvirthelper.exceptions.domainNotFound as e:
+    except domainNotFound as e:
         logging.error("%s", e)
         sys.exit(1)
-    except libvirthelper.exceptions.connectionFailed as e:
+    except connectionFailed as e:
         logging.error("Cant connect libvirt daemon: [%s]", e)
         sys.exit(1)
 
@@ -566,11 +574,11 @@ def main():
             )
             sys.exit(0)
 
-    logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
-
-    outHelper.Directory(args.scratchdir)
-
     if virtClient.remoteHost:
+        args.sshClient = lib.sshSession(args, virtClient.remoteHost)
+        if not args.sshClient:
+            logging.error("Remote backup detected but ssh session setup failed")
+            sys.exit(1)
         logging.info(
             "Remote: NDB Endpoint socket: [%s:%s]",
             virtClient.remoteHost,
@@ -580,6 +588,8 @@ def main():
         logging.info("Local NDB Endpoint socket: [%s]", args.socketfile)
 
     if args.offline is not True:
+        logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
+        outHelper.Directory(args.scratchdir)
         if not startBackupJob(args, virtClient, domObj, disks):
             sys.exit(1)
 
@@ -611,7 +621,7 @@ def main():
                     raise exceptions.DiskBackupFailed("Backup of one disk failed")
     except exceptions.BackupException as e:
         logging.error("Disk backup failed: [%s]", e)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logging.fatal("Unknown Exception during backup: %s", e)
         logging.exception(e)
 
@@ -625,7 +635,10 @@ def main():
 
     configFile = backupConfig(args, vmConfig)
 
-    backupBootConfig(args, virtClient)
+    backupBootConfig(args)
+
+    if args.sshClient:
+        args.sshClient.disconnect()
 
     if args.stdout is True:
         addFiles(args, configFile, fileStream, logFile)
@@ -679,48 +692,46 @@ def backupConfig(args, vmConfig):
     configFile = f"{args.output}/vmconfig.{getIdent(args)}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
-        with outputhelper.openfile(configFile, "w") as fh:
-            fh.write(vmConfig)
+        with outputhelper.openfile(configFile, "wb") as fh:
+            fh.write(vmConfig.encode())
         return configFile
-    except outputhelper.exceptions.OutputException as e:
+    except OutputException as e:
         logging.error("Error saving VM config: [%s]", e)
         return None
 
 
-def sshSession(args, remoteHost):
-    """Use ssh to copy remote files"""
-    try:
-        return sshutil.Client(remoteHost, args.ssh_user)
-    except sshutil.exceptions.sshutilError as err:
-        logging.warning("Failed to setup SSH connection: [%s]", err)
-
-    return None
-
-
-def backupBootConfig(args, virtClient):
+def backupBootConfig(args):
     """Save domain uefi/nvram/kernel and loader if configured."""
-    sshClient = None
-    if virtClient.remoteHost and not sshClient:
-        sshClient = sshSession(args, virtClient.remoteHost)
-        if not sshClient:
-            logging.warning(
-                "Saving additional boot config failed: cant setup ssh session."
-            )
-            return
-
     for setting, val in args.info.items():
         tFile = f"{args.output}/{os.path.basename(val)}.{getIdent(args)}"
         logging.info("Save additional boot config [%s] to: [%s]", setting, tFile)
-        lib.copy(val, tFile, sshClient)
+        lib.copy(args, val, tFile)
 
-    if sshClient:
-        sshClient.disconnect()
+
+def backupDiskInfo(args, disk):
+    """Save information about qcow image"""
+    try:
+        info = qemuhelper.qemuHelper(None).info(disk.path, args.sshClient)
+    except (
+        ProcessError,
+        sshutilError,
+    ) as errmsg:
+        logging.warning("Failed to read QCOW image info: [%s]", errmsg)
+    configFile = f"{args.output}/{disk.target}.{getIdent(args)}.qcow.json"
+    try:
+        with outputhelper.openfile(configFile, "wb") as fh:
+            fh.write(info.out.encode())
+        logging.info("Saved QCOW image config to: [%s]", configFile)
+        if args.stdout is True:
+            args.info[disk.target] = configFile
+    except OutputException as e:
+        logging.warning("Error saving QCOW image config: [%s]", e)
 
 
 def setMetaContext(args, disk):
     """Set meta context passed to nbd server based on
     backup type"""
-    metaContext = None
+    metaContext = ""
     if args.level in ("inc", "diff"):
         if args.offline is True:
             metaContext = f"qemu:dirty-bitmap:{args.cpt.name}"
@@ -741,16 +752,17 @@ def setStreamType(args, disk):
     return streamType
 
 
-def setTargetFile(args, disk):
-    """Set Target file name to write"""
+def setTargetFile(args, disk, ext="data"):
+    """Set Target file name to write data to, used for both data files
+    and qemu disk info"""
     if args.level in ("full", "copy"):
         level = args.level
         if disk.format == "raw":
             level = "copy"
-        targetFile = f"{args.output}/{disk.target}.{level}.data"
+        targetFile = f"{args.output}/{disk.target}.{level}.{ext}"
     elif args.level in ("inc", "diff"):
         cptName = getIdent(args)
-        targetFile = f"{args.output}/{disk.target}.{args.level}.{cptName}.data"
+        targetFile = f"{args.output}/{disk.target}.{args.level}.{cptName}.{ext}"
 
     targetFilePartial = f"{targetFile}.partial"
 
@@ -803,14 +815,10 @@ def startOfflineNBD(args, disk, remoteHost):
     socket = f"{args.socketfile}.{disk.target}"
     logging.info("Offline backup, starting NDB Service, socket: [%s]", socket)
     if remoteHost:
-        sshClient = sshSession(args, remoteHost)
-        if not sshClient:
-            raise exceptions.DiskBackupFailed("Starting remote NBD Service failed.")
         nbdProc = qemuhelper.qemuHelper(disk.target).startRemoteBackupNbdServer(
-            args, disk.format, disk.path, bitMap, sshClient
+            args, disk.format, disk.path, bitMap
         )
         logging.info("Remote NDB Service started, PID: [%s].", nbdProc.pid)
-        sshClient.disconnect()
         return nbdProc
     try:
         nbdProc = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
@@ -818,7 +826,7 @@ def startOfflineNBD(args, disk, remoteHost):
         )
         logging.info("NDB Service started, PID: [%s]", nbdProc.pid)
         return nbdProc
-    except qemuhelper.exceptions.QemuHelperError as e:
+    except QemuHelperError as e:
         raise exceptions.DiskBackupFailed(e)
 
 
@@ -850,7 +858,7 @@ def connectNbd(args, disk, metaContext, remoteIP, virtClient):
 
     try:
         return nbdClient.waitForServer(), nbdClient
-    except nbdhelper.exceptions.NbdClientException as e:
+    except NbdClientException as e:
         raise exceptions.DiskBackupFailed(
             f"NBD endpoint: [{cType}]: connection failed: [{e}]"
         )
@@ -978,6 +986,9 @@ def backupDisk(args, disk, count, fileStream, virtClient):
     if args.offline is True and not virtClient.remoteHost:
         logging.info("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)
+
+    if disk.format.startswith("qcow"):
+        backupDiskInfo(args, disk)
     if args.stdout is False:
         if args.noprogress is True:
             logging.info(

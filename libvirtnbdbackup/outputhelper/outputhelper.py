@@ -18,8 +18,8 @@ import os
 import sys
 import zipfile
 import logging
-
-from datetime import datetime
+import time
+from typing import IO, Literal, Union, Tuple, BinaryIO
 from libvirtnbdbackup.outputhelper import exceptions
 
 log = logging.getLogger(__name__)
@@ -34,13 +34,13 @@ class outputHelper:
     class Directory:
         """Backup to target directory"""
 
-        def __init__(self, targetDir):
+        def __init__(self, targetDir: str) -> None:
             self.targetDir = targetDir
-            self.fileHandle = None
-            if self.targetDir is not None:
+            self.fileHandle: BinaryIO
+            if self.targetDir != "":
                 self._makeDir()
 
-        def _makeDir(self):
+        def _makeDir(self) -> None:
             """Create output directoy on init"""
             if os.path.exists(self.targetDir):
                 if not os.path.isdir(self.targetDir):
@@ -55,7 +55,11 @@ class outputHelper:
                         f"Failed to create target directory: [{e}]"
                     )
 
-        def open(self, targetFile, mode="wb"):
+        def open(
+            self,
+            targetFile: str,
+            mode: Union[Literal["wb"], Literal["rb"]] = "wb",
+        ) -> BinaryIO:
             """Open target file"""
             try:
                 # pylint: disable=unspecified-encoding,consider-using-with
@@ -82,8 +86,8 @@ class outputHelper:
         """Backup to zip file"""
 
         def __init__(self):
-            self.zipStream = None
-            self.zipFileStream = None
+            self.zipStream: zipfile.ZipFile
+            self.zipFileStream: IO[bytes]
 
             log.info("Writing zip file stream to stdout")
             try:
@@ -96,13 +100,21 @@ class outputHelper:
                     f"Failed to open zip file: {e}"
                 ) from e
 
-        def open(self, fileName, mode="w"):
+        def open(self, fileName: str, mode: Literal["w"] = "w") -> IO[bytes]:
             """Open wrapper"""
             zipFile = zipfile.ZipInfo(
                 filename=fileName,
             )
-            now = datetime.now()
-            zipFile.date_time = now.replace(microsecond=0).timetuple()
+            dateTime: time.struct_time = time.localtime(time.time())
+            timeStamp: Tuple[int, int, int, int, int, int] = (
+                dateTime.tm_year,
+                dateTime.tm_mon,
+                dateTime.tm_mday,
+                dateTime.tm_hour,
+                dateTime.tm_min,
+                dateTime.tm_sec,
+            )
+            zipFile.date_time = timeStamp
             zipFile.compress_type = zipfile.ZIP_STORED
 
             try:

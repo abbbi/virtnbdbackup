@@ -1,5 +1,18 @@
 """
-Common functions
+    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
 import sys
@@ -10,12 +23,15 @@ import logging.handlers
 import signal
 import shutil
 import pprint
-from dataclasses import dataclass
+from argparse import Namespace
+from typing import Optional, Generator, List, Any, Tuple, IO, Union
 import lz4.frame
 from tqdm import tqdm
 
-from libvirtnbdbackup.sshutil import exceptions as sshexception
+from libvirtnbdbackup import sshutil
+from libvirtnbdbackup.sshutil.exceptions import sshutilError
 from libvirtnbdbackup import outputhelper
+from libvirtnbdbackup.logcount import logCount
 
 log = logging.getLogger(__name__)
 
@@ -27,27 +43,17 @@ logDateFormat = "[%Y-%m-%d %H:%M:%S]"
 checkpointName = "virtnbdbackup"
 
 
-@dataclass
-class processInfo:
-    """Process info object"""
-
-    pid: int
-    logFile: str
-    err: str
-    out: str
-
-
-def argparse(parser):
+def argparse(parser) -> Namespace:
     """Parse arguments"""
     return parser.parse_args()
 
 
-def printVersion(version):
+def printVersion(version) -> None:
     """Print version and passed arguments"""
     log.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
 
-def setLogLevel(verbose):
+def setLogLevel(verbose: bool) -> int:
     """Set loglevel"""
     level = logging.INFO
     if verbose is True:
@@ -56,7 +62,17 @@ def setLogLevel(verbose):
     return level
 
 
-def getLogFile(fileName):
+def sshSession(args: Namespace, remoteHost: str) -> Union[sshutil.Client, None]:
+    """Use ssh to copy remote files"""
+    try:
+        return sshutil.Client(remoteHost, args.ssh_user)
+    except sshutilError as err:
+        logging.warning("Failed to setup SSH connection: [%s]", err)
+
+    return None
+
+
+def getLogFile(fileName: str) -> Optional[logging.FileHandler]:
     """Try setup log handler, if this fails, something is already
     wrong, but we can at least provide correct error message."""
     try:
@@ -66,13 +82,16 @@ def getLogFile(fileName):
         return None
 
 
-def configLogger(args, fileLog, counter):
+def configLogger(
+    args: Namespace, fileLog: Optional[logging.FileHandler], counter: logCount
+):
     """Setup logging"""
     syslog = False
     try:
         syslog = args.syslog is True
     except AttributeError:
         pass
+    handler: List[Any]
     handler = [
         fileLog,
         logging.StreamHandler(stream=sys.stderr),
@@ -88,19 +107,19 @@ def configLogger(args, fileLog, counter):
     )
 
 
-def partialBackup(args):
+def partialBackup(args: Namespace) -> int:
     """Check for possible partial backup files"""
     partialFiles = glob.glob(f"{args.output}/*.partial")
     return len(partialFiles) > 0
 
 
-def hasFullBackup(args):
+def hasFullBackup(args: Namespace) -> int:
     """Check if full backup file exists in target directory"""
     fullFiles = glob.glob(f"{args.output}/*.full.data")
     return len(fullFiles) > 0
 
 
-def exists(filePath, sshClient=None):
+def exists(filePath: str, sshClient=None) -> bool:
     """Check if file exists either remotely or locally."""
     if sshClient:
         return sshClient.exists(filePath)
@@ -108,7 +127,7 @@ def exists(filePath, sshClient=None):
     return os.path.exists(filePath)
 
 
-def targetIsEmpty(args):
+def targetIsEmpty(args: Namespace) -> bool:
     """Check if target directory does not include an backup
     already (no .data or .data.partial files)"""
     if exists(args.output) and args.level in ("full", "copy", "auto"):
@@ -119,7 +138,7 @@ def targetIsEmpty(args):
     return True
 
 
-def getLatest(targetDir, search, key=None):
+def getLatest(targetDir: str, search: str, key=None) -> Union[List[str], str, None]:
     """get the last backed up file matching search
     from the backupset, used to find latest vm config,
     data files or data files by disk.
@@ -139,20 +158,20 @@ def getLatest(targetDir, search, key=None):
         return None
 
 
-def copy(source, target, sshClient=None):
+def copy(args: Namespace, source: str, target: str) -> None:
     """Copy file, handle exceptions"""
     try:
-        if sshClient:
-            sshClient.copy(source, target)
+        if args.sshClient:
+            args.sshClient.copy(source, target)
         else:
             shutil.copyfile(source, target)
     except OSError as e:
         log.warning("Failed to copy [%s] to [%s]: [%s]", source, target, e)
-    except sshexception.sshutilError as e:
+    except sshutilError as e:
         log.warning("Remote copy from [%s] to [%s] failed: [%s]", source, target, e)
 
 
-def progressBar(total, desc, args, count=0):
+def progressBar(total: int, desc: str, args: Namespace, count=0) -> tqdm:
     """Return tqdm object"""
     return tqdm(
         total=total,
@@ -165,7 +184,7 @@ def progressBar(total, desc, args, count=0):
     )
 
 
-def killProc(pid):
+def killProc(pid: int) -> bool:
     """Attempt kill PID"""
     logging.debug("Killing PID: %s", pid)
     while True:
@@ -176,7 +195,7 @@ def killProc(pid):
             return True
 
 
-def dumpExtentJson(extents):
+def dumpExtentJson(extents) -> str:
     """Dump extent object as json"""
     extList = []
     for extent in extents:
@@ -189,14 +208,14 @@ def dumpExtentJson(extents):
     return json.dumps(extList, indent=4, sort_keys=True)
 
 
-def dumpMetaData(dataFile, stream):
+def dumpMetaData(dataFile: str, stream):
     """read metadata header"""
     with outputhelper.openfile(dataFile, "rb") as reader:
         _, _, length = stream.readFrame(reader)
         return stream.loadMetadata(reader.read(length))
 
 
-def blockStep(offset, length, maxRequestSize):
+def blockStep(offset: int, length: int, maxRequestSize: int) -> Generator:
     """Process block and ensure to not exceed the maximum request size
     from NBD server.
 
@@ -208,8 +227,8 @@ def blockStep(offset, length, maxRequestSize):
     blockOffset = offset
     if isinstance(length, dict):
         blockOffset = offset
-        item = next(iter(length))
-        for step in length[item]:
+        compressOffset = list(length.keys())[0]
+        for step in length[compressOffset]:
             blockOffset += step
             yield step, blockOffset
     else:
@@ -220,7 +239,7 @@ def blockStep(offset, length, maxRequestSize):
             blockOffset += blocklen
 
 
-def isCompressed(meta):
+def isCompressed(meta: dict) -> bool:
     """Return true if stream is compressed"""
     try:
         version = meta["stream-version"] == 2
@@ -234,14 +253,14 @@ def isCompressed(meta):
     return False
 
 
-def lz4DecompressFrame(data):
+def lz4DecompressFrame(data: bytes) -> bytes:
     """Decompress lz4 frame, print frame information"""
     frameInfo = lz4.frame.get_frame_info(data)
     log.debug("Compressed Frame: %s", frameInfo)
     return lz4.frame.decompress(data)
 
 
-def lz4CompressFrame(data, level):
+def lz4CompressFrame(data: bytes, level: int) -> bytes:
     """Compress block with to lz4 frame, checksums
     enabled for safety
     """
@@ -253,7 +272,9 @@ def lz4CompressFrame(data, level):
     )
 
 
-def writeChunk(writer, block, maxRequestSize, nbdCon, btype, compress):
+def writeChunk(
+    writer: IO[Any], block, maxRequestSize: int, nbdCon, btype, compress
+) -> Tuple[int, List[int]]:
     """During extent processing, consecutive blocks with
     the same type(data or zeroed) are unified into one big chunk.
     This helps to reduce requests to the NBD Server.
@@ -285,7 +306,7 @@ def writeChunk(writer, block, maxRequestSize, nbdCon, btype, compress):
     return wSize, cSizes
 
 
-def writeBlock(writer, block, nbdCon, btype, compress):
+def writeBlock(writer: IO[Any], block, nbdCon, btype: str, compress: bool) -> int:
     """Write single block that does not exceed nbd maxRequestSize
     setting. In case compression is enabled, single blocks are
     compressed using lz4.block.
@@ -300,7 +321,14 @@ def writeBlock(writer, block, nbdCon, btype, compress):
     return writer.write(data)
 
 
-def readChunk(reader, offset, length, maxRequestSize, nbdCon, compression):
+def readChunk(
+    reader: IO[Any],
+    offset: int,
+    length: int,
+    maxRequestSize: int,
+    nbdCon,
+    compression: int,
+) -> int:
     """Read data from reader and write to nbd connection
 
     If Compression is enabled function receives length information

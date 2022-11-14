@@ -27,7 +27,7 @@ define clean
 	@rm -rf checkpoints
 	@rm -f vmconfig*.xml
 	@umount -lf /empty || true
-	for vm in vm1 vm2 vm3 vm4 vm5; do \
+	for vm in vm1 restore_vm1 vm2 vm3 vm4 vm5; do \
 		if virsh list --all | grep $$vm; then \
 			virsh destroy $$vm; \
 			virsh undefine $$vm --checkpoints-metadata --nvram; \

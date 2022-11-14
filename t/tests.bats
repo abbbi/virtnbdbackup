@@ -6,6 +6,10 @@ if [ -z "$TEST" ]; then
     exit
 fi
 
+if [ -e /root/agent ]; then
+    source /root/agent > /dev/null
+fi
+
 if [ -z "$TMPDIR" ]; then
     export TMPDIR=$(mktemp -d)
     chmod go+rwx $TMPDIR
@@ -199,6 +203,8 @@ toOut() {
     [ "$status" -eq 0 ]
     unzip -l ${TMPDIR}/backup.zip | grep checkpoints
     [ "$status" -eq 0 ]
+    unzip -l ${TMPDIR}/backup.zip | grep "qcow.json"
+    [ "$status" -eq 0 ]
     if [ ! -z ${VM_UEFI_VARS} ]; then
         echo "output = ${output}"
         unzip -l ${TMPDIR}/backup.zip | grep UEFI.fd
@@ -326,6 +332,7 @@ toOut() {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/inctest
     echo "output = ${output}"
+    [[ "${output}" =~  "Saved QCOW image config" ]]
     [ "$status" -eq 0 ]
 }
 @test "Backup: incremental and differencial backup must fail if partial file found" {
@@ -370,6 +377,7 @@ toOut() {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
+    [[ "${output}" =~  "Saved QCOW image config" ]]
     [ "$status" -eq 0 ]
 }
 @test "Incremental Backup: create second incremental backup" {
@@ -605,6 +613,30 @@ toOut() {
     [ "$status" -eq 0 ]
     [[ "${output}" =~  "Backup mode auto: executing incremental backup" ]]
     run ls ${TMPDIR}/autotest/*inc*.data
+    [ "$status" -eq 0 ]
+}
+
+@test "Backup: test remote backup functionality via localhost" {
+    [ -z $GITHUB_JOB ] && skip "skip locally"
+    run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -v -o  ${TMPDIR}/remotebackup
+    echo "output = ${output}"
+    [[ "${output}" =~  "Connecting remote system via ssh" ]]
+    [ "$status" -eq 0 ]
+}
+@test "Restore: test remote restore functionality via localhost" {
+    [ -z $GITHUB_JOB ] && skip "skip locally"
+    run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore
+    echo "output = ${output}"
+    [[ "${output}" =~  "Connecting remote system via ssh" ]]
+    [ "$status" -eq 0 ]
+}
+
+@test "Backup: test estimating backup size" {
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/estimation
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/estimation -p
+    [[ "${output}" =~  "Estimated checkpoint backup size" ]]
     [ "$status" -eq 0 ]
 }
 

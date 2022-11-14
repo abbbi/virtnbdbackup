@@ -19,15 +19,36 @@ import string
 import random
 import glob
 import logging
+from dataclasses import dataclass
 from socket import gethostname
-from collections import namedtuple
-import libvirt
+from argparse import Namespace
+from typing import Any, Dict, List, Tuple, Optional, Union
+from lxml.etree import _Element
 from lxml import etree as ElementTree
-from libvirtnbdbackup.libvirthelper import exceptions
+import libvirt
+from libvirtnbdbackup.libvirthelper.exceptions import (
+    domainNotFound,
+    connectionFailed,
+    startBackupFailed,
+)
 from libvirtnbdbackup import outputhelper
+from libvirtnbdbackup.outputhelper.exceptions import OutputException
 
 
-def libvirt_ignore(_ignore, _err):
+@dataclass
+class DomainDisk:
+    """Domain disk object"""
+
+    target: str
+    format: str
+    filename: str
+    path: str
+    backingstores: Union[List[str], None]
+
+
+def libvirt_ignore(
+    _ignore: None, _err: Tuple[int, int, str, int, str, str, None, int, int]
+) -> None:
     """this is required so libvirt.py does not report errors to stderr
     which it does by default. Error messages are fetched accordingly
     using exceptions.
@@ -42,30 +63,30 @@ log = logging.getLogger(__name__)
 class client:
     """Libvirt related functions"""
 
-    def __init__(self, uri):
+    def __init__(self, uri: Namespace) -> None:
         self.remoteHost = None
         self._conn = self._connect(uri)
         self._domObj = None
         self.libvirtVersion = self._conn.getLibVersion()
 
     @staticmethod
-    def _connectAuth(uri, user, password):
+    def _connectAuth(uri: str, user: str, password: str) -> libvirt.virConnect:
         """Use openAuth if connection string includes authfile or
         username/password are set"""
 
-        def _cred(credentials, user_data):
+        def _cred(credentials, user_data) -> None:
             for credential in credentials:
                 if credential[0] == libvirt.VIR_CRED_AUTHNAME:
                     credential[4] = user_data[0]
                 elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
                     credential[4] = user_data[1]
-            return 0
 
         logging.debug("Username: %s", user)
         logging.debug("Password: %s", password)
 
         try:
-            auth = [[libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]]
+            flags: List[Any] = [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]
+            auth: List[Any] = [flags]
             if user is not None and password is not None:
                 user_data = [user, password]
                 auth.append(_cred)
@@ -73,29 +94,29 @@ class client:
 
             return libvirt.openAuth(uri, auth, 0)
         except libvirt.libvirtError as e:
-            raise exceptions.connectionFailed(e) from e
+            raise connectionFailed(e) from e
 
     @staticmethod
-    def _connectOpen(uri):
+    def _connectOpen(uri: str) -> libvirt.virConnect:
         """Open connection with regular libvirt URI for local authentication"""
         try:
             return libvirt.open(uri)
         except libvirt.libvirtError as e:
-            raise exceptions.connectionFailed(e) from e
+            raise connectionFailed(e) from e
 
     @staticmethod
-    def _reqAuth(uri):
+    def _reqAuth(uri: str) -> bool:
         """If authentication file is passed or qemu+ssh is used,
         no user and password are required."""
         return "authfile" in uri
 
     @staticmethod
-    def _isSsh(uri):
+    def _isSsh(uri: str) -> bool:
         """If authentication file is passed or qemu+ssh is used,
         no user and password are required."""
         return uri.startswith("qemu+ssh")
 
-    def _useAuth(self, args):
+    def _useAuth(self, args: Namespace) -> bool:
         """Check wether we want to use advanced auth method"""
         if args.uri.startswith("qemu+"):
             return True
@@ -106,7 +127,7 @@ class client:
 
         return False
 
-    def _connect(self, args):
+    def _connect(self, args: Namespace) -> libvirt.virConnect:
         """return libvirt connection handle"""
         logging.debug("Libvirt URI: [%s]", args.uri)
         if self._useAuth(args):
@@ -118,7 +139,7 @@ class client:
                 and not self._isSsh(args.uri)
                 and (not args.user or not args.password)
             ):
-                raise exceptions.connectionFailed(
+                raise connectionFailed(
                     "Username (--user) and password (--password) required."
                 )
             if not self._isSsh(args.uri):
@@ -140,18 +161,18 @@ class client:
         return self._connectOpen(args.uri)
 
     @staticmethod
-    def _getTree(vmConfig):
+    def _getTree(vmConfig: str) -> _Element:
         """Return Etree element for vm config"""
         return ElementTree.fromstring(vmConfig)
 
-    def getDomain(self, name):
+    def getDomain(self, name: str) -> libvirt.virDomain:
         """Lookup domain"""
         try:
             return self._conn.lookupByName(name)
         except libvirt.libvirtError as e:
-            raise exceptions.domainNotFound(e) from e
+            raise domainNotFound(e) from e
 
-    def refreshPool(self, path):
+    def refreshPool(self, path: str) -> None:
         """Check if specified path matches an existing
         storage pool and refresh its contents"""
         try:
@@ -170,7 +191,7 @@ class client:
             logging.warning("Failed to refresh libvirt pool [%s]: [%s]", pool.name(), e)
 
     @staticmethod
-    def blockJobActive(domObj, disks):
+    def blockJobActive(domObj: libvirt.virDomain, disks: List[DomainDisk]) -> bool:
         """Check if there is already an active block job for this virtual
         machine, which might block"""
         for disk in disks:
@@ -184,7 +205,7 @@ class client:
                 return True
         return False
 
-    def hasIncrementalEnabled(self, domObj):
+    def hasIncrementalEnabled(self, domObj: libvirt.virDomain) -> bool:
         """Check if virtual machine has enabled required capabilities
         for incremental backup
 
@@ -208,11 +229,11 @@ class client:
         return False
 
     @staticmethod
-    def getDomainConfig(domObj):
+    def getDomainConfig(domObj: libvirt.virDomain) -> str:
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
-    def defineDomain(self, vmConfig):
+    def defineDomain(self, vmConfig: bytes) -> bool:
         """Define domain based on restored config"""
         try:
             logging.info("Redefining domain based on adjusted config.")
@@ -224,7 +245,7 @@ class client:
 
         return True
 
-    def getDomainInfo(self, vmConfig):
+    def getDomainInfo(self, vmConfig: str) -> Dict[str, str]:
         """Return object with general vm information relevant
         for backup"""
         tree = self._getTree(vmConfig)
@@ -239,7 +260,7 @@ class client:
         logging.debug("Domain Info: [%s]", settings)
         return settings
 
-    def adjustDomainConfigRemoveDisk(self, vmConfig, excluded):
+    def adjustDomainConfigRemoveDisk(self, vmConfig: str, excluded) -> str:
         """Remove disk from config, in case it has been excluded
         from the backup."""
         tree = self._getTree(vmConfig)
@@ -255,7 +276,9 @@ class client:
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
-    def adjustDomainConfig(self, args, restoreDisk, vmConfig, targetFile):
+    def adjustDomainConfig(
+        self, args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
+    ) -> str:
         """Adjust virtual machine configuration after restoring. Changes
         the pathes to the virtual machine disks and attempts to remove
         components excluded during restore."""
@@ -308,10 +331,10 @@ class client:
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
     @staticmethod
-    def getBackingStores(disk):
+    def getBackingStores(disk: _Element) -> Union[List[str], None]:
         """Get list of backing store files defined for disk, usually
         the case if virtual machine has external snapshots."""
-        backingStoreFiles = []
+        backingStoreFiles: List[str] = []
         backingStore = disk.find("backingStore")
         while backingStore is not None:
             backingStoreSource = backingStore.find("source")
@@ -326,14 +349,26 @@ class client:
 
         return backingStoreFiles
 
-    def getDomainDisks(self, args, vmConfig):
+    def _getDiskPathByVolume(self, disk: _Element) -> Union[str, None]:
+        """If virtual machine disk is configured via type='volume'
+        get path to disk via appropriate libvirt functions,
+        pool and volume setting are mandatory as by xml schema definition"""
+        vol = disk.xpath("source")[0].get("volume")
+        pool = disk.xpath("source")[0].get("pool")
+
+        try:
+            diskPool = self._conn.storagePoolLookupByName(pool)
+            diskPath = diskPool.storageVolLookupByName(vol).path()
+        except libvirt.libvirtError as errmsg:
+            logging.error("Failed to detect vm disk by volumes: [%s]", errmsg)
+            return None
+
+        return diskPath
+
+    def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
-        DomainDisk = namedtuple(
-            "DomainDisk",
-            ["target", "format", "filename", "path", "backingstores"],
-        )
         tree = self._getTree(vmConfig)
         devices = []
 
@@ -375,10 +410,22 @@ class client:
                 )
                 continue
 
-            # attempt to get original disk file name
-            diskSrc = disk.xpath("source")[0].get("file")
-            diskFileName = os.path.basename(diskSrc)
-            diskPath = diskSrc
+            diskType = disk.get("type")
+            if diskType == "volume":
+                logging.debug("Disk config using volume notation")
+                diskPath = self._getDiskPathByVolume(disk)
+            elif diskType == "file":
+                logging.debug("Disk config file notation")
+                diskPath = disk.xpath("source")[0].get("file")
+            else:
+                logging.error("Unable to detect disk volume type")
+                continue
+
+            if diskPath is None:
+                logging.error("Unable to detect disk source")
+                continue
+
+            diskFileName = os.path.basename(diskPath)
 
             if args.include is not None and dev != args.include:
                 log.info(
@@ -397,7 +444,7 @@ class client:
         return devices
 
     @staticmethod
-    def _indentXml(top):
+    def _indentXml(top: _Element) -> str:
         """Indent xml output for debug logging"""
         try:
             ElementTree.indent(top)
@@ -414,7 +461,7 @@ class client:
 
         return xml
 
-    def _createBackupXml(self, args, diskList):
+    def _createBackupXml(self, args: Namespace, diskList) -> str:
         """Create XML file for starting an backup task using libvirt API."""
         top = ElementTree.Element("domainbackup", {"mode": "pull"})
         if self.remoteHost is None:
@@ -453,7 +500,9 @@ class client:
 
         return xml
 
-    def _createCheckpointXml(self, diskList, parentCheckpoint, checkpointName):
+    def _createCheckpointXml(
+        self, diskList: List[Any], parentCheckpoint: str, checkpointName: str
+    ) -> str:
         """Create valid checkpoint XML file which is passed to libvirt API"""
         top = ElementTree.Element("domaincheckpoint")
         desc = ElementTree.SubElement(top, "description")
@@ -479,7 +528,7 @@ class client:
         return xml
 
     @staticmethod
-    def fsFreeze(domObj, mountpoints):
+    def fsFreeze(domObj: libvirt.virDomain, mountpoints: None) -> bool:
         """Attempt to freeze domain filesystems using qemu guest agent"""
         log.debug("Attempting to freeze filesystems.")
         try:
@@ -494,7 +543,7 @@ class client:
             return False
 
     @staticmethod
-    def fsThaw(domObj):
+    def fsThaw(domObj: libvirt.virDomain) -> bool:
         """Thaw freeze filesystems"""
         log.debug("Attempting to thaw filesystems.")
         try:
@@ -507,10 +556,10 @@ class client:
 
     def startBackup(
         self,
-        args,
-        domObj,
-        diskList,
-    ):
+        args: Namespace,
+        domObj: libvirt.virDomain,
+        diskList: List[Any],
+    ) -> None:
         """Attempt to start pull based backup task using  XML description"""
         backupXml = self._createBackupXml(args, diskList)
         checkpointXml = None
@@ -528,11 +577,13 @@ class client:
             domObj.backupBegin(backupXml, checkpointXml)
             log.debug("Started backup job via libvirt API.")
         except libvirt.libvirtError as errmsg:
-            raise exceptions.startBackupFailed(f"Failed to start backup: [{errmsg}]")
+            raise startBackupFailed(
+                f"Failed to start backup: [{errmsg}]"
+            ) from libvirt.libvirtError
         except Exception as e:
-            raise exceptions.startBackupFailed(
+            raise startBackupFailed(
                 f"Unknown exception during backup start: [{e}]"
-            )
+            ) from libvirt.libvirtError
         finally:
             # check if filesystem is freezed and thaw
             # in case creating checkpoint fails.
@@ -540,12 +591,14 @@ class client:
                 self.fsThaw(domObj)
 
     @staticmethod
-    def checkpointExists(domObj, checkpointName):
+    def _checkpointExists(
+        domObj: libvirt.virDomain, checkpointName: str
+    ) -> libvirt.virDomainCheckpoint:
         """Check if an checkpoint exists"""
         return domObj.checkpointLookupByName(checkpointName)
 
     @staticmethod
-    def getCheckpointXml(cptObj):
+    def _getCheckpointXml(cptObj: libvirt.virDomainCheckpoint) -> str:
         """Get Checkpoint XML including size, if possible. Flag
         is not supported amongst all libvirt versions."""
         try:
@@ -556,17 +609,23 @@ class client:
             )
             return cptObj.getXMLDesc()
 
-    def getCheckpointSize(self, domObj, checkpointName):
+    def getCheckpointSize(self, domObj: libvirt.virDomain, checkpointName: str) -> int:
         """Return current size of checkpoint for all disks"""
         size = 0
-        cpt = self.checkpointExists(domObj, checkpointName)
-        cptTree = self._getTree(self.getCheckpointXml(cpt))
+        cpt = self._checkpointExists(domObj, checkpointName)
+        cptTree = self._getTree(self._getCheckpointXml(cpt))
         for s in cptTree.xpath("disks/disk/@size"):
             size += int(s)
 
         return size
 
-    def removeAllCheckpoints(self, domObj, checkpointList, args, defaultCheckpointName):
+    def removeAllCheckpoints(
+        self,
+        domObj: libvirt.virDomain,
+        checkpointList: List[Any],
+        args: Namespace,
+        defaultCheckpointName: str,
+    ) -> bool:
         """Remove all existing checkpoints for a virtual machine,
         used during FULL backup to reset checkpoint chain
         """
@@ -590,14 +649,16 @@ class client:
             return True
 
         for checkpoint in checkpointList:
-            cptObj = self.checkpointExists(domObj, checkpoint)
+            cptObj = self._checkpointExists(domObj, checkpoint)
             if cptObj:
                 if self._deleteCheckpoint(cptObj, defaultCheckpointName) is False:
                     return False
         return True
 
     @staticmethod
-    def _deleteCheckpoint(cptObj, defaultCheckpointName):
+    def _deleteCheckpoint(
+        cptObj: libvirt.virDomainCheckpoint, defaultCheckpointName: str
+    ) -> bool:
         """Delete checkpoint"""
         checkpointName = cptObj.getName()
         if defaultCheckpointName not in checkpointName:
@@ -616,15 +677,16 @@ class client:
             return False
 
     @staticmethod
-    def stopBackup(domObj):
+    def stopBackup(domObj: libvirt.virDomain) -> bool:
         """Cancel the backup task using job abort"""
         try:
-            return domObj.abortJob(), None
+            domObj.abortJob()
+            return True
         except libvirt.libvirtError as err:
             log.warning("Failed to stop backup job: [%s]", err)
             return False
 
-    def redefineCheckpoints(self, domObj, args):
+    def redefineCheckpoints(self, domObj: libvirt.virDomain, args: Namespace) -> bool:
         """Redefine checkpoints from persistent storage"""
         log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
         checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
@@ -636,7 +698,7 @@ class client:
                 with outputhelper.openfile(checkpointFile, "rb") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
-            except outputhelper.exceptions.OutputException as e:
+            except OutputException as e:
                 log.error("Opening checkpoint file failed: [%s]: %s", checkpointFile, e)
                 return False
             except ElementTree.ParseError as e:
@@ -652,7 +714,7 @@ class client:
                 return False
 
             try:
-                _ = self.checkpointExists(domObj, checkpointName)
+                _ = self._checkpointExists(domObj, checkpointName)
                 log.debug("Checkpoint [%s] found", checkpointName)
                 continue
             except libvirt.libvirtError as e:
@@ -673,16 +735,16 @@ class client:
 
         return True
 
-    def backupCheckpoint(self, args, domObj):
+    def backupCheckpoint(self, args: Namespace, domObj: libvirt.virDomain) -> bool:
         """save checkpoint config to persistent storage"""
         checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
         log.info("Saving checkpoint config to: [%s]", checkpointFile)
         try:
             with outputhelper.openfile(checkpointFile, "wb") as f:
-                c = self.checkpointExists(domObj, args.cpt.name)
-                f.write(self.getCheckpointXml(c).encode())
+                c = self._checkpointExists(domObj, args.cpt.name)
+                f.write(self._getCheckpointXml(c).encode())
                 return True
-        except outputhelper.exceptions.OutputException as errmsg:
+        except OutputException as errmsg:
             log.error(
                 "Failed to save checkpoint config to file: [%s]: %s",
                 checkpointFile,
@@ -691,7 +753,9 @@ class client:
             return False
 
     @staticmethod
-    def hasforeignCheckpoint(domObj, defaultCheckpointName):
+    def hasforeignCheckpoint(
+        domObj: libvirt.virDomain, defaultCheckpointName: str
+    ) -> Optional[str]:
         """Check if the virtual machine has an checkpoint which was not
         created by virtnbdbackup
 

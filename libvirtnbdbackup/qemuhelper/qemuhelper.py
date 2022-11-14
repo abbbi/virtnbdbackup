@@ -19,11 +19,15 @@ import json
 import logging
 import tempfile
 import subprocess
+from typing import List, Tuple, Union
+from argparse import Namespace
 
-from libvirtnbdbackup.qemuhelper import exceptions
-from libvirtnbdbackup.sshutil import exceptions as sshexceptions
+from libvirtnbdbackup.qemuhelper.exceptions import (
+    ProcessError,
+)
+from libvirtnbdbackup.sshutil.exceptions import sshutilError
 from libvirtnbdbackup.outputhelper import openfile
-from libvirtnbdbackup.common.common import processInfo
+from libvirtnbdbackup.common.processinfo import processInfo
 
 log = logging.getLogger(__name__)
 
@@ -31,14 +35,14 @@ log = logging.getLogger(__name__)
 class qemuHelper:
     """Wrapper for qemu executables"""
 
-    def __init__(self, exportName):
+    def __init__(self, exportName: None = None) -> None:
         self.exportName = exportName
 
     @staticmethod
-    def map(cType):
+    def map(cType) -> str:
         """Read extent map using nbdinfo utility"""
         metaOpt = "--map"
-        if cType.metaContext is not None:
+        if cType.metaContext != "":
             metaOpt = f"--map={cType.metaContext}"
 
         cmd = f"nbdinfo --json {metaOpt} '{cType.uri}'"
@@ -53,7 +57,14 @@ class qemuHelper:
 
         return json.loads(extentMap.stdout)
 
-    def create(self, targetFile, fileSize, diskFormat, sshClient=None):
+    def create(
+        self,
+        targetFile: str,
+        fileSize: int,
+        diskFormat: str,
+        qcowOptions: list,
+        sshClient=None,
+    ) -> processInfo:
         """Create the target qcow image"""
         cmd = [
             "qemu-img",
@@ -61,14 +72,27 @@ class qemuHelper:
             "-f",
             f"{diskFormat}",
             f"{targetFile}",
-            f"{fileSize}",
+            "-o",
+            f"size={fileSize}",
         ]
+
+        if qcowOptions:
+            cmd = cmd + qcowOptions
+
         if not sshClient:
             return self.runcmd(cmd)
 
         return sshClient.run(" ".join(cmd))
 
-    def startRestoreNbdServer(self, targetFile, socketFile):
+    def info(self, targetFile: str, sshClient=None) -> processInfo:
+        """Return qemu image information"""
+        cmd = ["qemu-img", "info", f"{targetFile}", "--output", "json", "--force-share"]
+        if not sshClient:
+            return self.runcmd(cmd, toPipe=True)
+
+        return sshClient.run(" ".join(cmd))
+
+    def startRestoreNbdServer(self, targetFile: str, socketFile: str) -> processInfo:
         """Start local nbd server process for restore operation"""
         cmd = [
             "qemu-nbd",
@@ -84,7 +108,7 @@ class qemuHelper:
         return self.runcmd(cmd)
 
     @staticmethod
-    def _gt(prefix, suffix, delete=False):
+    def _gt(prefix: str, suffix: str, delete: bool = False) -> str:
         """Create named temporary file."""
         with tempfile.NamedTemporaryFile(
             delete=delete, prefix=prefix, suffix=suffix
@@ -92,7 +116,7 @@ class qemuHelper:
             return tf1.name
 
     @staticmethod
-    def _addTls(cmd, certpath):
+    def _addTls(cmd: List[str], certpath: str) -> None:
         """Add required tls related options to qemu-nbd command
         line."""
         cmd.append("--object")
@@ -101,7 +125,9 @@ class qemuHelper:
         )
         cmd.append("--tls-creds tls0")
 
-    def startRemoteRestoreNbdServer(self, args, sshClient, targetFile):
+    def startRemoteRestoreNbdServer(
+        self, args: Namespace, targetFile: str
+    ) -> processInfo:
         """Start nbd server process remotely over ssh for restore operation"""
         pidFile = self._gt("qemu-nbd-restore", ".pid")
         logFile = self._gt("qemu-nbd-restore", ".log")
@@ -122,12 +148,14 @@ class qemuHelper:
             self._addTls(cmd, args.tls_cert)
         cmd.append(f"> {logFile} 2>&1")
         try:
-            return sshClient.run(" ".join(cmd), pidFile, logFile)
-        except sshexceptions.sshutilError:
+            return args.sshClient.run(" ".join(cmd), pidFile, logFile)
+        except sshutilError:
             logging.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
-    def startNbdkitProcess(self, args, nbdkitModule, blockMap, fullImage):
+    def startNbdkitProcess(
+        self, args: Namespace, nbdkitModule: str, blockMap, fullImage: str
+    ) -> processInfo:
         """Execute nbdkit process for virtnbdmap"""
         debug = "0"
         pidFile = self._gt("nbdkit", ".pid")
@@ -157,7 +185,9 @@ class qemuHelper:
         ]
         return self.runcmd(cmd, pidFile=pidFile)
 
-    def startBackupNbdServer(self, diskFormat, diskFile, socketFile, bitMap):
+    def startBackupNbdServer(
+        self, diskFormat: str, diskFile: str, socketFile: str, bitMap: str
+    ) -> processInfo:
         """Start nbd server process for offline backup operation"""
         bitmapOpt = "--"
         if bitMap is not None:
@@ -183,8 +213,8 @@ class qemuHelper:
         return self.runcmd(cmd, pidFile=pidFile)
 
     def startRemoteBackupNbdServer(
-        self, args, diskFormat, targetFile, bitMap, sshClient
-    ):
+        self, args: Namespace, diskFormat: str, targetFile: str, bitMap: str
+    ) -> processInfo:
         """Start nbd server process remotely over ssh for restore operation"""
         pidFile = self._gt("qemu-nbd-backup", ".pid")
         logFile = self._gt("qemu-nbd-backup", ".log")
@@ -212,36 +242,39 @@ class qemuHelper:
             self._addTls(cmd, args.tls_cert)
         cmd.append(f"> {logFile} 2>&1")
         try:
-            return sshClient.run(" ".join(cmd), pidFile, logFile)
-        except sshexceptions.sshutilError:
+            return args.sshClient.run(" ".join(cmd), pidFile, logFile)
+        except sshutilError:
             logging.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
-    def disconnect(self, device):
+    def disconnect(self, device: str) -> processInfo:
         """Disconnect device"""
         logging.info("Disconnecting device [%s]", device)
         cmd = ["qemu-nbd", "-d", f"{device}"]
         return self.runcmd(cmd)
 
     @staticmethod
-    def _readlog(logFile, cmd):
+    def _readlog(logFile: str, cmd: str) -> str:
         try:
             with openfile(logFile, "rb") as fh:
                 return fh.read().decode().strip()
         except Exception as errmsg:
-            raise exceptions.ProcessError(
+            raise ProcessError(
                 f"Error executing [{cmd}] Unable to get error message: {errmsg}"
-            )
+            ) from errmsg
 
     @staticmethod
-    def _readpipe(p):
+    def _readpipe(p) -> Tuple[str, str]:
         out = p.stdout.read().decode().strip()
         err = p.stderr.read().decode().strip()
         return out, err
 
-    def runcmd(self, cmdLine, pidFile=None, toPipe=False):
+    def runcmd(
+        self, cmdLine: List[str], pidFile=None, toPipe: bool = False
+    ) -> processInfo:
         """Execute passed command"""
-        logFileName = None
+        logFileName: str = ""
+        logFile: Union[int, tempfile._TemporaryFileWrapper]
         if toPipe is True:
             logFile = subprocess.PIPE
         else:
@@ -258,21 +291,18 @@ class qemuHelper:
             stderr=logFile,
             stdout=logFile,
         ) as p:
-            p.wait(5)
+            p.wait()
             log.debug("Return code: %s", p.returncode)
             err = None
             out = None
             if p.returncode != 0:
-                p.wait(5)
                 log.info("CMD: %s", " ".join(cmdLine))
                 log.debug("Read error messages from logfile")
                 if toPipe is True:
                     out, err = self._readpipe(p)
                 else:
-                    err = self._readlog(logFile.name, cmdLine[0])
-                raise exceptions.ProcessError(
-                    f"Unable to start [{cmdLine[0]}] error: [{err}]"
-                )
+                    err = self._readlog(logFileName, cmdLine[0])
+                raise ProcessError(f"Unable to start [{cmdLine[0]}] error: [{err}]")
 
             if toPipe is True:
                 out, err = self._readpipe(p)

@@ -15,12 +15,18 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+from typing import Tuple, Callable
 from enum import Enum
-from paramiko import AutoAddPolicy, SSHClient, SFTPClient, SSHException
-from paramiko.auth_handler import AuthenticationException
+from paramiko import (  # pylint: disable=import-error
+    AutoAddPolicy,
+    SSHClient,
+    SFTPClient,
+    SSHException,
+    AuthenticationException,
+)
 
 from libvirtnbdbackup.sshutil import exceptions
-from libvirtnbdbackup.common.common import processInfo
+from libvirtnbdbackup.common.processinfo import processInfo
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +46,13 @@ class Client:
         self.client = None
         self.host = host
         self.user = user
+        self.copy = Callable[[str, str], None]
         self.copy = self.copyFrom
         if mode == Mode.UPLOAD:
             self.copy = self.copyTo
         self.connection = self.connect()
 
-    def connect(self):
+    def connect(self) -> SSHClient:
         """Connect to remote system"""
         log.info("Connecting remote system via ssh, username: [%s]", self.user)
         try:
@@ -68,9 +75,9 @@ class Client:
     @property
     def sftp(self) -> SFTPClient:
         """Copy file"""
-        return SFTPClient.from_transport(self.connection.get_transport())
+        return self.connection.open_sftp()
 
-    def exists(self, filepath: str):
+    def exists(self, filepath: str) -> bool:
         """
         Check if remote file exists
         """
@@ -80,7 +87,7 @@ class Client:
         except IOError:
             return False
 
-    def copyFrom(self, filepath: str, localpath: str):
+    def copyFrom(self, filepath: str, localpath: str) -> None:
         """
         Get file from remote system
         """
@@ -90,7 +97,7 @@ class Client:
         except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
-    def copyTo(self, localpath: str, remotepath: str):
+    def copyTo(self, localpath: str, remotepath: str) -> None:
         """
         Put file to remote system
         """
@@ -100,30 +107,32 @@ class Client:
         except SSHException as e:
             logging.warning("Error during file copy: [%s]", e)
 
-    def _execute(self, cmd):
+    def _execute(self, cmd) -> Tuple[int, str, str]:
         _, stdout, stderr = self.connection.exec_command(cmd)
         ret = stdout.channel.recv_exit_status()
         err = stderr.read().strip().decode()
         out = stdout.read().strip().decode()
         return ret, err, out
 
-    def run(self, cmd: str, pidFile: str = None, logFile: str = None):
+    def run(self, cmd: str, pidFile: str = "", logFile: str = "") -> processInfo:
         """
         Execute command
         """
-        pid = None
+        pid: int = 0
+        pidOut: str
         logging.debug("Executing command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         if ret != 0:
             if logFile:
-                _, _, err = self._execute(f"cat {logFile}")
+                _, _, _ = self._execute(f"cat {logFile}")
             raise exceptions.sshutilError(
                 f"Error during remote command: [{cmd}]: [{err}]"
             )
 
         if pidFile:
             logging.debug("PIDfile: [%s]", pidFile)
-            _, _, pid = self._execute(f"cat {pidFile}")
+            _, _, pidOut = self._execute(f"cat {pidFile}")
+            pid = int(pidOut)
             logging.debug("PID: [%s]", pid)
 
         return processInfo(pid, logFile, err, out)

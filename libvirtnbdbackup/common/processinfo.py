@@ -1,5 +1,5 @@
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2022  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,5 +14,15 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from typing import Optional
+from dataclasses import dataclass
 
-__version__ = "1.9.1"
+
+@dataclass
+class processInfo:
+    """Process info object"""
+
+    pid: int
+    logFile: Optional[str]
+    err: Optional[str]
+    out: Optional[str]
