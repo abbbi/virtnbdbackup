@@ -637,6 +637,9 @@ def main():
     configFile = backupConfig(args, vmConfig)
 
     backupBootConfig(args)
+    for disk in disks:
+        if disk.format.startswith("qcow"):
+            backupDiskInfo(args, disk)
 
     if args.sshClient:
         args.sshClient.disconnect()
@@ -1000,8 +1003,6 @@ def backupDisk(args, disk, count, fileStream, virtClient):
         logging.info("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)
 
-    if disk.format.startswith("qcow"):
-        backupDiskInfo(args, disk)
     if args.stdout is False:
         if args.noprogress is True:
             logging.info(

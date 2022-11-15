@@ -627,6 +627,13 @@ toOut() {
     [[ "${output}" =~  "Connecting remote system via ssh" ]]
     [ "$status" -eq 0 ]
 }
+@test "Backup: test remote backup functionality via localhost to zip file" {
+    [ -z $GITHUB_JOB ] && skip "skip locally"
+    run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -o - >  ${TMPDIR}/remotebackup.zip
+    echo "output = ${output}"
+    [[ "${output}" =~  "Connecting remote system via ssh" ]]
+    [ "$status" -eq 0 ]
+}
 @test "Restore: test remote restore functionality via localhost" {
     [ -z $GITHUB_JOB ] && skip "skip locally"
     run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore

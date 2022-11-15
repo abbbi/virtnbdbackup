@@ -1,3 +1,10 @@
+Version 1.9.3
+---------
+ * Move function call for backing up qemu disk information outside worker
+ threads: should fix occasional "Fatal Python error: _enter_buffered_busy"
+ error during backup.
+
+
 Version 1.9.2
 ---------
  * Return function if gathering qemu disk info fails for some reason.
