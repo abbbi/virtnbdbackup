@@ -64,7 +64,7 @@ class client:
     """Libvirt related functions"""
 
     def __init__(self, uri: Namespace) -> None:
-        self.remoteHost = None
+        self.remoteHost: str = ""
         self._conn = self._connect(uri)
         self._domObj = None
         self.libvirtVersion = self._conn.getLibVersion()
@@ -464,7 +464,7 @@ class client:
     def _createBackupXml(self, args: Namespace, diskList) -> str:
         """Create XML file for starting an backup task using libvirt API."""
         top = ElementTree.Element("domainbackup", {"mode": "pull"})
-        if self.remoteHost is None:
+        if self.remoteHost == "":
             ElementTree.SubElement(
                 top, "server", {"transport": "unix", "socket": f"{args.socketfile}"}
             )
@@ -473,7 +473,7 @@ class client:
             tls = "no"
             if args.tls:
                 tls = "yes"
-            if args.nbd_ip is not None:
+            if args.nbd_ip != "":
                 listen = args.nbd_ip
             ElementTree.SubElement(
                 top,
@@ -483,7 +483,7 @@ class client:
 
         disks = ElementTree.SubElement(top, "disks")
 
-        if args.cpt.parent is not False:
+        if args.cpt.parent != "":
             inc = ElementTree.SubElement(top, "incremental")
             inc.text = args.cpt.parent
 
@@ -509,7 +509,7 @@ class client:
         desc.text = "Backup checkpoint"
         name = ElementTree.SubElement(top, "name")
         name.text = checkpointName
-        if parentCheckpoint is not False:
+        if parentCheckpoint != "":
             pct = ElementTree.SubElement(top, "parent")
             cptName = ElementTree.SubElement(pct, "name")
             cptName.text = parentCheckpoint
@@ -622,7 +622,7 @@ class client:
     def removeAllCheckpoints(
         self,
         domObj: libvirt.virDomain,
-        checkpointList: List[Any],
+        checkpointList: Union[List[Any], None],
         args: Namespace,
         defaultCheckpointName: str,
     ) -> bool:

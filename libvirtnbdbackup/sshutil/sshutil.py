@@ -124,7 +124,7 @@ class Client:
         ret, err, out = self._execute(cmd)
         if ret != 0:
             if logFile:
-                _, _, _ = self._execute(f"cat {logFile}")
+                _, _, err = self._execute(f"cat {logFile}")
             raise exceptions.sshutilError(
                 f"Error during remote command: [{cmd}]: [{err}]"
             )

@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 class qemuHelper:
     """Wrapper for qemu executables"""
 
-    def __init__(self, exportName: None = None) -> None:
+    def __init__(self, exportName: str) -> None:
         self.exportName = exportName
 
     @staticmethod
@@ -190,7 +190,7 @@ class qemuHelper:
     ) -> processInfo:
         """Start nbd server process for offline backup operation"""
         bitmapOpt = "--"
-        if bitMap is not None:
+        if bitMap != "":
             bitmapOpt = f"--bitmap={bitMap}"
 
         pidFile = f"{socketFile}.pid"
@@ -213,7 +213,7 @@ class qemuHelper:
         return self.runcmd(cmd, pidFile=pidFile)
 
     def startRemoteBackupNbdServer(
-        self, args: Namespace, diskFormat: str, targetFile: str, bitMap: str
+        self, args: Namespace, diskFormat: str, targetFile: str, bitMap: str, port: int
     ) -> processInfo:
         """Start nbd server process remotely over ssh for restore operation"""
         pidFile = self._gt("qemu-nbd-backup", ".pid")
@@ -226,16 +226,16 @@ class qemuHelper:
             f"{self.exportName}",
             f"{targetFile}",
             "-p",
-            f"{args.nbd_port}",
+            f"{port}",
             "--pid-file",
             f"{pidFile}",
             "--fork",
         ]
-        if args.nbd_ip is not None:
+        if args.nbd_ip != "":
             cmd.append("-b")
             cmd.append(args.nbd_ip)
 
-        if bitMap is not None:
+        if bitMap != "":
             cmd.append(f"--bitmap={bitMap}")
 
         if args.tls is True:
@@ -293,8 +293,8 @@ class qemuHelper:
         ) as p:
             p.wait()
             log.debug("Return code: %s", p.returncode)
-            err = None
-            out = None
+            err: str = ""
+            out: str = ""
             if p.returncode != 0:
                 log.info("CMD: %s", " ".join(cmdLine))
                 log.debug("Read error messages from logfile")

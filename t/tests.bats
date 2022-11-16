@@ -634,6 +634,19 @@ toOut() {
     [[ "${output}" =~  "Connecting remote system via ssh" ]]
     [ "$status" -eq 0 ]
 }
+@test "Backup: test remote backup functionality: backup offline vm " {
+    [ -z $GITHUB_JOB ] && skip "skip locally"
+    run virsh destroy $VM
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -o ${TMPDIR}/remotebackup-offline
+    echo "output = ${output}"
+    [[ "${output}" =~  "Connecting remote system via ssh" ]]
+    [ "$status" -eq 0 ]
+    run virsh start $VM
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
 @test "Restore: test remote restore functionality via localhost" {
     [ -z $GITHUB_JOB ] && skip "skip locally"
     run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore
@@ -641,16 +654,15 @@ toOut() {
     [[ "${output}" =~  "Connecting remote system via ssh" ]]
     [ "$status" -eq 0 ]
 }
-
 @test "Backup: test estimating backup size" {
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/estimation
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/estimation -p
+    echo "output = ${output}"
     [[ "${output}" =~  "Estimated checkpoint backup size" ]]
     [ "$status" -eq 0 ]
 }
-
 @test "Map: Map full backup to nbd block device, check device size and partitions, mount filesystem" {
     [ -f /.dockerenv ] && skip "wont work inside docker image"
     [ -z $MAPTEST ] && skip "skipping"
@@ -676,4 +688,10 @@ toOut() {
 
     run umount /empty
     kill -2 $PID
+}
+
+@test "Check for leftover qemu-nbd processes" {
+    run pgrep qemu-nbd
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
 }

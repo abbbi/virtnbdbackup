@@ -303,13 +303,13 @@ def startNbd(args, exportName, targetFile, virtClient):
     if not virtClient.remoteHost:
         logging.info("Starting NBD server on socket: [%s]", args.socketfile)
         err = qFh.startRestoreNbdServer(targetFile, args.socketfile)
-        if err.err is not None:
+        if err.err != "":
             logging.error("Unable to start NBD server: [%s]", err)
             return False
         cType = nbdhelper.nbdConnUnix(exportName, "", args.socketfile)
     else:
         remoteIP = virtClient.remoteHost
-        if args.nbd_ip is not None:
+        if args.nbd_ip != "":
             remoteIP = args.nbd_ip
         err = qFh.startRemoteRestoreNbdServer(args, targetFile)
         cType = nbdhelper.nbdConnTCP(exportName, "", remoteIP, args.tls, args.nbd_port)

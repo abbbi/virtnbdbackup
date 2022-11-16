@@ -109,7 +109,7 @@ class nbdClient:
 
         return self.nbd
 
-    def waitForServer(self) -> None:
+    def waitForServer(self) -> nbd.NBD:
         """Wait until NBD endpoint connection can be established"""
         logging.info("Waiting until NBD server at [%s] is up.", self.cType.uri)
         retry = 0

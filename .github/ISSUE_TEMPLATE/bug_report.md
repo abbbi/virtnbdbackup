@@ -23,3 +23,6 @@ A clear and concise description of what you expected to happen.
 
 **Logfiles:**
 Please attach generated logfiles relevant to the reported issue.
+
+**Workaround:**
+Share possible workarounds, if any.

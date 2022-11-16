@@ -201,7 +201,7 @@ class ExtentHandler:
         assert data is not None
         return data
 
-    def queryBlockStatus(self, extentList=None) -> List[_ExtentObj]:
+    def queryBlockStatus(self, extentList=None) -> List[Extent]:
         """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
         """

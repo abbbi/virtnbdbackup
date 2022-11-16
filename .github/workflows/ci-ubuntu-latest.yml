@@ -23,6 +23,7 @@ jobs:
         sudo pip3 install mypy
         sudo pip3 install types-paramiko
         mypy --ignore-missing libvirtnbdbackup
+        mypy --ignore-missing virtnbdbackup
     - name: Set up ssh access to localhost
       run: |
         sudo ssh-keygen -f /root/.ssh/id_rsa -N ""
@@ -75,3 +76,15 @@ jobs:
       run: sudo python3 setup.py install
     - name: Execute commands
       run: virtnbdbackup -h && virtnbdrestore -h
+    - name: Create log archive
+      if: always()
+      run: |
+        sudo find /tmp/ -type d -name '.guestfs-*' | sudo xargs rm -rf
+        sudo tar -czvf /log.tar.gz /tmp/tmp.*
+        sudo chmod go+r /log.tar.gz
+    - name: Archive Test Results
+      if: always()
+      uses: actions/upload-artifact@v1
+      with:
+        name: test-results
+        path: /log.tar.gz

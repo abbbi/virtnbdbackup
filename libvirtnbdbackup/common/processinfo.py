@@ -14,7 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from typing import Optional
 from dataclasses import dataclass
 
 
@@ -23,6 +22,6 @@ class processInfo:
     """Process info object"""
 
     pid: int
-    logFile: Optional[str]
-    err: Optional[str]
-    out: Optional[str]
+    logFile: str
+    err: str
+    out: str

@@ -1,3 +1,12 @@
+Version 1.9.4
+---------
+ * Code cleanup: more type annotations, correctly catch ssh exceptions.
+ * Better logging information in case of remote backup
+ * Remote backup of offline virtual machines with multiple disks may fail:
+ (#82) port used by remote NBD Service must be unique.  Also report used
+ ports in logfile.
+
+
 Version 1.9.3
 ---------
  * Move function call for backing up qemu disk information outside worker

@@ -77,7 +77,7 @@ def addRemoteArgs(opt: _ArgumentGroup) -> None:
         "-I",
         "--nbd-ip",
         type=str,
-        default=None,
+        default="",
         required=False,
         help=(
             "IP used to bind remote NBD service on"
