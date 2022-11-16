@@ -124,11 +124,11 @@ def hasPartial(args: Namespace) -> bool:
     return False
 
 
-def readCheckpointFile(cFile: str) -> List[str]:
+def readCheckpointFile(args: Namespace, cFile: str) -> List[str]:
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints: List[str] = []
-    if not lib.exists(cFile):
+    if not lib.exists(args, cFile):
         return checkpoints
 
     try:
@@ -155,7 +155,7 @@ def handleCheckpoints(
     checkpointName: str = f"{lib.checkpointName}.0"
     parentCheckpoint: str = ""
     cptFile: str = f"{args.output}/{args.domain}.cpt"
-    checkpoints: List[str] = readCheckpointFile(cptFile)
+    checkpoints: List[str] = readCheckpointFile(args, cptFile)
 
     if args.offline is False:
         if virtClient.redefineCheckpoints(domObj, args) is False:
@@ -211,7 +211,7 @@ def saveCheckpointFile(args: Namespace) -> None:
     """Append created checkpoint to checkpoint
     file"""
     try:
-        checkpoints = readCheckpointFile(args.cpt.file)
+        checkpoints = readCheckpointFile(args, args.cpt.file)
         checkpoints.append(args.cpt.name)
         with outputhelper.openfile(args.cpt.file, "wb") as cFw:
             cFw.write(json.dumps(checkpoints).encode())

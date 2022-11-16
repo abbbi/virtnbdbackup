@@ -313,5 +313,5 @@ class qemuHelper:
                 realPid = p.pid
 
             process = processInfo(realPid, logFileName, err, out)
-            log.debug("Started [%s] process, returning: %s", cmdLine[0], err)
+            log.debug("Started [%s] process: [%s]", cmdLine[0], process)
         return process

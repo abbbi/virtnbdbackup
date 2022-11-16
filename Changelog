@@ -1,3 +1,8 @@
+Version 1.9.5
+---------
+ * virtnbdrestore and virtnbdmap: code cleanups, add type annotations.
+
+
 Version 1.9.4
 ---------
  * Code cleanup: more type annotations, correctly catch ssh exceptions.

@@ -24,16 +24,20 @@ from functools import partial
 import json
 import time
 import argparse
+from argparse import Namespace
 import logging
 
+from typing import List, Tuple, Dict, IO
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import qemuhelper
-from libvirtnbdbackup.qemuhelper.exceptions import ProcessError
+from libvirtnbdbackup.qemuhelper.exceptions import ProcessError, QemuHelperError
 from libvirtnbdbackup import outputhelper
 from libvirtnbdbackup.outputhelper.exceptions import OutputException
 from libvirtnbdbackup.common import common as lib
+from libvirtnbdbackup.common.processinfo import processInfo
 from libvirtnbdbackup.logcount import logCount
+from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import exceptions
@@ -46,32 +50,32 @@ def checkRequirements():
             logging.error("Please install required [%s] utility.", exe)
 
 
-def checkDevice(device):
+def checkDevice(args: Namespace, device: str) -> None:
     """Check if /dev/nbdX exists, otherwise it is likely
     nbd module isnt loaded on the system"""
     if not device.startswith("/dev/nbd"):
         logging.error("Target device [%s] seems not to be a ndb device?", device)
 
-    if not lib.exists(device):
+    if not lib.exists(args, device):
         logging.error(
             "Target device [%s] does not exist, nbd module not loaded?", device
         )
 
 
-def locatePlugin():
+def locatePlugin(args: Namespace) -> str:
     """Attempt to locate the nbdkit plugin that is passed to the
     nbdkit process"""
     pluginFileName = "virtnbd-nbdkit-plugin"
     installDir = os.path.dirname(sys.argv[0])
     nbdkitModule = f"{installDir}/{pluginFileName}"
 
-    if not lib.exists(nbdkitModule):
+    if not lib.exists(args, nbdkitModule):
         logging.error("Failed to locate nbdkit plugin: [%s]", pluginFileName)
 
     return nbdkitModule
 
 
-def replayChanges(dataRanges, args):
+def replayChanges(dataRanges: List, args: Namespace) -> None:
     """Replay the changes from an incremental or differential
     backup file to the NBD device"""
     logging.info("Replaying changes from incremental backups")
@@ -102,10 +106,10 @@ def replayChanges(dataRanges, args):
     progressBar.close()
 
 
-def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
+def handleSignal(nbdkitProcess: processInfo, device: str, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
-    qemuhelper.qemuHelper(None).disconnect(device)
+    qemuhelper.qemuHelper("").disconnect(device)
     log.info("Removing temporary blockmap file: [%s]", blockMap.name)
     os.remove(blockMap.name)
     log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
@@ -114,22 +118,22 @@ def handleSignal(nbdkitProcess, device, blockMap, log, signum, _):
     sys.exit(0)
 
 
-def getDataRanges(stream, sTypes, reader):
+def getDataRanges(stream, sTypes, reader) -> Tuple[List, Dict]:
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
         meta = stream.loadMetadata(reader.read(length))
     except exceptions.StreamFormatException as errmsg:
         logging.error("Unable to read metadata header: %s", errmsg)
-        return False, False
+        raise RestoreError from errmsg
 
     if lib.isCompressed(meta):
         logging.error("Mapping compressed images currently not supported.")
-        return False, False
+        raise RestoreError
 
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
-    dataRanges = []
+    dataRanges: List = []
     while True:
         kind, start, length = stream.readFrame(reader)
         if kind == sTypes.STOP:
@@ -156,7 +160,7 @@ def getDataRanges(stream, sTypes, reader):
     return dataRanges, meta
 
 
-def dumpBlockMap(tfile, dataRanges):
+def dumpBlockMap(tfile: IO, dataRanges: List) -> bool:
     """Dump block map to temporary file"""
     try:
         tfile.write(json.dumps(dataRanges, indent=4).encode())
@@ -166,7 +170,7 @@ def dumpBlockMap(tfile, dataRanges):
         return False
 
 
-def main():
+def main() -> None:
     """Map full backup file to nbd device for single file or
     instant recovery"""
     parser = argparse.ArgumentParser(
@@ -249,17 +253,18 @@ def main():
     )
     argopt.addDebugArgs(debopt)
     args = lib.argparse(parser)
+    args.sshClient = None
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
 
     counter = logCount()
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
-    nbdkitModule = locatePlugin()
+    nbdkitModule = locatePlugin(args)
     logging.info("Logfile: [%s]", args.logfile)
     logging.info("Plugin location: [%s]", nbdkitModule)
 
     checkRequirements()
-    checkDevice(args.device)
+    checkDevice(args, args.device)
     dataFiles = args.file.split(",")
 
     if len(dataFiles) > 1 and not "full.data" in dataFiles[0]:
@@ -312,7 +317,7 @@ def main():
         nbdkitProcess = qFh.startNbdkitProcess(
             args, nbdkitModule, blockMap.name, fullImage
         )
-    except qemuhelper.exceptions.QemuHelperError as e:
+    except QemuHelperError as e:
         logging.error("Failed to start nbdkit process: [%s]", e)
         sys.exit(1)
 

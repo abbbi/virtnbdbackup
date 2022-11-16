@@ -43,7 +43,7 @@ class DomainDisk:
     format: str
     filename: str
     path: str
-    backingstores: Union[List[str], None]
+    backingstores: list
 
 
 def libvirt_ignore(
@@ -260,7 +260,7 @@ class client:
         logging.debug("Domain Info: [%s]", settings)
         return settings
 
-    def adjustDomainConfigRemoveDisk(self, vmConfig: str, excluded) -> str:
+    def adjustDomainConfigRemoveDisk(self, vmConfig: str, excluded) -> bytes:
         """Remove disk from config, in case it has been excluded
         from the backup."""
         tree = self._getTree(vmConfig)
@@ -278,7 +278,7 @@ class client:
 
     def adjustDomainConfig(
         self, args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
-    ) -> str:
+    ) -> bytes:
         """Adjust virtual machine configuration after restoring. Changes
         the pathes to the virtual machine disks and attempts to remove
         components excluded during restore."""
@@ -331,7 +331,7 @@ class client:
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
     @staticmethod
-    def getBackingStores(disk: _Element) -> Union[List[str], None]:
+    def getBackingStores(disk: _Element) -> List[str]:
         """Get list of backing store files defined for disk, usually
         the case if virtual machine has external snapshots."""
         backingStoreFiles: List[str] = []

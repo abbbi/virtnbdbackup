@@ -24,7 +24,7 @@ import signal
 import shutil
 import pprint
 from argparse import Namespace
-from typing import Optional, Generator, List, Any, Tuple, IO, Union
+from typing import Optional, Generator, List, Any, Tuple, IO, Union, Dict
 import lz4.frame
 from tqdm import tqdm
 
@@ -119,10 +119,10 @@ def hasFullBackup(args: Namespace) -> int:
     return len(fullFiles) > 0
 
 
-def exists(filePath: str, sshClient=None) -> bool:
+def exists(args: Namespace, filePath: str) -> bool:
     """Check if file exists either remotely or locally."""
-    if sshClient:
-        return sshClient.exists(filePath)
+    if args.sshClient:
+        return args.sshClient.exists(filePath)
 
     return os.path.exists(filePath)
 
@@ -130,7 +130,7 @@ def exists(filePath: str, sshClient=None) -> bool:
 def targetIsEmpty(args: Namespace) -> bool:
     """Check if target directory does not include an backup
     already (no .data or .data.partial files)"""
-    if exists(args.output) and args.level in ("full", "copy", "auto"):
+    if exists(args, args.output) and args.level in ("full", "copy", "auto"):
         dirList = glob.glob(f"{args.output}/*.data*")
         if len(dirList) > 0:
             return False
@@ -138,24 +138,25 @@ def targetIsEmpty(args: Namespace) -> bool:
     return True
 
 
-def getLatest(targetDir: str, search: str, key=None) -> Union[List[str], str, None]:
+def getLatest(targetDir: str, search: str, key=None) -> List[str]:
     """get the last backed up file matching search
     from the backupset, used to find latest vm config,
     data files or data files by disk.
     """
+    ret: List[str] = []
     try:
         files = glob.glob(f"{targetDir}/{search}")
         files.sort(key=os.path.getmtime)
 
         if key is not None:
-            ret = files[key]
+            ret.append(files[key])
         else:
             ret = files
 
         log.debug("Sorted data files: \n%s", pprint.pformat(ret))
         return ret
     except IndexError:
-        return None
+        return []
 
 
 def copy(args: Namespace, source: str, target: str) -> None:
@@ -239,7 +240,7 @@ def blockStep(offset: int, length: int, maxRequestSize: int) -> Generator:
             blockOffset += blocklen
 
 
-def isCompressed(meta: dict) -> bool:
+def isCompressed(meta: Dict[str, str]) -> bool:
     """Return true if stream is compressed"""
     try:
         version = meta["stream-version"] == 2

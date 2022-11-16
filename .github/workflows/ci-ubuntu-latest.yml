@@ -24,6 +24,8 @@ jobs:
         sudo pip3 install types-paramiko
         mypy --ignore-missing libvirtnbdbackup
         mypy --ignore-missing virtnbdbackup
+        mypy --ignore-missing virtnbdrestore
+        mypy --ignore-missing virtnbdmap
     - name: Set up ssh access to localhost
       run: |
         sudo ssh-keygen -f /root/.ssh/id_rsa -N ""
