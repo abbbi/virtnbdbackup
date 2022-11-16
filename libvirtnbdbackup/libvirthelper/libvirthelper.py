@@ -300,6 +300,10 @@ class client:
         name.text = domainName
 
         for disk in tree.xpath("devices/disk"):
+            diskType = disk.get("type")
+            if diskType == "volume":
+                logging.info("Disk has type volume, resetting to type file.")
+                disk.set("type", "file")
             dev = disk.xpath("target")[0].get("dev")
             originalFile = disk.xpath("source")[0].get("file")
             if dev == restoreDisk.target:
