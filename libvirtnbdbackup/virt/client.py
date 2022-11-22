@@ -26,13 +26,13 @@ from typing import Any, Dict, List, Tuple, Optional, Union
 from lxml.etree import _Element
 from lxml import etree as ElementTree
 import libvirt
-from libvirtnbdbackup.libvirthelper.exceptions import (
+from libvirtnbdbackup.virt.exceptions import (
     domainNotFound,
     connectionFailed,
     startBackupFailed,
 )
-from libvirtnbdbackup import outputhelper
-from libvirtnbdbackup.outputhelper.exceptions import OutputException
+from libvirtnbdbackup import output
+from libvirtnbdbackup.output.exceptions import OutputException
 
 
 @dataclass
@@ -300,8 +300,7 @@ class client:
         name.text = domainName
 
         for disk in tree.xpath("devices/disk"):
-            diskType = disk.get("type")
-            if diskType == "volume":
+            if disk.get("type") == "volume":
                 logging.info("Disk has type volume, resetting to type file.")
                 disk.set("type", "file")
             dev = disk.xpath("target")[0].get("dev")
@@ -699,7 +698,7 @@ class client:
         for checkpointFile in checkpointList:
             log.debug("Loading checkpoint config from: [%s]", checkpointFile)
             try:
-                with outputhelper.openfile(checkpointFile, "rb") as f:
+                with output.openfile(checkpointFile, "rb") as f:
                     checkpointConfig = f.read()
                     root = ElementTree.fromstring(checkpointConfig)
             except OutputException as e:
@@ -744,7 +743,7 @@ class client:
         checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
         log.info("Saving checkpoint config to: [%s]", checkpointFile)
         try:
-            with outputhelper.openfile(checkpointFile, "wb") as f:
+            with output.openfile(checkpointFile, "wb") as f:
                 c = self._checkpointExists(domObj, args.cpt.name)
                 f.write(self._getCheckpointXml(c).encode())
                 return True

@@ -19,7 +19,7 @@ import logging
 from time import sleep
 from dataclasses import dataclass
 import nbd
-from libvirtnbdbackup.nbdhelper import exceptions
+from libvirtnbdbackup.nbdcli import exceptions
 
 log = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ class nbdConn:
 
 
 @dataclass
-class nbdConnUnix(nbdConn):
-    """NBD connection type unix"""
+class Unix(nbdConn):
+    """NBD connection type unix for connection via socket file"""
 
     backupSocket: str
     tls: bool = False
@@ -44,8 +44,8 @@ class nbdConnUnix(nbdConn):
 
 
 @dataclass
-class nbdConnTCP(nbdConn):
-    """NBD connection type tcp"""
+class TCP(nbdConn):
+    """NBD connection type tcp for remote backup"""
 
     hostname: str
     tls: bool
@@ -59,7 +59,7 @@ class nbdConnTCP(nbdConn):
         self.uri = f"{self.uri_prefix}{self.hostname}:{self.port}/{self.exportName}"
 
 
-class nbdClient:
+class client:
     """Helper functions for NBD"""
 
     def __init__(self, cType):
@@ -75,14 +75,17 @@ class nbdClient:
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
         self.nbd = nbd.NBD()
-        self.version()
+        self.connection = None
+
+        self._printVersion()
 
     @staticmethod
-    def version() -> None:
-        """Log libnbd version"""
+    def _printVersion() -> None:
+        """Log libnbd, so it is included within the backup logfiles,
+        to know which components are involved."""
         log.info("libnbd version: %s", nbd.__version__)
 
-    def getBlockInfo(self) -> None:
+    def _getBlockInfo(self) -> None:
         """Read maximum request/block size as advertised by the nbd
         server. This is the value which will then be used by default
         """
@@ -92,7 +95,7 @@ class nbdClient:
 
         log.info("Using Maximum Block size supported by NBD server: [%s]", maxSize)
 
-    def connect(self) -> nbd.NBD:
+    def _connect(self) -> nbd.NBD:
         """Setup connection to NBD server endpoint, return
         connection handle
         """
@@ -105,12 +108,15 @@ class nbdClient:
         except nbd.Error as e:
             raise exceptions.NbdConnectionError(f"Unable to connect nbd server: {e}")
 
-        self.getBlockInfo()
+        self._getBlockInfo()
 
         return self.nbd
 
-    def waitForServer(self) -> nbd.NBD:
-        """Wait until NBD endpoint connection can be established"""
+    def connect(self) -> nbd.NBD:
+        """Wait until NBD endpoint connection can be established. It can take
+        some time until qemu-nbd process is running and reachable. Attempt to
+        connect and fail if no connection can be established. In case of unix
+        domain socket, wait until socket file is created by qemu-nbd."""
         logging.info("Waiting until NBD server at [%s] is up.", self.cType.uri)
         retry = 0
         maxRetry = 20
@@ -126,10 +132,11 @@ class nbdClient:
                 logging.info("Waiting for NBD Server, Retry: %s", retry)
                 retry = retry + 1
 
-            connection = self.connect()
+            connection = self._connect()
             if connection:
                 logging.info("Connection to NBD backend succeeded.")
-                return connection
+                self.connection = connection
+                return self
 
             logging.info("Waiting for NBD Server, Retry: %s", retry)
             retry = retry + 1

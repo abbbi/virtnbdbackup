@@ -50,7 +50,7 @@ class ExtentHandler:
 
     def __init__(self, nbdFh, cType) -> None:
         self.useQemu = False
-        if nbdFh.__class__.__name__ == "qemuHelper":
+        if nbdFh.__class__.__name__ == "util":
             self.useQemu = True
         self._nbdFh = nbdFh
         self._cType = cType
@@ -80,7 +80,7 @@ class ExtentHandler:
 
     def _setRequestAligment(self) -> int:
         """Align request size to nbd server"""
-        align = self._nbdFh.get_block_size(0)
+        align = self._nbdFh.nbd.get_block_size(0)
         if align == 0:
             align = self._align
         return self._maxRequestBlock - align + 1
@@ -149,7 +149,7 @@ class ExtentHandler:
         """Request used blocks/extents from the nbd service"""
         maxRequestLen = self._setRequestAligment()
         offset = 0
-        size = self._nbdFh.get_size()
+        size = self._nbdFh.nbd.get_size()
         log.debug("Size returned from NDB server: %s", size)
         lastExtentLen = len(self._extentEntries)
         while offset < size:
@@ -158,7 +158,9 @@ class ExtentHandler:
             else:
                 request_length = min(size - offset, maxRequestLen)
             log.debug("Block status request length: %s", request_length)
-            self._nbdFh.block_status(request_length, offset, self._getExtentCallback)
+            self._nbdFh.nbd.block_status(
+                request_length, offset, self._getExtentCallback
+            )
             assert self._extentEntries != 0
 
             offset += sum(self._extentEntries[lastExtentLen::2])
@@ -201,14 +203,14 @@ class ExtentHandler:
         assert data is not None
         return data
 
-    def queryBlockStatus(self, extentList=None) -> List[Extent]:
+    def queryBlockStatus(self) -> List[Extent]:
         """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
         """
         if self.useQemu is True:
             return self.queryExtentsQemu()
 
-        extentList = []
+        extentList: List[Extent] = []
         start = 0
         for extent in self._unifyExtents(self.queryExtentsNbd()):
             extObj = Extent(self.setBlockType(extent.type), start, extent.length)

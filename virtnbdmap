@@ -30,10 +30,10 @@ import logging
 from typing import List, Tuple, Dict, IO
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
-from libvirtnbdbackup import qemuhelper
-from libvirtnbdbackup.qemuhelper.exceptions import ProcessError, QemuHelperError
-from libvirtnbdbackup import outputhelper
-from libvirtnbdbackup.outputhelper.exceptions import OutputException
+from libvirtnbdbackup import qemu
+from libvirtnbdbackup.qemu.exceptions import ProcessError, QemuHelperError
+from libvirtnbdbackup import output
+from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.common.processinfo import processInfo
 from libvirtnbdbackup.logcount import logCount
@@ -87,15 +87,13 @@ def replayChanges(dataRanges: List, args: Namespace) -> None:
     )
     dataSize = sum(extent["length"] for extent in blockListInc)
     progressBar = lib.progressBar(dataSize, "replaying..", args)
-    with outputhelper.openfile(args.device, "wb") as replayDevice:
+    with output.openfile(args.device, "wb") as replayDevice:
         for extent in blockListInc:
             if args.noprogress:
                 logging.info(
                     "Replaying offset %s from %s", extent["offset"], extent["file"]
                 )
-            with outputhelper.openfile(
-                os.path.abspath(extent["file"]), "rb"
-            ) as replaySrc:
+            with output.openfile(os.path.abspath(extent["file"]), "rb") as replaySrc:
                 replaySrc.seek(extent["offset"])
                 replayDevice.seek(extent["originalOffset"])
                 replayDevice.write(replaySrc.read(extent["length"]))
@@ -109,7 +107,7 @@ def replayChanges(dataRanges: List, args: Namespace) -> None:
 def handleSignal(nbdkitProcess: processInfo, device: str, blockMap, log, signum, _):
     """Catch signal, attempt to stop processes."""
     log.info("Received signal: [%s]", signum)
-    qemuhelper.qemuHelper("").disconnect(device)
+    qemu.util("").disconnect(device)
     log.info("Removing temporary blockmap file: [%s]", blockMap.name)
     os.remove(blockMap.name)
     log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
@@ -287,7 +285,7 @@ def main() -> None:
     dataRanges = []
     for dFile in dataFiles:
         try:
-            reader = outputhelper.openfile(dFile, "rb")
+            reader = output.openfile(dFile, "rb")
         except OutputException as e:
             logging.error("[%s]: [%s]", dFile, e)
             sys.exit(1)
@@ -312,7 +310,7 @@ def main() -> None:
 
     logging.info("Target device: %s", args.device)
 
-    qFh = qemuhelper.qemuHelper(args.export_name)
+    qFh = qemu.util(args.export_name)
     try:
         nbdkitProcess = qFh.startNbdkitProcess(
             args, nbdkitModule, blockMap.name, fullImage
@@ -348,7 +346,7 @@ def main() -> None:
     logging.debug(nbdCmd)
     while True:
         try:
-            qemuhelper.runcmd(cmdLine=nbdCmd, toPipe=True)
+            qemu.runcmd(cmdLine=nbdCmd, toPipe=True)
             break
         except ProcessError as e:
             if retryCnt >= maxRetry:

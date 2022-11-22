@@ -1,3 +1,18 @@
+Version 1.9.7
+---------
+ * Update README
+ * Code cleanup, use shorter class names, change some error handling.
+ * virtnbdrestore: in case option -D is passed, set option to adjust virtual
+ machine config automatically.
+ * virtnbdbackup: amount of ports used for offline backup depends on how many
+ workers are used, not how much disks are attached, log correct port range use
+ during offline backup.
+
+Development:
+ * Github workflow now saves all files created by testsuite for better
+ analysis, extend some testcases.
+
+
 Version 1.9.6
 ---------
  * virtnbdrestore: add detection for disks with volume notation, reset

@@ -20,7 +20,7 @@ import zipfile
 import logging
 import time
 from typing import IO, Union, Tuple, BinaryIO
-from libvirtnbdbackup.outputhelper import exceptions
+from libvirtnbdbackup.output import exceptions
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -30,7 +30,7 @@ else:
 log = logging.getLogger(__name__)
 
 
-class outputHelper:
+class target:
     """Directs output stream to either regular directory or
     zipfile. If other formats are added class should be
     used as generic wrapper for open()/write()/close() functions.

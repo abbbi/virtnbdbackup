@@ -30,7 +30,7 @@ from tqdm import tqdm
 
 from libvirtnbdbackup import sshutil
 from libvirtnbdbackup.sshutil.exceptions import sshutilError
-from libvirtnbdbackup import outputhelper
+from libvirtnbdbackup import output
 from libvirtnbdbackup.logcount import logCount
 
 log = logging.getLogger(__name__)
@@ -211,7 +211,7 @@ def dumpExtentJson(extents) -> str:
 
 def dumpMetaData(dataFile: str, stream):
     """read metadata header"""
-    with outputhelper.openfile(dataFile, "rb") as reader:
+    with output.openfile(dataFile, "rb") as reader:
         _, _, length = stream.readFrame(reader)
         return stream.loadMetadata(reader.read(length))
 
@@ -274,7 +274,7 @@ def lz4CompressFrame(data: bytes, level: int) -> bytes:
 
 
 def writeChunk(
-    writer: IO[Any], block, maxRequestSize: int, nbdCon, btype, compress
+    writer: IO[Any], block, nbdCon, btype, compress
 ) -> Tuple[int, List[int]]:
     """During extent processing, consecutive blocks with
     the same type(data or zeroed) are unified into one big chunk.
@@ -291,11 +291,13 @@ def writeChunk(
     """
     wSize = 0
     cSizes = []
-    for blocklen, blockOffset in blockStep(block.offset, block.length, maxRequestSize):
+    for blocklen, blockOffset in blockStep(
+        block.offset, block.length, nbdCon.maxRequestSize
+    ):
         if btype == "raw":
             writer.seek(blockOffset)
 
-        data = nbdCon.pread(blocklen, blockOffset)
+        data = nbdCon.nbd.pread(blocklen, blockOffset)
 
         if compress is not False and btype != "raw":
             compressed = lz4CompressFrame(data, compress)
@@ -314,7 +316,7 @@ def writeBlock(writer: IO[Any], block, nbdCon, btype: str, compress: bool) -> in
     """
     if btype == "raw":
         writer.seek(block.offset)
-    data = nbdCon.pread(block.length, block.offset)
+    data = nbdCon.nbd.pread(block.length, block.offset)
 
     if compress is not False and btype != "raw":
         data = lz4CompressFrame(data, compress)
@@ -326,7 +328,6 @@ def readChunk(
     reader: IO[Any],
     offset: int,
     length: int,
-    maxRequestSize: int,
     nbdCon,
     compression: int,
 ) -> int:
@@ -347,15 +348,15 @@ def readChunk(
     directly.
     """
     wSize = 0
-    for blocklen, blockOffset in blockStep(offset, length, maxRequestSize):
+    for blocklen, blockOffset in blockStep(offset, length, nbdCon.maxRequestSize):
         if compression is True:
             data = lz4DecompressFrame(reader.read(blocklen))
-            nbdCon.pwrite(data, offset)
+            nbdCon.nbd.pwrite(data, offset)
             offset += len(data)
             wSize += len(data)
         else:
             data = reader.read(blocklen)
-            nbdCon.pwrite(data, blockOffset)
+            nbdCon.nbd.pwrite(data, blockOffset)
             wSize += len(data)
 
     return wSize

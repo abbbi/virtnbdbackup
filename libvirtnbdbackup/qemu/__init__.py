@@ -15,8 +15,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__title__ = "nbdhelper"
+__title__ = "qemu"
 __version__ = "0.1"
 
-from .nbdhelper import nbdClient
-from .nbdhelper import nbdConnUnix, nbdConnTCP
+from .run import util
+
+runcmd = util("").runcmd

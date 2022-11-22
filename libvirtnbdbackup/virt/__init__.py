@@ -15,9 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__title__ = "qemuhelper"
+__title__ = "virt"
 __version__ = "0.1"
 
-from .qemuhelper import qemuHelper
-
-runcmd = qemuHelper("").runcmd
+from .client import client

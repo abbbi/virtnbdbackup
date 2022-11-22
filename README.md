@@ -41,7 +41,7 @@ of your `kvm/qemu` virtual machines.
   - [Remote Backup](#remote-backup)
     - [QEMU Sessions](#qemu-sessions)
     - [NBD with TLS](#nbd-with-tls)
-    - [Remote IP for NBD Transfer](#remote-ip-for-nbd-transfer)
+    - [Using a separate network for data transfer](#using-a-separate-network-for-data-transfer)
     - [Piping data to other hosts](#piping-data-to-other-hosts)
   - [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
 - [Restore examples](#restore-examples)
@@ -490,11 +490,11 @@ instructions how setup:
 > You should have installed at least version 1.12.6 of the libnbd library
 > which makes the transfer via NBDS more stable [full background](https://github.com/abbbi/virtnbdbackup/issues/66#issuecomment-1196813750)
 
-### Remote IP for NBD Transfer
+### Using a separate network for data transfer
 
-In case you want to use a dedicated network for the NBD transfer, you
-can specify an specific IP address to bind the remote NBD service to 
-via `--nbd-ip` option.
+In case you want to use a dedicated network for the data transfer via NBD, you
+can specify an specific IP address to bind the remote NBD service to via
+`--nbd-ip` option.
 
 ### Piping data to other hosts
 

@@ -31,12 +31,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from libvirt import virDomain
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
-from libvirtnbdbackup import nbdhelper
+from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import extenthandler
-from libvirtnbdbackup import qemuhelper
-from libvirtnbdbackup import libvirthelper
-from libvirtnbdbackup.libvirthelper.libvirthelper import DomainDisk
-from libvirtnbdbackup import outputhelper
+from libvirtnbdbackup import qemu
+from libvirtnbdbackup import virt
+from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup import output
 from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.common.processinfo import processInfo
 from libvirtnbdbackup.logcount import logCount
@@ -44,20 +44,20 @@ from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup import exceptions
 from libvirtnbdbackup.sshutil.exceptions import sshutilError
-from libvirtnbdbackup.nbdhelper.exceptions import NbdClientException
-from libvirtnbdbackup.qemuhelper.exceptions import QemuHelperError, ProcessError
-from libvirtnbdbackup.libvirthelper.exceptions import (
+from libvirtnbdbackup.nbdcli.exceptions import NbdClientException
+from libvirtnbdbackup.qemu.exceptions import ProcessError
+from libvirtnbdbackup.virt.exceptions import (
     startBackupFailed,
     domainNotFound,
     connectionFailed,
 )
-from libvirtnbdbackup.outputhelper.exceptions import OutputException
+from libvirtnbdbackup.output.exceptions import OutputException
 
 
 def handleSignal(
     args: Namespace,
     domObj: virDomain,
-    virtClient: libvirthelper.client,
+    virtClient: virt.client,
     log: Any,
     signum: int,
     _,
@@ -72,7 +72,7 @@ def handleSignal(
 
 def checkForeign(
     args: Namespace,
-    virtClient: libvirthelper.client,
+    virtClient: virt.client,
     domObj: virDomain,
 ) -> bool:
     """Check and warn user if virtual machine has checkpoints
@@ -132,7 +132,7 @@ def readCheckpointFile(args: Namespace, cFile: str) -> List[str]:
         return checkpoints
 
     try:
-        with outputhelper.openfile(cFile, "rb") as fh:
+        with output.openfile(cFile, "rb") as fh:
             checkpoints = json.loads(fh.read().decode())
         return checkpoints
     except OutputException as e:
@@ -143,7 +143,7 @@ def readCheckpointFile(args: Namespace, cFile: str) -> List[str]:
 
 def handleCheckpoints(
     args: Namespace,
-    virtClient: libvirthelper.client,
+    virtClient: virt.client,
     domObj: virDomain,
 ) -> None:
     """Checkpoint handling for different backup modes
@@ -213,7 +213,7 @@ def saveCheckpointFile(args: Namespace) -> None:
     try:
         checkpoints = readCheckpointFile(args, args.cpt.file)
         checkpoints.append(args.cpt.name)
-        with outputhelper.openfile(args.cpt.file, "wb") as cFw:
+        with output.openfile(args.cpt.file, "wb") as cFw:
             cFw.write(json.dumps(checkpoints).encode())
     except exceptions.CheckpointException as e:
         raise exceptions.CheckpointException from e
@@ -222,17 +222,15 @@ def saveCheckpointFile(args: Namespace) -> None:
 
 
 def getFileStream(
-    args: Namespace, outHelper: outputhelper.outputHelper
-) -> Union[outputhelper.outputHelper.Directory, outputhelper.outputHelper.Zip]:
+    args: Namespace, repository: output.target
+) -> Union[output.target.Directory, output.target.Zip]:
     """Get filehandle for output files based on output
     mode"""
-    fileStream: Union[
-        outputhelper.outputHelper.Directory, outputhelper.outputHelper.Zip
-    ]
+    fileStream: Union[output.target.Directory, output.target.Zip]
     if args.stdout is False:
-        fileStream = outHelper.Directory(args.output)
+        fileStream = repository.Directory(args.output)
     else:
-        fileStream = outHelper.Zip()
+        fileStream = repository.Zip()
         args.output = "./"
         args.worker = 1
         args.raw = False
@@ -242,7 +240,7 @@ def getFileStream(
 
 def startBackupJob(
     args: Namespace,
-    virtClient: libvirthelper.client,
+    virtClient: virt.client,
     domObj: virDomain,
     disks: List[DomainDisk],
 ) -> bool:
@@ -449,7 +447,7 @@ def main() -> None:
     )
     argopt.addDebugArgs(debopt)
 
-    outHelper = outputhelper.outputHelper()
+    repository = output.target()
     args = lib.argparse(parser)
 
     args.stdout = args.output == "-"
@@ -457,7 +455,7 @@ def main() -> None:
     args.diskInfo = []
 
     try:
-        fileStream = getFileStream(args, outHelper)
+        fileStream = getFileStream(args, repository)
     except OutputException as e:
         logging.error("Cant open output file: [%s]", e)
         sys.exit(1)
@@ -519,10 +517,10 @@ def main() -> None:
     else:
         logging.info("Store checkpoints in: [%s]", args.checkpointdir)
 
-    outHelper.Directory(args.checkpointdir)
+    repository.Directory(args.checkpointdir)
 
     try:
-        virtClient = libvirthelper.client(args)
+        virtClient = virt.client(args)
         domObj = virtClient.getDomain(args.domain)
     except domainNotFound as e:
         logging.error("%s", e)
@@ -618,14 +616,14 @@ def main() -> None:
             logging.info(
                 "Remote ports used for backup: [%s-%s]",
                 args.nbd_port,
-                args.nbd_port + len(disks),
+                args.nbd_port + args.worker,
             )
     else:
         logging.info("Local NDB Endpoint socket: [%s]", args.socketfile)
 
     if args.offline is not True:
         logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
-        outHelper.Directory(args.scratchdir)
+        repository.Directory(args.scratchdir)
         if not startBackupJob(args, virtClient, domObj, disks):
             sys.exit(1)
 
@@ -739,7 +737,7 @@ def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
     configFile = f"{args.output}/vmconfig.{getIdent(args)}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
-        with outputhelper.openfile(configFile, "wb") as fh:
+        with output.openfile(configFile, "wb") as fh:
             fh.write(vmConfig.encode())
         return configFile
     except OutputException as e:
@@ -762,7 +760,7 @@ def backupBootConfig(args: Namespace) -> None:
 def backupDiskInfo(args: Namespace, disk: DomainDisk):
     """Save information about qcow image"""
     try:
-        info = qemuhelper.qemuHelper("").info(disk.path, args.sshClient)
+        info = qemu.util("").info(disk.path, args.sshClient)
     except (
         ProcessError,
         sshutilError,
@@ -772,7 +770,7 @@ def backupDiskInfo(args: Namespace, disk: DomainDisk):
 
     configFile = f"{args.output}/{disk.target}.{getIdent(args)}.qcow.json"
     try:
-        with outputhelper.openfile(configFile, "wb") as fh:
+        with output.openfile(configFile, "wb") as fh:
             fh.write(info.out.encode())
         logging.info("Saved QCOW image config to: [%s]", configFile)
         if args.stdout is True:
@@ -838,16 +836,16 @@ def getWriter(
     return writer
 
 
-def getExtentHandler(args: Namespace, cType, connection):
+def getExtentHandler(args: Namespace, nbdClient):
     """Query dirty blocks either via qemu client or self
     implemented extend handler"""
     if args.qemu:
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemuhelper.qemuHelper(cType.exportName), cType
+            qemu.util(nbdClient.cType.exportName), nbdClient.cType
         )
     else:
-        extentHandler = extenthandler.ExtentHandler(connection, cType)
+        extentHandler = extenthandler.ExtentHandler(nbdClient, nbdClient.cType)
 
     return extentHandler
 
@@ -873,25 +871,23 @@ def startOfflineNBD(
     socket = f"{args.socketfile}.{disk.target}"
     if remoteHost != "":
         logging.info(
-            "Offline backup, starting remote NDB Service, socket: [%s:%s], port: [%s]",
+            "Offline backup, starting remote NDB server, socket: [%s:%s], port: [%s]",
             remoteHost,
             socket,
             port,
         )
-        nbdProc = qemuhelper.qemuHelper(disk.target).startRemoteBackupNbdServer(
+        nbdProc = qemu.util(disk.target).startRemoteBackupNbdServer(
             args, disk.format, disk.path, bitMap, port
         )
-        logging.info("Remote NDB Service started, PID: [%s].", nbdProc.pid)
+        logging.info("Remote NDB server started, PID: [%s].", nbdProc.pid)
         return nbdProc
-    try:
-        logging.info("Offline backup, starting local NDB Service, socket: [%s]", socket)
-        nbdProc = qemuhelper.qemuHelper(disk.target).startBackupNbdServer(
-            disk.format, disk.path, socket, bitMap
-        )
-        logging.info("Local NDB Service started, PID: [%s]", nbdProc.pid)
-        return nbdProc
-    except QemuHelperError as e:
-        raise exceptions.DiskBackupFailed(e)
+
+    logging.info("Offline backup, starting local NDB server, socket: [%s]", socket)
+    nbdProc = qemu.util(disk.target).startBackupNbdServer(
+        disk.format, disk.path, socket, bitMap
+    )
+    logging.info("Local NDB Service started, PID: [%s]", nbdProc.pid)
+    return nbdProc
 
 
 def truncate(writer, size: int) -> None:
@@ -911,23 +907,23 @@ def connectNbd(
     metaContext: str,
     remoteIP: str,
     port: int,
-    virtClient: libvirthelper.client,
+    virtClient: virt.client,
 ):
     """Connect to started nbd endpoint"""
     socket = args.socketfile
     if args.offline is True:
         socket = f"{args.socketfile}.{disk.target}"
 
-    cType: Union[nbdhelper.nbdConnTCP, nbdhelper.nbdConnUnix]
+    cType: Union[nbdcli.TCP, nbdcli.Unix]
     if virtClient.remoteHost != "":
-        cType = nbdhelper.nbdConnTCP(disk.target, metaContext, remoteIP, args.tls, port)
+        cType = nbdcli.TCP(disk.target, metaContext, remoteIP, args.tls, port)
     else:
-        cType = nbdhelper.nbdConnUnix(disk.target, metaContext, socket)
+        cType = nbdcli.Unix(disk.target, metaContext, socket)
 
-    nbdClient = nbdhelper.nbdClient(cType)
+    nbdClient = nbdcli.client(cType)
 
     try:
-        return nbdClient.waitForServer(), nbdClient
+        return nbdClient.connect()
     except NbdClientException as e:
         raise exceptions.DiskBackupFailed(
             f"NBD endpoint: [{cType}]: connection failed: [{e}]"
@@ -939,7 +935,7 @@ def backupDisk(
     disk: DomainDisk,
     count: int,
     fileStream,
-    virtClient: libvirthelper.client,
+    virtClient: virt.client,
 ):
     """Backup domain disk data."""
     stream = streamer.SparseStream(types)
@@ -955,15 +951,17 @@ def backupDisk(
 
     if args.offline is True:
         port = args.nbd_port + count
-        nbdProc = startOfflineNBD(args, disk, virtClient.remoteHost, port)
+        try:
+            nbdProc = startOfflineNBD(args, disk, virtClient.remoteHost, port)
+        except ProcessError as errmsg:
+            logging.error(errmsg)
+            raise exceptions.DiskBackupFailed("Failed to start NBD server.")
 
-    connection, nbdClient = connectNbd(
-        args, disk, metaContext, remoteIP, port, virtClient
-    )
+    connection = connectNbd(args, disk, metaContext, remoteIP, port, virtClient)
 
-    extentHandler = getExtentHandler(args, nbdClient.cType, connection)
+    extentHandler = getExtentHandler(args, connection)
     extents = extentHandler.queryBlockStatus()
-    diskSize = connection.get_size()
+    diskSize = connection.nbd.get_size()
 
     if extents is None:
         logging.error("No extents found.")
@@ -1011,7 +1009,7 @@ def backupDisk(
 
             cSizes = None
 
-            if save.length >= nbdClient.maxRequestSize:
+            if save.length >= connection.maxRequestSize:
                 logging.debug(
                     "Chunked data read from: start %s, length: %s",
                     save.offset,
@@ -1020,7 +1018,6 @@ def backupDisk(
                 size, cSizes = lib.writeChunk(
                     writer,
                     save,
-                    nbdClient.maxRequestSize,
                     connection,
                     streamType,
                     args.compress,
@@ -1063,7 +1060,7 @@ def backupDisk(
     progressBar.close()
     logging.debug("Closing write handle.")
     writer.close()
-    nbdClient.disconnect()
+    connection.disconnect()
     if args.offline is True and virtClient.remoteHost == "":
         logging.info("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)

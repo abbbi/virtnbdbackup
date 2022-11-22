@@ -22,17 +22,17 @@ import subprocess
 from typing import List, Tuple, Union
 from argparse import Namespace
 
-from libvirtnbdbackup.qemuhelper.exceptions import (
+from libvirtnbdbackup.qemu.exceptions import (
     ProcessError,
 )
 from libvirtnbdbackup.sshutil.exceptions import sshutilError
-from libvirtnbdbackup.outputhelper import openfile
+from libvirtnbdbackup.output import openfile
 from libvirtnbdbackup.common.processinfo import processInfo
 
 log = logging.getLogger(__name__)
 
 
-class qemuHelper:
+class util:
     """Wrapper for qemu executables"""
 
     def __init__(self, exportName: str) -> None:
@@ -296,7 +296,7 @@ class qemuHelper:
             err: str = ""
             out: str = ""
             if p.returncode != 0:
-                log.info("CMD: %s", " ".join(cmdLine))
+                log.error("CMD: %s", " ".join(cmdLine))
                 log.debug("Read error messages from logfile")
                 if toPipe is True:
                     out, err = self._readpipe(p)

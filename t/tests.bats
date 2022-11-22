@@ -214,13 +214,13 @@ toOut() {
     fi
 }
 @test "Dump metadata information" {
-    run ../virtnbdrestore -i $BACKUPSET -a dump -o /dev/null
+    run ../virtnbdrestore -i $BACKUPSET -a dump -o /dev/null --logfile ${TMPDIR}/dumpmetadata.log
     echo "output = ${output}"
     [[ "$output" =~ "$DATA_SIZE" ]]
     [[ "$output" =~ "$VIRTUAL_SIZE" ]]
 }
 @test "Restore stream format"  {
-    run ../virtnbdrestore $OPT -i $BACKUPSET -o $RESTORESET
+    run ../virtnbdrestore $OPT -i $BACKUPSET -o $RESTORESET --logfile ${TMPDIR}/restorestream.log
     echo "output = ${output}"
     [[ "$output" =~ "End of stream" ]]
     [ "$status" -eq 0 ]
@@ -649,7 +649,7 @@ toOut() {
 }
 @test "Restore: test remote restore functionality via localhost" {
     [ -z $GITHUB_JOB ] && skip "skip locally"
-    run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore
+    run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore --logfile ${TMPDIR}/remoterestore.log
     echo "output = ${output}"
     [[ "${output}" =~  "Connecting remote system via ssh" ]]
     [ "$status" -eq 0 ]
