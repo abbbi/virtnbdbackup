@@ -25,7 +25,7 @@ from argparse import Namespace
 from libvirtnbdbackup.qemu.exceptions import (
     ProcessError,
 )
-from libvirtnbdbackup.sshutil.exceptions import sshutilError
+from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.output import openfile
 from libvirtnbdbackup.common.processinfo import processInfo
 
@@ -149,7 +149,7 @@ class util:
         cmd.append(f"> {logFile} 2>&1")
         try:
             return args.sshClient.run(" ".join(cmd), pidFile, logFile)
-        except sshutilError:
+        except sshError:
             logging.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
@@ -243,7 +243,7 @@ class util:
         cmd.append(f"> {logFile} 2>&1")
         try:
             return args.sshClient.run(" ".join(cmd), pidFile, logFile)
-        except sshutilError:
+        except sshError:
             logging.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
@@ -260,7 +260,7 @@ class util:
                 return fh.read().decode().strip()
         except Exception as errmsg:
             raise ProcessError(
-                f"Error executing [{cmd}] Unable to get error message: {errmsg}"
+                f"Failed to execute [{cmd}]: Unable to get error message: {errmsg}"
             ) from errmsg
 
     @staticmethod
@@ -270,7 +270,7 @@ class util:
         return out, err
 
     def runcmd(
-        self, cmdLine: List[str], pidFile=None, toPipe: bool = False
+        self, cmdLine: List[str], pidFile: str = "", toPipe: bool = False
     ) -> processInfo:
         """Execute passed command"""
         logFileName: str = ""
@@ -307,7 +307,7 @@ class util:
             if toPipe is True:
                 out, err = self._readpipe(p)
 
-            if pidFile is not None:
+            if pidFile != "":
                 realPid = int(self._readlog(pidFile, ""))
             else:
                 realPid = p.pid

@@ -43,7 +43,7 @@ from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup import exceptions
-from libvirtnbdbackup.sshutil.exceptions import sshutilError
+from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.nbdcli.exceptions import NbdClientException
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.virt.exceptions import (
@@ -655,7 +655,7 @@ def main() -> None:
                     raise exceptions.DiskBackupFailed("Backup of one disk failed")
     except exceptions.BackupException as e:
         logging.error("Disk backup failed: [%s]", e)
-    except sshutilError as e:
+    except sshError as e:
         logging.error("Remote Disk backup failed: [%s]", e)
     except Exception as e:  # pylint: disable=broad-except
         logging.fatal("Unknown Exception during backup: %s", e)
@@ -763,7 +763,7 @@ def backupDiskInfo(args: Namespace, disk: DomainDisk):
         info = qemu.util("").info(disk.path, args.sshClient)
     except (
         ProcessError,
-        sshutilError,
+        sshError,
     ) as errmsg:
         logging.warning("Failed to read QCOW image info: [%s]", errmsg)
         return

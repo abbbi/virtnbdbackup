@@ -28,8 +28,8 @@ from typing import Optional, Generator, List, Any, Tuple, IO, Union, Dict
 import lz4.frame
 from tqdm import tqdm
 
-from libvirtnbdbackup import sshutil
-from libvirtnbdbackup.sshutil.exceptions import sshutilError
+from libvirtnbdbackup import ssh
+from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup import output
 from libvirtnbdbackup.logcount import logCount
 
@@ -62,11 +62,11 @@ def setLogLevel(verbose: bool) -> int:
     return level
 
 
-def sshSession(args: Namespace, remoteHost: str) -> Union[sshutil.Client, None]:
+def sshSession(args: Namespace, remoteHost: str) -> Union[ssh.client, None]:
     """Use ssh to copy remote files"""
     try:
-        return sshutil.Client(remoteHost, args.ssh_user)
-    except sshutilError as err:
+        return ssh.client(remoteHost, args.ssh_user)
+    except sshError as err:
         logging.warning("Failed to setup SSH connection: [%s]", err)
 
     return None
@@ -168,7 +168,7 @@ def copy(args: Namespace, source: str, target: str) -> None:
             shutil.copyfile(source, target)
     except OSError as e:
         log.warning("Failed to copy [%s] to [%s]: [%s]", source, target, e)
-    except sshutilError as e:
+    except sshError as e:
         log.warning("Remote copy from [%s] to [%s] failed: [%s]", source, target, e)
 
 

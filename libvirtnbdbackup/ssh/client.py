@@ -25,7 +25,7 @@ from paramiko import (  # pylint: disable=import-error
     AuthenticationException,
 )
 
-from libvirtnbdbackup.sshutil import exceptions
+from libvirtnbdbackup.ssh import exceptions
 from libvirtnbdbackup.common.processinfo import processInfo
 
 log = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class Mode(Enum):
     DOWNLOAD = 2
 
 
-class Client:
+class client:
     """Wrapper around paramiko/sftp put and get functions, to be able to
     remote copy files from hypervisor host"""
 
@@ -56,21 +56,21 @@ class Client:
         """Connect to remote system"""
         log.info("Connecting remote system via ssh, username: [%s]", self.user)
         try:
-            client = SSHClient()
-            client.load_system_host_keys()
-            client.set_missing_host_key_policy(AutoAddPolicy())
-            client.connect(
+            cli = SSHClient()
+            cli.load_system_host_keys()
+            cli.set_missing_host_key_policy(AutoAddPolicy())
+            cli.connect(
                 self.host,
                 username=self.user,
                 timeout=5000,
             )
-            return client
+            return cli
         except AuthenticationException as e:
-            raise exceptions.sshutilError(
+            raise exceptions.sshError(
                 f"AuthenticationException occurred; did you remember to generate an SSH key? {e}"
             )
         except Exception as e:
-            raise exceptions.sshutilError(f"Unknown exception occured: {e}")
+            raise exceptions.sshError(f"Unknown exception occured: {e}")
 
     @property
     def sftp(self) -> SFTPClient:
@@ -120,14 +120,12 @@ class Client:
         """
         pid: int = 0
         pidOut: str
-        logging.debug("Executing command: [%s]", cmd)
+        logging.debug("Executing remote command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         if ret != 0:
             if logFile:
                 _, _, err = self._execute(f"cat {logFile}")
-            raise exceptions.sshutilError(
-                f"Error during remote command: [{cmd}]: [{err}]"
-            )
+            raise exceptions.sshError(f"Error during remote command: [{cmd}]: [{err}]")
 
         if pidFile:
             logging.debug("PIDfile: [%s]", pidFile)

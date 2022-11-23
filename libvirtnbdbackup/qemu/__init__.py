@@ -18,6 +18,6 @@
 __title__ = "qemu"
 __version__ = "0.1"
 
-from .run import util
+from .util import util
 
 runcmd = util("").runcmd

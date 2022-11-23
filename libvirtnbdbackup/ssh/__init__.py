@@ -15,7 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__title__ = "sshutil"
+__title__ = "ssh"
 __version__ = "0.1"
 
-from .sshutil import Client, Mode
+from .client import client, Mode
