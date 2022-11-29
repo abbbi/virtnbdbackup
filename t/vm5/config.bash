@@ -2,8 +2,8 @@ QEMU_FILE=${TMPDIR}/convert.full.raw
 CONVERT_FILE=${TMPDIR}/restored.full.raw
 BACKUPSET=${TMPDIR}/testset
 RESTORESET=${TMPDIR}/restoreset
-VM="vm4"
-VM_IMAGE="${VM}/vm4-sda.qcow2"
+VM="vm5"
+VM_IMAGE="${VM}/vm5-sda.qcow2"
 
 
 # following outputs are expected for this vm image

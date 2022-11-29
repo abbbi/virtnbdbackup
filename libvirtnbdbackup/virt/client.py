@@ -580,13 +580,11 @@ class client:
             domObj.backupBegin(backupXml, checkpointXml)
             log.debug("Started backup job via libvirt API.")
         except libvirt.libvirtError as errmsg:
-            raise startBackupFailed(
-                f"Failed to start backup: [{errmsg}]"
-            ) from libvirt.libvirtError
+            raise startBackupFailed(f"Failed to start backup: [{errmsg}]") from errmsg
         except Exception as e:
             raise startBackupFailed(
                 f"Unknown exception during backup start: [{e}]"
-            ) from libvirt.libvirtError
+            ) from e
         finally:
             # check if filesystem is freezed and thaw
             # in case creating checkpoint fails.

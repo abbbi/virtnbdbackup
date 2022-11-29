@@ -12,6 +12,10 @@ vm3.tests: $(bats)
 vm4.tests: $(bats)
 	$(call clean)
 	export TEST=vm4 ; ./bats-core/bin/bats tests.bats
+vm5.tests: $(bats)
+	$(call clean)
+	export TEST=vm5 ; ./bats-core/bin/bats tests.bats
+
 
 all: | $(bats) vm1.tests vm2.tests vm3.tests vm4.tests
 

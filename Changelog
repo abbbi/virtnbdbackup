@@ -1,3 +1,7 @@
+Version 1.9.9
+---------
+ * Fix exception handling/raise in case bitmap already exists. (#85)
+
 Version 1.9.8
 ---------
  * Code cleanup

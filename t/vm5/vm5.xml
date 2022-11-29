@@ -12,7 +12,7 @@
     <partition>/machine</partition>
   </resource>
   <os>
-    <type arch='x86_64' machine='pc-q35-rhel8.2.0'>hvm</type>
+    <type arch='x86_64' machine='pc-q35-2.10'>hvm</type>
     <boot dev='hd'/>
   </os>
   <features>
