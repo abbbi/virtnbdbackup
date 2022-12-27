@@ -1,6 +1,7 @@
 Version 1.9.10
 ---------
-
+ * Fix checkpoint determination if remote backup is executed: attempt to
+ locate checkpoint list only locally, not remotely (#89)
 
 Version 1.9.9
 ---------
