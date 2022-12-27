@@ -1,7 +1,8 @@
 Version 1.9.10
 ---------
- * Fix checkpoint determination if remote backup is executed: attempt to
- locate checkpoint list only locally, not remotely (#89)
+ * Remote incremental backup fails: checkpoint virtnbdbackup.1 already exists:
+ check for checkpoint file only on local system, not on the remote system
+ (#89)
 
 Version 1.9.9
 ---------
