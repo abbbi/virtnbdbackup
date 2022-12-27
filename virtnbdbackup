@@ -176,7 +176,11 @@ def handleCheckpoints(
         checkpoints = []
 
     if checkpoints and args.level in ("inc", "diff"):
-        nextCpt = len(checkpoints)
+        nextCpt: int = 0
+        for string in checkpoints:
+            substrings = string.split(".")
+            val: int = int(substrings[len(substrings)-1])
+            nextCpt = val+1 if val>=nextCpt else nextCpt
         checkpointName = f"{lib.checkpointName}.{nextCpt}"
         parentCheckpoint = checkpoints[-1]
         logging.info("Next checkpoint id: [%s].", nextCpt)
