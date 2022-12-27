@@ -128,7 +128,7 @@ def readCheckpointFile(args: Namespace, cFile: str) -> List[str]:
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints: List[str] = []
-    if not lib.exists(args, cFile):
+    if not lib.os.path.exists(args, cFile):
         return checkpoints
 
     try:
