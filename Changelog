@@ -1,3 +1,7 @@
+Version 1.9.11
+---------
+
+
 Version 1.9.10
 ---------
  * Remote incremental backup fails: checkpoint virtnbdbackup.1 already exists:
