@@ -1,3 +1,9 @@
+Version 1.9.10
+---------
+ * Remote incremental backup fails: checkpoint virtnbdbackup.1 already exists:
+ check for checkpoint file only on local system, not on the remote system
+ (#89)
+
 Version 1.9.9
 ---------
  * Fix exception handling/raise in case bitmap already exists. (#85)
