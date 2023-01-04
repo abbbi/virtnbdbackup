@@ -624,14 +624,14 @@ toOut() {
     [ -z $GITHUB_JOB ] && skip "skip locally"
     run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -v -o  ${TMPDIR}/remotebackup
     echo "output = ${output}"
-    [[ "${output}" =~  "Connecting remote system.*via ssh" ]]
+    [[ "${output}" =~  "Connecting remote system" ]]
     [ "$status" -eq 0 ]
 }
 @test "Backup: test remote backup functionality via localhost to zip file" {
     [ -z $GITHUB_JOB ] && skip "skip locally"
     run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -o - >  ${TMPDIR}/remotebackup.zip
     echo "output = ${output}"
-    [[ "${output}" =~  "Connecting remote system.*via ssh" ]]
+    [[ "${output}" =~  "Connecting remote system" ]]
     [ "$status" -eq 0 ]
 }
 @test "Backup: test remote backup functionality: backup offline vm " {
@@ -641,7 +641,7 @@ toOut() {
     [ "$status" -eq 0 ]
     run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -o ${TMPDIR}/remotebackup-offline
     echo "output = ${output}"
-    [[ "${output}" =~  "Connecting remote system.*via ssh" ]]
+    [[ "${output}" =~  "Connecting remote system" ]]
     [ "$status" -eq 0 ]
     run virsh start $VM
     echo "output = ${output}"
@@ -651,7 +651,7 @@ toOut() {
     [ -z $GITHUB_JOB ] && skip "skip locally"
     run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore --logfile ${TMPDIR}/remoterestore.log
     echo "output = ${output}"
-    [[ "${output}" =~  "Connecting remote system.*via ssh" ]]
+    [[ "${output}" =~  "Connecting remote system" ]]
     [ "$status" -eq 0 ]
 }
 @test "Backup: test estimating backup size" {
