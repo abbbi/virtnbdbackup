@@ -70,6 +70,7 @@ class client:
                 f"AuthenticationException occurred; did you remember to generate an SSH key? {e}"
             )
         except Exception as e:
+            log.exception(e)
             raise exceptions.sshError(f"Unknown exception occured: {e}")
 
     @property
