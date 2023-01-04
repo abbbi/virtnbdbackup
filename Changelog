@@ -1,3 +1,7 @@
+Version 1.9.13
+---------
+
+
 Version 1.9.12
 ---------
  * Rework logging facilities: use local log instance of global logging object
