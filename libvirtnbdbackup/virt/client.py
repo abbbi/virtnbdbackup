@@ -582,6 +582,7 @@ class client:
         except libvirt.libvirtError as errmsg:
             raise startBackupFailed(f"Failed to start backup: [{errmsg}]") from errmsg
         except Exception as e:
+            log.exception(e)
             raise startBackupFailed(
                 f"Unknown exception during backup start: [{e}]"
             ) from e

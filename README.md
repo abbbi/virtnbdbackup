@@ -14,7 +14,7 @@ of your `kvm/qemu` virtual machines.
 - [About](#about)
 - [Prerequisites](#prerequisites)
   - [Libvirt versions <= 7.6.0 (Debian Bullseye, Ubuntu 20.x)](#libvirt-versions--760-debian-bullseye-ubuntu-20x)
-  - [RHEL/Centos Stream, Alma](#rhelcentos-stream-alma)
+  - [RHEL/Centos Stream, Alma, Rocky Linux](#rhelcentos-stream-alma-rocky-linux)
     - [Version <= 8.5](#version--85)
     - [Version >= 8.6](#version--86)
   - [Environment dependencies](#environment-dependencies)
@@ -122,7 +122,7 @@ first line must be changed, too!):
 `Note`:
 > You must restart the virtual machine after enabling the feature!
  
-## RHEL/Centos Stream, Alma
+## RHEL/Centos Stream, Alma, Rocky Linux
 
 ### Version <= 8.5
 

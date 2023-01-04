@@ -144,6 +144,7 @@ def restoreData(
                         lib.isCompressed(meta),
                     )
                 except Exception as e:
+                    logging.exception(e)
                     raise RestoreError from e
                 logging.debug("Wrote: [%s]", written)
             else:
@@ -154,6 +155,7 @@ def restoreData(
                     connection.nbd.pwrite(data, start)
                     written = len(data)
                 except Exception as e:
+                    logging.exception(e)
                     raise RestoreError from e
 
             assert reader.read(len(sTypes.TERM)) == sTypes.TERM

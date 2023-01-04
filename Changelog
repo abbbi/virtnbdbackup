@@ -1,3 +1,7 @@
+Version 1.9.11
+---------
+ * Log traceback for unknown exceptions for easier analysis of issues. (#92)
+
 Version 1.9.10
 ---------
  * Remote incremental backup fails: checkpoint virtnbdbackup.1 already exists:
