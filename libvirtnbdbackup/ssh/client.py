@@ -54,7 +54,11 @@ class client:
 
     def connect(self) -> SSHClient:
         """Connect to remote system"""
-        log.info("Connecting remote system via ssh, username: [%s]", self.user)
+        log.info(
+            "Connecting remote system [%s] via ssh, username: [%s]",
+            self.host,
+            self.user,
+        )
         try:
             cli = SSHClient()
             cli.load_system_host_keys()
