@@ -1,7 +1,7 @@
 Version 1.9.11
 ---------
- * Log unknown exception during ssh session setup for easier analysis
- of issues.
+ * Log unknown exception during ssh session setup for easier analysis of
+ issues. (#92)
 
 Version 1.9.10
 ---------
