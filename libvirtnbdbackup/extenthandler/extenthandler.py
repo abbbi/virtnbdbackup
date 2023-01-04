@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import List, Any, Generator
 from nbd import CONTEXT_BASE_ALLOCATION
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("extenthandler")
 
 
 @dataclass

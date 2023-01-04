@@ -1,3 +1,8 @@
+Version 1.9.12
+---------
+ * Rework logging facilities: use local log instance of global logging object
+ to have saner logging information.
+
 Version 1.9.11
 ---------
  * Log traceback for unknown exceptions for easier analysis of issues. (#92)

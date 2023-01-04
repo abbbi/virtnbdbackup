@@ -28,7 +28,7 @@ from paramiko import (  # pylint: disable=import-error
 from libvirtnbdbackup.ssh import exceptions
 from libvirtnbdbackup.common.processinfo import processInfo
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("ssh")
 
 
 class Mode(Enum):
@@ -100,7 +100,7 @@ class client:
         try:
             self.sftp.get(filepath, localpath)
         except SSHException as e:
-            logging.warning("Error during file copy: [%s]", e)
+            log.warning("Error during file copy: [%s]", e)
 
     def copyTo(self, localpath: str, remotepath: str) -> None:
         """
@@ -110,7 +110,7 @@ class client:
         try:
             self.sftp.put(localpath, remotepath)
         except SSHException as e:
-            logging.warning("Error during file copy: [%s]", e)
+            log.warning("Error during file copy: [%s]", e)
 
     def _execute(self, cmd) -> Tuple[int, str, str]:
         _, stdout, stderr = self.connection.exec_command(cmd)
@@ -125,7 +125,7 @@ class client:
         """
         pid: int = 0
         pidOut: str
-        logging.debug("Executing remote command: [%s]", cmd)
+        log.debug("Executing remote command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         if ret != 0:
             if logFile:
@@ -133,10 +133,10 @@ class client:
             raise exceptions.sshError(f"Error during remote command: [{cmd}]: [{err}]")
 
         if pidFile:
-            logging.debug("PIDfile: [%s]", pidFile)
+            log.debug("PIDfile: [%s]", pidFile)
             _, _, pidOut = self._execute(f"cat {pidFile}")
             pid = int(pidOut)
-            logging.debug("PID: [%s]", pid)
+            log.debug("PID: [%s]", pid)
 
         return processInfo(pid, logFile, err, out)
 

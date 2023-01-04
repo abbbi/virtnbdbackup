@@ -33,10 +33,10 @@ from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup import output
 from libvirtnbdbackup.logcount import logCount
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("lib")
 
 logFormat = (
-    "%(asctime)s %(levelname)s %(module)s - %(funcName)s"
+    "%(asctime)s %(levelname)s %(name)s %(module)s - %(funcName)s"
     " [%(threadName)s]: %(message)s"
 )
 logDateFormat = "[%Y-%m-%d %H:%M:%S]"
@@ -67,7 +67,7 @@ def sshSession(args: Namespace, remoteHost: str) -> Union[ssh.client, None]:
     try:
         return ssh.client(remoteHost, args.ssh_user)
     except sshError as err:
-        logging.warning("Failed to setup SSH connection: [%s]", err)
+        log.warning("Failed to setup SSH connection: [%s]", err)
 
     return None
 
@@ -187,7 +187,7 @@ def progressBar(total: int, desc: str, args: Namespace, count=0) -> tqdm:
 
 def killProc(pid: int) -> bool:
     """Attempt kill PID"""
-    logging.debug("Killing PID: %s", pid)
+    log.debug("Killing PID: %s", pid)
     while True:
         try:
             os.kill(pid, signal.SIGTERM)

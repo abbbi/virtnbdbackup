@@ -57,7 +57,7 @@ def libvirt_ignore(
 
 libvirt.registerErrorHandler(f=libvirt_ignore, ctx=None)
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("virt")
 
 
 class client:
@@ -81,8 +81,8 @@ class client:
                 elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
                     credential[4] = user_data[1]
 
-        logging.debug("Username: %s", user)
-        logging.debug("Password: %s", password)
+        log.debug("Username: %s", user)
+        log.debug("Password: %s", password)
 
         try:
             flags: List[Any] = [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]
@@ -129,9 +129,9 @@ class client:
 
     def _connect(self, args: Namespace) -> libvirt.virConnect:
         """return libvirt connection handle"""
-        logging.debug("Libvirt URI: [%s]", args.uri)
+        log.debug("Libvirt URI: [%s]", args.uri)
         if self._useAuth(args):
-            logging.debug(
+            log.debug(
                 "Login information specified, connect libvirtd using openAuth function."
             )
             if (
@@ -147,7 +147,7 @@ class client:
             else:
                 conn = self._connectOpen(args.uri)
             if gethostname() != conn.getHostname():
-                logging.info(
+                log.info(
                     "Connected to remote host: [%s], local host: [%s]",
                     conn.getHostname(),
                     gethostname(),
@@ -156,7 +156,7 @@ class client:
 
             return conn
 
-        logging.debug("Connect libvirt using open function.")
+        log.debug("Connect libvirt using open function.")
 
         return self._connectOpen(args.uri)
 
@@ -178,7 +178,7 @@ class client:
         try:
             pool = self._conn.storagePoolLookupByTargetPath(path)
         except libvirt.libvirtError:
-            logging.warning(
+            log.warning(
                 "Restore path [%s] seems not to be an libvirt managed pool, skipping refresh.",
                 path,
             )
@@ -186,9 +186,9 @@ class client:
 
         try:
             pool.refresh()
-            logging.info("Refreshed contents of libvirt pool [%s]", pool.name())
+            log.info("Refreshed contents of libvirt pool [%s]", pool.name())
         except libvirt.libvirtError as e:
-            logging.warning("Failed to refresh libvirt pool [%s]: [%s]", pool.name(), e)
+            log.warning("Failed to refresh libvirt pool [%s]: [%s]", pool.name(), e)
 
     @staticmethod
     def blockJobActive(domObj: libvirt.virDomain, disks: List[DomainDisk]) -> bool:
@@ -200,8 +200,8 @@ class client:
                 blockInfo
                 and blockInfo["type"] == libvirt.VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP
             ):
-                logging.debug("Running block jobs for disk [%s]", disk.target)
-                logging.debug(blockInfo)
+                log.debug("Running block jobs for disk [%s]", disk.target)
+                log.debug(blockInfo)
                 return True
         return False
 
@@ -236,9 +236,9 @@ class client:
     def defineDomain(self, vmConfig: bytes) -> bool:
         """Define domain based on restored config"""
         try:
-            logging.info("Redefining domain based on adjusted config.")
+            log.info("Redefining domain based on adjusted config.")
             self._conn.defineXMLFlags(vmConfig.decode(), 0)
-            logging.info("Successfully redefined domain.")
+            log.info("Successfully redefined domain.")
         except libvirt.libvirtError as errmsg:
             log.error("Failed to define domain: [%s]", errmsg)
             return False
@@ -255,24 +255,22 @@ class client:
             try:
                 settings[flag] = tree.find("os").find(flag).text
             except AttributeError as e:
-                logging.debug("No setting [%s] found: %s", flag, e)
+                log.debug("No setting [%s] found: %s", flag, e)
 
-        logging.debug("Domain Info: [%s]", settings)
+        log.debug("Domain Info: [%s]", settings)
         return settings
 
     def adjustDomainConfigRemoveDisk(self, vmConfig: str, excluded) -> bytes:
         """Remove disk from config, in case it has been excluded
         from the backup."""
         tree = self._getTree(vmConfig)
-        logging.info("Removing excluded disk [%s] from vm config.", excluded)
+        log.info("Removing excluded disk [%s] from vm config.", excluded)
         try:
             target = tree.xpath(f"devices/disk/target[@dev='{excluded}']")[0]
             disk = target.getparent()
             disk.getparent().remove(disk)
         except IndexError:
-            logging.warning(
-                "Removing excluded disk from config failed: no object found."
-            )
+            log.warning("Removing excluded disk from config failed: no object found.")
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
@@ -285,7 +283,7 @@ class client:
         tree = self._getTree(vmConfig)
 
         try:
-            logging.info("Removing uuid setting from vm config.")
+            log.info("Removing uuid setting from vm config.")
             uuid = tree.xpath("uuid")[0]
             tree.remove(uuid)
         except IndexError:
@@ -296,17 +294,17 @@ class client:
             domainName = f"restore_{name.text}"
         else:
             domainName = args.name
-        logging.info("Changing name from [%s] to [%s]", name.text, domainName)
+        log.info("Changing name from [%s] to [%s]", name.text, domainName)
         name.text = domainName
 
         for disk in tree.xpath("devices/disk"):
             if disk.get("type") == "volume":
-                logging.info("Disk has type volume, resetting to type file.")
+                log.info("Disk has type volume, resetting to type file.")
                 disk.set("type", "file")
             dev = disk.xpath("target")[0].get("dev")
             originalFile = disk.xpath("source")[0].get("file")
             if dev == restoreDisk.target:
-                logging.info(
+                log.info(
                     "Change target file for disk [%s] from [%s] to [%s]",
                     restoreDisk.target,
                     originalFile,
@@ -316,7 +314,7 @@ class client:
             device = disk.get("device")
             driver = disk.xpath("driver")[0].get("type")
             if device in ("lun", "cdrom", "floppy"):
-                logging.info("Removing [%s] device from vm config", device)
+                log.info("Removing [%s] device from vm config", device)
                 disk.getparent().remove(disk)
                 continue
             if driver == "raw" and args.raw is False:
@@ -328,7 +326,7 @@ class client:
                 continue
             backingStore = disk.xpath("backingStore")
             if backingStore:
-                logging.info("Removing existant backing store settings")
+                log.info("Removing existant backing store settings")
                 disk.remove(backingStore[0])
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
@@ -363,7 +361,7 @@ class client:
             diskPool = self._conn.storagePoolLookupByName(pool)
             diskPath = diskPool.storageVolLookupByName(vol).path()
         except libvirt.libvirtError as errmsg:
-            logging.error("Failed to detect vm disk by volumes: [%s]", errmsg)
+            log.error("Failed to detect vm disk by volumes: [%s]", errmsg)
             return None
 
         return diskPath
@@ -415,17 +413,17 @@ class client:
 
             diskType = disk.get("type")
             if diskType == "volume":
-                logging.debug("Disk config using volume notation")
+                log.debug("Disk config using volume notation")
                 diskPath = self._getDiskPathByVolume(disk)
             elif diskType == "file":
-                logging.debug("Disk config file notation")
+                log.debug("Disk config file notation")
                 diskPath = disk.xpath("source")[0].get("file")
             else:
-                logging.error("Unable to detect disk volume type")
+                log.error("Unable to detect disk volume type")
                 continue
 
             if diskPath is None:
-                logging.error("Unable to detect disk source")
+                log.error("Unable to detect disk source")
                 continue
 
             diskFileName = os.path.basename(diskPath)
@@ -448,7 +446,7 @@ class client:
 
     @staticmethod
     def _indentXml(top: _Element) -> str:
-        """Indent xml output for debug logging"""
+        """Indent xml output for debug log"""
         try:
             ElementTree.indent(top)
         except ElementTree.ParseError as errmsg:
@@ -606,9 +604,7 @@ class client:
         try:
             return cptObj.getXMLDesc(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
         except libvirt.libvirtError as e:
-            logging.warning(
-                "Failed to get checkpoint info with size information: [%s]", e
-            )
+            log.warning("Failed to get checkpoint info with size information: [%s]", e)
             return cptObj.getXMLDesc()
 
     def getCheckpointSize(self, domObj: libvirt.virDomain, checkpointName: str) -> int:

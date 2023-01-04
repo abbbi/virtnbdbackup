@@ -21,7 +21,7 @@ from dataclasses import dataclass
 import nbd
 from libvirtnbdbackup.nbdcli import exceptions
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("nbd")
 
 
 @dataclass
@@ -117,7 +117,7 @@ class client:
         some time until qemu-nbd process is running and reachable. Attempt to
         connect and fail if no connection can be established. In case of unix
         domain socket, wait until socket file is created by qemu-nbd."""
-        logging.info("Waiting until NBD server at [%s] is up.", self.cType.uri)
+        log.info("Waiting until NBD server at [%s] is up.", self.cType.uri)
         retry = 0
         maxRetry = 20
         sleepTime = 1
@@ -129,16 +129,16 @@ class client:
                 )
 
             if self.cType.backupSocket and not os.path.exists(self.cType.backupSocket):
-                logging.info("Waiting for NBD Server, Retry: %s", retry)
+                log.info("Waiting for NBD Server, Retry: %s", retry)
                 retry = retry + 1
 
             connection = self._connect()
             if connection:
-                logging.info("Connection to NBD backend succeeded.")
+                log.info("Connection to NBD backend succeeded.")
                 self.connection = connection
                 return self
 
-            logging.info("Waiting for NBD Server, Retry: %s", retry)
+            log.info("Waiting for NBD Server, Retry: %s", retry)
             retry = retry + 1
 
     def disconnect(self) -> None:
