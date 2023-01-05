@@ -164,7 +164,7 @@ def hasQcowDisks(diskList: List[Any]) -> bool:
     qcow image based disk, else checkpoint handling can be
     skipped and backup modue falls back to type copy"""
     for disk in diskList:
-        if disk.format == "qcow":
+        if disk.format == "qcow2":
             return True
 
     return False
