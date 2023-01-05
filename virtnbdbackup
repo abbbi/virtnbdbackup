@@ -555,7 +555,7 @@ def main() -> None:
 
     if lib.hasQcowDisks(disks) is False:
         args.level = "copy"
-        logging.info("Only raw disks attached, fallback to backup mode copy")
+        logging.info("Only raw disks attached, fallback to backup mode copy.")
 
     if not disks:
         logging.error(
@@ -573,7 +573,7 @@ def main() -> None:
 
     args.info = virtClient.getDomainInfo(vmConfig)
     logging.info(
-        "Domain has [%s] disks attached which support changed block tracking.",
+        "Backup will save [%s] attached disks.",
         len(disks),
     )
     if args.worker is None or args.worker > int(len(disks)):
