@@ -1,6 +1,7 @@
 Version 1.9.13
 ---------
-
+ * Fallback to backup mode copy if virtual machine has only raw disks
+ attached (#94)
 
 Version 1.9.12
 ---------

@@ -552,6 +552,11 @@ def main() -> None:
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks: List[DomainDisk] = virtClient.getDomainDisks(args, vmConfig)
+
+    if lib.hasQcowDisks(disks) is False:
+        args.level = "copy"
+        logging.info("Only raw disks attached, fallback to backup mode copy")
+
     if not disks:
         logging.error(
             "Domain has no disks attached which support changed block tracking."

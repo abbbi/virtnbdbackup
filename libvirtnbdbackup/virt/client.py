@@ -442,6 +442,7 @@ class client:
                 DomainDisk(dev, diskFormat, diskFileName, diskPath, backingStoreFiles)
             )
 
+        log.debug("Device list: %s ", devices)
         return devices
 
     @staticmethod
