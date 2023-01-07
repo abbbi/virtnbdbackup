@@ -1,3 +1,15 @@
+Version 1.9.13
+---------
+ * Fallback to backup mode copy if virtual machine has only raw disks
+ attached (#94)
+ * Some fixes in regard on how attached 'raw' disks are handled:
+  + fail correctly if backup to stdout is attempted
+  + override --raw option during attempted incremental or differential backup:
+  backup modes will only be attempted for disks supporting the required
+  features.
+ * If no disks suitable for backup are detected or backup fails, save at least
+ virtual machine configuration and related kernel/uefi files (#93)
+
 Version 1.9.12
 ---------
  * Rework logging facilities: use local log instance of global logging object

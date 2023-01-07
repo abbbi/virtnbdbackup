@@ -124,7 +124,7 @@ def hasPartial(args: Namespace) -> bool:
     return False
 
 
-def readCheckpointFile(args: Namespace, cFile: str) -> List[str]:
+def readCheckpointFile(cFile: str) -> List[str]:
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints: List[str] = []
@@ -155,7 +155,7 @@ def handleCheckpoints(
     checkpointName: str = f"{lib.checkpointName}.0"
     parentCheckpoint: str = ""
     cptFile: str = f"{args.output}/{args.domain}.cpt"
-    checkpoints: List[str] = readCheckpointFile(args, cptFile)
+    checkpoints: List[str] = readCheckpointFile(cptFile)
 
     if args.offline is False:
         if virtClient.redefineCheckpoints(domObj, args) is False:
@@ -211,7 +211,7 @@ def saveCheckpointFile(args: Namespace) -> None:
     """Append created checkpoint to checkpoint
     file"""
     try:
-        checkpoints = readCheckpointFile(args, args.cpt.file)
+        checkpoints = readCheckpointFile(args.cpt.file)
         checkpoints.append(args.cpt.name)
         with output.openfile(args.cpt.file, "wb") as cFw:
             cFw.write(json.dumps(checkpoints).encode())
@@ -233,7 +233,6 @@ def getFileStream(
         fileStream = repository.Zip()
         args.output = "./"
         args.worker = 1
-        args.raw = False
 
     return fileStream
 
@@ -469,7 +468,6 @@ def main() -> None:
 
     counter = logCount()
     lib.configLogger(args, fileLog, counter)
-
     lib.printVersion(__version__)
 
     logging.info("Backup level: [%s]", args.level)
@@ -477,7 +475,11 @@ def main() -> None:
         logging.info("Compression enabled, level [%s]", args.compress)
 
     if args.stdout is True and args.type == "raw":
-        logging.error("Output type raw not supported to stdout")
+        logging.error("Output type raw not supported to stdout.")
+        sys.exit(1)
+
+    if args.stdout is True and args.raw is True:
+        logging.error("Saving raw images to stdout is not supported.")
         sys.exit(1)
 
     if lib.targetIsEmpty(args) and args.level == "auto":
@@ -497,15 +499,16 @@ def main() -> None:
             logging.error("Target directory already contains full or copy backup.")
             sys.exit(1)
 
-    if args.raw and args.level in ("inc", "diff"):
-        logging.error(
+    if args.raw is True and args.level in ("inc", "diff"):
+        logging.warning(
             "Raw disks cant be included during incremental or differential backup."
         )
-        sys.exit(1)
+        logging.warning("Excluding raw disks.")
+        args.raw = False
 
     if args.type == "raw" and args.level in ("inc", "diff"):
         logging.error(
-            "Backup format raw does not support incremental or differential backup."
+            "Stream format raw does not support incremental or differential backup."
         )
         sys.exit(1)
 
@@ -552,10 +555,15 @@ def main() -> None:
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks: List[DomainDisk] = virtClient.getDomainDisks(args, vmConfig)
+    args.info = virtClient.getDomainInfo(vmConfig)
+
+    if args.level != "copy" and lib.hasQcowDisks(disks) is False:
+        args.level = "copy"
+        logging.info("Only raw disks attached, switching to backup mode copy.")
+
     if not disks:
-        logging.error(
-            "Domain has no disks attached which support changed block tracking."
-        )
+        logging.error("Unable to detect disks suitable for backup.")
+        saveFiles(args, vmConfig, disks, fileStream, logFile)
         sys.exit(1)
     if (
         not args.killonly
@@ -566,9 +574,8 @@ def main() -> None:
         logging.error("Check with [virsh domjobinfo %s]", args.domain)
         sys.exit(1)
 
-    args.info = virtClient.getDomainInfo(vmConfig)
     logging.info(
-        "Domain has [%s] disks attached which support changed block tracking.",
+        "Backup will save [%s] attached disks.",
         len(disks),
     )
     if args.worker is None or args.worker > int(len(disks)):
@@ -665,22 +672,14 @@ def main() -> None:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
+    saveFiles(args, vmConfig, disks, fileStream, logFile)
+
     if counter.count.errors > 0:
         logging.error("Error during backup")
         sys.exit(1)
 
-    configFile = backupConfig(args, vmConfig)
-
-    backupBootConfig(args)
-    for disk in disks:
-        if disk.format.startswith("qcow"):
-            backupDiskInfo(args, disk)
-
     if args.sshClient:
         args.sshClient.disconnect()
-
-    if args.stdout is True:
-        addFiles(args, configFile, fileStream, logFile)
 
     if counter.count.warnings > 0 and args.strict is True:
         logging.info(
@@ -690,6 +689,25 @@ def main() -> None:
         sys.exit(2)
 
     logging.info("Finished successfully")
+
+
+def saveFiles(
+    args: Namespace,
+    vmConfig: str,
+    disks: List[DomainDisk],
+    fileStream: Union[output.target.Directory, output.target.Zip],
+    logFile: str,
+):
+    """Save additional files such as virtual machine configuration
+    and UEFI / kernel images"""
+    configFile = backupConfig(args, vmConfig)
+
+    backupBootConfig(args)
+    for disk in disks:
+        if disk.format.startswith("qcow"):
+            backupDiskInfo(args, disk)
+    if args.stdout is True:
+        addFiles(args, configFile, fileStream, logFile)
 
 
 def addFiles(args: Namespace, configFile: Union[str, None], zipStream, logFile: str):
@@ -723,7 +741,10 @@ def getIdent(args: Namespace) -> Union[str, int]:
     """Used to get an uniqe identifier for target files,
     usually checkpoint name is used, but if no checkpoint
     is created, we use timestamp"""
-    ident = args.cpt.name
+    try:
+        ident = args.cpt.name
+    except AttributeError:
+        ident = int(time())
     if args.level == "diff":
         ident = int(time())
     if args.level == "copy":
@@ -765,18 +786,18 @@ def backupDiskInfo(args: Namespace, disk: DomainDisk):
         ProcessError,
         sshError,
     ) as errmsg:
-        logging.warning("Failed to read QCOW image info: [%s]", errmsg)
+        logging.warning("Failed to read qcow image info: [%s]", errmsg)
         return
 
     configFile = f"{args.output}/{disk.target}.{getIdent(args)}.qcow.json"
     try:
         with output.openfile(configFile, "wb") as fh:
             fh.write(info.out.encode())
-        logging.info("Saved QCOW image config to: [%s]", configFile)
+        logging.info("Saved qcow image config to: [%s]", configFile)
         if args.stdout is True:
             args.diskInfo.append(configFile)
     except OutputException as e:
-        logging.warning("Failed to save QCOW image config: [%s]", e)
+        logging.warning("Failed to save qcow image config: [%s]", e)
 
 
 def setMetaContext(args: Namespace, disk: DomainDisk) -> str:

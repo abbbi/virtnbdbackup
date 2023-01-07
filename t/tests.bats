@@ -332,7 +332,7 @@ toOut() {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/inctest
     echo "output = ${output}"
-    [[ "${output}" =~  "Saved QCOW image config" ]]
+    [[ "${output}" =~  "Saved qcow image config" ]]
     [ "$status" -eq 0 ]
     [ -e "${TMPDIR}/inctest/sda.virtnbdbackup.0.qcow.json" ]
     [ -e "${TMPDIR}/inctest/sda.full.data" ]
@@ -379,7 +379,7 @@ toOut() {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/inctest
     echo "output = ${output}"
-    [[ "${output}" =~  "Saved QCOW image config" ]]
+    [[ "${output}" =~  "Saved qcow image config" ]]
     [ -e "${TMPDIR}/inctest/sda.virtnbdbackup.1.qcow.json" ]
     [ "$status" -eq 0 ]
 }

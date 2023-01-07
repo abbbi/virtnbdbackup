@@ -159,6 +159,17 @@ def getLatest(targetDir: str, search: str, key=None) -> List[str]:
         return []
 
 
+def hasQcowDisks(diskList: List[Any]) -> bool:
+    """Check if the list of attached disks includes at least one
+    qcow image based disk, else checkpoint handling can be
+    skipped and backup modue falls back to type copy"""
+    for disk in diskList:
+        if disk.format.startswith("qcow"):
+            return True
+
+    return False
+
+
 def copy(args: Namespace, source: str, target: str) -> None:
     """Copy file, handle exceptions"""
     try:

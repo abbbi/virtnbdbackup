@@ -28,6 +28,8 @@ jobs:
         mypy --ignore-missing virtnbdmap
     - name: Set up ssh access to localhost
       run: |
+        sudo hostname -f
+        sudo hostname
         sudo ssh-keygen -f /root/.ssh/id_rsa -N ""
         sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /root/.ssh/authorized_keys
         sudo ssh-keyscan -H localhost | sudo tee -a /root/.ssh/known_hosts
