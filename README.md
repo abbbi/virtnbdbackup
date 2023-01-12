@@ -478,7 +478,7 @@ See also: [Authentication](#authentication)
 
 By default disk data received from a remote system will be transferred via
 regular NBD protocol. You can enable TLS for this connection, using the `--tls`
-option. Before beeing able to use TLS, you *must* configure the required
+option. Before being able to use TLS, you *must* configure the required
 certificates on both sides.
 
 See the following documentation by the libvirt project for detailed
