@@ -1,3 +1,9 @@
+Version 1.9.14
+---------
+ * Adjust log messages during disk parsing.
+ * Ignore direct attached block devices which use disk type notation (#98)
+
+
 Version 1.9.13
 ---------
  * Fallback to backup mode copy if virtual machine has only raw disks

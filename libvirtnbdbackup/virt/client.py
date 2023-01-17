@@ -381,20 +381,21 @@ class client:
             dev = disk.xpath("target")[0].get("dev")
 
             if excludeList is not None and dev in excludeList:
-                log.warning("Excluding Disks %s from backup as requested", dev)
+                log.warning("Excluding disk [%s] from backup as requested", dev)
                 continue
 
             # ignore attached lun or direct access block devices
             if disk.xpath("target")[0].get("type") == "block":
                 log.warning(
-                    "Ignoring device %s does not support changed block tracking.", dev
+                    "Device [%s] does not support changed block tracking, skipping.",
+                    dev,
                 )
                 continue
 
             device = disk.get("device")
             if device == "lun":
                 log.warning(
-                    "Skipping direct attached lun [%s]: does not support changed block tracking.",
+                    "Skipping direct attached lun [%s].",
                     dev,
                 )
                 continue
@@ -413,17 +414,23 @@ class client:
 
             diskType = disk.get("type")
             if diskType == "volume":
-                log.debug("Disk config using volume notation")
+                log.debug("Disk [%s]: volume notation", dev)
                 diskPath = self._getDiskPathByVolume(disk)
             elif diskType == "file":
-                log.debug("Disk config file notation")
+                log.debug("Disk [%s]: file notation")
                 diskPath = disk.xpath("source")[0].get("file")
+            elif diskType == "block":
+                log.warning(
+                    "Skipping direct attached block device [%s].",
+                    dev,
+                )
+                continue
             else:
-                log.error("Unable to detect disk volume type")
+                log.error("Unable to detect disk volume type for disk [%s]", dev)
                 continue
 
             if diskPath is None:
-                log.error("Unable to detect disk source")
+                log.error("Unable to detect disk source for disk [%s]", dev)
                 continue
 
             diskFileName = os.path.basename(diskPath)

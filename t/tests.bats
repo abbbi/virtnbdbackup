@@ -153,7 +153,7 @@ setup() {
     run ../virtnbdbackup -l copy -x sdb -d $VM -o "${BACKUPSET}_exclude"
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Excluding Disks sdb" ]]
+    [[ "$output" =~ "Excluding disk [sdb]" ]]
     [ ! -e "${BACKUPSET}_exclude/sdb.copy.data" ]
 }
 @test "Backup in stream format"  {
