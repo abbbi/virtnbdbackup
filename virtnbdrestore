@@ -680,6 +680,10 @@ def main() -> None:
         ConfigFile = ConfigFiles[0]
         logging.info("Using latest config file: [%s]", ConfigFile)
 
+        autoStart = False
+        if lib.getLatest(args.input, "autostart.*", -1):
+            autoStart = True
+
         restConfig: bytes = b""
         try:
             if args.sequence is not None:
@@ -694,7 +698,7 @@ def main() -> None:
         restoreConfig(args, ConfigFile, restConfig)
         virtClient.refreshPool(args.output)
         if args.define is True:
-            if not virtClient.defineDomain(restConfig):
+            if not virtClient.defineDomain(restConfig, autoStart):
                 sys.exit(1)
 
 

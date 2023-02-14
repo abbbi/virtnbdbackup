@@ -1,8 +1,12 @@
+Version 1.9.15
+---------
+ * Add install_requires to setup.py
+ * Backup and restore autostart setting for domain if set. (#106)
+
 Version 1.9.14
 ---------
  * Adjust log messages during disk parsing.
  * Ignore direct attached block devices which use disk type notation (#98)
-
 
 Version 1.9.13
 ---------

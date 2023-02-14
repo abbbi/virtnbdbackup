@@ -674,6 +674,9 @@ def main() -> None:
 
     saveFiles(args, vmConfig, disks, fileStream, logFile)
 
+    if domObj.autostart() == 1:
+        backupAutoStart(args, domObj)
+
     if counter.count.errors > 0:
         logging.error("Error during backup")
         sys.exit(1)
@@ -754,7 +757,7 @@ def getIdent(args: Namespace) -> Union[str, int]:
 
 
 def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
-    """Save domain config file"""
+    """Save domain XML config file"""
     configFile = f"{args.output}/vmconfig.{getIdent(args)}.xml"
     logging.info("Saving VM config to: [%s]", configFile)
     try:
@@ -762,8 +765,20 @@ def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
             fh.write(vmConfig.encode())
         return configFile
     except OutputException as e:
-        logging.error("Error saving VM config: [%s]", e)
+        logging.error("Failed to save VM config: [%s]", e)
         return None
+
+
+def backupAutoStart(args: Namespace, domObj: virDomain) -> None:
+    """Save information wether if virtual machine was marked
+    for autostart during system boot"""
+    logging.info("Autostart setting configured for virtual machine.")
+    autoStartFile = f"{args.output}/autostart.{getIdent(args)}"
+    try:
+        with output.openfile(autoStartFile, "wb") as fh:
+            fh.write(b"True")
+    except OutputException as e:
+        logging.warning("Failed to save autostart information: [%s]", e)
 
 
 def backupBootConfig(args: Namespace) -> None:

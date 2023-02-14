@@ -233,15 +233,27 @@ class client:
         """Return Virtual Machine configuration as XML"""
         return domObj.XMLDesc(0)
 
-    def defineDomain(self, vmConfig: bytes) -> bool:
+    @staticmethod
+    def domainAutoStart(domObj: libvirt.virDomain) -> None:
+        """Mark virtual machine for autostart"""
+        try:
+            domObj.setAutostart(1)
+            log.info("Setting autostart config for domain.")
+        except libvirt.libvirtError as errmsg:
+            log.warning("Failed to set autostart flag for domain: [%s]", errmsg)
+
+    def defineDomain(self, vmConfig: bytes, autoStart: bool) -> bool:
         """Define domain based on restored config"""
         try:
             log.info("Redefining domain based on adjusted config.")
-            self._conn.defineXMLFlags(vmConfig.decode(), 0)
-            log.info("Successfully redefined domain.")
+            domObj = self._conn.defineXMLFlags(vmConfig.decode(), 0)
+            log.info("Successfully redefined domain [%s]", domObj.name())
         except libvirt.libvirtError as errmsg:
             log.error("Failed to define domain: [%s]", errmsg)
             return False
+
+        if autoStart is True:
+            self.domainAutoStart(domObj)
 
         return True
 
