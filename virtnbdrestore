@@ -189,7 +189,7 @@ def restoreSequence(
 
     result: bool = False
 
-    sourceFile = f"{args.input}/{dataFiles[0]}"
+    sourceFile = f"{args.input}/{dataFiles[-1]}"
     meta = getHeader(sourceFile, stream)
     if not meta:
         return result
@@ -283,10 +283,11 @@ def getQcowConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
 def createDiskFile(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
     """Create target image file"""
     logging.info(
-        "Create virtual disk [%s] format: [%s] size: [%s]",
+        "Create virtual disk [%s] format: [%s] size: [%s] using disk information from: [%s]",
         targetFile,
         meta["diskFormat"],
         meta["virtualSize"],
+        meta["checkpointName"],
     )
 
     options = getQcowConfig(args, meta)
@@ -448,7 +449,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
             )
             raise RestoreError("Failed to locate backup.")
 
-        meta = getHeader(restoreDisk[0], stream)
+        meta = getHeader(restoreDisk[-1], stream)
 
         try:
             createDiskFile(args, meta, targetFile, args.sshClient)
