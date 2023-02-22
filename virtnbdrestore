@@ -283,7 +283,7 @@ def getQcowConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
 def createDiskFile(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
     """Create target image file"""
     logging.info(
-        "Create virtual disk [%s] format: [%s] size: [%s] using disk information from: [%s]",
+        "Create virtual disk [%s] format: [%s] size: [%s] based on: [%s]",
         targetFile,
         meta["diskFormat"],
         meta["virtualSize"],

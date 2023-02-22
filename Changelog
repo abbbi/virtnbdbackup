@@ -1,5 +1,8 @@
 Version 1.9.16
-
+---------
+ * virtnbdrestore: use disk size from the latest backup during restore: this
+ should handle situations where disk size has changed between full and
+ incremental or differential backups (#109)
 
 Version 1.9.15
 ---------
