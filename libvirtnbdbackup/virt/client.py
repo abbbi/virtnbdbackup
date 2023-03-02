@@ -313,16 +313,10 @@ class client:
             if disk.get("type") == "volume":
                 log.info("Disk has type volume, resetting to type file.")
                 disk.set("type", "file")
+
             dev = disk.xpath("target")[0].get("dev")
-            originalFile = disk.xpath("source")[0].get("file")
-            if dev == restoreDisk.target:
-                log.info(
-                    "Change target file for disk [%s] from [%s] to [%s]",
-                    restoreDisk.target,
-                    originalFile,
-                    targetFile,
-                )
-                disk.xpath("source")[0].set("file", targetFile)
+            log.debug("Handling target device: [%s]", dev)
+
             device = disk.get("device")
             driver = disk.xpath("driver")[0].get("type")
             if device in ("lun", "cdrom", "floppy"):
@@ -340,6 +334,16 @@ class client:
             if backingStore:
                 log.info("Removing existant backing store settings")
                 disk.remove(backingStore[0])
+
+            originalFile = disk.xpath("source")[0].get("file")
+            if dev == restoreDisk.target:
+                log.info(
+                    "Change target file for disk [%s] from [%s] to [%s]",
+                    restoreDisk.target,
+                    originalFile,
+                    targetFile,
+                )
+                disk.xpath("source")[0].set("file", targetFile)
 
         return ElementTree.tostring(tree, encoding="utf8", method="xml")
 
