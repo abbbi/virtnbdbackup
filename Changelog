@@ -1,3 +1,8 @@
+Version 1.9.17
+---------
+ * virtnbdrestore: fix restore fails with IndexError if CDROM or LUN devices
+ appear in the list of devices before the first disk. (#110).
+
 Version 1.9.16
 ---------
  * virtnbdrestore: use disk size from the latest backup during restore: handle
