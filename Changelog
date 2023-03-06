@@ -1,3 +1,10 @@
+Version 1.9.18
+---------
+ * virtnbdbackup: treat direct attached lun and block devices just like
+ regular raw disks: backup will work but only in backup mode copy and
+ of course full provisioned backup of these block devices is created
+ if option `--raw` is enabled. (#111)
+
 Version 1.9.17
 ---------
  * virtnbdrestore: fix restore fails with IndexError if CDROM or LUN devices

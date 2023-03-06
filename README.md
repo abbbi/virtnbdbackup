@@ -278,13 +278,22 @@ with qcow(v3) based disk images. If you are using older image versions, you can
 only create `copy` backups, or consider converting the images to a newer
 format using `qemu-img`.
 
-By default `virtnbdbackup` will exclude all disks with format `raw`. This
-behavior can be changed if option  `--raw` is specified, raw disks will then be
-included during a `full` backup. This of course means that no thin provisioned
-backup is created for these particular disks.
+By default `virtnbdbackup` will exclude all disks with format `raw` aswell
+as direct attached (passthrough) disks such as LVM or ZVOL and ISCSI
+volumes. These type of disks do not support storing checkpoint/bitmap
+metadata.
+
+This behavior can be changed if option `--raw` is specified, raw disks will
+then be included during a `full` backup.  This of course means that no thin
+provisioned backup is created for these particular disks.
 
 During restore, these files can be copied "as is" from the backup folder and
 must not be processed using `virtnbdrestore`.
+
+`Note:`
+> The backup data for raw disks will only be crash consistant, be aware
+> that this might result in inconsistent filesystems after restoring!
+
 
 # Backup Examples
 

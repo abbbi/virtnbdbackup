@@ -31,6 +31,7 @@ from libvirtnbdbackup.virt.exceptions import (
     connectionFailed,
     startBackupFailed,
 )
+from libvirtnbdbackup.virt.fs import freeze, thaw
 from libvirtnbdbackup import output
 from libvirtnbdbackup.output.exceptions import OutputException
 
@@ -319,13 +320,15 @@ class client:
 
             device = disk.get("device")
             driver = disk.xpath("driver")[0].get("type")
-            if device in ("lun", "cdrom", "floppy"):
-                log.info("Removing [%s] device from vm config", device)
+
+            if self._isOptical(device, dev):
+                log.info("Removing device [%s], type [%s] from vm config", dev, device)
                 disk.getparent().remove(disk)
                 continue
-            if driver == "raw" and args.raw is False:
+
+            if self._isRaw(args, driver, device):
                 log.warning(
-                    "Removing raw disk [%s] from vm config.",
+                    "Removing raw disk [%s] from vm config, use --raw to copy as is.",
                     dev,
                 )
                 disk.getparent().remove(disk)
@@ -382,6 +385,51 @@ class client:
 
         return diskPath
 
+    @staticmethod
+    def _isOptical(device: list, dev: str) -> bool:
+        """Check if device is cdrom or floppy"""
+        if device in ("cdrom", "floppy"):
+            log.info("Skipping attached [%s] device: [%s].", device, dev)
+            return True
+
+        return False
+
+    @staticmethod
+    def _isLun(args: Namespace, device: list, dev: str) -> bool:
+        """Check if device is direct attached LUN"""
+        if device == "lun" and args.raw is False:
+            log.warning(
+                "Skipping direct attached lun [%s], use option --raw to include",
+                dev,
+            )
+            return True
+
+        return False
+
+    @staticmethod
+    def _isBlock(args, disk: _Element, dev: str) -> bool:
+        """Check if device is direct attached block type device"""
+        if disk.xpath("target")[0].get("type") == "block" and args.raw is False:
+            log.warning(
+                "Block device [%s] excluded by default, use option --raw to include.",
+                dev,
+            )
+            return True
+
+        return False
+
+    @staticmethod
+    def _isRaw(args, diskFormat: str, dev: str) -> bool:
+        """Check if disk has RAW disk format"""
+        if diskFormat == "raw" and args.raw is False:
+            log.warning(
+                "Raw disk [%s] excluded by default, use option --raw to include.",
+                dev,
+            )
+            return True
+
+        return False
+
     def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
@@ -395,52 +443,38 @@ class client:
 
         for disk in tree.xpath("devices/disk"):
             dev = disk.xpath("target")[0].get("dev")
+            device = disk.get("device")
+            diskFormat = disk.xpath("driver")[0].get("type")
 
             if excludeList is not None and dev in excludeList:
                 log.warning("Excluding disk [%s] from backup as requested", dev)
                 continue
 
-            # ignore attached lun or direct access block devices
-            if disk.xpath("target")[0].get("type") == "block":
-                log.warning(
-                    "Device [%s] does not support changed block tracking, skipping.",
-                    dev,
-                )
+            if self._isBlock(args, disk, dev):
+                continue
+            if self._isLun(args, device, dev):
+                continue
+            if self._isOptical(device, dev):
+                continue
+            if self._isRaw(args, diskFormat, dev):
                 continue
 
-            device = disk.get("device")
-            if device == "lun":
-                log.warning(
-                    "Skipping direct attached lun [%s].",
-                    dev,
-                )
-                continue
-            if device in ("cdrom", "floppy"):
-                log.info("Skipping attached [%s] device: [%s].", device, dev)
-                continue
-
-            # ignore disk which use raw format, they do not support CBT
-            diskFormat = disk.xpath("driver")[0].get("type")
-            if diskFormat == "raw" and args.raw is False:
-                log.warning(
-                    "Raw disk [%s] excluded by default, use option --raw to include.",
-                    dev,
-                )
-                continue
-
+            diskPath = None
             diskType = disk.get("type")
             if diskType == "volume":
                 log.debug("Disk [%s]: volume notation", dev)
                 diskPath = self._getDiskPathByVolume(disk)
             elif diskType == "file":
-                log.debug("Disk [%s]: file notation")
+                log.debug("Disk [%s]: file notation", dev)
                 diskPath = disk.xpath("source")[0].get("file")
             elif diskType == "block":
-                log.warning(
-                    "Skipping direct attached block device [%s].",
-                    dev,
-                )
-                continue
+                if args.raw is False:
+                    log.warning(
+                        "Skipping direct attached block device [%s], use option --raw to include.",
+                        dev,
+                    )
+                    continue
+                diskPath = disk.xpath("source")[0].get("dev")
             else:
                 log.error("Unable to detect disk volume type for disk [%s]", dev)
                 continue
@@ -544,40 +578,18 @@ class client:
             # because it is not supported. Backup will only be crash
             # consistent. If we would like to create a consistent
             # backup, we would have to create an snapshot for these
-            # kind of disks.
+            # kind of disks, example:
+            # virsh checkpoint-create-as vm4 --diskspec sdb
+            # error: unsupported configuration:  \
+            # checkpoint for disk sdb unsupported for storage type raw
+            # See also:
+            # https://lists.gnu.org/archive/html/qemu-devel/2021-03/msg07448.html
             if disk.format != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.target})
 
         xml = self._indentXml(top)
 
         return xml
-
-    @staticmethod
-    def fsFreeze(domObj: libvirt.virDomain, mountpoints: None) -> bool:
-        """Attempt to freeze domain filesystems using qemu guest agent"""
-        log.debug("Attempting to freeze filesystems.")
-        try:
-            if mountpoints is not None:
-                frozen = domObj.fsFreeze(mountpoints.split(","))
-            else:
-                frozen = domObj.fsFreeze()
-            log.info("Freezed [%s] filesystems.", frozen)
-            return True
-        except libvirt.libvirtError as errmsg:
-            log.warning(errmsg)
-            return False
-
-    @staticmethod
-    def fsThaw(domObj: libvirt.virDomain) -> bool:
-        """Thaw freeze filesystems"""
-        log.debug("Attempting to thaw filesystems.")
-        try:
-            thawed = domObj.fsThaw()
-            log.info("Thawed [%s] filesystems.", thawed)
-            return True
-        except libvirt.libvirtError as errmsg:
-            log.warning(errmsg)
-            return False
 
     def startBackup(
         self,
@@ -596,7 +608,7 @@ class client:
             checkpointXml = self._createCheckpointXml(
                 diskList, args.cpt.parent, args.cpt.name
             )
-        freezed = self.fsFreeze(domObj, args.freeze_mountpoint)
+        freezed = freeze(domObj, args.freeze_mountpoint)
         try:
             log.debug("Starting backup job via libvirt API.")
             domObj.backupBegin(backupXml, checkpointXml)
@@ -612,7 +624,7 @@ class client:
             # check if filesystem is freezed and thaw
             # in case creating checkpoint fails.
             if freezed is True:
-                self.fsThaw(domObj)
+                thaw(domObj)
 
     @staticmethod
     def _checkpointExists(
