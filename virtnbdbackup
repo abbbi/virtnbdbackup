@@ -36,6 +36,7 @@ from libvirtnbdbackup import extenthandler
 from libvirtnbdbackup import qemu
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.virt import checkpoint
 from libvirtnbdbackup import output
 from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.common.processinfo import processInfo
@@ -72,14 +73,13 @@ def handleSignal(
 
 def checkForeign(
     args: Namespace,
-    virtClient: virt.client,
     domObj: virDomain,
 ) -> bool:
     """Check and warn user if virtual machine has checkpoints
     not originating from this utility"""
     foreign = None
     if args.level in ("full", "inc", "diff"):
-        foreign = virtClient.hasforeignCheckpoint(domObj, lib.checkpointName)
+        foreign = checkpoint.hasForeign(domObj, lib.checkpointName)
 
     if not foreign:
         return True
@@ -143,7 +143,6 @@ def readCheckpointFile(cFile: str) -> List[str]:
 
 def handleCheckpoints(
     args: Namespace,
-    virtClient: virt.client,
     domObj: virDomain,
 ) -> None:
     """Checkpoint handling for different backup modes
@@ -158,20 +157,18 @@ def handleCheckpoints(
     checkpoints: List[str] = readCheckpointFile(cptFile)
 
     if args.offline is False:
-        if virtClient.redefineCheckpoints(domObj, args) is False:
+        if checkpoint.redefine(domObj, args) is False:
             raise exceptions.RedefineCheckpointError("Failed to redefine checkpoints.")
 
     logging.info("Checkpoint handling.")
     if args.level == "full" and checkpoints:
         logging.info("Removing all existent checkpoints before full backup.")
-        if not virtClient.removeAllCheckpoints(
-            domObj, checkpoints, args, lib.checkpointName
-        ):
+        if not checkpoint.removeAll(domObj, checkpoints, args, lib.checkpointName):
             raise exceptions.RemoveCheckpointError("Failed to remove checkpoint.")
         os.remove(cptFile)
         checkpoints = []
     elif args.level == "full" and len(checkpoints) < 1:
-        if not virtClient.removeAllCheckpoints(domObj, None, args, lib.checkpointName):
+        if not checkpoint.removeAll(domObj, None, args, lib.checkpointName):
             raise exceptions.RemoveCheckpointError("Failed to remove checkpoint.")
         checkpoints = []
 
@@ -539,7 +536,7 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        checkForeign(args, virtClient, domObj)
+        checkForeign(args, domObj)
     except exceptions.CheckpointException:
         sys.exit(1)
 
@@ -589,18 +586,18 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        handleCheckpoints(args, virtClient, domObj)
+        handleCheckpoints(args, domObj)
     except exceptions.CheckpointException as errmsg:
         logging.error(errmsg)
         sys.exit(1)
 
     if args.printonly and args.cpt.parent and not args.offline:
-        size = virtClient.getCheckpointSize(domObj, args.cpt.parent)
+        size = checkpoint.getSize(domObj, args.cpt.parent)
         logging.info("Estimated checkpoint backup size: [%s] Bytes", size)
         sys.exit(0)
 
     if args.threshold and args.cpt.parent and not args.offline:
-        size = virtClient.getCheckpointSize(domObj, args.cpt.parent)
+        size = checkpoint.getSize(domObj, args.cpt.parent)
         if size < args.threshold:
             logging.info(
                 "Backup size [%s] does not meet required threshold [%s], skipping backup.",
@@ -641,7 +638,7 @@ def main() -> None:
         except exceptions.CheckpointException as e:
             logging.error("Extending checkpoint file failed: [%s]", e)
             sys.exit(1)
-        if not virtClient.backupCheckpoint(args, domObj):
+        if not checkpoint.backup(args, domObj):
             virtClient.stopBackup(domObj)
             sys.exit(1)
 
@@ -675,7 +672,7 @@ def main() -> None:
     saveFiles(args, vmConfig, disks, fileStream, logFile)
 
     if domObj.autostart() == 1:
-        backupAutoStart(args, domObj)
+        backupAutoStart(args)
 
     if counter.count.errors > 0:
         logging.error("Error during backup")
@@ -769,7 +766,7 @@ def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
         return None
 
 
-def backupAutoStart(args: Namespace, domObj: virDomain) -> None:
+def backupAutoStart(args: Namespace) -> None:
     """Save information wether if virtual machine was marked
     for autostart during system boot"""
     logging.info("Autostart setting configured for virtual machine.")

@@ -17,12 +17,11 @@
 import os
 import string
 import random
-import glob
 import logging
 from dataclasses import dataclass
 from socket import gethostname
 from argparse import Namespace
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Tuple, Union
 from lxml.etree import _Element
 from lxml import etree as ElementTree
 import libvirt
@@ -31,9 +30,9 @@ from libvirtnbdbackup.virt.exceptions import (
     connectionFailed,
     startBackupFailed,
 )
-from libvirtnbdbackup.virt.fs import freeze, thaw
-from libvirtnbdbackup import output
-from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.virt import fs
+from libvirtnbdbackup.virt import xml
+from libvirtnbdbackup.virt import disktype
 
 
 @dataclass
@@ -161,11 +160,6 @@ class client:
 
         return self._connectOpen(args.uri)
 
-    @staticmethod
-    def _getTree(vmConfig: str) -> _Element:
-        """Return Etree element for vm config"""
-        return ElementTree.fromstring(vmConfig)
-
     def getDomain(self, name: str) -> libvirt.virDomain:
         """Lookup domain"""
         try:
@@ -217,7 +211,7 @@ class client:
         if self.libvirtVersion >= 7006000:
             return True
 
-        tree = self._getTree(domObj.XMLDesc(0))
+        tree = xml.asTree(domObj.XMLDesc(0))
         for target in tree.findall(
             "{http://libvirt.org/schemas/domain/qemu/1.0}capabilities"
         ):
@@ -261,7 +255,7 @@ class client:
     def getDomainInfo(self, vmConfig: str) -> Dict[str, str]:
         """Return object with general vm information relevant
         for backup"""
-        tree = self._getTree(vmConfig)
+        tree = xml.asTree(vmConfig)
         settings = {}
 
         for flag in ["loader", "nvram", "kernel", "initrd"]:
@@ -276,7 +270,7 @@ class client:
     def adjustDomainConfigRemoveDisk(self, vmConfig: str, excluded) -> bytes:
         """Remove disk from config, in case it has been excluded
         from the backup."""
-        tree = self._getTree(vmConfig)
+        tree = xml.asTree(vmConfig)
         log.info("Removing excluded disk [%s] from vm config.", excluded)
         try:
             target = tree.xpath(f"devices/disk/target[@dev='{excluded}']")[0]
@@ -293,7 +287,7 @@ class client:
         """Adjust virtual machine configuration after restoring. Changes
         the pathes to the virtual machine disks and attempts to remove
         components excluded during restore."""
-        tree = self._getTree(vmConfig)
+        tree = xml.asTree(vmConfig)
 
         try:
             log.info("Removing uuid setting from vm config.")
@@ -321,12 +315,12 @@ class client:
             device = disk.get("device")
             driver = disk.xpath("driver")[0].get("type")
 
-            if self._isOptical(device, dev):
+            if disktype.Optical(device, dev):
                 log.info("Removing device [%s], type [%s] from vm config", dev, device)
                 disk.getparent().remove(disk)
                 continue
 
-            if self._isRaw(args, driver, device):
+            if disktype.Raw(driver, device):
                 log.warning(
                     "Removing raw disk [%s] from vm config, use --raw to copy as is.",
                     dev,
@@ -385,56 +379,11 @@ class client:
 
         return diskPath
 
-    @staticmethod
-    def _isOptical(device: list, dev: str) -> bool:
-        """Check if device is cdrom or floppy"""
-        if device in ("cdrom", "floppy"):
-            log.info("Skipping attached [%s] device: [%s].", device, dev)
-            return True
-
-        return False
-
-    @staticmethod
-    def _isLun(args: Namespace, device: list, dev: str) -> bool:
-        """Check if device is direct attached LUN"""
-        if device == "lun" and args.raw is False:
-            log.warning(
-                "Skipping direct attached lun [%s], use option --raw to include",
-                dev,
-            )
-            return True
-
-        return False
-
-    @staticmethod
-    def _isBlock(args, disk: _Element, dev: str) -> bool:
-        """Check if device is direct attached block type device"""
-        if disk.xpath("target")[0].get("type") == "block" and args.raw is False:
-            log.warning(
-                "Block device [%s] excluded by default, use option --raw to include.",
-                dev,
-            )
-            return True
-
-        return False
-
-    @staticmethod
-    def _isRaw(args, diskFormat: str, dev: str) -> bool:
-        """Check if disk has RAW disk format"""
-        if diskFormat == "raw" and args.raw is False:
-            log.warning(
-                "Raw disk [%s] excluded by default, use option --raw to include.",
-                dev,
-            )
-            return True
-
-        return False
-
     def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
         all non supported devices
         """
-        tree = self._getTree(vmConfig)
+        tree = xml.asTree(vmConfig)
         devices = []
 
         excludeList = None
@@ -450,13 +399,16 @@ class client:
                 log.warning("Excluding disk [%s] from backup as requested", dev)
                 continue
 
-            if self._isBlock(args, disk, dev):
+            # skip cdrom/floppy devices
+            if disktype.Optical(device, dev):
                 continue
-            if self._isLun(args, device, dev):
-                continue
-            if self._isOptical(device, dev):
-                continue
-            if self._isRaw(args, diskFormat, dev):
+
+            # include other direct attached devices if --raw option is enabled
+            if args.raw is False and (
+                disktype.Block(disk, dev)
+                or disktype.Lun(device, dev)
+                or disktype.Raw(diskFormat, dev)
+            ):
                 continue
 
             diskPath = None
@@ -502,24 +454,6 @@ class client:
         log.debug("Device list: %s ", devices)
         return devices
 
-    @staticmethod
-    def _indentXml(top: _Element) -> str:
-        """Indent xml output for debug log"""
-        try:
-            ElementTree.indent(top)
-        except ElementTree.ParseError as errmsg:
-            log.debug("Failed to parse xml: [%s]", errmsg)
-        except AttributeError:
-            # older ElementTree verisons dont have the
-            # indent method, skip silently and use
-            # non formatted string
-            pass
-
-        xml = ElementTree.tostring(top).decode()
-        log.debug("\n%s", xml)
-
-        return xml
-
     def _createBackupXml(self, args: Namespace, diskList) -> str:
         """Create XML file for starting an backup task using libvirt API."""
         top = ElementTree.Element("domainbackup", {"mode": "pull"})
@@ -555,9 +489,7 @@ class client:
             dE = ElementTree.SubElement(disks, "disk", {"name": disk.target})
             ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
 
-        xml = self._indentXml(top)
-
-        return xml
+        return xml.indent(top)
 
     def _createCheckpointXml(
         self, diskList: List[Any], parentCheckpoint: str, checkpointName: str
@@ -587,9 +519,7 @@ class client:
             if disk.format != "raw":
                 ElementTree.SubElement(disks, "disk", {"name": disk.target})
 
-        xml = self._indentXml(top)
-
-        return xml
+        return xml.indent(top)
 
     def startBackup(
         self,
@@ -608,7 +538,7 @@ class client:
             checkpointXml = self._createCheckpointXml(
                 diskList, args.cpt.parent, args.cpt.name
             )
-        freezed = freeze(domObj, args.freeze_mountpoint)
+        freezed = fs.freeze(domObj, args.freeze_mountpoint)
         try:
             log.debug("Starting backup job via libvirt API.")
             domObj.backupBegin(backupXml, checkpointXml)
@@ -624,91 +554,7 @@ class client:
             # check if filesystem is freezed and thaw
             # in case creating checkpoint fails.
             if freezed is True:
-                thaw(domObj)
-
-    @staticmethod
-    def _checkpointExists(
-        domObj: libvirt.virDomain, checkpointName: str
-    ) -> libvirt.virDomainCheckpoint:
-        """Check if an checkpoint exists"""
-        return domObj.checkpointLookupByName(checkpointName)
-
-    @staticmethod
-    def _getCheckpointXml(cptObj: libvirt.virDomainCheckpoint) -> str:
-        """Get Checkpoint XML including size, if possible. Flag
-        is not supported amongst all libvirt versions."""
-        try:
-            return cptObj.getXMLDesc(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
-        except libvirt.libvirtError as e:
-            log.warning("Failed to get checkpoint info with size information: [%s]", e)
-            return cptObj.getXMLDesc()
-
-    def getCheckpointSize(self, domObj: libvirt.virDomain, checkpointName: str) -> int:
-        """Return current size of checkpoint for all disks"""
-        size = 0
-        cpt = self._checkpointExists(domObj, checkpointName)
-        cptTree = self._getTree(self._getCheckpointXml(cpt))
-        for s in cptTree.xpath("disks/disk/@size"):
-            size += int(s)
-
-        return size
-
-    def removeAllCheckpoints(
-        self,
-        domObj: libvirt.virDomain,
-        checkpointList: Union[List[Any], None],
-        args: Namespace,
-        defaultCheckpointName: str,
-    ) -> bool:
-        """Remove all existing checkpoints for a virtual machine,
-        used during FULL backup to reset checkpoint chain
-        """
-        log.debug("Cleaning up persistent storage %s", args.checkpointdir)
-        try:
-            for checkpointFile in glob.glob(f"{args.checkpointdir}/*.xml"):
-                log.debug("Remove checkpoint file: %s", checkpointFile)
-                os.remove(checkpointFile)
-        except OSError as e:
-            log.error(
-                "Failed to clean persistent storage %s: %s", args.checkpointdir, e
-            )
-            return False
-
-        if checkpointList is None:
-            cpts = domObj.listAllCheckpoints()
-            if cpts:
-                for cpt in cpts:
-                    if self._deleteCheckpoint(cpt, defaultCheckpointName) is False:
-                        return False
-            return True
-
-        for checkpoint in checkpointList:
-            cptObj = self._checkpointExists(domObj, checkpoint)
-            if cptObj:
-                if self._deleteCheckpoint(cptObj, defaultCheckpointName) is False:
-                    return False
-        return True
-
-    @staticmethod
-    def _deleteCheckpoint(
-        cptObj: libvirt.virDomainCheckpoint, defaultCheckpointName: str
-    ) -> bool:
-        """Delete checkpoint"""
-        checkpointName = cptObj.getName()
-        if defaultCheckpointName not in checkpointName:
-            log.debug(
-                "Skipping checkpoint removal: [%s]: not from this application",
-                checkpointName,
-            )
-            return True
-        log.debug("Attempt to remove checkpoint: [%s]", checkpointName)
-        try:
-            cptObj.delete()
-            log.debug("Removed checkpoint: [%s]", checkpointName)
-            return True
-        except libvirt.libvirtError as errmsg:
-            log.error("Error during checkpoint removal: [%s]", errmsg)
-            return False
+                fs.thaw(domObj)
 
     @staticmethod
     def stopBackup(domObj: libvirt.virDomain) -> bool:
@@ -719,92 +565,3 @@ class client:
         except libvirt.libvirtError as err:
             log.warning("Failed to stop backup job: [%s]", err)
             return False
-
-    def redefineCheckpoints(self, domObj: libvirt.virDomain, args: Namespace) -> bool:
-        """Redefine checkpoints from persistent storage"""
-        log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
-        checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
-        checkpointList.sort(key=os.path.getmtime)
-
-        for checkpointFile in checkpointList:
-            log.debug("Loading checkpoint config from: [%s]", checkpointFile)
-            try:
-                with output.openfile(checkpointFile, "rb") as f:
-                    checkpointConfig = f.read()
-                    root = ElementTree.fromstring(checkpointConfig)
-            except OutputException as e:
-                log.error("Opening checkpoint file failed: [%s]: %s", checkpointFile, e)
-                return False
-            except ElementTree.ParseError as e:
-                log.error(
-                    "Failed to load checkpoint config from [%s]: %s", checkpointFile, e
-                )
-                return False
-
-            try:
-                checkpointName = root.find("name").text
-            except ElementTree.ParseError as e:
-                log.error("Failed to find checkpoint name: [%s]", e)
-                return False
-
-            try:
-                _ = self._checkpointExists(domObj, checkpointName)
-                log.debug("Checkpoint [%s] found", checkpointName)
-                continue
-            except libvirt.libvirtError as e:
-                # ignore VIR_ERR_NO_DOMAIN_CHECKPOINT, report other errors
-                if e.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
-                    log.error("libvirt error: %s", e)
-                    return False
-
-            log.info("Redefine missing checkpoint: [%s]", checkpointName)
-            try:
-                domObj.checkpointCreateXML(
-                    checkpointConfig.decode(),
-                    libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE,
-                )
-            except libvirt.libvirtError as e:
-                log.error("Redefining checkpoint failed: [%s]: %s", checkpointName, e)
-                return False
-
-        return True
-
-    def backupCheckpoint(self, args: Namespace, domObj: libvirt.virDomain) -> bool:
-        """save checkpoint config to persistent storage"""
-        checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
-        log.info("Saving checkpoint config to: [%s]", checkpointFile)
-        try:
-            with output.openfile(checkpointFile, "wb") as f:
-                c = self._checkpointExists(domObj, args.cpt.name)
-                f.write(self._getCheckpointXml(c).encode())
-                return True
-        except OutputException as errmsg:
-            log.error(
-                "Failed to save checkpoint config to file: [%s]: %s",
-                checkpointFile,
-                errmsg,
-            )
-            return False
-
-    @staticmethod
-    def hasforeignCheckpoint(
-        domObj: libvirt.virDomain, defaultCheckpointName: str
-    ) -> Optional[str]:
-        """Check if the virtual machine has an checkpoint which was not
-        created by virtnbdbackup
-
-        If an user or a third party utility creates an checkpoint,
-        it is in line with the complete checkpoint chain, but
-        virtnbdbackup does not save it. We can ensure consistency
-        only if the complete chain of checkpoints is created by
-        ourself. In case we detect an checkpoint that does not
-        match our name, return so.
-        """
-        cpts = domObj.listAllCheckpoints()
-        if cpts:
-            for cpt in cpts:
-                checkpointName = cpt.getName()
-                log.debug("Found foreign checkpoint: [%s]", checkpointName)
-                if defaultCheckpointName not in checkpointName:
-                    return checkpointName
-        return None

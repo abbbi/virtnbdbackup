@@ -1,3 +1,7 @@
+Version 1.9.19
+---------
+ * Code cleanup: move some functions to seperate files.
+
 Version 1.9.18
 ---------
  * virtnbdbackup: treat direct attached lun and block devices just like
