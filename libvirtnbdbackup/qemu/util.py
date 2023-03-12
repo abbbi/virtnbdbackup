@@ -19,15 +19,13 @@ import json
 import logging
 import tempfile
 import subprocess
-from typing import List, Tuple, Union
+from typing import List
 from argparse import Namespace
 
-from libvirtnbdbackup.qemu.exceptions import (
-    ProcessError,
-)
 from libvirtnbdbackup.ssh.exceptions import sshError
-from libvirtnbdbackup.output import openfile
 from libvirtnbdbackup.common.processinfo import processInfo
+from libvirtnbdbackup.qemu import command
+from libvirtnbdbackup.virt.client import DomainDisk
 
 log = logging.getLogger(__name__)
 
@@ -57,8 +55,8 @@ class util:
 
         return json.loads(extentMap.stdout)
 
+    @staticmethod
     def create(
-        self,
         targetFile: str,
         fileSize: int,
         diskFormat: str,
@@ -80,7 +78,7 @@ class util:
             cmd = cmd + qcowOptions
 
         if not sshClient:
-            return self.runcmd(cmd)
+            return command.run(cmd)
 
         return sshClient.run(" ".join(cmd))
 
@@ -88,7 +86,7 @@ class util:
         """Return qemu image information"""
         cmd = ["qemu-img", "info", f"{targetFile}", "--output", "json", "--force-share"]
         if not sshClient:
-            return self.runcmd(cmd, toPipe=True)
+            return command.run(cmd, toPipe=True)
 
         return sshClient.run(" ".join(cmd))
 
@@ -105,7 +103,7 @@ class util:
             f"{socketFile}",
             "--fork",
         ]
-        return self.runcmd(cmd)
+        return command.run(cmd)
 
     @staticmethod
     def _gt(prefix: str, suffix: str, delete: bool = False) -> str:
@@ -183,7 +181,7 @@ class util:
             "-t",
             f"{args.threads}",
         ]
-        return self.runcmd(cmd, pidFile=pidFile)
+        return command.run(cmd, pidFile=pidFile)
 
     def startBackupNbdServer(
         self, diskFormat: str, diskFile: str, socketFile: str, bitMap: str
@@ -210,10 +208,10 @@ class util:
             f"--pid-file={pidFile}",
             bitmapOpt,
         ]
-        return self.runcmd(cmd, pidFile=pidFile)
+        return command.run(cmd, pidFile=pidFile)
 
     def startRemoteBackupNbdServer(
-        self, args: Namespace, diskFormat: str, targetFile: str, bitMap: str, port: int
+        self, args: Namespace, disk: DomainDisk, bitMap: str, port: int
     ) -> processInfo:
         """Start nbd server process remotely over ssh for restore operation"""
         pidFile = self._gt("qemu-nbd-backup", ".pid")
@@ -221,10 +219,10 @@ class util:
         cmd = [
             "qemu-nbd",
             "-r",
-            f"--format={diskFormat}",
+            f"--format={disk.format}",
             "-x",
             f"{self.exportName}",
-            f"{targetFile}",
+            f"{disk.path}",
             "-p",
             f"{port}",
             "--pid-file",
@@ -251,68 +249,4 @@ class util:
         """Disconnect device"""
         logging.info("Disconnecting device [%s]", device)
         cmd = ["qemu-nbd", "-d", f"{device}"]
-        return self.runcmd(cmd)
-
-    @staticmethod
-    def _readlog(logFile: str, cmd: str) -> str:
-        try:
-            with openfile(logFile, "rb") as fh:
-                return fh.read().decode().strip()
-        except Exception as errmsg:
-            logging.exception(errmsg)
-            raise ProcessError(
-                f"Failed to execute [{cmd}]: Unable to get error message: {errmsg}"
-            ) from errmsg
-
-    @staticmethod
-    def _readpipe(p) -> Tuple[str, str]:
-        out = p.stdout.read().decode().strip()
-        err = p.stderr.read().decode().strip()
-        return out, err
-
-    def runcmd(
-        self, cmdLine: List[str], pidFile: str = "", toPipe: bool = False
-    ) -> processInfo:
-        """Execute passed command"""
-        logFileName: str = ""
-        logFile: Union[int, tempfile._TemporaryFileWrapper]
-        if toPipe is True:
-            logFile = subprocess.PIPE
-        else:
-            # pylint: disable=consider-using-with
-            logFile = tempfile.NamedTemporaryFile(
-                delete=False, prefix=cmdLine[0], suffix=".log"
-            )
-            logFileName = logFile.name
-
-        log.debug("CMD: %s", " ".join(cmdLine))
-        with subprocess.Popen(
-            cmdLine,
-            close_fds=True,
-            stderr=logFile,
-            stdout=logFile,
-        ) as p:
-            p.wait()
-            log.debug("Return code: %s", p.returncode)
-            err: str = ""
-            out: str = ""
-            if p.returncode != 0:
-                log.error("CMD: %s", " ".join(cmdLine))
-                log.debug("Read error messages from logfile")
-                if toPipe is True:
-                    out, err = self._readpipe(p)
-                else:
-                    err = self._readlog(logFileName, cmdLine[0])
-                raise ProcessError(f"Unable to start [{cmdLine[0]}] error: [{err}]")
-
-            if toPipe is True:
-                out, err = self._readpipe(p)
-
-            if pidFile != "":
-                realPid = int(self._readlog(pidFile, ""))
-            else:
-                realPid = p.pid
-
-            process = processInfo(realPid, logFileName, err, out)
-            log.debug("Started [%s] process: [%s]", cmdLine[0], process)
-        return process
+        return command.run(cmd)

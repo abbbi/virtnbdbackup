@@ -18,6 +18,10 @@ jobs:
         black --check virtnbdrestore
         black --check virtnbdmap
         black --check virtnbd-nbdkit-plugin
+    - name: Python lint test
+      run: |
+        sudo pip3 install pylint==2.14.5
+        pylint libvirtnbdbackup
     - name: Python typing tests
       run: |
         sudo pip3 install mypy

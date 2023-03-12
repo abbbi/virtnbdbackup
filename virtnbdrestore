@@ -28,7 +28,7 @@ from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
-from libvirtnbdbackup import qemu
+from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import output
 from libvirtnbdbackup.common import common as lib
 from libvirtnbdbackup.logcount import logCount
@@ -208,7 +208,7 @@ def restoreSequence(
         connection = startNbd(args, diskName, targetFile, virtClient)
     except ProcessError as errmsg:
         logging.error(errmsg)
-        raise RestoreError("Failed to start NBD server.")
+        raise RestoreError("Failed to start NBD server.") from errmsg
 
     for disk in dataFiles:
         sourceFile = f"{args.input}/{disk}"
@@ -460,7 +460,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
             connection = startNbd(args, meta["diskName"], targetFile, virtClient)
         except ProcessError as errmsg:
             logging.error(errmsg)
-            raise RestoreError("Failed to start NBD server.")
+            raise RestoreError("Failed to start NBD server.") from errmsg
 
         for dataFile in restoreDisk:
             try:

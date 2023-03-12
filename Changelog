@@ -1,3 +1,9 @@
+Version 1.9.20
+---------
+ * More code cleanup and reorg
+ * Module directory is now pylint clean (except for some ignores): run pylint
+  using github actions.
+
 Version 1.9.19
 ---------
  * Code cleanup: move some functions to seperate files.

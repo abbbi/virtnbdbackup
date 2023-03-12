@@ -30,7 +30,8 @@ import logging
 from typing import List, Tuple, Dict, IO
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
-from libvirtnbdbackup import qemu
+from libvirtnbdbackup.qemu import util as qemu
+from libvirtnbdbackup.qemu import command
 from libvirtnbdbackup.qemu.exceptions import ProcessError, QemuHelperError
 from libvirtnbdbackup import output
 from libvirtnbdbackup.output.exceptions import OutputException
@@ -346,7 +347,7 @@ def main() -> None:
     logging.debug(nbdCmd)
     while True:
         try:
-            qemu.runcmd(cmdLine=nbdCmd, toPipe=True)
+            qemu.command.run(cmdLine=nbdCmd, toPipe=True)
             break
         except ProcessError as e:
             if retryCnt >= maxRetry:

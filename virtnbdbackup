@@ -33,7 +33,7 @@ from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import extenthandler
-from libvirtnbdbackup import qemu
+from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt import checkpoint
@@ -910,7 +910,7 @@ def startOfflineNBD(
             port,
         )
         nbdProc = qemu.util(disk.target).startRemoteBackupNbdServer(
-            args, disk.format, disk.path, bitMap, port
+            args, disk, bitMap, port
         )
         logging.info("Remote NDB server started, PID: [%s].", nbdProc.pid)
         return nbdProc
