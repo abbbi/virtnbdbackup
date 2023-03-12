@@ -77,10 +77,10 @@ class client:
         self.nbd = nbd.NBD()
         self.connection = None
 
-        self._printVersion()
+        self.printVersion()
 
     @staticmethod
-    def _printVersion() -> None:
+    def printVersion() -> None:
         """Log libnbd, so it is included within the backup logfiles,
         to know which components are involved."""
         log.info("libnbd version: %s", nbd.__version__)
