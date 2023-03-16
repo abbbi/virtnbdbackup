@@ -23,9 +23,9 @@ import logging.handlers
 import signal
 import shutil
 import pprint
+from time import time
 from argparse import Namespace
-from typing import Optional, Generator, List, Any, Tuple, IO, Union, Dict
-import lz4.frame
+from typing import Optional, List, Any, Union, Dict
 from tqdm import tqdm
 
 from libvirtnbdbackup import ssh
@@ -40,7 +40,7 @@ logFormat = (
     " [%(threadName)s]: %(message)s"
 )
 logDateFormat = "[%Y-%m-%d %H:%M:%S]"
-checkpointName = "virtnbdbackup"
+defaultCheckpointName = "virtnbdbackup"
 
 
 def argparse(parser) -> Namespace:
@@ -207,6 +207,22 @@ def killProc(pid: int) -> bool:
             return True
 
 
+def getIdent(args: Namespace) -> Union[str, int]:
+    """Used to get an uniqe identifier for target files,
+    usually checkpoint name is used, but if no checkpoint
+    is created, we use timestamp"""
+    try:
+        ident = args.cpt.name
+    except AttributeError:
+        ident = int(time())
+    if args.level == "diff":
+        ident = int(time())
+    if args.level == "copy":
+        ident = "copy"
+
+    return ident
+
+
 def dumpExtentJson(extents) -> str:
     """Dump extent object as json"""
     extList = []
@@ -227,30 +243,6 @@ def dumpMetaData(dataFile: str, stream):
         return stream.loadMetadata(reader.read(length))
 
 
-def blockStep(offset: int, length: int, maxRequestSize: int) -> Generator:
-    """Process block and ensure to not exceed the maximum request size
-    from NBD server.
-
-    If length parameter is dict, compression was enabled during
-    backup, thus we cannot use the offsets and sizes for the
-    original data, but must use the compressed offsets and sizes
-    to read the correct lz4 frames from the stream.
-    """
-    blockOffset = offset
-    if isinstance(length, dict):
-        blockOffset = offset
-        compressOffset = list(length.keys())[0]
-        for step in length[compressOffset]:
-            blockOffset += step
-            yield step, blockOffset
-    else:
-        blockOffset = offset
-        while blockOffset < offset + length:
-            blocklen = min(offset + length - blockOffset, maxRequestSize)
-            yield blocklen, blockOffset
-            blockOffset += blocklen
-
-
 def isCompressed(meta: Dict[str, str]) -> bool:
     """Return true if stream is compressed"""
     try:
@@ -263,111 +255,3 @@ def isCompressed(meta: Dict[str, str]) -> bool:
             return True
 
     return False
-
-
-def lz4DecompressFrame(data: bytes) -> bytes:
-    """Decompress lz4 frame, print frame information"""
-    frameInfo = lz4.frame.get_frame_info(data)
-    log.debug("Compressed Frame: %s", frameInfo)
-    return lz4.frame.decompress(data)
-
-
-def lz4CompressFrame(data: bytes, level: int) -> bytes:
-    """Compress block with to lz4 frame, checksums
-    enabled for safety
-    """
-    return lz4.frame.compress(
-        data,
-        content_checksum=True,
-        block_checksum=True,
-        compression_level=level,
-    )
-
-
-def writeChunk(
-    writer: IO[Any], block, nbdCon, btype, compress
-) -> Tuple[int, List[int]]:
-    """During extent processing, consecutive blocks with
-    the same type(data or zeroed) are unified into one big chunk.
-    This helps to reduce requests to the NBD Server.
-
-    But in cases where the block to be saved exceeds the maximum
-    recommended request size (nbdClient.maxRequestSize), we
-    need to split one big request into multiple not exceeding
-    the limit
-
-    If compression is enabled, function returns a list of
-    offsets for the compressed frames, which is appended
-    to the end of the stream.
-    """
-    wSize = 0
-    cSizes = []
-    for blocklen, blockOffset in blockStep(
-        block.offset, block.length, nbdCon.maxRequestSize
-    ):
-        if btype == "raw":
-            writer.seek(blockOffset)
-
-        data = nbdCon.nbd.pread(blocklen, blockOffset)
-
-        if compress is not False and btype != "raw":
-            compressed = lz4CompressFrame(data, compress)
-            wSize += writer.write(compressed)
-            cSizes.append(len(compressed))
-        else:
-            wSize += writer.write(data)
-
-    return wSize, cSizes
-
-
-def writeBlock(writer: IO[Any], block, nbdCon, btype: str, compress: bool) -> int:
-    """Write single block that does not exceed nbd maxRequestSize
-    setting. In case compression is enabled, single blocks are
-    compressed using lz4.block.
-    """
-    if btype == "raw":
-        writer.seek(block.offset)
-    data = nbdCon.nbd.pread(block.length, block.offset)
-
-    if compress is not False and btype != "raw":
-        data = lz4CompressFrame(data, compress)
-
-    return writer.write(data)
-
-
-def readChunk(
-    reader: IO[Any],
-    offset: int,
-    length: int,
-    nbdCon,
-    compression: int,
-) -> int:
-    """Read data from reader and write to nbd connection
-
-    If Compression is enabled function receives length information
-    as dict, which contains the stream offsets for the compressed
-    lz4 frames.
-
-    Frames are read from the stream at the compressed size information
-    (offset in the stream).
-
-    After decompression, data is written back to original offset
-    in the virtual machine disk image.
-
-    If no compression is enabled, data is read from the regular
-    data header at its position and written to nbd target
-    directly.
-    """
-    wSize = 0
-    for blocklen, blockOffset in blockStep(offset, length, nbdCon.maxRequestSize):
-        if compression is True:
-            data = lz4DecompressFrame(reader.read(blocklen))
-            nbdCon.nbd.pwrite(data, offset)
-            offset += len(data)
-            wSize += len(data)
-        else:
-            data = reader.read(blocklen)
-            nbdCon.nbd.pwrite(data, blockOffset)
-            wSize += len(data)
-
-    return wSize

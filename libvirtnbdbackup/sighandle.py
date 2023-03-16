@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,25 +15,24 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import logging
+import sys
+from argparse import Namespace
+from typing import Any
+from libvirt import virDomain
+from libvirtnbdbackup import virt
 
 
-class logCount(logging.Handler):
-    """Custom log handler keeping track of issued log messages"""
-
-    class LogType:
-        """Log message type"""
-
-        def __init__(self) -> None:
-            self.warnings = 0
-            self.errors = 0
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.count = self.LogType()
-
-    def emit(self, record: logging.LogRecord) -> None:
-        if record.levelname == "WARNING":
-            self.count.warnings += 1
-        if record.levelname in ("ERROR", "FATAL", "CRITICAL"):
-            self.count.errors += 1
+def catch(
+    args: Namespace,
+    domObj: virDomain,
+    virtClient: virt.client,
+    log: Any,
+    signum: int,
+    _,
+) -> None:
+    """Catch signal, attempt to stop running backup job."""
+    log.error("Caught signal: %s", signum)
+    log.error("Cleanup: Stopping backup job")
+    if args.offline is not True:
+        virtClient.stopBackup(domObj)
+    sys.exit(1)

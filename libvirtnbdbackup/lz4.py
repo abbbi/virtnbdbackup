@@ -1,6 +1,5 @@
-#!/usr/bin/python3
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,24 +15,25 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+import lz4.frame
+
+log = logging.getLogger()
 
 
-class logCount(logging.Handler):
-    """Custom log handler keeping track of issued log messages"""
+def decompressFrame(data: bytes) -> bytes:
+    """Decompress lz4 frame, print frame information"""
+    frameInfo = lz4.frame.get_frame_info(data)
+    log.debug("Compressed Frame: %s", frameInfo)
+    return lz4.frame.decompress(data)
 
-    class LogType:
-        """Log message type"""
 
-        def __init__(self) -> None:
-            self.warnings = 0
-            self.errors = 0
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.count = self.LogType()
-
-    def emit(self, record: logging.LogRecord) -> None:
-        if record.levelname == "WARNING":
-            self.count.warnings += 1
-        if record.levelname in ("ERROR", "FATAL", "CRITICAL"):
-            self.count.errors += 1
+def compressFrame(data: bytes, level: int) -> bytes:
+    """Compress block with to lz4 frame, checksums
+    enabled for safety
+    """
+    return lz4.frame.compress(
+        data,
+        content_checksum=True,
+        block_checksum=True,
+        compression_level=level,
+    )

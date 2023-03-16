@@ -16,6 +16,7 @@
 """
 import os
 import glob
+import json
 import logging
 from argparse import Namespace
 from typing import Optional, Union, Any, List
@@ -24,6 +25,16 @@ import libvirt
 from libvirtnbdbackup import output
 from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.common.common import defaultCheckpointName
+from libvirtnbdbackup.exceptions import (
+    NoCheckpointsFound,
+    ReadCheckpointsError,
+    CheckpointException,
+    SaveCheckpointError,
+    ForeignCeckpointError,
+    RedefineCheckpointError,
+    RemoveCheckpointError,
+)
 
 log = logging.getLogger()
 
@@ -56,7 +67,7 @@ def getSize(domObj: libvirt.virDomain, checkpointName: str) -> int:
     return size
 
 
-def delete(cptObj: libvirt.virDomainCheckpoint, defaultCheckpointName: str) -> bool:
+def delete(cptObj: libvirt.virDomainCheckpoint, checkpointName: str) -> bool:
     """Delete checkpoint"""
     checkpointName = cptObj.getName()
     if defaultCheckpointName not in checkpointName:
@@ -93,7 +104,7 @@ def backup(args: Namespace, domObj: libvirt.virDomain) -> bool:
         return False
 
 
-def hasForeign(domObj: libvirt.virDomain, defaultCheckpointName: str) -> Optional[str]:
+def _hasForeign(domObj: libvirt.virDomain, checkpointName: str) -> Optional[str]:
     """Check if the virtual machine has an checkpoint which was not
     created by virtnbdbackup
 
@@ -114,11 +125,35 @@ def hasForeign(domObj: libvirt.virDomain, defaultCheckpointName: str) -> Optiona
     return None
 
 
+def checkForeign(
+    args: Namespace,
+    domObj: libvirt.virDomain,
+) -> bool:
+    """Check and warn user if virtual machine has checkpoints
+    not originating from this utility"""
+    foreign = None
+    if args.level in ("full", "inc", "diff"):
+        foreign = _hasForeign(domObj, defaultCheckpointName)
+
+    if not foreign:
+        return True
+
+    log.fatal("Foreign checkpoint found: [%s]", foreign)
+    log.fatal("This checkpoint has not been created by this utility.")
+    log.fatal(
+        "To ensure backup chain consistency, "
+        "remove existing checkpoints "
+        "and start a new backup chain by creating a full backup."
+    )
+
+    raise ForeignCeckpointError
+
+
 def removeAll(
     domObj: libvirt.virDomain,
     checkpointList: Union[List[Any], None],
     args: Namespace,
-    defaultCheckpointName: str,
+    checkpointName: str,
 ) -> bool:
     """Remove all existing checkpoints for a virtual machine,
     used during FULL backup to reset checkpoint chain
@@ -136,14 +171,14 @@ def removeAll(
         cpts = domObj.listAllCheckpoints()
         if cpts:
             for cpt in cpts:
-                if delete(cpt, defaultCheckpointName) is False:
+                if delete(cpt, checkpointName) is False:
                     return False
         return True
 
     for cp in checkpointList:
         cptObj = exists(domObj, cp)
         if cptObj:
-            if delete(cptObj, defaultCheckpointName) is False:
+            if delete(cptObj, checkpointName) is False:
                 return False
     return True
 
@@ -196,3 +231,96 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
             return False
 
     return True
+
+
+def read(cFile: str) -> List[str]:
+    """Open checkpoint file and read checkpoint
+    information"""
+    checkpoints: List[str] = []
+    if not os.path.exists(cFile):
+        return checkpoints
+
+    try:
+        with output.openfile(cFile, "rb") as fh:
+            checkpoints = json.loads(fh.read().decode())
+        return checkpoints
+    except OutputException as e:
+        raise ReadCheckpointsError(f"Failed to read checkpoint file: [{e}]") from e
+    except json.decoder.JSONDecodeError as e:
+        raise ReadCheckpointsError(f"Invalid checkpoint file: [{e}]") from e
+
+
+def save(args: Namespace) -> None:
+    """Append created checkpoint to checkpoint
+    file"""
+    try:
+        checkpoints = read(args.cpt.file)
+        checkpoints.append(args.cpt.name)
+        with output.openfile(args.cpt.file, "wb") as cFw:
+            cFw.write(json.dumps(checkpoints).encode())
+    except CheckpointException as e:
+        raise CheckpointException from e
+    except OutputException as e:
+        raise SaveCheckpointError from e
+
+
+def create(
+    args: Namespace,
+    domObj: libvirt.virDomain,
+) -> None:
+    """Checkpoint handling for different backup modes
+    to be executed. Create, check and redefine checkpoints based
+    on backup mode.
+
+    Creates a new namespace in the argparse object,
+    for easy pass around in further functions.
+    """
+    checkpointName: str = f"{defaultCheckpointName}.0"
+    parentCheckpoint: str = ""
+    cptFile: str = f"{args.output}/{args.domain}.cpt"
+    checkpoints: List[str] = read(cptFile)
+
+    if args.offline is False:
+        if redefine(domObj, args) is False:
+            raise RedefineCheckpointError("Failed to redefine checkpoints.")
+
+    log.info("Checkpoint handling.")
+    if args.level == "full" and checkpoints:
+        log.info("Removing all existent checkpoints before full backup.")
+        if not removeAll(domObj, checkpoints, args, defaultCheckpointName):
+            raise RemoveCheckpointError("Failed to remove checkpoint.")
+        os.remove(cptFile)
+        checkpoints = []
+    elif args.level == "full" and len(checkpoints) < 1:
+        if not removeAll(domObj, None, args, defaultCheckpointName):
+            raise RemoveCheckpointError("Failed to remove checkpoint.")
+        checkpoints = []
+
+    if checkpoints and args.level in ("inc", "diff"):
+        nextCpt = len(checkpoints)
+        checkpointName = f"{defaultCheckpointName}.{nextCpt}"
+        parentCheckpoint = checkpoints[-1]
+        log.info("Next checkpoint id: [%s].", nextCpt)
+        log.info("Parent checkpoint name [%s].", parentCheckpoint)
+
+        if args.offline is True:
+            log.info("Offline backup, using latest checkpoint, saving only delta.")
+            checkpointName = parentCheckpoint
+
+    if args.level == "diff":
+        log.info("Diff backup: saving delta since checkpoint: [%s].", parentCheckpoint)
+
+    if args.level in ("inc", "diff") and len(checkpoints) < 1:
+        raise NoCheckpointsFound(
+            "No existing checkpoints found, execute full backup first."
+        )
+
+    if args.level in ("full", "inc"):
+        log.info("Using checkpoint name: [%s].", checkpointName)
+
+    args.cpt = Namespace()
+    args.cpt.name = checkpointName
+    args.cpt.parent = parentCheckpoint
+    args.cpt.file = cptFile
+
+    log.debug("Checkpoint info: [%s].", vars(args.cpt))

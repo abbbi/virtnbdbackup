@@ -148,7 +148,7 @@ class util:
         try:
             return args.sshClient.run(" ".join(cmd), pidFile, logFile)
         except sshError:
-            logging.error("Executing command failed: check [%s] for errors.", logFile)
+            log.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
     def startNbdkitProcess(
@@ -242,11 +242,11 @@ class util:
         try:
             return args.sshClient.run(" ".join(cmd), pidFile, logFile)
         except sshError:
-            logging.error("Executing command failed: check [%s] for errors.", logFile)
+            log.error("Executing command failed: check [%s] for errors.", logFile)
             raise
 
     def disconnect(self, device: str) -> processInfo:
         """Disconnect device"""
-        logging.info("Disconnecting device [%s]", device)
+        log.info("Disconnecting device [%s]", device)
         cmd = ["qemu-nbd", "-d", f"{device}"]
         return command.run(cmd)

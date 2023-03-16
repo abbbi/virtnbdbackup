@@ -34,7 +34,7 @@ def _readlog(logFile: str, cmd: str) -> str:
         with openfile(logFile, "rb") as fh:
             return fh.read().decode().strip()
     except Exception as errmsg:
-        logging.exception(errmsg)
+        log.exception(errmsg)
         raise ProcessError(
             f"Failed to execute [{cmd}]: Unable to get error message: {errmsg}"
         ) from errmsg

@@ -17,18 +17,17 @@
 """
 import os
 import sys
-import json
 import signal
 import logging
 import argparse
 from argparse import Namespace
-from time import time
 from typing import List, Union, BinaryIO, Any
 from datetime import datetime
 from functools import partial
 from threading import current_thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from libvirt import virDomain
+from libvirtnbdbackup import sighandle
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdcli
@@ -43,7 +42,10 @@ from libvirtnbdbackup.common.processinfo import processInfo
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
+from libvirtnbdbackup import metadata
 from libvirtnbdbackup import exceptions
+from libvirtnbdbackup import chunk
+from libvirtnbdbackup import block
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.nbdcli.exceptions import NbdClientException
 from libvirtnbdbackup.qemu.exceptions import ProcessError
@@ -53,46 +55,6 @@ from libvirtnbdbackup.virt.exceptions import (
     connectionFailed,
 )
 from libvirtnbdbackup.output.exceptions import OutputException
-
-
-def handleSignal(
-    args: Namespace,
-    domObj: virDomain,
-    virtClient: virt.client,
-    log: Any,
-    signum: int,
-    _,
-) -> None:
-    """Catch signal, attempt to stop running backup job."""
-    log.error("Caught signal: %s", signum)
-    log.error("Cleanup: Stopping backup job")
-    if args.offline is not True:
-        virtClient.stopBackup(domObj)
-    sys.exit(1)
-
-
-def checkForeign(
-    args: Namespace,
-    domObj: virDomain,
-) -> bool:
-    """Check and warn user if virtual machine has checkpoints
-    not originating from this utility"""
-    foreign = None
-    if args.level in ("full", "inc", "diff"):
-        foreign = checkpoint.hasForeign(domObj, lib.checkpointName)
-
-    if not foreign:
-        return True
-
-    logging.fatal("Foreign checkpoint found: [%s]", foreign)
-    logging.fatal("This checkpoint has not been created by this utility.")
-    logging.fatal(
-        "To ensure backup chain consistency, "
-        "remove existing checkpoints "
-        "and start a new backup chain by creating a full backup."
-    )
-
-    raise exceptions.ForeignCeckpointError
 
 
 def setOfflineArguments(args: Namespace, domObj: virDomain) -> None:
@@ -122,100 +84,6 @@ def hasPartial(args: Namespace) -> bool:
         return True
 
     return False
-
-
-def readCheckpointFile(cFile: str) -> List[str]:
-    """Open checkpoint file and read checkpoint
-    information"""
-    checkpoints: List[str] = []
-    if not lib.os.path.exists(cFile):
-        return checkpoints
-
-    try:
-        with output.openfile(cFile, "rb") as fh:
-            checkpoints = json.loads(fh.read().decode())
-        return checkpoints
-    except OutputException as e:
-        raise exceptions.ReadCheckpointsError(f"Failed to read checkpoint file: [{e}]")
-    except json.decoder.JSONDecodeError as e:
-        raise exceptions.ReadCheckpointsError(f"Invalid checkpoint file: [{e}]")
-
-
-def handleCheckpoints(
-    args: Namespace,
-    domObj: virDomain,
-) -> None:
-    """Checkpoint handling for different backup modes
-    to be executed.
-
-    Creates a new namespace in the argparse object,
-    for easy pass around in further functions.
-    """
-    checkpointName: str = f"{lib.checkpointName}.0"
-    parentCheckpoint: str = ""
-    cptFile: str = f"{args.output}/{args.domain}.cpt"
-    checkpoints: List[str] = readCheckpointFile(cptFile)
-
-    if args.offline is False:
-        if checkpoint.redefine(domObj, args) is False:
-            raise exceptions.RedefineCheckpointError("Failed to redefine checkpoints.")
-
-    logging.info("Checkpoint handling.")
-    if args.level == "full" and checkpoints:
-        logging.info("Removing all existent checkpoints before full backup.")
-        if not checkpoint.removeAll(domObj, checkpoints, args, lib.checkpointName):
-            raise exceptions.RemoveCheckpointError("Failed to remove checkpoint.")
-        os.remove(cptFile)
-        checkpoints = []
-    elif args.level == "full" and len(checkpoints) < 1:
-        if not checkpoint.removeAll(domObj, None, args, lib.checkpointName):
-            raise exceptions.RemoveCheckpointError("Failed to remove checkpoint.")
-        checkpoints = []
-
-    if checkpoints and args.level in ("inc", "diff"):
-        nextCpt = len(checkpoints)
-        checkpointName = f"{lib.checkpointName}.{nextCpt}"
-        parentCheckpoint = checkpoints[-1]
-        logging.info("Next checkpoint id: [%s].", nextCpt)
-        logging.info("Parent checkpoint name [%s].", parentCheckpoint)
-
-        if args.offline is True:
-            logging.info("Offline backup, using latest checkpoint, saving only delta.")
-            checkpointName = parentCheckpoint
-
-    if args.level == "diff":
-        logging.info(
-            "Diff backup: saving delta since checkpoint: [%s].", parentCheckpoint
-        )
-
-    if args.level in ("inc", "diff") and len(checkpoints) < 1:
-        raise exceptions.NoCheckpointsFound(
-            "No existing checkpoints found, execute full backup first."
-        )
-
-    if args.level in ("full", "inc"):
-        logging.info("Using checkpoint name: [%s].", checkpointName)
-
-    args.cpt = Namespace()
-    args.cpt.name = checkpointName
-    args.cpt.parent = parentCheckpoint
-    args.cpt.file = cptFile
-
-    logging.debug("Checkpoint info: [%s].", vars(args.cpt))
-
-
-def saveCheckpointFile(args: Namespace) -> None:
-    """Append created checkpoint to checkpoint
-    file"""
-    try:
-        checkpoints = readCheckpointFile(args.cpt.file)
-        checkpoints.append(args.cpt.name)
-        with output.openfile(args.cpt.file, "wb") as cFw:
-            cFw.write(json.dumps(checkpoints).encode())
-    except exceptions.CheckpointException as e:
-        raise exceptions.CheckpointException from e
-    except OutputException as e:
-        raise exceptions.SaveCheckpointError from e
 
 
 def getFileStream(
@@ -536,7 +404,7 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        checkForeign(args, domObj)
+        checkpoint.checkForeign(args, domObj)
     except exceptions.CheckpointException:
         sys.exit(1)
 
@@ -547,7 +415,7 @@ def main() -> None:
         sys.exit(1)
 
     signal.signal(
-        signal.SIGINT, partial(handleSignal, args, domObj, virtClient, logging)
+        signal.SIGINT, partial(sighandle.catch, args, domObj, virtClient, logging)
     )
 
     vmConfig = virtClient.getDomainConfig(domObj)
@@ -560,7 +428,7 @@ def main() -> None:
 
     if not disks:
         logging.error("Unable to detect disks suitable for backup.")
-        saveFiles(args, vmConfig, disks, fileStream, logFile)
+        metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
         sys.exit(1)
     if (
         not args.killonly
@@ -586,7 +454,7 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        handleCheckpoints(args, domObj)
+        checkpoint.create(args, domObj)
     except exceptions.CheckpointException as errmsg:
         logging.error(errmsg)
         sys.exit(1)
@@ -634,7 +502,7 @@ def main() -> None:
     if args.level not in ("copy", "diff") and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
         try:
-            saveCheckpointFile(args)
+            checkpoint.save(args)
         except exceptions.CheckpointException as e:
             logging.error("Extending checkpoint file failed: [%s]", e)
             sys.exit(1)
@@ -669,10 +537,10 @@ def main() -> None:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
-    saveFiles(args, vmConfig, disks, fileStream, logFile)
+    metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
 
     if domObj.autostart() == 1:
-        backupAutoStart(args)
+        metadata.backupAutoStart(args)
 
     if counter.count.errors > 0:
         logging.error("Error during backup")
@@ -689,127 +557,6 @@ def main() -> None:
         sys.exit(2)
 
     logging.info("Finished successfully")
-
-
-def saveFiles(
-    args: Namespace,
-    vmConfig: str,
-    disks: List[DomainDisk],
-    fileStream: Union[output.target.Directory, output.target.Zip],
-    logFile: str,
-):
-    """Save additional files such as virtual machine configuration
-    and UEFI / kernel images"""
-    configFile = backupConfig(args, vmConfig)
-
-    backupBootConfig(args)
-    for disk in disks:
-        if disk.format.startswith("qcow"):
-            backupDiskInfo(args, disk)
-    if args.stdout is True:
-        addFiles(args, configFile, fileStream, logFile)
-
-
-def addFiles(args: Namespace, configFile: Union[str, None], zipStream, logFile: str):
-    """Add backup log and other files to zip archive"""
-    if configFile is not None:
-        logging.info("Adding vm config to zipfile")
-        zipStream.zipStream.write(configFile, configFile)
-    if args.level in ("full", "inc"):
-        logging.info("Adding checkpoint info to zipfile")
-        zipStream.zipStream.write(args.cpt.file, args.cpt.file)
-        for dirname, _, files in os.walk(args.checkpointdir):
-            zipStream.zipStream.write(dirname)
-            for filename in files:
-                zipStream.zipStream.write(os.path.join(dirname, filename))
-
-    for setting, val in args.info.items():
-        logging.info(
-            "Adding additional [%s] setting file [%s] to zipfile", setting, val
-        )
-        zipStream.zipStream.write(val, os.path.basename(val))
-
-    for diskInfo in args.diskInfo:
-        logging.info("Adding QCOW image format file [%s] to zipfile", diskInfo)
-        zipStream.zipStream.write(diskInfo, os.path.basename(diskInfo))
-
-    logging.info("Adding backup log [%s] to zipfile", logFile)
-    zipStream.zipStream.write(logFile, logFile)
-
-
-def getIdent(args: Namespace) -> Union[str, int]:
-    """Used to get an uniqe identifier for target files,
-    usually checkpoint name is used, but if no checkpoint
-    is created, we use timestamp"""
-    try:
-        ident = args.cpt.name
-    except AttributeError:
-        ident = int(time())
-    if args.level == "diff":
-        ident = int(time())
-    if args.level == "copy":
-        ident = "copy"
-
-    return ident
-
-
-def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
-    """Save domain XML config file"""
-    configFile = f"{args.output}/vmconfig.{getIdent(args)}.xml"
-    logging.info("Saving VM config to: [%s]", configFile)
-    try:
-        with output.openfile(configFile, "wb") as fh:
-            fh.write(vmConfig.encode())
-        return configFile
-    except OutputException as e:
-        logging.error("Failed to save VM config: [%s]", e)
-        return None
-
-
-def backupAutoStart(args: Namespace) -> None:
-    """Save information wether if virtual machine was marked
-    for autostart during system boot"""
-    logging.info("Autostart setting configured for virtual machine.")
-    autoStartFile = f"{args.output}/autostart.{getIdent(args)}"
-    try:
-        with output.openfile(autoStartFile, "wb") as fh:
-            fh.write(b"True")
-    except OutputException as e:
-        logging.warning("Failed to save autostart information: [%s]", e)
-
-
-def backupBootConfig(args: Namespace) -> None:
-    """Save domain uefi/nvram/kernel and loader if configured."""
-    for setting, val in args.info.items():
-        if args.level != "copy":
-            tFile = f"{args.output}/{os.path.basename(val)}.{getIdent(args)}"
-        else:
-            tFile = f"{args.output}/{os.path.basename(val)}"
-        logging.info("Save additional boot config [%s] to: [%s]", setting, tFile)
-        lib.copy(args, val, tFile)
-        args.info[setting] = tFile
-
-
-def backupDiskInfo(args: Namespace, disk: DomainDisk):
-    """Save information about qcow image"""
-    try:
-        info = qemu.util("").info(disk.path, args.sshClient)
-    except (
-        ProcessError,
-        sshError,
-    ) as errmsg:
-        logging.warning("Failed to read qcow image info: [%s]", errmsg)
-        return
-
-    configFile = f"{args.output}/{disk.target}.{getIdent(args)}.qcow.json"
-    try:
-        with output.openfile(configFile, "wb") as fh:
-            fh.write(info.out.encode())
-        logging.info("Saved qcow image config to: [%s]", configFile)
-        if args.stdout is True:
-            args.diskInfo.append(configFile)
-    except OutputException as e:
-        logging.warning("Failed to save qcow image config: [%s]", e)
 
 
 def setMetaContext(args: Namespace, disk: DomainDisk) -> str:
@@ -846,7 +593,7 @@ def setTargetFile(args: Namespace, disk: DomainDisk, ext: str = "data"):
             level = "copy"
         targetFile = f"{args.output}/{disk.target}.{level}.{ext}"
     elif args.level in ("inc", "diff"):
-        cptName = getIdent(args)
+        cptName = lib.getIdent(args)
         targetFile = f"{args.output}/{disk.target}.{args.level}.{cptName}.{ext}"
 
     targetFilePartial = f"{targetFile}.partial"
@@ -1018,14 +765,14 @@ def backupDisk(
         truncate(writer, diskSize)
     else:
         logging.info("Creating thin provisioned stream backup image")
-        metadata = stream.dumpMetadata(
+        header = stream.dumpMetadata(
             args,
             diskSize,
             thinBackupSize,
             disk,
         )
-        stream.writeFrame(writer, sTypes.META, 0, len(metadata))
-        writer.write(metadata)
+        stream.writeFrame(writer, sTypes.META, 0, len(header))
+        writer.write(header)
         writer.write(sTypes.TERM)
 
     progressBar = lib.progressBar(
@@ -1048,7 +795,7 @@ def backupDisk(
                     save.offset,
                     save.length,
                 )
-                size, cSizes = lib.writeChunk(
+                size, cSizes = chunk.write(
                     writer,
                     save,
                     connection,
@@ -1056,7 +803,7 @@ def backupDisk(
                     args.compress,
                 )
             else:
-                size = lib.writeBlock(
+                size = block.write(
                     writer,
                     save,
                     connection,

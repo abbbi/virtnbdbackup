@@ -28,6 +28,8 @@ from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
+from libvirtnbdbackup import chunk
+from libvirtnbdbackup import lz4
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import output
 from libvirtnbdbackup.common import common as lib
@@ -78,6 +80,7 @@ def restoreData(
     sTypes = types.SparseStreamTypes()
 
     try:
+        # pylint: disable=consider-using-with
         reader = open(dataFile, "rb")
     except OSError as errmsg:
         logging.critical("Failed to open backup file for reading: [%s].", errmsg)
@@ -136,7 +139,7 @@ def restoreData(
                     "Chunked read/write, start: [%s], len: [%s]", start, length
                 )
                 try:
-                    written = lib.readChunk(
+                    written = chunk.read(
                         reader,
                         start,
                         length,
@@ -151,7 +154,7 @@ def restoreData(
                 try:
                     data = reader.read(length)
                     if lib.isCompressed(meta):
-                        data = lib.lz4DecompressFrame(data)
+                        data = lz4.decompressFrame(data)
                     connection.nbd.pwrite(data, start)
                     written = len(data)
                 except Exception as e:
