@@ -24,7 +24,7 @@ from libvirtnbdbackup.qemu.exceptions import (
     ProcessError,
 )
 from libvirtnbdbackup.output import openfile
-from libvirtnbdbackup.common.processinfo import processInfo
+from libvirtnbdbackup.processinfo import processInfo
 
 log = logging.getLogger(__name__)
 

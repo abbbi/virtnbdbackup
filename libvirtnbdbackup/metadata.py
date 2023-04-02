@@ -22,7 +22,7 @@ from typing import List, Union
 
 from libvirtnbdbackup import output
 from libvirtnbdbackup.virt.client import DomainDisk
-from libvirtnbdbackup.common import common as lib
+from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.ssh.exceptions import sshError

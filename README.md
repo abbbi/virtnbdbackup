@@ -338,7 +338,7 @@ machine, including logfiles that can be used for analyzing backup issues:
 
 During backup `virtnbdbackup` attempts to freeze all file systems within the
 domain using the qemu guest agent filesystem freeze and thaw functions.  In
-case no qemu agent is installed or filesystem freeze fails, a warning is issued
+case no qemu agent is installed or filesystem freeze fails, a warning is shown
 during backup:
 
 ```
@@ -968,8 +968,8 @@ See also: https://github.com/abbbi/virtnbdbackup/issues/8
 The utility is provided "as is", i take no responsibility or warranty if you
 face any issues recovering your data! The only way to ensure your backups are
 valid and your backup plan works correctly is to repeatedly test the integrity
-by restoring them! If you discover any issues, please do not hesitate to open
-an issue.
+by restoring them! If you discover any issues, please do not hesitate to report
+them.
 
 ## Links
 

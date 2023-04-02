@@ -1,5 +1,5 @@
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ from typing import List
 from argparse import Namespace
 
 from libvirtnbdbackup.ssh.exceptions import sshError
-from libvirtnbdbackup.common.processinfo import processInfo
+from libvirtnbdbackup.processinfo import processInfo
 from libvirtnbdbackup.qemu import command
 from libvirtnbdbackup.virt.client import DomainDisk
 

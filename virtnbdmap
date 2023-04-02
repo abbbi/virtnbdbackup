@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,23 +20,21 @@ import sys
 import shutil
 import tempfile
 import signal
-from functools import partial
 import json
 import time
 import argparse
-from argparse import Namespace
 import logging
-
+from functools import partial
+from argparse import Namespace
 from typing import List, Tuple, Dict, IO
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
+from libvirtnbdbackup import sighandle
 from libvirtnbdbackup.qemu import util as qemu
-from libvirtnbdbackup.qemu import command
 from libvirtnbdbackup.qemu.exceptions import ProcessError, QemuHelperError
 from libvirtnbdbackup import output
 from libvirtnbdbackup.output.exceptions import OutputException
-from libvirtnbdbackup.common import common as lib
-from libvirtnbdbackup.common.processinfo import processInfo
+from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.sparsestream import streamer
@@ -103,18 +101,6 @@ def replayChanges(dataRanges: List, args: Namespace) -> None:
             progressBar.update(extent["length"])
 
     progressBar.close()
-
-
-def handleSignal(nbdkitProcess: processInfo, device: str, blockMap, log, signum, _):
-    """Catch signal, attempt to stop processes."""
-    log.info("Received signal: [%s]", signum)
-    qemu.util("").disconnect(device)
-    log.info("Removing temporary blockmap file: [%s]", blockMap.name)
-    os.remove(blockMap.name)
-    log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
-    os.remove(nbdkitProcess.logFile)
-    lib.killProc(nbdkitProcess.pid)
-    sys.exit(0)
 
 
 def getDataRanges(stream, sTypes, reader) -> Tuple[List, Dict]:
@@ -327,7 +313,7 @@ def main() -> None:
     )
     signal.signal(
         signal.SIGINT,
-        partial(handleSignal, nbdkitProcess, args.device, blockMap, logging),
+        partial(sighandle.Map.catch, nbdkitProcess, args.device, blockMap, logging),
     )
 
     maxRetry = 10

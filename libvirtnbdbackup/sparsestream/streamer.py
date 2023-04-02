@@ -1,5 +1,5 @@
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
     Copyright (C) 2020 Red Hat, Inc.
 
     This program is free software: you can redistribute it and/or modify

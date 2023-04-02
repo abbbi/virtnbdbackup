@@ -1,5 +1,5 @@
 """
-    Copyright (C) 2022  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ from paramiko import (  # pylint: disable=import-error
 )
 
 from libvirtnbdbackup.ssh import exceptions
-from libvirtnbdbackup.common.processinfo import processInfo
+from libvirtnbdbackup.processinfo import processInfo
 
 log = logging.getLogger("ssh")
 

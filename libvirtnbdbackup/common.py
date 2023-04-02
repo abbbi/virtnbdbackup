@@ -1,5 +1,5 @@
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -105,12 +105,6 @@ def configLogger(
         datefmt=logDateFormat,
         handlers=handler,
     )
-
-
-def partialBackup(args: Namespace) -> int:
-    """Check for possible partial backup files"""
-    partialFiles = glob.glob(f"{args.output}/*.partial")
-    return len(partialFiles) > 0
 
 
 def hasFullBackup(args: Namespace) -> int:

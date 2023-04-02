@@ -25,7 +25,7 @@ import libvirt
 from libvirtnbdbackup import output
 from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.output.exceptions import OutputException
-from libvirtnbdbackup.common.common import defaultCheckpointName
+from libvirtnbdbackup.common import defaultCheckpointName
 from libvirtnbdbackup.exceptions import (
     NoCheckpointsFound,
     ReadCheckpointsError,

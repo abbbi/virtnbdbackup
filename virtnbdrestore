@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-    Copyright (C) 2021 Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023 Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,10 +20,10 @@ import sys
 import tempfile
 import logging
 import argparse
-from argparse import Namespace
-from typing import List, Union, Dict
 import pprint
 import json
+from argparse import Namespace
+from typing import List, Union, Dict
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdcli
@@ -32,7 +32,7 @@ from libvirtnbdbackup import chunk
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import output
-from libvirtnbdbackup.common import common as lib
+from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
@@ -359,15 +359,6 @@ def readConfig(ConfigFile: str) -> str:
         raise
 
 
-def getDisksFromConfig(
-    args: Namespace, vmConfig: str, virtClient: virt.client
-) -> List[DomainDisk]:
-    """Parse disk information from latest config file
-    contained in the backup directory
-    """
-    return virtClient.getDomainDisks(args, vmConfig)
-
-
 def checkBackingStore(args: Namespace, disk: DomainDisk) -> None:
     """If an virtual machine was running on an snapshot image,
     warn user, the virtual machine configuration has to be
@@ -416,7 +407,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
     """Handle restore operation"""
     stream = streamer.SparseStream(types)
     vmConfig = readConfig(ConfigFile)
-    vmDisks = getDisksFromConfig(args, vmConfig, virtClient)
+    vmDisks = virtClient.getDomainDisks(args, vmConfig)
     if not vmDisks:
         raise RestoreError("Unable to parse disks from config")
 

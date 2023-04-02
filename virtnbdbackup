@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-    Copyright (C) 2021  Michael Ablassmeier <abi@grinser.de>
+    Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt import checkpoint
 from libvirtnbdbackup import output
-from libvirtnbdbackup.common import common as lib
-from libvirtnbdbackup.common.processinfo import processInfo
+from libvirtnbdbackup import common as lib
+from libvirtnbdbackup.processinfo import processInfo
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
@@ -46,6 +46,7 @@ from libvirtnbdbackup import metadata
 from libvirtnbdbackup import exceptions
 from libvirtnbdbackup import chunk
 from libvirtnbdbackup import block
+from libvirtnbdbackup import partialfile
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.nbdcli.exceptions import NbdClientException
 from libvirtnbdbackup.qemu.exceptions import ProcessError
@@ -67,23 +68,6 @@ def setOfflineArguments(args: Namespace, domObj: virDomain) -> None:
             args.level = "copy"
             logging.info("Backup level: [%s].", args.level)
         args.offline = True
-
-
-def hasPartial(args: Namespace) -> bool:
-    """Check if target directory has an partial backup,
-    makes backup utility exit errnous in case backup
-    type is full or inc"""
-    if (
-        args.level in ("inc", "diff")
-        and args.stdout is False
-        and lib.partialBackup(args) is True
-    ):
-        logging.error("Partial backup found in target directory: [%s]", args.output)
-        logging.error("One of the last backups seems to have failed.")
-        logging.error("Consider re-executing full backup.")
-        return True
-
-    return False
 
 
 def getFileStream(
@@ -377,7 +361,7 @@ def main() -> None:
         )
         sys.exit(1)
 
-    if hasPartial(args):
+    if partialfile.exists(args):
         sys.exit(1)
 
     if not args.checkpointdir:
@@ -415,7 +399,8 @@ def main() -> None:
         sys.exit(1)
 
     signal.signal(
-        signal.SIGINT, partial(sighandle.catch, args, domObj, virtClient, logging)
+        signal.SIGINT,
+        partial(sighandle.Backup.catch, args, domObj, virtClient, logging),
     )
 
     vmConfig = virtClient.getDomainConfig(domObj)
@@ -630,15 +615,6 @@ def getExtentHandler(args: Namespace, nbdClient):
     return extentHandler
 
 
-def renamePartial(targetFilePartial: str, targetFile: str) -> None:
-    """After backup, move .partial file to real
-    target file"""
-    try:
-        os.rename(targetFilePartial, targetFile)
-    except OSError as e:
-        raise exceptions.DiskBackupFailed(f"Failed to rename file: [{e}]") from e
-
-
 def startOfflineNBD(
     args: Namespace, disk: DomainDisk, remoteHost: str, port: int
 ) -> processInfo:
@@ -850,7 +826,7 @@ def backupDisk(
             logging.info(
                 "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
-        renamePartial(targetFilePartial, targetFile)
+        partialfile.rename(targetFilePartial, targetFile)
 
     return True
 
