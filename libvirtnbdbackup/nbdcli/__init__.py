@@ -19,3 +19,4 @@ __title__ = "nbdcli"
 __version__ = "0.1"
 
 from .client import client, Unix, TCP
+from . import context

@@ -37,6 +37,7 @@ from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt import checkpoint
 from libvirtnbdbackup import output
+from libvirtnbdbackup.output import stream
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.processinfo import processInfo
 from libvirtnbdbackup.logcount import logCount
@@ -60,7 +61,7 @@ from libvirtnbdbackup.output.exceptions import OutputException
 
 def setOfflineArguments(args: Namespace, domObj: virDomain) -> None:
     """Check if to be saved VM is offline and set
-    propper options/overwrite backup mode"""
+    proper options/overwrite backup mode"""
     args.offline = False
     if domObj.isActive() == 0:
         if args.level == "full":
@@ -68,22 +69,6 @@ def setOfflineArguments(args: Namespace, domObj: virDomain) -> None:
             args.level = "copy"
             logging.info("Backup level: [%s].", args.level)
         args.offline = True
-
-
-def getFileStream(
-    args: Namespace, repository: output.target
-) -> Union[output.target.Directory, output.target.Zip]:
-    """Get filehandle for output files based on output
-    mode"""
-    fileStream: Union[output.target.Directory, output.target.Zip]
-    if args.stdout is False:
-        fileStream = repository.Directory(args.output)
-    else:
-        fileStream = repository.Zip()
-        args.output = "./"
-        args.worker = 1
-
-    return fileStream
 
 
 def startBackupJob(
@@ -303,9 +288,9 @@ def main() -> None:
     args.diskInfo = []
 
     try:
-        fileStream = getFileStream(args, repository)
+        fileStream = stream.get(args, repository)
     except OutputException as e:
-        logging.error("Cant open output file: [%s]", e)
+        logging.error("Can't open output file: [%s]", e)
         sys.exit(1)
 
     if args.worker is not None and args.worker < 1:
@@ -337,7 +322,7 @@ def main() -> None:
     elif not lib.targetIsEmpty(args) and args.level == "auto":
         if not lib.hasFullBackup(args):
             logging.error(
-                "Cant execute switch to auto incremental backup: "
+                "Can't execute switch to auto incremental backup: "
                 "target folder seems not to include full backup."
             )
             sys.exit(1)
@@ -350,7 +335,7 @@ def main() -> None:
 
     if args.raw is True and args.level in ("inc", "diff"):
         logging.warning(
-            "Raw disks cant be included during incremental or differential backup."
+            "Raw disks can't be included during incremental or differential backup."
         )
         logging.warning("Excluding raw disks.")
         args.raw = False
@@ -378,7 +363,7 @@ def main() -> None:
         logging.error("%s", e)
         sys.exit(1)
     except connectionFailed as e:
-        logging.error("Cant connect libvirt daemon: [%s]", e)
+        logging.error("Can't connect libvirt daemon: [%s]", e)
         sys.exit(1)
 
     logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
@@ -544,21 +529,6 @@ def main() -> None:
     logging.info("Finished successfully")
 
 
-def setMetaContext(args: Namespace, disk: DomainDisk) -> str:
-    """Set meta context passed to nbd server based on
-    backup type"""
-    metaContext = ""
-    if args.level in ("inc", "diff"):
-        if args.offline is True:
-            metaContext = f"qemu:dirty-bitmap:{args.cpt.name}"
-        else:
-            metaContext = f"qemu:dirty-bitmap:backup-{disk.target}"
-
-        logging.info("INC/DIFF backup: set context to [%s]", metaContext)
-
-    return metaContext
-
-
 def setStreamType(args: Namespace, disk: DomainDisk) -> str:
     """Set target stream type based on disk format"""
     streamType = "raw"
@@ -646,17 +616,6 @@ def startOfflineNBD(
     return nbdProc
 
 
-def truncate(writer, size: int) -> None:
-    """Truncate raw image"""
-    try:
-        writer.truncate(size)
-        writer.seek(0)
-    except OSError as e:
-        raise exceptions.DiskBackupWriterException(
-            f"Failed to truncate target file: [{e}]"
-        ) from e
-
-
 def connectNbd(
     args: Namespace,
     disk: DomainDisk,
@@ -698,7 +657,7 @@ def backupDisk(
     sTypes = types.SparseStreamTypes()
     current_thread().name = disk.target
     streamType = setStreamType(args, disk)
-    metaContext = setMetaContext(args, disk)
+    metaContext = nbdcli.context.get(args, disk)
     nbdProc: processInfo
     remoteIP: str = virtClient.remoteHost
     port: int = args.nbd_port
@@ -738,7 +697,7 @@ def backupDisk(
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
-        truncate(writer, diskSize)
+        writer.truncate(diskSize)
     else:
         logging.info("Creating thin provisioned stream backup image")
         header = stream.dumpMetadata(

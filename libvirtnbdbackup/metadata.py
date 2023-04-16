@@ -81,7 +81,7 @@ def backupBootConfig(args: Namespace) -> None:
 
 
 def backupAutoStart(args: Namespace) -> None:
-    """Save information wether if virtual machine was marked
+    """Save information if virtual machine was marked
     for autostart during system boot"""
     log.info("Autostart setting configured for virtual machine.")
     autoStartFile = f"{args.output}/autostart.{lib.getIdent(args)}"

@@ -156,7 +156,7 @@ def getLatest(targetDir: str, search: str, key=None) -> List[str]:
 def hasQcowDisks(diskList: List[Any]) -> bool:
     """Check if the list of attached disks includes at least one
     qcow image based disk, else checkpoint handling can be
-    skipped and backup modue falls back to type copy"""
+    skipped and backup module falls back to type copy"""
     for disk in diskList:
         if disk.format.startswith("qcow"):
             return True
@@ -202,7 +202,7 @@ def killProc(pid: int) -> bool:
 
 
 def getIdent(args: Namespace) -> Union[str, int]:
-    """Used to get an uniqe identifier for target files,
+    """Used to get an unique identifier for target files,
     usually checkpoint name is used, but if no checkpoint
     is created, we use timestamp"""
     try:

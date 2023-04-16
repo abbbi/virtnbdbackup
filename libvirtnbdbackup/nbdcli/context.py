@@ -14,5 +14,25 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import logging
+from argparse import Namespace
+from libvirtnbdbackup.virt.client import DomainDisk
 
-__version__ = "1.9.23"
+log = logging.getLogger("nbdctx")
+
+
+def get(args: Namespace, disk: DomainDisk) -> str:
+    """Get required meta context string passed to nbd server based on
+    backup type"""
+    metaContext = ""
+    if args.level not in ("inc", "diff"):
+        return metaContext
+
+    if args.offline is True:
+        metaContext = f"qemu:dirty-bitmap:{args.cpt.name}"
+    else:
+        metaContext = f"qemu:dirty-bitmap:backup-{disk.target}"
+
+    logging.info("Using NBD meta context [%s]", metaContext)
+
+    return metaContext

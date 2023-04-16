@@ -278,7 +278,7 @@ with qcow(v3) based disk images. If you are using older image versions, you can
 only create `copy` backups, or consider converting the images to a newer
 format using `qemu-img`.
 
-By default `virtnbdbackup` will exclude all disks with format `raw` aswell
+By default `virtnbdbackup` will exclude all disks with format `raw` as well
 as direct attached (passthrough) disks such as LVM or ZVOL and ISCSI
 volumes. These type of disks do not support storing checkpoint/bitmap
 metadata.
@@ -291,7 +291,7 @@ During restore, these files can be copied "as is" from the backup folder and
 must not be processed using `virtnbdrestore`.
 
 `Note:`
-> The backup data for raw disks will only be crash consistant, be aware
+> The backup data for raw disks will only be crash consistent, be aware
 > that this might result in inconsistent filesystems after restoring!
 
 
@@ -412,7 +412,7 @@ virtnbdbackup -d vm1 -l inc -o /tmp/backupset -p
 
 `Note:`
 > Not all libvirt versions support the flag required to read the checkpoint
-> size. If the estimated checkpoint size is allways 0, your libvirt version
+> size. If the estimated checkpoint size is always 0, your libvirt version
 > might miss the required features.
 
 ## Backup threshold
@@ -440,7 +440,7 @@ has attached, it might make sense to try a different amount of workers to see
 which amount your hardware can handle best.
 
 If standard output (`-`) is defined as backup target, the amount of workers is
-allways limited to 1, to ensure a valid Zip file format.
+always limited to 1, to ensure a valid Zip file format.
 
 ## Compression
 
@@ -460,7 +460,7 @@ block and original data are enabled.
 
 ## Remote Backup
 
-It is also possible to backup remote libvirt systems.  The most convinient way
+It is also possible to backup remote libvirt systems.  The most convenient way
 is to use ssh for initiating the libvirt connection (key authentication
 mandatory).
 
@@ -558,7 +558,7 @@ During restore unzip the data from both zip files into a single directory:
 
 If an domain has configured custom kernel, initrd, loader or nvram images
 (usually the case if the domain boots from OVM UEFI BIOS), these files will be
-saved to the backup folder aswell.
+saved to the backup folder as well.
 
 # Restore examples
 
@@ -607,8 +607,8 @@ in the output directory `/tmp/restore`
 
 `Note`:
 > The restore utility will copy the latest virtual machine config to the
-> target directory, but wont alter its contents. You have to adjust the config
-> file for the new pathes and/or excluded disks to be able to define and run it.
+> target directory, but won't alter its contents. You have to adjust the config
+> file for the new paths and/or excluded disks to be able to define and run it.
 
 ## Process only specific disks during restore
 
@@ -646,11 +646,11 @@ restore accordingly, the following changes are done:
  * UUID of the virtual machine is removed from the config file
  * Name of the virtual machine is prefixed with "restore_" (use option
    `--name` to specify desired vm name)
- * The disk pathes to the virtual machine are changed to the new target directory.
+ * The disk paths to the virtual machine are changed to the new target directory.
  * If virtual machine was operating on snapshots/backing store images, the
    references to the configured backing stores will be removed.
- * Raw devices are removed from VM config if `--raw` is not specified, aswell
-   as floppy or cdrom devices (which arent part of the backup).
+ * Raw devices are removed from VM config if `--raw` is not specified, as well
+   as floppy or cdrom devices (which aren't part of the backup).
 
 `Note:`
 > If missing, Kernel, UEFI or NVRAM files are restored to their original
@@ -863,13 +863,13 @@ See [past issues](https://github.com/abbbi/virtnbdbackup/issues?q=label%3Aopenne
 Both `virtnbdbackup` and `virtnbdrestore` commands support authenticating
 against libvirtd with the usual URIs. Consider using the following options:
 
- `-U`: Specify an arbitary connection URI to use against libvirt
+ `-U`: Specify an arbitrary connection URI to use against libvirt
 
  `--user`: Username to use for the specified connection URI
 
  `--password`: Password to use for the specified connection URI.
 
-It is also possible to specifiy the credentials stored as authentication file
+It is also possible to specify the credentials stored as authentication file
 like it would be possible using the `virsh -c` option:
 
 ```

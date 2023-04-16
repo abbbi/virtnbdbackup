@@ -118,7 +118,7 @@ def restoreData(
         try:
             kind, start, length = stream.readFrame(reader)
         except exceptions.StreamFormatException as err:
-            logging.error("Cant read stream at pos: [%s]: [%s]", reader.tell(), err)
+            logging.error("Can't read stream at pos: [%s]: [%s]", reader.tell(), err)
             raise RestoreError from err
         if kind == sTypes.ZERO:
             logging.debug("Zero segment from [%s] length: [%s]", start, length)
@@ -295,7 +295,7 @@ def createDiskFile(args: Namespace, meta: Dict[str, str], targetFile: str, sshCl
 
     options = getQcowConfig(args, meta)
     if lib.exists(args, targetFile):
-        logging.error("Target file already exists: [%s], wont overwrite.", targetFile)
+        logging.error("Target file already exists: [%s], won't overwrite.", targetFile)
         raise RestoreError
 
     qFh = qemu.util(meta["diskName"])
@@ -304,7 +304,7 @@ def createDiskFile(args: Namespace, meta: Dict[str, str], targetFile: str, sshCl
             targetFile, int(meta["virtualSize"]), meta["diskFormat"], options, sshClient
         )
     except ProcessError as e:
-        logging.error("Cant create restore target: [%s]", e)
+        logging.error("Can't create restore target: [%s]", e)
         raise RestoreError from e
 
 
@@ -355,7 +355,7 @@ def readConfig(ConfigFile: str) -> str:
     try:
         return output.openfile(ConfigFile, "rb").read().decode()
     except:
-        logging.error("Cant read config file: [%s]", ConfigFile)
+        logging.error("Can't read config file: [%s]", ConfigFile)
         raise
 
 

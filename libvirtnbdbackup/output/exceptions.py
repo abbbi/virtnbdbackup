@@ -12,4 +12,4 @@ class OutputOpenException(OutputException):
 
 
 class OutputCreateDirectory(OutputException):
-    """Cant create output directory"""
+    """Can't create output directory"""

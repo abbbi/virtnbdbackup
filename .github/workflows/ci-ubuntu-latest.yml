@@ -10,6 +10,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: abbbi/github-actions-tune@v1
+    - name: codespell
+      run: |
+        sudo apt-get update
+        sudo apt-get install codespell -y
+        codespell libvirtnbdbackup
+        codespell virtnbdbackup
+        codespell virtnbdrestore
+        codespell virtnbdmap
+        codespell virtnbd-nbdkit-plugin
+        codespell README.md
     - name: Python code format test
       run: |
         sudo pip3 install black==22.3

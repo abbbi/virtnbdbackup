@@ -8,22 +8,22 @@ class CheckpointException(Exception):
 
 
 class NoCheckpointsFound(CheckpointException):
-    """Inc or differencial backup attempted but
+    """Inc or differential backup attempted but
     no existing checkpoints are found."""
 
 
 class RedefineCheckpointError(CheckpointException):
     """During redefining existing checkpoints after
-    vm relocate, an error occured"""
+    vm relocate, an error occurred"""
 
 
 class ReadCheckpointsError(CheckpointException):
-    """Cant read checkpoint file"""
+    """Can't read checkpoint file"""
 
 
 class RemoveCheckpointError(CheckpointException):
     """During removal of existing checkpoints after
-    an error occured"""
+    an error occurred"""
 
 
 class SaveCheckpointError(CheckpointException):

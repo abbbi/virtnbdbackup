@@ -44,7 +44,7 @@ class SparseStream:
         disk,
     ):
         """First block in backup stream is Meta data information
-        about virtual size of the disk being backed up, aswell
+        about virtual size of the disk being backed up, as well
         as various information regarding backup.
         Dumps Metadata frame to be written at start of stream in
         json format.

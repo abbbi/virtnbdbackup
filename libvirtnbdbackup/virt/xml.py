@@ -33,7 +33,7 @@ def indent(top: _Element) -> str:
     except ElementTree.ParseError as errmsg:
         log.debug("Failed to parse xml: [%s]", errmsg)
     except AttributeError:
-        # older ElementTree verisons dont have the
+        # older ElementTree versions dont have the
         # indent method, skip silently and use
         # non formatted string
         pass

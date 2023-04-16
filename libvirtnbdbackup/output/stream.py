@@ -14,5 +14,22 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from argparse import Namespace
+from typing import Union
+from libvirtnbdbackup import output
 
-__version__ = "1.9.23"
+
+def get(
+    args: Namespace, repository: output.target
+) -> Union[output.target.Directory, output.target.Zip]:
+    """Get filehandle for output files based on output
+    mode"""
+    fileStream: Union[output.target.Directory, output.target.Zip]
+    if args.stdout is False:
+        fileStream = repository.Directory(args.output)
+    else:
+        fileStream = repository.Zip()
+        args.output = "./"
+        args.worker = 1
+
+    return fileStream

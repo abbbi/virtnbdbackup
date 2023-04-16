@@ -1,3 +1,8 @@
+Version 1.9.23
+---------
+ * Code cleanups
+ * Spelling fixes, run codespell during CI
+
 Version 1.9.22
 ---------
  * Code cleanups, pylint warning

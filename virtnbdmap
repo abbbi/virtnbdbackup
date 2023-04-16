@@ -51,7 +51,7 @@ def checkRequirements():
 
 def checkDevice(args: Namespace, device: str) -> None:
     """Check if /dev/nbdX exists, otherwise it is likely
-    nbd module isnt loaded on the system"""
+    nbd module isn't loaded on the system"""
     if not device.startswith("/dev/nbd"):
         logging.error("Target device [%s] seems not to be a ndb device?", device)
 

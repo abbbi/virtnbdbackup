@@ -8,12 +8,12 @@ class virtHelperError(Exception):
 
 
 class domainNotFound(virtHelperError):
-    """Cant find domain"""
+    """Can't find domain"""
 
 
 class connectionFailed(virtHelperError):
-    """Cant connect libvirtd domain"""
+    """Can't connect libvirtd domain"""
 
 
 class startBackupFailed(virtHelperError):
-    """Cant start backup operation"""
+    """Can't start backup operation"""

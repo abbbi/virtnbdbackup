@@ -75,7 +75,7 @@ class client:
             )
         except Exception as e:
             log.exception(e)
-            raise exceptions.sshError(f"Unknown exception occured: {e}")
+            raise exceptions.sshError(f"Unknown exception occurred: {e}")
 
     @property
     def sftp(self) -> SFTPClient:

@@ -46,7 +46,7 @@ class target:
                 self._makeDir()
 
         def _makeDir(self) -> None:
-            """Create output directoy on init"""
+            """Create output directory on init"""
             if os.path.exists(self.targetDir):
                 if not os.path.isdir(self.targetDir):
                     raise exceptions.OutputCreateDirectory(
@@ -82,6 +82,16 @@ class target:
         def flush(self):
             """Flush wrapper"""
             return self.fileHandle.flush()
+
+        def truncate(self, size: int) -> None:
+            """Truncate target file"""
+            try:
+                self.fileHandle.truncate(size)
+                self.fileHandle.seek(0)
+            except OSError as e:
+                raise exceptions.OutputException(
+                    f"Failed to truncate target file: [{e}]"
+                ) from e
 
         def close(self):
             """Close wrapper"""
@@ -135,10 +145,14 @@ class target:
 
             return False
 
-        def close(self):
-            """Close wrapper"""
-            return self.zipFileStream.close()
+        def truncate(self, size: int) -> None:
+            """Truncate target file"""
+            raise RuntimeError("Not implemented")
 
         def write(self, data):
             """Write wrapper"""
             return self.zipFileStream.write(data)
+
+        def close(self):
+            """Close wrapper"""
+            return self.zipFileStream.close()

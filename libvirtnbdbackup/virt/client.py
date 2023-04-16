@@ -117,7 +117,7 @@ class client:
         return uri.startswith("qemu+ssh")
 
     def _useAuth(self, args: Namespace) -> bool:
-        """Check wether we want to use advanced auth method"""
+        """Check if we want to use advanced auth method"""
         if args.uri.startswith("qemu+"):
             return True
         if self._reqAuth(args.uri):
@@ -285,7 +285,7 @@ class client:
         self, args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
     ) -> bytes:
         """Adjust virtual machine configuration after restoring. Changes
-        the pathes to the virtual machine disks and attempts to remove
+        the paths to the virtual machine disks and attempts to remove
         components excluded during restore."""
         tree = xml.asTree(vmConfig)
 
@@ -329,7 +329,7 @@ class client:
                 continue
             backingStore = disk.xpath("backingStore")
             if backingStore:
-                log.info("Removing existant backing store settings")
+                log.info("Removing existent backing store settings")
                 disk.remove(backingStore[0])
 
             originalFile = disk.xpath("source")[0].get("file")
