@@ -25,3 +25,4 @@ class processInfo:
     logFile: str
     err: str
     out: str
+    pidFile: str

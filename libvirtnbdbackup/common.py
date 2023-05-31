@@ -177,6 +177,22 @@ def copy(args: Namespace, source: str, target: str) -> None:
         log.warning("Remote copy from [%s] to [%s] failed: [%s]", source, target, e)
 
 
+def remove(args: Namespace, file: str) -> None:
+    """Remove file either locally or remote"""
+    try:
+        if args.sshClient:
+            args.sshClient.run(f"rm -f {file}")
+        else:
+            os.remove(file)
+        log.debug("Removed: [%s]", file)
+    except FileNotFoundError:
+        pass
+    except OSError as e:
+        log.warning("Failed to remove [%s]: [%s]", file, e)
+    except sshError as e:
+        log.warning("Remote remove failed: [%s]: [%s]", file, e)
+
+
 def progressBar(total: int, desc: str, args: Namespace, count=0) -> tqdm:
     """Return tqdm object"""
     return tqdm(

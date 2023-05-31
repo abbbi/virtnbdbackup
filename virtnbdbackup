@@ -780,6 +780,9 @@ def backupDisk(
         logging.info("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)
 
+    if args.offline is True:
+        lib.remove(args, nbdProc.pidFile)
+
     if args.stdout is False:
         if args.noprogress is True:
             logging.info(

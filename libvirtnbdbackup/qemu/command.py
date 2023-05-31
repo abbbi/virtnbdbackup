@@ -87,7 +87,7 @@ def run(cmdLine: List[str], pidFile: str = "", toPipe: bool = False) -> processI
         else:
             realPid = p.pid
 
-        process = processInfo(realPid, logFileName, err, out)
+        process = processInfo(realPid, logFileName, err, out, pidFile)
         log.debug("Started [%s] process: [%s]", cmdLine[0], process)
 
     return process

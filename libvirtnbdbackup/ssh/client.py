@@ -138,7 +138,7 @@ class client:
             pid = int(pidOut)
             log.debug("PID: [%s]", pid)
 
-        return processInfo(pid, logFile, err, out)
+        return processInfo(pid, logFile, err, out, pidFile)
 
     def disconnect(self):
         """Disconnect"""
