@@ -69,7 +69,7 @@ def addRemoteArgs(opt: _ArgumentGroup) -> None:
         default=10809,
         required=False,
         help=(
-            "Port used by remote NDB Service, should be unique for each"
+            "Port used by remote NBD Service, should be unique for each"
             " started backup. (default: %(default)s)"
         ),
     )

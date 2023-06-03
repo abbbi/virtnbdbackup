@@ -886,7 +886,7 @@ like it would be possible using the `virsh -c` option:
 ## The thin provisioned backups are bigger than the original qcow images
 
 Virtual machines using the qcow format do compress data. During backup, the
-image contents are exposed as NDB device which is a RAW device. The backup data
+image contents are exposed as NBD device which is a RAW device. The backup data
 will be at least as big as the used data within the virtual machine. 
 
 You can use the `--compress` option or other tools to compress the backup

@@ -150,7 +150,7 @@ class ExtentHandler:
         maxRequestLen = self._setRequestAligment()
         offset = 0
         size = self._nbdFh.nbd.get_size()
-        log.debug("Size returned from NDB server: %s", size)
+        log.debug("Size returned from NBD server: %s", size)
         lastExtentLen = len(self._extentEntries)
         while offset < size:
             if size < maxRequestLen:

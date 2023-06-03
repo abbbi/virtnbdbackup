@@ -1,3 +1,7 @@
+Version 1.9.25
+---------
+ * Fix typo in log messages.
+
 Version 1.9.24
 ---------
  * Remove leftover pid files in /var/tmp during offline backup (#114)

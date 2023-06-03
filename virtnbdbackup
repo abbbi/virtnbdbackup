@@ -450,9 +450,8 @@ def main() -> None:
             logging.error("Remote backup detected but ssh session setup failed")
             sys.exit(1)
         logging.info(
-            "Remote: NDB Endpoint socket: [%s:%s]",
+            "Remote NBD Endpoint host: [%s]",
             virtClient.remoteHost,
-            args.socketfile,
         )
         if args.offline is True:
             logging.info(
@@ -461,7 +460,7 @@ def main() -> None:
                 args.nbd_port + args.worker,
             )
     else:
-        logging.info("Local NDB Endpoint socket: [%s]", args.socketfile)
+        logging.info("Local NBD Endpoint socket: [%s]", args.socketfile)
 
     if args.offline is not True:
         logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
@@ -597,7 +596,7 @@ def startOfflineNBD(
     socket = f"{args.socketfile}.{disk.target}"
     if remoteHost != "":
         logging.info(
-            "Offline backup, starting remote NDB server, socket: [%s:%s], port: [%s]",
+            "Offline backup, starting remote NBD server, socket: [%s:%s], port: [%s]",
             remoteHost,
             socket,
             port,
@@ -605,14 +604,14 @@ def startOfflineNBD(
         nbdProc = qemu.util(disk.target).startRemoteBackupNbdServer(
             args, disk, bitMap, port
         )
-        logging.info("Remote NDB server started, PID: [%s].", nbdProc.pid)
+        logging.info("Remote NBD server started, PID: [%s].", nbdProc.pid)
         return nbdProc
 
-    logging.info("Offline backup, starting local NDB server, socket: [%s]", socket)
+    logging.info("Offline backup, starting local NBD server, socket: [%s]", socket)
     nbdProc = qemu.util(disk.target).startBackupNbdServer(
         disk.format, disk.path, socket, bitMap
     )
-    logging.info("Local NDB Service started, PID: [%s]", nbdProc.pid)
+    logging.info("Local NBD Service started, PID: [%s]", nbdProc.pid)
     return nbdProc
 
 
