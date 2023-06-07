@@ -103,11 +103,13 @@ required versions.
 ## Libvirt versions <= 7.6.0 (Debian Bullseye, Ubuntu 20.x)
 
 If you are using Debian Bullseye or Ubuntu 20.x, the included libvirt version
-already supports the features required, but does not enable them by default!
+already has an almost complete support for incremental backup, although it
+doesn't work properly with migration or some block jobs.
 
-To enable the incremental backup feature on these libvirt versions 
-change the virtual machine config using `virsh edit <vm>` like so: (the
-first line must be changed, too!):
+If you don't want to use migration or other blockjobs you can enable the 
+incremental backup feature on these libvirt versions change the virtual 
+machine config using `virsh edit <vm>` like so: (the first line must be 
+changed, too!):
 
  ```
   <domain type='kvm' id='1' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
@@ -121,7 +123,8 @@ first line must be changed, too!):
 
 `Note`:
 > You must restart the virtual machine after enabling the feature!
- 
+>
+> Upstream libvirt strongly discourages enabling the feature on production systems.
 ## RHEL/Centos Stream, Alma, Rocky Linux
 
 ### Version <= 8.5
