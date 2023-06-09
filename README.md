@@ -96,18 +96,25 @@ this project: [qmpbackup](https://github.com/abbbi/qmpbackup)
 
 # Prerequisites
 
-Obviously you require a libvirt/qemu version that supports the incremental backup
-features. Following, you will find a short overview which distributions ship the
-required versions.
+Obviously you require a libvirt/qemu version that supports the incremental
+backup features. Since libvirt v7.6.0 and qemu-6.1 the required features are
+[enabled by default](https://libvirt.org/news.html#v7-6-0-2021-08-02) and are
+considered production ready: everything will work out of the box.
+
+Following, you will find a short overview which older libvirt
+versions may require further adjustments to the virtual machine config.
+
 
 ## Libvirt versions <= 7.6.0 (Debian Bullseye, Ubuntu 20.x)
 
 If you are using Debian Bullseye or Ubuntu 20.x, the included libvirt version
-already supports the features required, but does not enable them by default!
+already has an almost complete support for incremental backup, although it
+doesn't work properly with migration or some block jobs.
 
-To enable the incremental backup feature on these libvirt versions 
-change the virtual machine config using `virsh edit <vm>` like so: (the
-first line must be changed, too!):
+If you don't want to use migration or other blockjobs you can enable the 
+incremental backup feature on these libvirt versions change the virtual 
+machine config using `virsh edit <vm>` like so: (the first line must be 
+changed, too!):
 
  ```
   <domain type='kvm' id='1' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
@@ -121,7 +128,9 @@ first line must be changed, too!):
 
 `Note`:
 > You must restart the virtual machine after enabling the feature!
- 
+> Upstream libvirt strongly discourages enabling the feature on production
+> systems for these libvirt versions.
+
 ## RHEL/Centos Stream, Alma, Rocky Linux
 
 ### Version <= 8.5
@@ -482,6 +491,11 @@ virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d src -o  /t
 ```
 
 See also: [Authentication](#authentication)
+
+`Note`:
+> If you want to run multiple remote backups at the same time you need to pass
+> an unique port for the NBD service used for data transfer via --nbd-port
+> option for each backup session.
 
 ### NBD with TLS
 

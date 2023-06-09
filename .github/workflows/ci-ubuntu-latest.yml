@@ -20,6 +20,7 @@ jobs:
         codespell virtnbdmap
         codespell virtnbd-nbdkit-plugin
         codespell README.md
+        codespell Changelog
     - name: Python code format test
       run: |
         sudo pip3 install black==22.3

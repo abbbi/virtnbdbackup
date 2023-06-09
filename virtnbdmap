@@ -53,7 +53,7 @@ def checkDevice(args: Namespace, device: str) -> None:
     """Check if /dev/nbdX exists, otherwise it is likely
     nbd module isn't loaded on the system"""
     if not device.startswith("/dev/nbd"):
-        logging.error("Target device [%s] seems not to be a ndb device?", device)
+        logging.error("Target device [%s] seems not to be an NBD device?", device)
 
     if not lib.exists(args, device):
         logging.error(

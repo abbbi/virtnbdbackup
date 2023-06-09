@@ -1,3 +1,12 @@
+Version 1.9.26
+---------
+ * virtnbdbackup: transient vm backup: validate the state of the checkpoint
+   during redefine: this can help to detect situations where the bitmap is
+   broken.
+ * virtnbdmap: Fix typo in log message.
+ * Update README regarding port usage during remote backups.
+ * Add notes regarding stability of the features, thanks @pipo
+
 Version 1.9.25
 ---------
  * Fix typo in log messages.
@@ -112,7 +121,7 @@ Version 1.9.6
 ---------
  * virtnbdrestore: add detection for disks with volume notation, reset
  type to file during restore so virtual machine config is adjusted to
- new restore pathes. (#81)
+ new restore paths. (#81)
 
 
 Version 1.9.5
@@ -152,10 +161,10 @@ Version 1.9.1
  * Fix disk detection with volume notation. (#81)
  * Backup and restore qcow image related settings: during backup
  qemu-img info is called on qcow based image devices and qcow specific options
- are stored as json dump. If information is existant, on restore the
+ are stored as json dump. If information is existent, on restore the
  original settings of the qcow image (such as cluster size or other options)
  are now applied during image creation. (#80)
- * Fix some race conditions during restore of multiple disks and seqences: NBD
+ * Fix some race conditions during restore of multiple disks and sequences: NBD
  connection handle was not closed, following qemu-nbd calls would fail due
  to locked files or already in use tcp ports.
 
@@ -285,7 +294,7 @@ Version 0.89
 ---------
 * virtnbdrestore: check if additional boot files such as nvram/kernel images
 exist and if not, restore them to the original path instead of just warning
-the user about manual steps beeing required.
+the user about manual steps being required.
 
 Version 0.88
 ---------
@@ -326,7 +335,7 @@ before assignment
 
 Version 0.82
 ---------
-* Move common arguments to seperate file.
+* Move common arguments to separate file.
 
 Version 0.81
 ---------
@@ -341,7 +350,7 @@ Version 0.80
 
 Version 0.79
 ---------
-* Add -U/--uri option: can be used to specifiy libvirt connection URI, if
+* Add -U/--uri option: can be used to specify libvirt connection URI, if
 authfile is specified, use openAuth to authenticate against libvirt daemon.
 * Add --user and --password options: can be used to authenticate against
 libvirt daemon.
@@ -367,7 +376,7 @@ Version 0.76
  specified mountpoints are freezed and thawed. (#60)
 * virtnbdrestore:
  + Option -c would only adjust virtual machine config for the first disk.
- + Option -c now correctly removes exluded disks from the adjusted virtual
+ + Option -c now correctly removes excluded disks from the adjusted virtual
  machine configuration.
 * Add --version option for all utilities.
 * Vagrant scripts: test installation/execution after creating rpm packages.
@@ -381,7 +390,7 @@ Version 0.75
 Version 0.74
 ---------
 * virtnbdbackup: add some more debug messages around freezing/thwaing
-filesytems and backup job operation.
+filesystems and backup job operation.
 
 Version 0.73
 ---------
@@ -413,11 +422,11 @@ Version 0.69
 * virtnbdbackup: exit early if removing checkpoints fails during full
 backup.
 * virtnbdrestore: do not write zeroes during restore of image, as the
-resulting zeroed regions are then reported as beeing "data": this would result
+resulting zeroed regions are then reported as being "data": this would result
 in further backups of the virtual machine to be thick provisioned, as even
 zeroed regions are saved. (#56)
 * virtnbdrestore: dont adjust vm config if option -c is missing.
-* virtnbdrestore: now removes existant backing stores if adjust setting is
+* virtnbdrestore: now removes existent backing stores if adjust setting is
 enabled: usually the case if virtual machine operated on snapshot during
 backup.
 
@@ -426,7 +435,7 @@ Version 0.68
 * Code cleanup at different places. Make the output helper wrapping.
 * Use Elementree from lxml for easier access via xpath, adjust dependencies
 * Adjust pylintrc
-* virtnbdrestore: add option -c: adjusts required pathes within restored
+* virtnbdrestore: add option -c: adjusts required paths within restored
 virtual machine config so it can be defined using virsh. (#54)
 * virtnbdrestore: add option -D: in combination with option -c can be used to
 register virtual machine on libvirt daemon after restore.
@@ -510,11 +519,11 @@ Version 0.57
 
 Version 0.56
 ---------
-* Fix for Issue (#40): redefining checkpoints failes
+* Fix for Issue (#40): redefining checkpoints fails
 
 Version 0.55
 ---------
-* Correct some wrongly catched exceptions
+* Correct some wrongly caught exceptions
 * Update README
 
 
@@ -559,10 +568,10 @@ passed by the --sequence option.
 Version 0.48
 ---------
 
-* Internal code changes: start using propper exceptions if stream format
+* Internal code changes: start using proper exceptions if stream format
 is not parseable
-* virtnbdbrestore: add --sequence option, allows to specify a comma seperated
-list of backup files whose informations should be dumped. Next step is to
+* virtnbdbrestore: add --sequence option, allows to specify a comma separated
+list of backup files whose information should be dumped. Next step is to
 implement restore of a specified sequence.
 
 
@@ -690,7 +699,7 @@ With the recent changes, virtnbdbackup now detects
 if the backup source is offline and then:
 
  * Forces the backup mode to "copy": no full or
- incremental backup supported because we cant create
+ incremental backup supported because we can't create
  an checkpoint via libvirt API. Copy type backup
  is like a full backup just without checkpoint.
  * Forces the amount of workers to 1
@@ -739,7 +748,7 @@ devices not possible within docker containers.)
 
 Version 0.32
 ---------
-Introduce new `virtnbdmap` utlity to allow simple single file and instant recovery, see:
+Introduce new `virtnbdmap` utility to allow simple single file and instant recovery, see:
 
  https://github.com/abbbi/virtnbdbackup#single-file-restore-and-instant-recovery
 
@@ -753,7 +762,7 @@ Version 0.30
 ---------
 Various bugfixes, added some small features in `virtnbdrestore`: it now
 attempts to use the original disks name for the disk files and copies the
-virtual machine config file. Fixed a few pylint warnings aswell.
+virtual machine config file. Fixed a few pylint warnings as well.
 
 Updated readme and improved testsuite.
 
@@ -844,8 +853,8 @@ Version 0.16
 Version 0.15
 ---------
 * Minor code changes, move some functions to common class
-* Use makedirs for targetfolder to support nested target pathes.
-* Updated README with more informations about backup workflow.
+* Use makedirs for targetfolder to support nested target paths.
+* Updated README with more information about backup workflow.
 
 Version 0.14
 ---------
@@ -863,7 +872,7 @@ it is assumed everything is OK.
 
 Now virtnbdbackup writes the data to a partial file first
 and renames the file as last step. During incremental
-backup the target directory is checked for possible existance
+backup the target directory is checked for possible existence
 of partial backups and backup is aborted with error.
 
 Version 0.11
