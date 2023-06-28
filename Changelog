@@ -1,8 +1,11 @@
+Version 1.9.28
+---------
+ * Remote backup: enhance logging if executing remote command via SSH fails.
+
 Version 1.9.27
 ---------
  * Enhance debug logging for remote backup.
  * Update README regarding remote backup and its requirements. (#117)
-
 
 Version 1.9.26
 ---------

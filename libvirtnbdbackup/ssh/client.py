@@ -128,9 +128,18 @@ class client:
         log.debug("Executing remote command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         if ret != 0:
+            log.error(
+                "Executing command failed, return code: [%s] stderr: [%s], stdout: [%s]",
+                ret,
+                err,
+                out,
+            )
             if logFile:
-                _, _, err = self._execute(f"cat {logFile}")
-            raise exceptions.sshError(f"Error during remote command: [{cmd}]: [{err}]")
+                log.debug("Attempting to catch errors from logfile")
+                _, _, logerr = self._execute(f"cat {logFile}")
+            raise exceptions.sshError(
+                f"Error during remote command: [{cmd}]: [{err}] [{logerr}]"
+            )
 
         if pidFile:
             log.debug("PIDfile: [%s]", pidFile)
