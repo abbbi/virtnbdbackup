@@ -469,9 +469,18 @@ block and original data are enabled.
 
 ## Remote Backup
 
-It is also possible to backup remote libvirt systems.  The most convenient way
+It is also possible to backup remote libvirt systems. The most convenient way
 is to use ssh for initiating the libvirt connection (key authentication
 mandatory).
+
+Before attempting an remote backup, please validate your environment meets the
+following criteria:
+
+ * DNS resolution (forward and reverse) must work on all involved systems.
+ * SSH Login to the remote system via ssh key authentication (using ssh agent
+   or passwordless ssh key) should work without issues.
+ * Unique hostnames must be set on all hostnames ([background](https://github.com/abbbi/virtnbdbackup/issues/117))
+ * Firewall must allow connection on all ports involved.
 
 If the virtual machine has additional files configured, as described in
 [Kernel/initrd and additional files](#kernelinitrd-and-additional-files), these

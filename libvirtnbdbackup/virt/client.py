@@ -130,6 +130,9 @@ class client:
     def _connect(self, args: Namespace) -> libvirt.virConnect:
         """return libvirt connection handle"""
         log.debug("Libvirt URI: [%s]", args.uri)
+        localHostname = gethostname()
+        log.debug("Hostname: [%s]", localHostname)
+
         if self._useAuth(args):
             log.debug(
                 "Login information specified, connect libvirtd using openAuth function."
@@ -146,13 +149,16 @@ class client:
                 conn = self._connectAuth(args.uri, args.user, args.password)
             else:
                 conn = self._connectOpen(args.uri)
-            if gethostname() != conn.getHostname():
+
+            remoteHostname = conn.getHostname()
+            log.debug("Hostname returned by libvirt API: [%s]", remoteHostname)
+            if localHostname != remoteHostname:
                 log.info(
                     "Connected to remote host: [%s], local host: [%s]",
                     conn.getHostname(),
                     gethostname(),
                 )
-                self.remoteHost = conn.getHostname()
+                self.remoteHost = remoteHostname
 
             return conn
 

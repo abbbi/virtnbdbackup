@@ -1,3 +1,9 @@
+Version 1.9.27
+---------
+ * Enhance debug logging for remote backup.
+ * Update README regarding remote backup and its requirements. (#117)
+
+
 Version 1.9.26
 ---------
  * virtnbdbackup: transient vm backup: validate the state of the checkpoint
