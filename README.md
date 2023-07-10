@@ -479,7 +479,8 @@ following criteria:
  * DNS resolution (forward and reverse) must work on all involved systems.
  * SSH Login to the remote system via ssh key authentication (using ssh agent
    or passwordless ssh key) should work without issues.
- * Unique hostnames must be set on all hostnames ([background](https://github.com/abbbi/virtnbdbackup/issues/117))
+ * Unique hostnames must be set on all systems involved.
+   ([background](https://github.com/abbbi/virtnbdbackup/issues/117))
  * Firewall must allow connection on all ports involved.
 
 If the virtual machine has additional files configured, as described in
