@@ -51,6 +51,7 @@ of your `kvm/qemu` virtual machines.
   - [Point in time recovery](#point-in-time-recovery)
   - [Restoring with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
   - [Remote Restore](#remote-restore)
+- [Post restore steps and considerations](#post-restore-steps-and-considerations)
 - [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
 - [Extents](#extents)
 - [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
@@ -700,6 +701,14 @@ configuration and register the virtual machine:
 ```
 virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset -o /remote/target
 ```
+
+# Post restore steps and considerations
+
+If you restore the virtual machine with its original name on the same
+hypervisor, you may have to cleanup checkpoint information, otherwise backing
+up the restored virtual machine may fail, see [this
+discussion](https://github.com/abbbi/virtnbdbackup/discussions/48)
+
 
 # Single file restore and instant recovery
 
