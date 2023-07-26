@@ -406,7 +406,10 @@ def main() -> None:
         and virtClient.blockJobActive(domObj, disks)
     ):
         logging.error("Detected an active backup operation for running domain.")
-        logging.error("Check with [virsh domjobinfo %s]", args.domain)
+        logging.error(
+            "Check with [virsh domjobinfo %s] or use option -k to kill the active job.",
+            args.domain,
+        )
         sys.exit(1)
 
     logging.info(

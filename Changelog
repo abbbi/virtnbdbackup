@@ -1,3 +1,9 @@
+Version 1.9.31
+---------
+ * setup.cfg: fix obsolete description-file warning
+ * In case domain has an already active block job, add note about
+ option -k to the error message (#120).
+
 Version 1.9.30
 ---------
  * Update README
