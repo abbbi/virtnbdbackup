@@ -224,10 +224,8 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
         try:
             domObj.checkpointCreateXML(
                 checkpointConfig.decode(),
-                [
-                    libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE,
-                    libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE_VALIDATE,
-                ],
+                libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
+                | libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE_VALIDATE,
             )
         except libvirt.libvirtError as e:
             log.error("Redefining checkpoint failed: [%s]: %s", checkpointName, e)

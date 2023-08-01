@@ -1,3 +1,9 @@
+Version 1.9.32
+---------
+ * Fix TypeError during backup of transient virtual machines: do not pass
+ flags to checkpointCreateXML as list. (#122)
+ * Add simple test for transient virtual machine handling.
+
 Version 1.9.31
 ---------
  * setup.cfg: fix obsolete description-file warning

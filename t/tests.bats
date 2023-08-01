@@ -328,6 +328,21 @@ toOut() {
     [ "$status" -eq 0 ]
     rm -rf ${TMPDIR}/ext-checkpoint
 }
+@test "Backup: test backup in transient environment" {
+    [ -z $INCTEST ] && skip "skipping"
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/transient -C  ${TMPDIR}/transient_checkpoints
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    # remove the checkpoint metadata
+    run virsh checkpoint-delete $VM --checkpointname virtnbdbackup.0 --metadata
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    # create inc backup, must recreate checkpoints.
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/transient -C  ${TMPDIR}/transient_checkpoints
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    [[ "${output}" =~  "Redefine missing checkpoint" ]]
+}
 @test "Backup: create full backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/inctest
