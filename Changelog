@@ -1,3 +1,7 @@
+Version 1.9.33
+---------
+ * Update README
+
 Version 1.9.32
 ---------
  * Fix TypeError during backup of transient virtual machines: do not pass

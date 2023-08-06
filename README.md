@@ -290,8 +290,9 @@ format using `qemu-img`.
 
 By default `virtnbdbackup` will exclude all disks with format `raw` as well
 as direct attached (passthrough) disks such as LVM or ZVOL and ISCSI
-volumes. These type of disks do not support storing checkpoint/bitmap
-metadata.
+volumes. These type of virtual disks do not support storing checkpoint/bitmap
+metadata and do not support incremental/differential backup. [see this
+discussion](https://www.mail-archive.com/qemu-devel@nongnu.org/msg793625.html)
 
 This behavior can be changed if option `--raw` is specified, raw disks will
 then be included during a `full` backup.  This of course means that no thin
