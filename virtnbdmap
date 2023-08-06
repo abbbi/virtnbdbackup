@@ -241,7 +241,7 @@ def main() -> None:
     args.sshClient = None
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
 
-    counter = logCount()
+    counter = logCount()  # pylint: disable=unreachable
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
     nbdkitModule = locatePlugin(args)
