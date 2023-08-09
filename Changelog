@@ -1,3 +1,8 @@
+Version 1.9.36
+---------
+ * Fail with better understandable error message if libvirt version requires
+ the virtual machine configuration to be adjusted for backup to work.
+
 Version 1.9.35
 ---------
  * Fix some pylint warnings, add ignores.

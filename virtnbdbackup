@@ -369,7 +369,12 @@ def main() -> None:
     logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
 
     if virtClient.hasIncrementalEnabled(domObj) is False:
-        logging.error("Domain is missing required incremental-backup capability.")
+        logging.error(
+            (
+                "Virtual machine does not support required backup features, "
+                "please adjust virtual machine configuration."
+            )
+        )
         sys.exit(1)
 
     try:
