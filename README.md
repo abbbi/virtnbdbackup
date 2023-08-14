@@ -286,7 +286,9 @@ directory to store the data.
 `libvirt/qemu` supports dirty bitmaps, required for incremental backups only
 with qcow(v3) based disk images. If you are using older image versions, you can
 only create `copy` backups, or consider converting the images to a newer
-format using `qemu-img`.
+format using `qemu-img`:
+
+> qemu-img convert -O qcow2 -o compat=1.1 disk-old.qcow2 disk.qcow2
 
 By default `virtnbdbackup` will exclude all disks with format `raw` as well
 as direct attached (passthrough) disks such as LVM or ZVOL and ISCSI

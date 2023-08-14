@@ -1,3 +1,8 @@
+Version 1.9.37
+---------
+ * Update README: add example how to convert qcow images to the required
+ format to support all backup features.
+
 Version 1.9.36
 ---------
  * Fail with better understandable error message if libvirt version requires
