@@ -1,6 +1,9 @@
 Version 1.9.38
 ---------
  * Release packages compatible with RHEL9 (#130)
+ + add required vagrant file
+ + adjust requirements during package build
+ + put dist files into separate directories
 
 Version 1.9.37
 ---------
