@@ -21,7 +21,6 @@ of your `kvm/qemu` virtual machines.
 - [Installation](#installation)
   - [Python package](#python-package)
   - [RPM package](#rpm-package)
-    - [Centos/Almalinux 8](#centosalmalinux-8)
   - [Debian package](#debian-package)
   - [Vagrant](#vagrant)
   - [Virtualenv](#virtualenv)
@@ -185,31 +184,27 @@ python3 setup.py install
 
 ## RPM package
 
-To create an RPM package from source suitable for installation:
+Packages compatible with RHEL derivates are available via
+[releases](https://github.com/abbbi/virtnbdbackup/releases).
 
-### Centos/Almalinux 8
+To create an RPM package from source by yourself you can follow
+the steps from the [vagrant scripts](vagrant/).
 
-To build the rpm package from source:
-
-```
-yum install epel-release    # required for tqdm on centos 8
-yum makecache
-yum install rpm-build
-python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
-yum install dist/virtnbdbackup-<version>-.noarch.rpm
-```
 
 ## Debian package
 
-Official packages are available for unstable/testing:
-[https://packages.debian.org/virtnbdbackup](http://packages.debian.org/virtnbdbackup)
+Official packages are available:
+[https://packages.debian.org/virtnbdbackup](http://packages.debian.org/virtnbdbackup) and are maintained on
+the [Debian salsa codespace](https://salsa.debian.org/debian/virtnbdbackup).
 
-To create a Debian package (Debian bullseye required) use:
+To create a Debian package from source (Debian bullseye and above required)
+use:
 
 ```
 sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-tqdm python3-lz4 python3-lxml
 python3 setup.py --command-packages=stdeb.command bdist_deb
 ```
+
 
 ## Vagrant
 

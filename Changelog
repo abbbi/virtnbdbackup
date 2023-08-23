@@ -1,3 +1,7 @@
+Version 1.9.39
+---------
+ * Update README
+
 Version 1.9.38
 ---------
  * Release packages compatible with RHEL9 (#130)
