@@ -4,4 +4,4 @@ __version__ = "0.1"
 
 from .target import target
 
-openfile = target.Directory("").open
+openfile = target.Directory().open

@@ -50,13 +50,21 @@ class Map:
     """Handle signal during map operation"""
 
     @staticmethod
-    def catch(nbdkitProcess: processInfo, device: str, blockMap, log, signum, _):
+    def catch(
+        args: Namespace,
+        nbdkitProcess: processInfo,
+        blockMap,
+        log: Any,
+        signum,
+        _,
+    ):
         """Catch signal, attempt to stop processes."""
         log.info("Received signal: [%s]", signum)
-        qemu.util("").disconnect(device)
-        log.info("Removing temporary blockmap file: [%s]", blockMap.name)
-        os.remove(blockMap.name)
-        log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
-        os.remove(nbdkitProcess.logFile)
+        qemu.util("").disconnect(args.device)
+        if not args.verbose:
+            log.info("Removing temporary blockmap file: [%s]", blockMap.name)
+            os.remove(blockMap.name)
+            log.info("Removing nbdkit logfile: [%s]", nbdkitProcess.logFile)
+            os.remove(nbdkitProcess.logFile)
         lib.killProc(nbdkitProcess.pid)
         sys.exit(0)

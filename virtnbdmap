@@ -313,7 +313,7 @@ def main() -> None:
     )
     signal.signal(
         signal.SIGINT,
-        partial(sighandle.Map.catch, nbdkitProcess, args.device, blockMap, logging),
+        partial(sighandle.Map.catch, args, nbdkitProcess, blockMap, logging),
     )
 
     maxRetry = 10

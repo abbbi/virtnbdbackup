@@ -162,6 +162,15 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Compute checksums using virtnbdrestore verify"  {
+    rm -rf $BACKUPSET
+    run ../virtnbdbackup -l copy -d $VM -o $BACKUPSET
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run ../virtnbdrestore -i $BACKUPSET -o verify
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
 @test "Backup in stream format, check if multiple writers are used"  {
     [ $DISK_COUNT -lt 2 ] && skip "vm has only one disk"
     rm -rf $BACKUPSET

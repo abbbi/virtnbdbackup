@@ -16,10 +16,12 @@
 """
 import os
 import sys
+import zlib
 import zipfile
 import logging
 import time
-from typing import IO, Union, Tuple, BinaryIO
+import builtins
+from typing import IO, Union, Tuple, Any
 from libvirtnbdbackup.output import exceptions
 
 if sys.version_info >= (3, 8):
@@ -39,22 +41,21 @@ class target:
     class Directory:
         """Backup to target directory"""
 
-        def __init__(self, targetDir: str) -> None:
-            self.targetDir = targetDir
-            self.fileHandle: BinaryIO
-            if self.targetDir != "":
-                self._makeDir()
+        def __init__(self) -> None:
+            self.fileHandle: IO[Any]
+            self.chksum: int = 1
 
-        def _makeDir(self) -> None:
-            """Create output directory on init"""
-            if os.path.exists(self.targetDir):
-                if not os.path.isdir(self.targetDir):
+        def create(self, targetDir) -> None:
+            """Create wrapper"""
+            log.debug("Create: %s", targetDir)
+            if os.path.exists(targetDir):
+                if not os.path.isdir(targetDir):
                     raise exceptions.OutputCreateDirectory(
                         "Specified target is a file, not a directory"
                     )
-            if not os.path.exists(self.targetDir):
+            if not os.path.exists(targetDir):
                 try:
-                    os.makedirs(self.targetDir)
+                    os.makedirs(targetDir)
                 except OSError as e:
                     raise exceptions.OutputCreateDirectory(
                         f"Failed to create target directory: [{e}]"
@@ -63,12 +64,14 @@ class target:
         def open(
             self,
             targetFile: str,
-            mode: Union[Literal["wb"], Literal["rb"]] = "wb",
-        ) -> BinaryIO:
+            mode: Union[
+                Literal["w"], Literal["wb"], Literal["rb"], Literal["r"]
+            ] = "wb",
+        ) -> IO[Any]:
             """Open target file"""
             try:
                 # pylint: disable=unspecified-encoding,consider-using-with
-                self.fileHandle = open(targetFile, mode)
+                self.fileHandle = builtins.open(targetFile, mode)
                 return self.fileHandle
             except OSError as e:
                 raise exceptions.OutputOpenException(
@@ -77,7 +80,12 @@ class target:
 
         def write(self, data):
             """Write wrapper"""
+            self.chksum = zlib.adler32(data, self.chksum)
             return self.fileHandle.write(data)
+
+        def read(self, size=-1):
+            """Read wrapper"""
+            return self.fileHandle.read(size)
 
         def flush(self):
             """Flush wrapper"""
@@ -95,7 +103,18 @@ class target:
 
         def close(self):
             """Close wrapper"""
+            log.debug("Close file")
             return self.fileHandle.close()
+
+        def seek(self, tgt: int, whence: int = 0):
+            """Seek wrapper"""
+            return self.fileHandle.seek(tgt, whence)
+
+        def checksum(self):
+            """Return computed checksum"""
+            cur = self.chksum
+            self.chksum = 1
+            return cur
 
     class Zip:
         """Backup to zip file"""
@@ -115,10 +134,15 @@ class target:
                     f"Failed to open zip file: {e}"
                 ) from e
 
+        def create(self, targetDir) -> None:
+            """Create wrapper"""
+            log.debug("Create: %s", targetDir)
+            target.Directory().create(targetDir)
+
         def open(self, fileName: str, mode: Literal["w"] = "w") -> IO[bytes]:
             """Open wrapper"""
             zipFile = zipfile.ZipInfo(
-                filename=fileName,
+                filename=os.path.basename(fileName),
             )
             dateTime: time.struct_time = time.localtime(time.time())
             timeStamp: Tuple[int, int, int, int, int, int] = (
@@ -155,4 +179,9 @@ class target:
 
         def close(self):
             """Close wrapper"""
+            log.debug("Close file")
             return self.zipFileStream.close()
+
+        def checksum(self):
+            """Checksum: not implemented for zip file"""
+            return

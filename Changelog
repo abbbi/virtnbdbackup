@@ -1,3 +1,10 @@
+Version 1.9.40
+---------
+ * Update README
+ * New feature: compute adler32 checksum for written data and add
+ verify option to virtnbdrestore, so its possible to check for corrupt
+ backups without having to restore.
+
 Version 1.9.39
 ---------
  * Update README

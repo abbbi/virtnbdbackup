@@ -45,6 +45,7 @@ of your `kvm/qemu` virtual machines.
   - [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
 - [Restore examples](#restore-examples)
   - [Dumping backup information](#dumping-backup-information)
+  - [Verifying created backups](#verifying-created-backups)
   - [Complete restore](#complete-restore)
   - [Process only specific disks during restore](#process-only-specific-disks-during-restore)
   - [Point in time recovery](#point-in-time-recovery)
@@ -615,6 +616,24 @@ INFO:root:Dumping saveset meta information
 ```
 The output includes information about the thick and thin provisioned disk
 space that is required for recovery, date of the backup and checkpoint chain.
+
+## Verifying created backups
+
+As with more recent versions, `virtnbdbackup` creates an check sum for
+each created data file. Using `virtnbdrestore` you can check the integrity
+for the created data files without having to restore:
+
+```
+virtnbdrestore -i /tmp/backup -o verify
+[..] INFO lib common - printVersion [MainThread]: Version: 1.9.39 Arguments: ./virtnbdrestore -i /tmp/backup -o verify
+[..] INFO root virtnbdrestore - verify [MainThread]: Computing checksum for: /tmp/backup/sda.full.data
+[..] INFO root virtnbdrestore - verify [MainThread]: Checksum result: 541406837
+[..] INFO root virtnbdrestore - verify [MainThread]: Comparing checksum with stored information
+[..] INFO root virtnbdrestore - verify [MainThread]: OK
+```
+
+this makes it easier to spot corrupted backup files due to storage issues.
+([background](https://github.com/abbbi/virtnbdbackup/issues/134))
 
 ## Complete restore
 

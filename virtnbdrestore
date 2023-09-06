@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
+import zlib
 import sys
 import tempfile
 import logging
@@ -70,6 +71,40 @@ def dump(args: Namespace, stream, dataFiles: List[str]) -> bool:
 
     print(json.dumps(entries, indent=4))
 
+    return True
+
+
+def verify(args: Namespace, dataFiles: List[str]) -> bool:
+    """Compute adler32 checksum"""
+    for dataFile in dataFiles:
+        if args.disk is not None and not os.path.basename(dataFile).startswith(
+            args.disk
+        ):
+            continue
+        logging.info("Computing checksum for: %s", dataFile)
+
+        sourceFile = dataFile
+        if args.sequence:
+            sourceFile = f"{args.input}/{dataFile}"
+
+        with output.openfile(sourceFile, "rb") as vfh:
+            adler = 1
+            data = vfh.read(4096)
+            while data:
+                adler = zlib.adler32(data, adler)
+                data = vfh.read(4096)
+
+        chksumFile = f"{sourceFile}.chksum"
+        logging.info("Checksum result: %s", adler)
+        if os.path.exists(chksumFile):
+            logging.info("Comparing checksum with stored information")
+            with output.openfile(chksumFile, "r") as s:
+                storedSum = int(s.read())
+            if storedSum != adler:
+                logging.error("Stored sums do not match: [%s]!=[%s]", storedSum, adler)
+                return False
+
+            logging.info("OK")
     return True
 
 
@@ -504,6 +539,8 @@ def main() -> None:
             "Examples:\n"
             "   # Dump backup metadata:\n"
             "\t%(prog)s -i /backup/ -o dump\n"
+            "   # Verify checksums for existing data files in backup:\n"
+            "\t%(prog)s -i /backup/ -o verify\n"
             "   # Complete restore with all disks:\n"
             "\t%(prog)s -i /backup/ -o /target\n"
             "   # Complete restore, adjust config and redefine vm after restore:\n"
@@ -529,7 +566,7 @@ def main() -> None:
         "--action",
         required=False,
         type=str,
-        choices=["dump", "restore"],
+        choices=["dump", "restore", "verify"],
         default="restore",
         help="Action to perform: (default: %(default)s)",
     )
@@ -653,6 +690,11 @@ def main() -> None:
         dump(args, stream, dataFiles)
         sys.exit(0)
 
+    if args.action == "verify" or args.output == "verify":
+        if not verify(args, dataFiles):
+            sys.exit(1)
+        sys.exit(0)
+
     if args.action == "restore":
         if args.define is True:
             args.adjust_config = True
@@ -665,7 +707,7 @@ def main() -> None:
                 sys.exit(1)
             args.sshClient.sftp.mkdir(args.output)
         else:
-            output.target.Directory(args.output)
+            output.target.Directory().create(args.output)
 
         ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml", -1)
         if not ConfigFiles:

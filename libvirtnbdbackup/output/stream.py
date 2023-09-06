@@ -26,7 +26,7 @@ def get(
     mode"""
     fileStream: Union[output.target.Directory, output.target.Zip]
     if args.stdout is False:
-        fileStream = repository.Directory(args.output)
+        fileStream = repository.Directory()
     else:
         fileStream = repository.Zip()
         args.output = "./"

@@ -34,7 +34,7 @@ define clean
 	for vm in vm1 restore_vm1 vm2 vm3 vm4 vm5; do \
 		if virsh list --all | grep $$vm; then \
 			virsh destroy $$vm; \
-			virsh undefine $$vm --checkpoints-metadata --nvram; \
+			virsh undefine $$vm --checkpoints-metadata --nvram --managed-save; \
 		fi \
 	done
 endef

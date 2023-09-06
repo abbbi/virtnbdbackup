@@ -287,8 +287,11 @@ def main() -> None:
     args.sshClient = None
     args.diskInfo = []
 
+    fileStream = stream.get(args, repository)
+
     try:
-        fileStream = stream.get(args, repository)
+        if not args.stdout:
+            fileStream.create(args.output)
     except OutputException as e:
         logging.error("Can't open output file: [%s]", e)
         sys.exit(1)
@@ -354,7 +357,7 @@ def main() -> None:
     else:
         logging.info("Store checkpoints in: [%s]", args.checkpointdir)
 
-    repository.Directory(args.checkpointdir)
+    fileStream.create(args.checkpointdir)
 
     try:
         virtClient = virt.client(args)
@@ -472,7 +475,7 @@ def main() -> None:
 
     if args.offline is not True:
         logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
-        repository.Directory(args.scratchdir)
+        fileStream.create(args.scratchdir)
         if not startBackupJob(args, virtClient, domObj, disks):
             sys.exit(1)
 
@@ -563,19 +566,18 @@ def setTargetFile(args: Namespace, disk: DomainDisk, ext: str = "data"):
     return targetFile, targetFilePartial
 
 
-def getWriter(
+def openTargetFile(
     args: Namespace, fileStream, targetFile: str, targetFilePartial: str
 ) -> BinaryIO:
     """Open target file based on output writer"""
     if args.stdout is True:
-        targetFile = os.path.basename(targetFile)
         logging.info("Writing data to zip archive.")
-        writer = fileStream.open(targetFile)
+        fileStream.open(targetFile)
     else:
         logging.info("Write data to target file: [%s].", targetFilePartial)
-        writer = fileStream.open(targetFilePartial)
+        fileStream.open(targetFilePartial)
 
-    return writer
+    return fileStream
 
 
 def getExtentHandler(args: Namespace, nbdClient):
@@ -700,7 +702,15 @@ def backupDisk(
         args.noprogress = True
 
     targetFile, targetFilePartial = setTargetFile(args, disk)
-    writer = getWriter(args, fileStream, targetFile, targetFilePartial)
+
+    # if writing to regular files we want instantiate an new
+    # handle for each file otherwise multiple threads collid
+    # during file close
+    # in case of zip file output we want to use the existing
+    # opened output channel
+    if not args.stdout:
+        fileStream = stream.get(args, output.target())
+    writer = openTargetFile(args, fileStream, targetFile, targetFilePartial)
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
@@ -780,8 +790,10 @@ def backupDisk(
             dStream.writeCompressionTrailer(writer, compressedSizes)
 
     progressBar.close()
-    logging.debug("Closing write handle.")
     writer.close()
+
+    checksum = fileStream.checksum()
+    logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
     connection.disconnect()
     if args.offline is True and virtClient.remoteHost == "":
         logging.info("Stopping NBD Service.")
@@ -796,6 +808,11 @@ def backupDisk(
                 "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
         partialfile.rename(targetFilePartial, targetFile)
+
+    chksumfile = f"{targetFile}.chksum"
+    logging.info("Saving checksum to: %s", chksumfile)
+    with output.openfile(chksumfile, "w") as cf:
+        cf.write(f"{checksum}")
 
     return True
 
