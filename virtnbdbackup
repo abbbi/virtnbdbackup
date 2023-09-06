@@ -792,8 +792,9 @@ def backupDisk(
     progressBar.close()
     writer.close()
 
-    checksum = fileStream.checksum()
-    logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
+    if not args.stdout:
+        checksum = fileStream.checksum()
+        logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
     connection.disconnect()
     if args.offline is True and virtClient.remoteHost == "":
         logging.info("Stopping NBD Service.")
@@ -802,17 +803,18 @@ def backupDisk(
     if args.offline is True:
         lib.remove(args, nbdProc.pidFile)
 
-    if args.stdout is False:
+    if not args.stdout:
         if args.noprogress is True:
             logging.info(
                 "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
         partialfile.rename(targetFilePartial, targetFile)
 
-    chksumfile = f"{targetFile}.chksum"
-    logging.info("Saving checksum to: %s", chksumfile)
-    with output.openfile(chksumfile, "w") as cf:
-        cf.write(f"{checksum}")
+    if not args.stdout:
+        chksumfile = f"{targetFile}.chksum"
+        logging.info("Saving checksum to: [%s]", chksumfile)
+        with output.openfile(chksumfile, "w") as cf:
+            cf.write(f"{checksum}")
 
     return True
 
