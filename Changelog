@@ -1,3 +1,8 @@
+Version 1.9.41
+---------
+ * virtnbdrestore: add Option -B to allow changing default buffer size
+ duing verify to speed up process.
+
 Version 1.9.40
 ---------
  * Update README

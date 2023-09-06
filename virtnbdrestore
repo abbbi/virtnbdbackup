@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
+import io
 import zlib
 import sys
 import tempfile
@@ -81,6 +82,7 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
             args.disk
         ):
             continue
+        logging.debug("Using buffer size: %s", args.buffsize)
         logging.info("Computing checksum for: %s", dataFile)
 
         sourceFile = dataFile
@@ -89,10 +91,10 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
 
         with output.openfile(sourceFile, "rb") as vfh:
             adler = 1
-            data = vfh.read(4096)
+            data = vfh.read(args.buffsize)
             while data:
                 adler = zlib.adler32(data, adler)
-                data = vfh.read(4096)
+                data = vfh.read(args.buffsize)
 
         chksumFile = f"{sourceFile}.chksum"
         logging.info("Checksum result: %s", adler)
@@ -645,6 +647,13 @@ def main() -> None:
         default=None,
         type=str,
         help="Define restored domain with specified name",
+    )
+    opt.add_argument(
+        "-B",
+        "--buffsize",
+        default=io.DEFAULT_BUFFER_SIZE,
+        type=int,
+        help="Buffer size to use during verify (default: %(default)s)",
     )
     remopt = parser.add_argument_group("Remote Restore options")
     argopt.addRemoteArgs(remopt)
