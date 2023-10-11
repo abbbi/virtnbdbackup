@@ -94,9 +94,10 @@ def configLogger(
     handler: List[Any]
     handler = [
         fileLog,
-        logging.StreamHandler(stream=sys.stderr),
         counter,
     ]
+    if args.quiet is False:
+        handler.append(logging.StreamHandler(stream=sys.stderr))
     if syslog is True:
         handler.append(logging.handlers.SysLogHandler(address="/dev/log"))
     logging.basicConfig(

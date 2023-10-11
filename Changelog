@@ -1,3 +1,8 @@
+Version 1.9.43
+---------
+ * virtnbdbackup: add --quiet option: disable log output to stderr,
+ log into logfile only. (#137)
+
 Version 1.9.42
 ---------
  * virtnbdbackup: skip checksum output if backup is redirected to stdout
@@ -5,7 +10,7 @@ Version 1.9.42
 Version 1.9.41
 ---------
  * virtnbdrestore: add Option -B to allow changing default buffer size
- duing verify to speed up process.
+ during verify to speed up process.
 
 Version 1.9.40
 ---------

@@ -249,6 +249,12 @@ def main() -> None:
         action="store_true",
         help="Additionally send log messages to syslog (default: %(default)s)",
     )
+    logopt.add_argument(
+        "--quiet",
+        default=False,
+        action="store_true",
+        help="Disable logging to stderr (default: %(default)s)",
+    )
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-q",

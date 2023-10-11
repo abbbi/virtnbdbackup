@@ -663,6 +663,7 @@ def main() -> None:
     argopt.addDebugArgs(debopt)
 
     args = lib.argparse(parser)
+    args.quiet = False
     args.sshClient = None
     # default values for common usage of lib.getDomainDisks
     args.exclude = None

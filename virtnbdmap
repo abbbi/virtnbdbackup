@@ -239,6 +239,7 @@ def main() -> None:
     argopt.addDebugArgs(debopt)
     args = lib.argparse(parser)
     args.sshClient = None
+    args.quiet = False
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
 
     counter = logCount()  # pylint: disable=unreachable

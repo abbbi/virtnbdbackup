@@ -122,7 +122,7 @@ def addDebugArgs(opt: _ArgumentGroup) -> None:
 
 
 def addLogArgs(opt, prog):
-    """Logfile argument"""
+    """Logging related arguments"""
     opt.add_argument(
         "-L",
         "--logfile",
