@@ -293,6 +293,9 @@ def main() -> None:
     args.sshClient = None
     args.diskInfo = []
 
+    if args.quiet is True:
+        args.noprogress = True
+
     fileStream = stream.get(args, repository)
 
     try:
