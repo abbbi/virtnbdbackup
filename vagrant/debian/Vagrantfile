@@ -25,6 +25,7 @@ Vagrant.configure("2") do |config|
       python3-libvirt \
       python3-lxml \
       python3-paramiko \
+      python3-colorlog \
       git
     rm -rf virtnbdbackup;
     git clone https://github.com/abbbi/virtnbdbackup

@@ -279,6 +279,8 @@ def create(
     checkpointName: str = f"{defaultCheckpointName}.0"
     parentCheckpoint: str = ""
     cptFile: str = f"{args.output}/{args.domain}.cpt"
+
+    log.info("Loading checkpoints from: [%s]", cptFile)
     checkpoints: List[str] = read(cptFile)
 
     if args.offline is False:
@@ -308,13 +310,13 @@ def create(
             log.info("Offline backup, using latest checkpoint, saving only delta.")
             checkpointName = parentCheckpoint
 
-    if args.level == "diff":
-        log.info("Diff backup: saving delta since checkpoint: [%s].", parentCheckpoint)
-
     if args.level in ("inc", "diff") and len(checkpoints) < 1:
         raise NoCheckpointsFound(
             "No existing checkpoints found, execute full backup first."
         )
+
+    if args.level == "diff":
+        log.info("Diff backup: saving delta since checkpoint: [%s].", parentCheckpoint)
 
     if args.level in ("full", "inc"):
         log.info("Using checkpoint name: [%s].", checkpointName)

@@ -67,7 +67,7 @@ def setOfflineArguments(args: Namespace, domObj: virDomain) -> None:
         if args.level == "full":
             logging.warning("Domain is offline, resetting backup options.")
             args.level = "copy"
-            logging.info("Backup level: [%s].", args.level)
+            logging.warning("New Backup level: [%s].", args.level)
         args.offline = True
 
 
@@ -255,6 +255,7 @@ def main() -> None:
         action="store_true",
         help="Disable logging to stderr (default: %(default)s)",
     )
+    argopt.addLogColorArgs(logopt)
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-q",

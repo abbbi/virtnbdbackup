@@ -27,6 +27,7 @@ from time import time
 from argparse import Namespace
 from typing import Optional, List, Any, Union, Dict
 from tqdm import tqdm
+import colorlog
 
 from libvirtnbdbackup import ssh
 from libvirtnbdbackup.ssh.exceptions import sshError
@@ -39,6 +40,12 @@ logFormat = (
     "%(asctime)s %(levelname)s %(name)s %(module)s - %(funcName)s"
     " [%(threadName)s]: %(message)s"
 )
+logFormatColored = (
+    "%(green)s%(asctime)s%(reset)s%(light_blue)s %(log_color)s%(levelname)s%(reset)s "
+    "%(name)s %(module)s - %(funcName)s"
+    " [%(threadName)s]: %(log_color)s %(message)s"
+)
+
 logDateFormat = "[%Y-%m-%d %H:%M:%S]"
 defaultCheckpointName = "virtnbdbackup"
 
@@ -96,8 +103,16 @@ def configLogger(
         fileLog,
         counter,
     ]
+    stderrh = logging.StreamHandler(stream=sys.stderr)
+    if args.nocolor is False:
+        formatter = colorlog.ColoredFormatter(
+            logFormatColored,
+            datefmt=logDateFormat,
+            log_colors={"WARNING": "yellow", "ERROR": "red", "DEBUG": "cyan"},
+        )
+        stderrh.setFormatter(formatter)
     if args.quiet is False:
-        handler.append(logging.StreamHandler(stream=sys.stderr))
+        handler.append(stderrh)
     if syslog is True:
         handler.append(logging.handlers.SysLogHandler(address="/dev/log"))
     logging.basicConfig(

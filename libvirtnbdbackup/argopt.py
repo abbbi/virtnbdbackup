@@ -130,3 +130,13 @@ def addLogArgs(opt, prog):
         type=str,
         help="Path to Logfile (default: %(default)s)",
     )
+
+
+def addLogColorArgs(opt):
+    """Option to enable or disable colored output"""
+    opt.add_argument(
+        "--nocolor",
+        default=False,
+        help="Disable colored output (default: %(default)s)",
+        action="store_true",
+    )

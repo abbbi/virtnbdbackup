@@ -659,6 +659,7 @@ def main() -> None:
     argopt.addRemoteArgs(remopt)
     logopt = parser.add_argument_group("Logging options")
     argopt.addLogArgs(logopt, parser.prog)
+    argopt.addLogColorArgs(logopt)
     debopt = parser.add_argument_group("Debug options")
     argopt.addDebugArgs(debopt)
 

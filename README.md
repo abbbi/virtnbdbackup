@@ -243,6 +243,7 @@ Following backup modes can be used:
 * `full`: Full, thin provisioned backup of the virtual machine, a new checkpoint
   named `virtnbdbackup` will be created, all existent checkpoints from prior
   backups matching this name will be removed: a new backup chain is created.
+  The Virtual machine must be online and running for this backup mode to work.
 
 * `inc`: Perform incremental backup, based on the last full or incremental
   backup. A checkpoint for each incremental backup is created and saved.
