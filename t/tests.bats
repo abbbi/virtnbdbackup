@@ -361,7 +361,7 @@ toOut() {
     [ -e "${TMPDIR}/inctest/sda.virtnbdbackup.0.qcow.json" ]
     [ -e "${TMPDIR}/inctest/sda.full.data" ]
 }
-@test "Backup: incremental and differencial backup must fail if partial file found" {
+@test "Backup: incremental and differential backup must fail if partial file found" {
     [ -z $INCTEST ] && skip "skipping"
     touch ${TMPDIR}/inctest/sda.partial
 
@@ -528,33 +528,33 @@ toOut() {
 }
 
 
-# differencial backup
+# differential backup
 
-@test "Differencial Setup: Prepare test for differencial backup" {
+@test "Differential Setup: Prepare test for differential backup" {
     [ -z $INCTEST ] && skip "skipping"
     command -v guestmount || exit 1
     rm -rf ${TMPDIR}/difftest
 }
-@test "Differencial Backup: differencial backup must fail without any checkpoints" {
+@test "Differential Backup: differential backup must fail without any checkpoints" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l diff -o ${TMPDIR}/difftest
     echo "output = ${output}"
     [ "$status" -eq 1 ]
     rm -rf ${TMPDIR}/difftest
 }
-@test "Differencial Backup: create full backup" {
+@test "Differential Backup: create full backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/difftest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Setup: destroy VM" {
+@test "Differential Setup: destroy VM" {
     [ -z $INCTEST ] && skip "skipping"
     run virsh destroy $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Setup: mount disk via guestmount and create file" {
+@test "Differential Setup: mount disk via guestmount and create file" {
     [ -z $INCTEST ] && skip "skipping"
     mkdir -p /empty
     run guestmount -d $VM -m /dev/sda1  /empty/
@@ -565,26 +565,26 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Setup: start VM after creating file" {
+@test "Differential Setup: start VM after creating file" {
     [ -z $INCTEST ] && skip "skipping"
     sleep 5 # not sure why..
     run virsh start $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Backup: create first differencial backup" {
+@test "Differential Backup: create first differential backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/difftest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Setup: destroy VM again" {
+@test "Differential Setup: destroy VM again" {
     [ -z $INCTEST ] && skip "skipping"
     run virsh destroy $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Setup: mount disk via guestmount and create second file" {
+@test "Differential Setup: mount disk via guestmount and create second file" {
     [ -z $INCTEST ] && skip "skipping"
     mkdir -p /empty
     run guestmount -d $VM -m /dev/sda1  /empty/
@@ -595,20 +595,20 @@ toOut() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Setup: start VM after creating second file" {
+@test "Differential Setup: start VM after creating second file" {
     [ -z $INCTEST ] && skip "skipping"
     sleep 5 # not sure why..
     run virsh start $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Backup: create second differencial backup" {
+@test "Differential Backup: create second differential backup" {
     [ -z $INCTEST ] && skip "skipping"
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/difftest
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Differencial Restore: restore data and check if both files from differencial backup exists" {
+@test "Differential Restore: restore data and check if both files from differential backup exists" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTOREINC/
     run ../virtnbdrestore -i ${TMPDIR}/difftest/ -o ${TMPDIR}/RESTOREDIFF/
@@ -688,7 +688,7 @@ toOut() {
     [ "$status" -eq 0 ]
 }
 @test "Map: Map full backup to nbd block device, check device size and partitions, mount filesystem" {
-    [ -f /.dockerenv ] && skip "wont work inside docker image"
+    [ -f /.dockerenv ] && skip "won't work inside docker image"
     [ -z $MAPTEST ] && skip "skipping"
     [ ! -z $GITHUB_JOB ] && skip "on github ci"
     modprobe nbd max_partitions=1 || true

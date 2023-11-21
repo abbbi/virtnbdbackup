@@ -1,3 +1,8 @@
+Version 1.9.46
+---------
+ * Update package dependencies in docker file.
+ * Spelling fixes
+
 Version 1.9.45
 ---------
  * virtnbdbackup: Add more info output during checkpoint handling, move

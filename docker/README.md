@@ -1,4 +1,4 @@
-## Overwiew:
+## Overview:
 
 This dockerfile is intended for scenarios where isn't viable for SysAdmins to
 provide a up-to-date dependencies (stable distros); or when this is totally
@@ -6,7 +6,7 @@ impossible due to system constraints (inmutable / embedded rootfs, docker
 oriented OSes, etc.)
 
 This image includes 'virtnbdbackup' and 'virtnbdrestore' utils installed along
-with required dependecies, and currently is being built from
+with required dependencies, and currently is being built from
 `debian:bullseye-slim` as base.
 
 It has been successfully tested on UnRaid v6.9.2, but should work the same on
@@ -98,7 +98,7 @@ device name, such as 'sda', 'vda', 'hdc', etc.
 ### Persistent container:
 In the above examples, the container will be removed as soon the invoked
 command has been executed. This is the optimal behaviour when you intend to
-automatize operations (such as incremental backups.)
+automate operations (such as incremental backups.)
 
 In addition, you can set a persistent container with all necessary bind mounts
 with:
