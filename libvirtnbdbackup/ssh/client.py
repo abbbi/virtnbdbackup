@@ -24,7 +24,6 @@ from paramiko import (  # pylint: disable=import-error
     SFTPClient,
     SSHException,
     AuthenticationException,
-    BadHostKeyException,
 )
 
 from libvirtnbdbackup.ssh import exceptions
@@ -72,12 +71,10 @@ class client:
             )
             return cli
         except AuthenticationException as e:
-            raise exceptions.sshError(
-                f"AuthenticationException occurred; did you remember to generate an SSH key? {e}"
-            )
+            raise exceptions.sshError(f"SSH key authentication failed: {e}")
         except socket.gaierror as e:
             raise exceptions.sshError(f"Unable to connect: {e}")
-        except BadHostKeyException as e:
+        except SSHException as e:
             raise exceptions.sshError(e)
         except Exception as e:
             log.exception(e)
