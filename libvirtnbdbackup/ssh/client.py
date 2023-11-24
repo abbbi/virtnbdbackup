@@ -15,6 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+import socket
 from typing import Tuple, Callable
 from enum import Enum
 from paramiko import (  # pylint: disable=import-error
@@ -23,6 +24,7 @@ from paramiko import (  # pylint: disable=import-error
     SFTPClient,
     SSHException,
     AuthenticationException,
+    BadHostKeyException,
 )
 
 from libvirtnbdbackup.ssh import exceptions
@@ -73,9 +75,13 @@ class client:
             raise exceptions.sshError(
                 f"AuthenticationException occurred; did you remember to generate an SSH key? {e}"
             )
+        except socket.gaierror as e:
+            raise exceptions.sshError(f"Unable to connect: {e}")
+        except BadHostKeyException as e:
+            raise exceptions.sshError(e)
         except Exception as e:
             log.exception(e)
-            raise exceptions.sshError(f"Unknown exception occurred: {e}")
+            raise exceptions.sshError(f"Unhandled exception occurred: {e}")
 
     @property
     def sftp(self) -> SFTPClient:

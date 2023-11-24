@@ -1,3 +1,8 @@
+Version 1.9.47
+---------
+ * Remote backup: catch more exceptions accordingly, provide better
+ error message if ssh connection fails.
+
 Version 1.9.46
 ---------
  * Update package dependencies in docker file.
