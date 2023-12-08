@@ -1,3 +1,8 @@
+Version 1.9.50
+---------
+ * Add install openssh-client to docker image required for remote backup
+ functionality (#151)
+
 Version 1.9.49
 ---------
  * Logging: Use blue color definition instead of light-blue which might not be
