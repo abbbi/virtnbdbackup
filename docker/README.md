@@ -7,7 +7,7 @@ oriented OSes, etc.)
 
 This image includes 'virtnbdbackup' and 'virtnbdrestore' utils installed along
 with required dependencies, and currently is being built from
-`debian:bullseye-slim` as base.
+`debian:bookworm-slim` as base.
 
 It has been successfully tested on UnRaid v6.9.2, but should work the same on
 many other distros, as much as below requirements can be accomplished.
