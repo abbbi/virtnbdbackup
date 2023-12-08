@@ -1,7 +1,7 @@
 # based on Docker image created by
 # Adrián Parilli <a.parilli@staffwerke.de>
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 ARG source="https://github.com/abbbi/virtnbdbackup"
 
