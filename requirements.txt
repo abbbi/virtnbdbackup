@@ -4,4 +4,4 @@ lz4>=2.1.2
 lxml
 paramiko
 typing_extensions
-colorlog>=6.4.1
+colorlog

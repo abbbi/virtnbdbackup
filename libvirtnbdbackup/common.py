@@ -41,7 +41,7 @@ logFormat = (
     " [%(threadName)s]: %(message)s"
 )
 logFormatColored = (
-    "%(green)s%(asctime)s%(reset)s%(light_blue)s %(log_color)s%(levelname)s%(reset)s "
+    "%(green)s%(asctime)s%(reset)s%(blue)s %(log_color)s%(levelname)s%(reset)s "
     "%(name)s %(module)s - %(funcName)s"
     " [%(threadName)s]: %(log_color)s %(message)s"
 )
