@@ -2,8 +2,8 @@ Version 1.9.49
 ---------
  * Update requirements.txt: light color codes are only supported
  as with colorlog >= 6.4.1. Set versioned dependency. (#148)
- * Rebase docker images on debian bookworm which includes
- compatible python3-colorlog module. (#148)
+ * Rebase docker and used vagrant images on debian bookworm which
+ includes compatible python3-colorlog module. (#148)
 
 Version 1.9.48
 ---------

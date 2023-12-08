@@ -6,7 +6,7 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "generic/debian11"
+  config.vm.box = "generic/debian12"
   config.vm.box_check_update = false
   config.vm.provider :libvirt do |libvirt|
     libvirt.cpus = 2
