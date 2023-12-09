@@ -16,6 +16,7 @@
 """
 import os
 import logging
+import ipaddress
 from time import sleep
 from dataclasses import dataclass
 import nbd
@@ -56,6 +57,14 @@ class TCP(nbdConn):
     def __post_init__(self):
         if self.tls:
             self.uri_prefix = "nbds://"
+
+        try:
+            ip = ipaddress.ip_address(self.hostname)
+            if ip.version == 6:
+                self.hostname = f"[{self.hostname}]"
+        except ValueError:
+            pass
+
         self.uri = f"{self.uri_prefix}{self.hostname}:{self.port}/{self.exportName}"
 
 
