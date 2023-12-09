@@ -130,6 +130,7 @@ class client:
         pidOut: str
         log.debug("Executing remote command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
+        logerr = ""
         if ret != 0:
             log.error(
                 "Executing command failed, return code: [%s] stderr: [%s], stdout: [%s]",
@@ -138,7 +139,7 @@ class client:
                 out,
             )
             if logFile:
-                log.debug("Attempting to catch errors from logfile")
+                log.debug("Attempting to catch errors from logfile: [%s]", logFile)
                 _, _, logerr = self._execute(f"cat {logFile}")
             raise exceptions.sshError(
                 f"Error during remote command: [{cmd}]: [{err}] [{logerr}]"
