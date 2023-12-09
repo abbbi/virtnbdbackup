@@ -5,6 +5,10 @@ Version 1.9.50
  * Check if specified ip address in `--nbd-ip` parameter is an
  ipv6 address and if so, use ipv6 ip notation for NBD client
  connection (#150)
+ * Fix NBD connection timeout: current implementation only waited
+ until NBD server on socket was reachable. Now it also attempts to
+ retry connection for remote TCP NBD servers (#150)
+ * Fix exception in ssh client during raise
 
 Version 1.9.49
 ---------

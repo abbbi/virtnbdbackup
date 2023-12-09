@@ -140,8 +140,16 @@ class client:
             if self.cType.backupSocket and not os.path.exists(self.cType.backupSocket):
                 log.info("Waiting for NBD Server, Retry: %s", retry)
                 retry = retry + 1
+                continue
 
-            connection = self._connect()
+            try:
+                connection = self._connect()
+            except exceptions.NbdConnectionError as e:
+                self.nbd = nbd.NBD()
+                log.info("Waiting for NBD Server, Retry: %s [%s]", retry, e)
+                retry = retry + 1
+                continue
+
             if connection:
                 log.info("Connection to NBD backend succeeded.")
                 self.connection = connection
