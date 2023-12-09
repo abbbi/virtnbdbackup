@@ -60,7 +60,7 @@ class TCP(nbdConn):
 
         try:
             ip = ipaddress.ip_address(self.hostname)
-            if ip.version == "6":
+            if ip.version == 6:
                 self.hostname = f"[{self.hostname}]"
         except ValueError:
             pass
