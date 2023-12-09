@@ -1,7 +1,10 @@
 Version 1.9.50
 ---------
- * Add install openssh-client to docker image required for remote backup
+ * Add openssh-client to docker image required for remote backup
  functionality (#151)
+ * Check if specified ip address in `--nbd-ip` parameter is an
+ ipv6 address and if so, use ipv6 ip notation for NBD client
+ connection (#150)
 
 Version 1.9.49
 ---------
