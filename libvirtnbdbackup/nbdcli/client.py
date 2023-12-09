@@ -150,13 +150,9 @@ class client:
                 retry = retry + 1
                 continue
 
-            if connection:
-                log.info("Connection to NBD backend succeeded.")
-                self.connection = connection
-                return self
-
-            log.info("Waiting for NBD Server, Retry: %s", retry)
-            retry = retry + 1
+            log.info("Connection to NBD backend succeeded.")
+            self.connection = connection
+            return self
 
     def disconnect(self) -> None:
         """Close nbd connection handle"""
