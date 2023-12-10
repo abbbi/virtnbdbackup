@@ -184,7 +184,7 @@ def copy(args: Namespace, source: str, target: str) -> None:
     """Copy file, handle exceptions"""
     try:
         if args.sshClient:
-            args.sshClient.copy(source, target)
+            args.sshClient.sftp.put(source, target)
         else:
             shutil.copyfile(source, target)
     except OSError as e:
