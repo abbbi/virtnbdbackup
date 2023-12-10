@@ -581,7 +581,11 @@ def main() -> None:
         help="Directory including a backup set",
     )
     opt.add_argument(
-        "-o", "--output", required=True, type=str, help="Restore target directory, creates the directory if it doesn't exist.",
+        "-o",
+        "--output",
+        required=True,
+        type=str,
+        help="Restore target directory, creates the directory if it doesn't exist.",
     )
     opt.add_argument(
         "-u",
