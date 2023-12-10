@@ -24,7 +24,6 @@ import logging
 import argparse
 import pprint
 import json
-import pathlib
 from argparse import Namespace
 from typing import List, Union, Dict
 from libvirtnbdbackup import argopt
@@ -516,7 +515,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
 def restoreConfig(args: Namespace, vmConfig: str, adjustedConfig: bytes) -> None:
     """Restore either original or adjusted vm configuration
     to new directory"""
-    targetFile = str(pathlib.Path(args.output).joinpath(os.path.basename(vmConfig)))
+    targetFile = str(os.path.join(args.output, os.path.basename(vmConfig)))
     if args.adjust_config is True:
         if args.sshClient:
             with tempfile.NamedTemporaryFile(delete=True) as fh:
