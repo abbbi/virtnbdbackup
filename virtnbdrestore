@@ -515,7 +515,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
 def restoreConfig(args: Namespace, vmConfig: str, adjustedConfig: bytes) -> None:
     """Restore either original or adjusted vm configuration
     to new directory"""
-    targetFile = f"{args.output}/{os.path.basename(vmConfig)}"
+    targetFile = str(os.path.join(args.output, os.path.basename(vmConfig)))
     if args.adjust_config is True:
         if args.sshClient:
             with tempfile.NamedTemporaryFile(delete=True) as fh:
@@ -580,7 +580,11 @@ def main() -> None:
         help="Directory including a backup set",
     )
     opt.add_argument(
-        "-o", "--output", required=True, type=str, help="Restore target directory"
+        "-o",
+        "--output",
+        required=True,
+        type=str,
+        help="Restore target directory, creates the directory if it doesn't exist.",
     )
     opt.add_argument(
         "-u",
@@ -716,7 +720,8 @@ def main() -> None:
             if not args.sshClient:
                 logging.error("Remote restore detected but ssh session setup failed")
                 sys.exit(1)
-            args.sshClient.sftp.mkdir(args.output)
+            if not args.sshClient.exists(args.output):
+                args.sshClient.sftp.mkdir(args.output)
         else:
             output.target.Directory().create(args.output)
 
