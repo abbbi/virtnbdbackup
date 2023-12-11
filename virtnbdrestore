@@ -42,6 +42,7 @@ from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
 from libvirtnbdbackup.sparsestream import exceptions
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.virt.client import DomainDisk
 
 
@@ -248,7 +249,10 @@ def restoreSequence(
         connection = startNbd(args, diskName, targetFile, virtClient)
     except ProcessError as errmsg:
         logging.error(errmsg)
-        raise RestoreError("Failed to start NBD server.") from errmsg
+        raise RestoreError("Failed to start local NBD server.") from errmsg
+    except sshError as errmsg:
+        logging.error(errmsg)
+        raise RestoreError("Failed to start remote NBD server.") from errmsg
 
     for disk in dataFiles:
         sourceFile = f"{args.input}/{disk}"
@@ -491,7 +495,10 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
             connection = startNbd(args, meta["diskName"], targetFile, virtClient)
         except ProcessError as errmsg:
             logging.error(errmsg)
-            raise RestoreError("Failed to start NBD server.") from errmsg
+            raise RestoreError("Failed to start local NBD server.") from errmsg
+        except sshError as errmsg:
+            logging.error(errmsg)
+            raise RestoreError("Failed to start remote NBD server.") from errmsg
 
         for dataFile in restoreDisk:
             try:

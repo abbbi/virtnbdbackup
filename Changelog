@@ -1,6 +1,8 @@
 Version 1.9.51
 ---------
  * Slight change in log message wording.
+ * Remote restore: if starting NBD service on remote system fails, catch
+ exceptions accordingly.
  * CI: enhance remote backup check: test if UEFI loader files are copied
  correctly during remote backup.
 
