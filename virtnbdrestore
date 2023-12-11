@@ -123,7 +123,7 @@ def restoreData(
         # pylint: disable=consider-using-with
         reader = open(dataFile, "rb")
     except OSError as errmsg:
-        logging.critical("Failed to open backup file for reading: [%s].", errmsg)
+        logging.error("Failed to open backup file for reading: [%s].", errmsg)
         raise RestoreError from errmsg
 
     try:
@@ -755,7 +755,7 @@ def main() -> None:
             else:
                 restConfig = restore(args, ConfigFile, virtClient)
         except RestoreError as errmsg:
-            logging.fatal("Disk restore failed: [%s]", errmsg)
+            logging.error("Disk restore failed: [%s]", errmsg)
             sys.exit(1)
 
         restoreFiles(args, ConfigFile, virtClient)
