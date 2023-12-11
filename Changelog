@@ -8,6 +8,8 @@ Version 1.9.51
  * virtnbdrestore: Set SSH session mode to UPLOAD, otherwise uploading
  files such as UEFI images and vm config fails.
  * virtnbdrestore: Catch exception if connection to libvirt fails
+ * virtnbdrestore: Create target directory on remote system only if it does
+ not exist, Thanks @draggeta
  * CI: enhance remote backup check: test if UEFI loader files are copied
  correctly during remote backup.
 

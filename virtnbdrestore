@@ -24,6 +24,7 @@ import logging
 import argparse
 import pprint
 import json
+import pathlib
 from argparse import Namespace
 from typing import List, Union, Dict
 from libvirtnbdbackup import argopt
@@ -523,7 +524,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
 def restoreConfig(args: Namespace, vmConfig: str, adjustedConfig: bytes) -> None:
     """Restore either original or adjusted vm configuration
     to new directory"""
-    targetFile = f"{args.output}/{os.path.basename(vmConfig)}"
+    targetFile = str(os.path.join(args.output, os.path.basename(vmConfig)))
     if args.adjust_config is True:
         if args.sshClient:
             with tempfile.NamedTemporaryFile(delete=True) as fh:
@@ -730,7 +731,9 @@ def main() -> None:
             if not args.sshClient:
                 logging.error("Remote restore detected but ssh session setup failed")
                 sys.exit(1)
-            args.sshClient.sftp.mkdir(args.output)
+            if not args.sshClient.exists(args.output):
+                logging.info("Create target directory: [%s]", args.output)
+                args.sshClient.sftp.mkdir(args.output)
         else:
             output.target.Directory().create(args.output)
 
