@@ -70,7 +70,7 @@ def setLogLevel(verbose: bool) -> int:
 
 
 def sshSession(
-    args: Namespace, remoteHost: str, mode=ssh.Mode.DOWNLOAD
+    args: Namespace, remoteHost: str, mode: ssh.Mode = ssh.Mode.DOWNLOAD
 ) -> Union[ssh.client, None]:
     """Use ssh to copy remote files"""
     try:
