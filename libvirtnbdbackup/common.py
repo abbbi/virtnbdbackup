@@ -30,6 +30,7 @@ from tqdm import tqdm
 import colorlog
 
 from libvirtnbdbackup import ssh
+from libvirtnbdbackup.ssh.client import Mode
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup import output
 from libvirtnbdbackup.logcount import logCount
@@ -72,6 +73,8 @@ def setLogLevel(verbose: bool) -> int:
 def sshSession(args: Namespace, remoteHost: str) -> Union[ssh.client, None]:
     """Use ssh to copy remote files"""
     try:
+        if args.action == "restore":
+            return ssh.client(remoteHost, args.ssh_user, mode=Mode.UPLOAD)
         return ssh.client(remoteHost, args.ssh_user)
     except sshError as err:
         log.warning("Failed to setup SSH connection: [%s]", err)
@@ -184,7 +187,7 @@ def copy(args: Namespace, source: str, target: str) -> None:
     """Copy file, handle exceptions"""
     try:
         if args.sshClient:
-            args.sshClient.sftp.put(source, target)
+            args.sshClient.copy(source, target)
         else:
             shutil.copyfile(source, target)
     except OSError as e:
