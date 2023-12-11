@@ -1,3 +1,9 @@
+Version 1.9.51
+---------
+ * Slight change in log message wording.
+ * CI: enhance remote backup check: test if UEFI loader files are copied
+ correctly during remote bacup.
+
 Version 1.9.50
 ---------
  * Add openssh-client to docker image required for remote backup

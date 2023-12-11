@@ -650,6 +650,10 @@ toOut() {
     echo "output = ${output}"
     [[ "${output}" =~  "Connecting remote system" ]]
     [ "$status" -eq 0 ]
+    if [ ! -z ${VM_UEFI_VARS} ]; then
+        [ -e "${TMPDIR}/remotebackup/UEFI.fd" ]
+        [ -e "${TMPDIR}/remotebackup/UEFI_VARS.fd" ]
+    fi
 }
 @test "Backup: test remote backup functionality via localhost to zip file" {
     [ -z $GITHUB_JOB ] && skip "skip locally"
