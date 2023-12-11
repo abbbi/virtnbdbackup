@@ -42,8 +42,10 @@ from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
 from libvirtnbdbackup.sparsestream import exceptions
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
-from libvirtnbdbackup.ssh.exceptions import sshError
+from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.ssh import Mode
 from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.virt.exceptions import connectionFailed
 
 
 def dump(args: Namespace, stream, dataFiles: List[str]) -> bool:
@@ -716,9 +718,15 @@ def main() -> None:
         if args.define is True:
             args.adjust_config = True
 
-        virtClient = virt.client(args)
+        try:
+            virtClient = virt.client(args)
+        except connectionFailed as e:
+            logging.error("Unable to connect libvirt: [%s]", e)
+            sys.exit(1)
         if virtClient.remoteHost:
-            args.sshClient = lib.sshSession(args, virtClient.remoteHost)
+            args.sshClient = lib.sshSession(
+                args, virtClient.remoteHost, mode=Mode.UPLOAD
+            )
             if not args.sshClient:
                 logging.error("Remote restore detected but ssh session setup failed")
                 sys.exit(1)

@@ -69,10 +69,12 @@ def setLogLevel(verbose: bool) -> int:
     return level
 
 
-def sshSession(args: Namespace, remoteHost: str) -> Union[ssh.client, None]:
+def sshSession(
+    args: Namespace, remoteHost: str, mode=ssh.Mode.DOWNLOAD
+) -> Union[ssh.client, None]:
     """Use ssh to copy remote files"""
     try:
-        return ssh.client(remoteHost, args.ssh_user)
+        return ssh.client(remoteHost, args.ssh_user, mode)
     except sshError as err:
         log.warning("Failed to setup SSH connection: [%s]", err)
 

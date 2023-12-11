@@ -5,6 +5,9 @@ Version 1.9.51
  exceptions accordingly.
  * virtnbdrestore: if --nbd-ip parameter is set, pass -b option to qemu-nbd
  command so the NDB service binds to specified IP address.
+ * virtnbdrestore: Set SSH session mode to UPLOAD, otherwise uploading
+ files such as UEFI images and vm config fails.
+ * virtnbdrestore: Catch exception if connection to libvirt fails
  * CI: enhance remote backup check: test if UEFI loader files are copied
  correctly during remote backup.
 
