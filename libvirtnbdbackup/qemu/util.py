@@ -144,6 +144,9 @@ class util:
         ]
         if args.tls is True:
             self._addTls(cmd, args.tls_cert)
+        if args.nbd_ip != "":
+            cmd.append("-b")
+            cmd.append(args.nbd_ip)
         cmd.append(f"> {logFile} 2>&1")
         try:
             return args.sshClient.run(" ".join(cmd), pidFile, logFile)

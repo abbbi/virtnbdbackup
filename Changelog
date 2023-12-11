@@ -1,8 +1,10 @@
 Version 1.9.51
 ---------
  * Slight change in log message wording.
- * Remote restore: if starting NBD service on remote system fails, catch
+ * virtnbdrestore: if starting NBD service on remote system fails, catch
  exceptions accordingly.
+ * virtnbdrestore: if --nbd-ip parameter is set, pass -b option to qemu-nbd
+ command so the NDB service binds to specified IP address.
  * CI: enhance remote backup check: test if UEFI loader files are copied
  correctly during remote backup.
 

@@ -378,9 +378,8 @@ def startNbd(
         if args.nbd_ip != "":
             remoteIP = args.nbd_ip
         logging.info(
-            "Starting remote NBD server on socket: [%s:%s], port: [%s]",
+            "Starting remote NBD server on socket: [%s:%s]",
             remoteIP,
-            args.socketfile,
             args.nbd_port,
         )
         proc = qFh.startRemoteRestoreNbdServer(args, targetFile)
