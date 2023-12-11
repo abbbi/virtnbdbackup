@@ -24,7 +24,6 @@ import logging
 import argparse
 import pprint
 import json
-import pathlib
 from argparse import Namespace
 from typing import List, Union, Dict
 from libvirtnbdbackup import argopt
@@ -62,7 +61,7 @@ def dump(args: Namespace, stream, dataFiles: List[str]) -> bool:
 
         sourceFile = dataFile
         if args.sequence:
-            sourceFile = f"{args.input}/{dataFile}"
+            sourceFile = os.path.join(args.input, dataFile)
 
         try:
             meta = getHeader(sourceFile, stream)
@@ -91,7 +90,7 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
 
         sourceFile = dataFile
         if args.sequence:
-            sourceFile = f"{args.input}/{dataFile}"
+            sourceFile = os.path.join(args.input, dataFile)
 
         with output.openfile(sourceFile, "rb") as vfh:
             adler = 1
@@ -233,13 +232,13 @@ def restoreSequence(
 
     result: bool = False
 
-    sourceFile = f"{args.input}/{dataFiles[-1]}"
+    sourceFile = os.path.join(args.input, dataFiles[-1])
     meta = getHeader(sourceFile, stream)
     if not meta:
         return result
 
     diskName = meta["diskName"]
-    targetFile = f"{args.output}/{diskName}"
+    targetFile = os.path.join(args.output, diskName)
     if lib.exists(args, targetFile):
         raise RestoreError(f"Targetfile {targetFile} already exists.")
 
@@ -258,7 +257,7 @@ def restoreSequence(
         raise RestoreError("Failed to start remote NBD server.") from errmsg
 
     for disk in dataFiles:
-        sourceFile = f"{args.input}/{disk}"
+        sourceFile = os.path.join(args.input, disk)
         result = writeData(args, stream, sourceFile, targetFile, connection)
 
     connection.disconnect()
@@ -439,9 +438,9 @@ def setTargetFile(args: Namespace, disk: DomainDisk) -> str:
     """Based on disk information, set target file
     to write"""
     if disk.filename is not None:
-        targetFile = f"{args.output}/{disk.filename}"
+        targetFile = os.path.join(args.output, disk.filename)
     else:
-        targetFile = f"{args.output}/{disk.target}"
+        targetFile = os.path.join(args.output, disk.target)
 
     return targetFile
 
@@ -524,7 +523,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
 def restoreConfig(args: Namespace, vmConfig: str, adjustedConfig: bytes) -> None:
     """Restore either original or adjusted vm configuration
     to new directory"""
-    targetFile = str(os.path.join(args.output, os.path.basename(vmConfig)))
+    targetFile = os.path.join(args.output, os.path.basename(vmConfig))
     if args.adjust_config is True:
         if args.sshClient:
             with tempfile.NamedTemporaryFile(delete=True) as fh:
