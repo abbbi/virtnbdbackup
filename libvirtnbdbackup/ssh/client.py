@@ -103,7 +103,7 @@ class client:
         try:
             self.sftp.get(filepath, localpath)
         except SSHException as e:
-            log.warning("Error during file copy: [%s]", e)
+            log.warning("Unable to download file: [%s]", e)
 
     def copyTo(self, localpath: str, remotepath: str) -> None:
         """
@@ -113,7 +113,7 @@ class client:
         try:
             self.sftp.put(localpath, remotepath)
         except SSHException as e:
-            log.warning("Error during file copy: [%s]", e)
+            log.warning("Unable to upload file: [%s]", e)
 
     def _execute(self, cmd) -> Tuple[int, str, str]:
         _, stdout, stderr = self.connection.exec_command(cmd)
