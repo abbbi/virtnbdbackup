@@ -31,7 +31,6 @@ from libvirtnbdbackup import __version__
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import chunk
 from libvirtnbdbackup import lz4
-from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.restore import server
 from libvirtnbdbackup.restore import image
 from libvirtnbdbackup import output
@@ -41,7 +40,6 @@ from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream.exceptions import StreamFormatException
 from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
-from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh import Mode
 from libvirtnbdbackup.virt.client import DomainDisk
