@@ -38,8 +38,8 @@ from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
+from libvirtnbdbackup.sparsestream.exceptions import StreamFormatException
 from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
-from libvirtnbdbackup.sparsestream import exceptions
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh import Mode
@@ -129,7 +129,7 @@ def restoreData(
     try:
         kind, start, length = stream.readFrame(reader)
         meta = stream.loadMetadata(reader.read(length))
-    except exceptions.StreamFormatException as errmsg:
+    except StreamFormatException as errmsg:
         logging.fatal(errmsg)
         raise RestoreError from errmsg
 
@@ -157,7 +157,7 @@ def restoreData(
     while True:
         try:
             kind, start, length = stream.readFrame(reader)
-        except exceptions.StreamFormatException as err:
+        except StreamFormatException as err:
             logging.error("Can't read stream at pos: [%s]: [%s]", reader.tell(), err)
             raise RestoreError from err
         if kind == sTypes.ZERO:
@@ -355,7 +355,7 @@ def getHeader(diskFile: str, stream) -> Dict[str, str]:
     """Read header from data file"""
     try:
         return lib.dumpMetaData(diskFile, stream)
-    except exceptions.StreamFormatException as errmsg:
+    except StreamFormatException as errmsg:
         raise RestoreError(
             f"Reading metadata from [{diskFile}] failed: [{errmsg}]"
         ) from errmsg
