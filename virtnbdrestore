@@ -33,6 +33,7 @@ from libvirtnbdbackup import lz4
 from libvirtnbdbackup.restore import server
 from libvirtnbdbackup.restore import image
 from libvirtnbdbackup.restore import vmconfig
+from libvirtnbdbackup.restore import files
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
@@ -279,27 +280,6 @@ def getHeader(diskFile: str, stream) -> Dict[str, str]:
         raise RestoreError(
             f"Reading data file [{diskFile}] failed: [{errmsg}]"
         ) from errmsg
-
-
-def restoreFiles(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
-    """Notice user if backed up vm had loader / nvram"""
-    config = vmconfig.read(vmConfig)
-    info = virtClient.getDomainInfo(config)
-
-    for setting, val in info.items():
-        f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
-        if lib.exists(args, val):
-            logging.info(
-                "File [%s]: for boot option [%s] already exists, skipping.",
-                val,
-                setting,
-            )
-            continue
-
-        logging.info(
-            "Restoring configured file [%s] for boot option [%s]", val, setting
-        )
-        lib.copy(args, f[0], val)
 
 
 def setTargetFile(args: Namespace, disk: DomainDisk) -> str:
@@ -598,7 +578,7 @@ def main() -> None:
             logging.error("Disk restore failed: [%s]", errmsg)
             sys.exit(1)
 
-        restoreFiles(args, ConfigFile, virtClient)
+        files.restore(args, ConfigFile, virtClient)
         vmconfig.restore(args, ConfigFile, restConfig)
         virtClient.refreshPool(args.output)
         if args.define is True:
