@@ -25,14 +25,14 @@ import argparse
 import pprint
 import json
 from argparse import Namespace
-from typing import List, Union, Dict
+from typing import List, Dict
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
-from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import chunk
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.qemu import util as qemu
+from libvirtnbdbackup.restore import server
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
@@ -43,7 +43,6 @@ from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh import Mode
-from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt.exceptions import connectionFailed
 
@@ -247,14 +246,7 @@ def restoreSequence(
     except RestoreError as errmsg:
         raise errmsg
 
-    try:
-        connection = startNbd(args, diskName, targetFile, virtClient)
-    except ProcessError as errmsg:
-        logging.error(errmsg)
-        raise RestoreError("Failed to start local NBD server.") from errmsg
-    except sshError as errmsg:
-        logging.error(errmsg)
-        raise RestoreError("Failed to start remote NBD server.") from errmsg
+    connection = server.start(args, diskName, targetFile, virtClient)
 
     for disk in dataFiles:
         sourceFile = os.path.join(args.input, disk)
@@ -365,33 +357,6 @@ def getHeader(diskFile: str, stream) -> Dict[str, str]:
         ) from errmsg
 
 
-def startNbd(
-    args: Namespace, exportName: str, targetFile: str, virtClient: virt.client
-):
-    """Start NBD service required for restore, either remote or local"""
-    qFh = qemu.util(exportName)
-    cType: Union[nbdcli.TCP, nbdcli.Unix]
-    if not virtClient.remoteHost:
-        logging.info("Starting local NBD server on socket: [%s]", args.socketfile)
-        proc = qFh.startRestoreNbdServer(targetFile, args.socketfile)
-        cType = nbdcli.Unix(exportName, "", args.socketfile)
-    else:
-        remoteIP = virtClient.remoteHost
-        if args.nbd_ip != "":
-            remoteIP = args.nbd_ip
-        logging.info(
-            "Starting remote NBD server on socket: [%s:%s]",
-            remoteIP,
-            args.nbd_port,
-        )
-        proc = qFh.startRemoteRestoreNbdServer(args, targetFile)
-        cType = nbdcli.TCP(exportName, "", remoteIP, args.tls, args.nbd_port)
-
-    nbdClient = nbdcli.client(cType)
-    logging.info("Started NBD server, PID: [%s]", proc.pid)
-    return nbdClient.connect()
-
-
 def readConfig(ConfigFile: str) -> str:
     """Read saved virtual machine config'"""
     try:
@@ -492,14 +457,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
         except RestoreError as errmsg:
             raise RestoreError("Creating target image failed.") from errmsg
 
-        try:
-            connection = startNbd(args, meta["diskName"], targetFile, virtClient)
-        except ProcessError as errmsg:
-            logging.error(errmsg)
-            raise RestoreError("Failed to start local NBD server.") from errmsg
-        except sshError as errmsg:
-            logging.error(errmsg)
-            raise RestoreError("Failed to start remote NBD server.") from errmsg
+        connection = server.start(args, meta["diskName"], targetFile, virtClient)
 
         for dataFile in restoreDisk:
             try:
