@@ -28,6 +28,7 @@ from libvirtnbdbackup.exceptions import RestoreError
 
 log = logging.getLogger("restore")
 
+
 def setup(args: Namespace, exportName: str, targetFile: str, virtClient: virt.client):
     """Setup NBD process required for restore, either remote or local"""
     qFh = qemu.util(exportName)
