@@ -16,9 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
+import zlib
 import logging
+from typing import List
 from argparse import Namespace
 from libvirtnbdbackup import virt
+from libvirtnbdbackup import output
 from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup import common as lib
 
@@ -42,3 +45,41 @@ def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
             "Restoring configured file [%s] for boot option [%s]", val, setting
         )
         lib.copy(args, f[0], val)
+
+
+def verify(args: Namespace, dataFiles: List[str]) -> bool:
+    """Compute adler32 checksum for exiting data files and
+    compare with checksums computed during backup."""
+    for dataFile in dataFiles:
+        if args.disk is not None and not os.path.basename(dataFile).startswith(
+            args.disk
+        ):
+            continue
+        logging.debug("Using buffer size: %s", args.buffsize)
+        logging.info("Computing checksum for: %s", dataFile)
+
+        sourceFile = dataFile
+        if args.sequence:
+            sourceFile = os.path.join(args.input, dataFile)
+
+        with output.openfile(sourceFile, "rb") as vfh:
+            adler = 1
+            data = vfh.read(args.buffsize)
+            while data:
+                adler = zlib.adler32(data, adler)
+                data = vfh.read(args.buffsize)
+
+        chksumFile = f"{sourceFile}.chksum"
+        logging.info("Checksum result: %s", adler)
+        if not os.path.exists(chksumFile):
+            logging.info("No checksum found, skipping: [%s]", sourceFile)
+            continue
+        logging.info("Comparing checksum with stored information")
+        with output.openfile(chksumFile, "r") as s:
+            storedSum = int(s.read())
+        if storedSum != adler:
+            logging.error("Stored sums do not match: [%s]!=[%s]", storedSum, adler)
+            return False
+
+        logging.info("OK")
+    return True

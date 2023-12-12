@@ -17,7 +17,6 @@
 """
 import os
 import io
-import zlib
 import sys
 import logging
 import argparse
@@ -74,41 +73,6 @@ def dump(args: Namespace, stream, dataFiles: List[str]) -> bool:
 
     print(json.dumps(entries, indent=4))
 
-    return True
-
-
-def verify(args: Namespace, dataFiles: List[str]) -> bool:
-    """Compute adler32 checksum"""
-    for dataFile in dataFiles:
-        if args.disk is not None and not os.path.basename(dataFile).startswith(
-            args.disk
-        ):
-            continue
-        logging.debug("Using buffer size: %s", args.buffsize)
-        logging.info("Computing checksum for: %s", dataFile)
-
-        sourceFile = dataFile
-        if args.sequence:
-            sourceFile = os.path.join(args.input, dataFile)
-
-        with output.openfile(sourceFile, "rb") as vfh:
-            adler = 1
-            data = vfh.read(args.buffsize)
-            while data:
-                adler = zlib.adler32(data, adler)
-                data = vfh.read(args.buffsize)
-
-        chksumFile = f"{sourceFile}.chksum"
-        logging.info("Checksum result: %s", adler)
-        if os.path.exists(chksumFile):
-            logging.info("Comparing checksum with stored information")
-            with output.openfile(chksumFile, "r") as s:
-                storedSum = int(s.read())
-            if storedSum != adler:
-                logging.error("Stored sums do not match: [%s]!=[%s]", storedSum, adler)
-                return False
-
-            logging.info("OK")
     return True
 
 
@@ -530,7 +494,7 @@ def main() -> None:
         sys.exit(0)
 
     if args.action == "verify" or args.output == "verify":
-        if not verify(args, dataFiles):
+        if not files.verify(args, dataFiles):
             sys.exit(1)
         sys.exit(0)
 
