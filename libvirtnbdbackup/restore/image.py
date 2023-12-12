@@ -19,7 +19,6 @@ import logging
 import json
 from argparse import Namespace
 from typing import List, Dict
-from libvirtnbdbackup import __version__
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib

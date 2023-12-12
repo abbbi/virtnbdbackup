@@ -18,7 +18,6 @@
 import logging
 from argparse import Namespace
 from typing import Union
-from libvirtnbdbackup import __version__
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.qemu import util as qemu

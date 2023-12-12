@@ -19,7 +19,6 @@ import os
 import io
 import zlib
 import sys
-import tempfile
 import logging
 import argparse
 import pprint
@@ -33,6 +32,7 @@ from libvirtnbdbackup import chunk
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.restore import server
 from libvirtnbdbackup.restore import image
+from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
@@ -281,30 +281,9 @@ def getHeader(diskFile: str, stream) -> Dict[str, str]:
         ) from errmsg
 
 
-def readConfig(ConfigFile: str) -> str:
-    """Read saved virtual machine config'"""
-    try:
-        return output.openfile(ConfigFile, "rb").read().decode()
-    except:
-        logging.error("Can't read config file: [%s]", ConfigFile)
-        raise
-
-
-def checkBackingStore(args: Namespace, disk: DomainDisk) -> None:
-    """If an virtual machine was running on an snapshot image,
-    warn user, the virtual machine configuration has to be
-    adjusted before starting the VM is possible"""
-    if len(disk.backingstores) > 0 and not args.adjust_config:
-        logging.warning(
-            "Target image [%s] seems to be a snapshot image.", disk.filename
-        )
-        logging.warning("Target virtual machine configuration must be altered!")
-        logging.warning("Configured backing store images must be changed.")
-
-
 def restoreFiles(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
     """Notice user if backed up vm had loader / nvram"""
-    config = readConfig(vmConfig)
+    config = vmconfig.read(vmConfig)
     info = virtClient.getDomainInfo(config)
 
     for setting, val in info.items():
@@ -337,7 +316,7 @@ def setTargetFile(args: Namespace, disk: DomainDisk) -> str:
 def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
     """Handle restore operation"""
     stream = streamer.SparseStream(types)
-    vmConfig = readConfig(ConfigFile)
+    vmConfig = vmconfig.read(ConfigFile)
     vmDisks = virtClient.getDomainDisks(args, vmConfig)
     if not vmDisks:
         raise RestoreError("Unable to parse disks from config")
@@ -391,7 +370,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
             except RestoreError:
                 break
 
-        checkBackingStore(args, disk)
+        vmconfig.backingstore(args, disk)
         if args.adjust_config is True:
             restConfig = virtClient.adjustDomainConfig(args, disk, vmConfig, targetFile)
         else:
@@ -400,27 +379,6 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
         connection.disconnect()
 
     return restConfig
-
-
-def restoreConfig(args: Namespace, vmConfig: str, adjustedConfig: bytes) -> None:
-    """Restore either original or adjusted vm configuration
-    to new directory"""
-    targetFile = os.path.join(args.output, os.path.basename(vmConfig))
-    if args.adjust_config is True:
-        if args.sshClient:
-            with tempfile.NamedTemporaryFile(delete=True) as fh:
-                fh.write(adjustedConfig)
-                lib.copy(args, fh.name, targetFile)
-        else:
-            with output.openfile(targetFile, "wb") as cnf:
-                cnf.write(adjustedConfig)
-            logging.info("Adjusted config placed in: [%s]", targetFile)
-        if args.define is False:
-            logging.info("Use 'virsh define %s' to define VM", targetFile)
-    else:
-        lib.copy(args, vmConfig, targetFile)
-        logging.info("Copied original vm config to [%s]", targetFile)
-        logging.info("Note: virtual machine config must be adjusted manually.")
 
 
 def main() -> None:
@@ -641,7 +599,7 @@ def main() -> None:
             sys.exit(1)
 
         restoreFiles(args, ConfigFile, virtClient)
-        restoreConfig(args, ConfigFile, restConfig)
+        vmconfig.restore(args, ConfigFile, restConfig)
         virtClient.refreshPool(args.output)
         if args.define is True:
             if not virtClient.defineDomain(restConfig, autoStart):
