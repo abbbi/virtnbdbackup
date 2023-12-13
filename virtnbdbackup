@@ -36,11 +36,11 @@ from libvirtnbdbackup import output
 from libvirtnbdbackup.output import stream
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
-from libvirtnbdbackup import metadata
 from libvirtnbdbackup import exceptions
 from libvirtnbdbackup import partialfile
 from libvirtnbdbackup.backup import job
 from libvirtnbdbackup.backup import disk
+from libvirtnbdbackup.backup import metadata
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.virt.exceptions import (
     domainNotFound,
