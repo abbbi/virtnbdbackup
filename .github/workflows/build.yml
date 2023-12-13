@@ -52,7 +52,7 @@ jobs:
                     python3-libvirt \
                     python3-lxml \
                     python3-paramiko \
-                    python3-colorlog \
+                    python3-colorlog
                   cd /work/
                   python3 setup.py --command-packages=stdeb.command bdist_deb
                   mv deb_dist/* dist/
