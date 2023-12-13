@@ -4,12 +4,12 @@ on: [push]
 
 jobs:
     compile:
-        name: rhel8
+        name: build
         runs-on: ubuntu-latest
         steps:
           - name: Check out the repo
             uses: actions/checkout@v2
-          - name: Run the build process with Docker
+          - name: Build on rhel8
             uses: addnab/docker-run-action@v3
             with:
                 image: almalinux:8
@@ -19,27 +19,18 @@ jobs:
                   cd /work/
                   python --version
                   python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
-        name: rhel9
-        runs-on: ubuntu-latest
-        steps:
-          - name: Check out the repo
-            uses: actions/checkout@v2
-          - name: Run the build process with Docker
+          - name: Build on rhel9
             uses: addnab/docker-run-action@v3
             with:
                 image: almalinux:8
                 options: -v ${{ github.workspace }}:/work
                 run: |
-                  yum -yq install rpm-build epel-release python3
+                  yum -yq install rpm-build epel-release python3 python3-setuptools
                   cd /work/
-                  python --version
-                  python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
+                  python3.9 setup.py bdist_rpm --python /usr/bin/python3.9 --requires "python3-libvirt python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog"
           - name: Archive Test Results
             if: always()
             uses: actions/upload-artifact@v1
             with:
               name: rhel8
               path: dist/
-
-
-
