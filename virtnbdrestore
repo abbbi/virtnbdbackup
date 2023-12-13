@@ -46,7 +46,7 @@ from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt.exceptions import connectionFailed
 
 
-def dump(args: Namespace, stream, dataFiles: List[str]) -> bool:
+def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -> bool:
     """Dump stream contents to json output"""
     logging.info("Dumping saveset meta information")
     entries = []
@@ -77,7 +77,11 @@ def dump(args: Namespace, stream, dataFiles: List[str]) -> bool:
 
 
 def restoreData(
-    args: Namespace, stream, dataFile: str, targetFile: str, connection
+    args: Namespace,
+    stream: streamer.SparseStream,
+    dataFile: str,
+    targetFile: str,
+    connection,
 ) -> bool:
     """Restore data for disk"""
     sTypes = types.SparseStreamTypes()
@@ -221,7 +225,13 @@ def restoreSequence(
     return result
 
 
-def writeData(args: Namespace, stream, disk: str, targetFile: str, connection) -> bool:
+def writeData(
+    args: Namespace,
+    stream: streamer.SparseStream,
+    disk: str,
+    targetFile: str,
+    connection,
+) -> bool:
     """Restore the data stream to the target file"""
     diskState = False
     diskState = restoreData(args, stream, disk, targetFile, connection)
@@ -232,7 +242,7 @@ def writeData(args: Namespace, stream, disk: str, targetFile: str, connection) -
     return diskState
 
 
-def getHeader(diskFile: str, stream) -> Dict[str, str]:
+def getHeader(diskFile: str, stream: streamer.SparseStream) -> Dict[str, str]:
     """Read header from data file"""
     try:
         return lib.dumpMetaData(diskFile, stream)
