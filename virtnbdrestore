@@ -20,7 +20,6 @@ import io
 import sys
 import logging
 import argparse
-import json
 from argparse import Namespace
 from typing import List
 from libvirtnbdbackup import argopt
@@ -41,36 +40,6 @@ from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
 from libvirtnbdbackup.ssh import Mode
 from libvirtnbdbackup.virt.exceptions import connectionFailed
-
-
-def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -> bool:
-    """Dump stream contents to json output"""
-    logging.info("Dumping saveset meta information")
-    entries = []
-    for dataFile in dataFiles:
-        if args.disk is not None and not os.path.basename(dataFile).startswith(
-            args.disk
-        ):
-            continue
-        logging.info(dataFile)
-
-        sourceFile = dataFile
-        if args.sequence:
-            sourceFile = os.path.join(args.input, dataFile)
-
-        try:
-            meta = header.get(sourceFile, stream)
-        except RestoreError:
-            continue
-
-        entries.append(meta)
-
-        if lib.isCompressed(meta):
-            logging.info("Compressed stream found: [%s].", meta["compressionMethod"])
-
-    print(json.dumps(entries, indent=4))
-
-    return True
 
 
 def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
@@ -306,7 +275,7 @@ def main() -> None:
             sys.exit(1)
 
     if args.action == "dump" or args.output == "dump":
-        dump(args, stream, dataFiles)
+        files.dump(args, stream, dataFiles)
         sys.exit(0)
 
     if args.action == "verify" or args.output == "verify":

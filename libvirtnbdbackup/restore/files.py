@@ -17,14 +17,18 @@
 """
 import os
 import zlib
+import json
 import logging
 from typing import List
 from argparse import Namespace
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import output
 from libvirtnbdbackup.restore import vmconfig
+from libvirtnbdbackup.restore import header
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.sparsestream import streamer
+from libvirtnbdbackup.exceptions import RestoreError
 
 
 def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
@@ -83,6 +87,37 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
             return False
 
         logging.info("OK")
+    return True
+
+
+def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -> bool:
+    """Dump stream contents to json output"""
+    logging.info("Dumping saveset meta information")
+    entries = []
+    for dataFile in dataFiles:
+        if args.disk is not None and not os.path.basename(dataFile).startswith(
+            args.disk
+        ):
+            continue
+        logging.info(dataFile)
+
+        sourceFile = dataFile
+        if args.sequence:
+            sourceFile = os.path.join(args.input, dataFile)
+
+        try:
+            meta = header.get(sourceFile, stream)
+        except RestoreError as e:
+            logging.error(e)
+            continue
+
+        entries.append(meta)
+
+        if lib.isCompressed(meta):
+            logging.info("Compressed stream found: [%s].", meta["compressionMethod"])
+
+    print(json.dumps(entries, indent=4))
+
     return True
 
 
