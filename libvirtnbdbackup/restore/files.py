@@ -24,6 +24,7 @@ from libvirtnbdbackup import virt
 from libvirtnbdbackup import output
 from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup import common as lib
+from libvirtnbdbackup.virt.client import DomainDisk
 
 
 def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
@@ -83,3 +84,14 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
 
         logging.info("OK")
     return True
+
+
+def target(args: Namespace, disk: DomainDisk) -> str:
+    """Based on disk information, return target file
+    to create during restore."""
+    if disk.filename is not None:
+        targetFile = os.path.join(args.output, disk.filename)
+    else:
+        targetFile = os.path.join(args.output, disk.target)
+
+    return targetFile

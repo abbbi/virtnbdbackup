@@ -256,17 +256,6 @@ def getHeader(diskFile: str, stream: streamer.SparseStream) -> Dict[str, str]:
         ) from errmsg
 
 
-def setTargetFile(args: Namespace, disk: DomainDisk) -> str:
-    """Based on disk information, set target file
-    to write"""
-    if disk.filename is not None:
-        targetFile = os.path.join(args.output, disk.filename)
-    else:
-        targetFile = os.path.join(args.output, disk.target)
-
-    return targetFile
-
-
 def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
     """Handle restore operation"""
     stream = streamer.SparseStream(types)
@@ -294,7 +283,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
                 )
             continue
 
-        targetFile = setTargetFile(args, disk)
+        targetFile = files.target(args, disk)
 
         if args.raw and disk.format == "raw":
             logging.info("Restoring raw image to [%s]", targetFile)
