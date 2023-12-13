@@ -50,10 +50,10 @@ from libvirtnbdbackup import block
 from libvirtnbdbackup import partialfile
 from libvirtnbdbackup.backup import server
 from libvirtnbdbackup.backup import target
+from libvirtnbdbackup.backup import job
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.virt.exceptions import (
-    startBackupFailed,
     domainNotFound,
     connectionFailed,
 )
@@ -70,28 +70,6 @@ def setOfflineArguments(args: Namespace, domObj: virDomain) -> None:
             args.level = "copy"
             logging.warning("New Backup level: [%s].", args.level)
         args.offline = True
-
-
-def startBackupJob(
-    args: Namespace,
-    virtClient: virt.client,
-    domObj: virDomain,
-    disks: List[DomainDisk],
-) -> bool:
-    """Start backup job via libvirt API"""
-    try:
-        logging.info("Starting backup job.")
-        virtClient.startBackup(
-            args,
-            domObj,
-            disks,
-        )
-        logging.debug("Backup job started.")
-        return True
-    except startBackupFailed as e:
-        logging.error(e)
-
-    return False
 
 
 def main() -> None:
@@ -487,7 +465,7 @@ def main() -> None:
     if args.offline is not True:
         logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
         fileStream.create(args.scratchdir)
-        if not startBackupJob(args, virtClient, domObj, disks):
+        if not job.start(args, virtClient, domObj, disks):
             sys.exit(1)
 
     if args.level not in ("copy", "diff") and args.offline is False:
