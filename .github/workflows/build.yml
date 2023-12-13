@@ -19,9 +19,27 @@ jobs:
                   cd /work/
                   python --version
                   python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
+        name: rhel9
+        runs-on: ubuntu-latest
+        steps:
+          - name: Check out the repo
+            uses: actions/checkout@v2
+          - name: Run the build process with Docker
+            uses: addnab/docker-run-action@v3
+            with:
+                image: almalinux:8
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  yum -yq install rpm-build epel-release python3
+                  cd /work/
+                  python --version
+                  python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
           - name: Archive Test Results
             if: always()
             uses: actions/upload-artifact@v1
             with:
               name: rhel8
               path: dist/
+
+
+
