@@ -1,6 +1,9 @@
 name: packages
 
-on: [push]
+on:
+  push:
+    tags:
+    - '*'
 
 jobs:
     compile:
