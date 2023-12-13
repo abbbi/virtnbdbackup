@@ -14,6 +14,6 @@ jobs:
             with:
                 image: almalinux:8
                 run: |
-                  yum -yq install git rpm-build epel-release
+                  yum -yq install rpm-build epel-release python3
                   python --version
                   python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
