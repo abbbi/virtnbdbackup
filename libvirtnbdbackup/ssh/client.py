@@ -27,7 +27,7 @@ from paramiko import (  # pylint: disable=import-error
 )
 
 from libvirtnbdbackup.ssh import exceptions
-from libvirtnbdbackup.processinfo import processInfo
+from libvirtnbdbackup.objects import processInfo
 
 log = logging.getLogger("ssh")
 

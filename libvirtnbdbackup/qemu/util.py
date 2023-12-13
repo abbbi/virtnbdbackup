@@ -23,7 +23,7 @@ from typing import List
 from argparse import Namespace
 
 from libvirtnbdbackup.ssh.exceptions import sshError
-from libvirtnbdbackup.processinfo import processInfo
+from libvirtnbdbackup.objects import processInfo
 from libvirtnbdbackup.qemu import command
 from libvirtnbdbackup.virt.client import DomainDisk
 

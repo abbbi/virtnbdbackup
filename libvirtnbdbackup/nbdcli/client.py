@@ -16,56 +16,11 @@
 """
 import os
 import logging
-import ipaddress
 from time import sleep
-from dataclasses import dataclass
 import nbd
 from libvirtnbdbackup.nbdcli import exceptions
 
 log = logging.getLogger("nbd")
-
-
-@dataclass
-class nbdConn:
-    """NBD connection"""
-
-    exportName: str
-    metaContext: str
-
-
-@dataclass
-class Unix(nbdConn):
-    """NBD connection type unix for connection via socket file"""
-
-    backupSocket: str
-    tls: bool = False
-
-    def __post_init__(self):
-        self.uri = f"nbd+unix:///{self.exportName}?socket={self.backupSocket}"
-
-
-@dataclass
-class TCP(nbdConn):
-    """NBD connection type tcp for remote backup"""
-
-    hostname: str
-    tls: bool
-    port: int = 10809
-    backupSocket: str = ""
-    uri_prefix = "nbd://"
-
-    def __post_init__(self):
-        if self.tls:
-            self.uri_prefix = "nbds://"
-
-        try:
-            ip = ipaddress.ip_address(self.hostname)
-            if ip.version == 6:
-                self.hostname = f"[{self.hostname}]"
-        except ValueError:
-            pass
-
-        self.uri = f"{self.uri_prefix}{self.hostname}:{self.port}/{self.exportName}"
 
 
 class client:

@@ -15,28 +15,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from dataclasses import dataclass
 from typing import List, Any, Generator
 from nbd import CONTEXT_BASE_ALLOCATION
+from libvirtnbdbackup.objects import Extent, _ExtentObj
 
 log = logging.getLogger("extenthandler")
-
-
-@dataclass
-class Extent:
-    """Extent description"""
-
-    data: bool
-    offset: int
-    length: int
-
-
-@dataclass
-class _ExtentObj:
-    """Single Extent object"""
-
-    length: int
-    type: int
 
 
 class ExtentHandler:

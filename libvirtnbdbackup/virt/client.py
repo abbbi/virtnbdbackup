@@ -18,13 +18,13 @@ import os
 import string
 import random
 import logging
-from dataclasses import dataclass
 from socket import gethostname
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple, Union
 from lxml.etree import _Element
 from lxml import etree as ElementTree
 import libvirt
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.virt.exceptions import (
     domainNotFound,
     connectionFailed,
@@ -33,17 +33,6 @@ from libvirtnbdbackup.virt.exceptions import (
 from libvirtnbdbackup.virt import fs
 from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.virt import disktype
-
-
-@dataclass
-class DomainDisk:
-    """Domain disk object"""
-
-    target: str
-    format: str
-    filename: str
-    path: str
-    backingstores: list
 
 
 def libvirt_ignore(

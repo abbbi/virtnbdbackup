@@ -22,7 +22,7 @@ from threading import current_thread
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
-from libvirtnbdbackup.processinfo import processInfo
+from libvirtnbdbackup.objects import processInfo
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup import exceptions

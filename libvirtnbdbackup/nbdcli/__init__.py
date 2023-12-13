@@ -18,5 +18,6 @@
 __title__ = "nbdcli"
 __version__ = "0.1"
 
-from .client import client, Unix, TCP
+from libvirtnbdbackup.objects import Unix, TCP
+from .client import client
 from . import context

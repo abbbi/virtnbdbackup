@@ -22,7 +22,7 @@ from typing import Any
 from libvirt import virDomain
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import common as lib
-from libvirtnbdbackup.processinfo import processInfo
+from libvirtnbdbackup.objects import processInfo
 from libvirtnbdbackup.qemu import util as qemu
 
 

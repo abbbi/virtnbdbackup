@@ -22,7 +22,7 @@ from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.qemu import util as qemu
-from libvirtnbdbackup.processinfo import processInfo
+from libvirtnbdbackup.objects import processInfo
 from libvirtnbdbackup.nbdcli.exceptions import NbdClientException
 from libvirtnbdbackup.exceptions import DiskBackupFailed
 
