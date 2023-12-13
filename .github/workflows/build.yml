@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
     compile:
-        name: Build
+        name: rhel8
         runs-on: ubuntu-latest
         steps:
           - name: Check out the repo
@@ -19,3 +19,9 @@ jobs:
                   cd /work/
                   python --version
                   python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
+          - name: Archive Test Results
+            if: always()
+            uses: actions/upload-artifact@v1
+            with:
+              name: rhel8
+              path: /work/dist/
