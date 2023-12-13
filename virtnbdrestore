@@ -42,7 +42,6 @@ from libvirtnbdbackup.sparsestream.exceptions import StreamFormatException
 from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh import Mode
-from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt.exceptions import connectionFailed
 
 
