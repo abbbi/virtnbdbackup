@@ -22,7 +22,7 @@ jobs:
           - name: Build on rhel9
             uses: addnab/docker-run-action@v3
             with:
-                image: almalinux:8
+                image: almalinux:9
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   yum -yq install rpm-build epel-release python3 python3-setuptools
@@ -32,5 +32,5 @@ jobs:
             if: always()
             uses: actions/upload-artifact@v1
             with:
-              name: rhel8
+              name: packages.zip
               path: dist/
