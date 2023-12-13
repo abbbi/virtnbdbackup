@@ -22,7 +22,6 @@ of your `kvm/qemu` virtual machines.
   - [Python package](#python-package)
   - [RPM package](#rpm-package)
   - [Debian package](#debian-package)
-  - [Vagrant](#vagrant)
   - [Virtualenv](#virtualenv)
   - [Docker images](#docker-images)
 - [Backup Format](#backup-format)
@@ -189,7 +188,7 @@ Packages compatible with RHEL derivates are available via
 [releases](https://github.com/abbbi/virtnbdbackup/releases).
 
 To create an RPM package from source by yourself you can follow
-the steps from the [vagrant scripts](vagrant/).
+the steps from the github build workflow.
 
 
 ## Debian package
@@ -206,10 +205,6 @@ sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-
 python3 setup.py --command-packages=stdeb.command bdist_deb
 ```
 
-
-## Vagrant
-
-You can also use existing [vagrant scripts](vagrant/) to build the packages.
 
 ## Virtualenv
 
