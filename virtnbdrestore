@@ -20,94 +20,22 @@ import io
 import sys
 import logging
 import argparse
-from argparse import Namespace
 from typing import List
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import virt
-from libvirtnbdbackup.restore import server
-from libvirtnbdbackup.restore import image
 from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.restore import files
-from libvirtnbdbackup.restore import header
 from libvirtnbdbackup.restore import sequence
-from libvirtnbdbackup.restore import data
+from libvirtnbdbackup.restore import disk
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
-from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
 from libvirtnbdbackup.ssh import Mode
 from libvirtnbdbackup.virt.exceptions import connectionFailed
-
-
-def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
-    """Handle restore operation"""
-    stream = streamer.SparseStream(types)
-    vmConfig = vmconfig.read(ConfigFile)
-    vmDisks = virtClient.getDomainDisks(args, vmConfig)
-    if not vmDisks:
-        raise RestoreError("Unable to parse disks from config")
-
-    restConfig: bytes = b""
-    for disk in vmDisks:
-        if args.disk not in (None, disk.target):
-            logging.info("Skipping disk [%s] for restore", disk.target)
-            continue
-
-        restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
-        logging.debug("Restoring disk: [%s]", restoreDisk)
-        if len(restoreDisk) < 1:
-            logging.warning(
-                "No backup file for disk [%s] found, assuming it has been excluded.",
-                disk.target,
-            )
-            if args.adjust_config is True:
-                restConfig = virtClient.adjustDomainConfigRemoveDisk(
-                    vmConfig, disk.target
-                )
-            continue
-
-        targetFile = files.target(args, disk)
-
-        if args.raw and disk.format == "raw":
-            logging.info("Restoring raw image to [%s]", targetFile)
-            lib.copy(args, restoreDisk[0], targetFile)
-            continue
-
-        if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
-            logging.error(
-                "[%s]: Unable to locate base full or copy backup.", restoreDisk[0]
-            )
-            raise RestoreError("Failed to locate backup.")
-
-        meta = header.get(restoreDisk[-1], stream)
-
-        try:
-            image.create(args, meta, targetFile, args.sshClient)
-        except RestoreError as errmsg:
-            raise RestoreError("Creating target image failed.") from errmsg
-
-        connection = server.start(args, meta["diskName"], targetFile, virtClient)
-
-        for dataFile in restoreDisk:
-            try:
-                data.restore(args, stream, dataFile, targetFile, connection)
-            except UntilCheckpointReached:
-                break
-            except RestoreError:
-                break
-
-        vmconfig.backingstore(args, disk)
-        if args.adjust_config is True:
-            restConfig = virtClient.adjustDomainConfig(args, disk, vmConfig, targetFile)
-        else:
-            restConfig = vmConfig.encode()
-
-        connection.disconnect()
-
-    return restConfig
+from libvirtnbdbackup.exceptions import RestoreError
 
 
 def main() -> None:
@@ -322,7 +250,7 @@ def main() -> None:
             if args.sequence is not None:
                 sequence.restore(args, dataFiles, virtClient)
             else:
-                restConfig = restore(args, ConfigFile, virtClient)
+                restConfig = disk.restore(args, ConfigFile, virtClient)
         except RestoreError as errmsg:
             logging.error("Disk restore failed: [%s]", errmsg)
             sys.exit(1)

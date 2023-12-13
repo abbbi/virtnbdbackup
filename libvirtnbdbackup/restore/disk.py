@@ -1,0 +1,101 @@
+#!/usr/bin/python3
+"""
+    Copyright (C) 2023 Michael Ablassmeier <abi@grinser.de>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+import logging
+from argparse import Namespace
+from libvirtnbdbackup import virt
+from libvirtnbdbackup import common as lib
+from libvirtnbdbackup.restore import server
+from libvirtnbdbackup.restore import files
+from libvirtnbdbackup.restore import image
+from libvirtnbdbackup.restore import header
+from libvirtnbdbackup.restore import data
+from libvirtnbdbackup.restore import vmconfig
+from libvirtnbdbackup.sparsestream import types
+from libvirtnbdbackup.sparsestream import streamer
+from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
+
+
+def restore(  # pylint: disable=too-many-branches
+    args: Namespace, ConfigFile: str, virtClient: virt.client
+) -> bytes:
+    """Handle disk restore operation and adjust virtual machine
+    configuration accordingly."""
+    stream = streamer.SparseStream(types)
+    vmConfig = vmconfig.read(ConfigFile)
+    vmDisks = virtClient.getDomainDisks(args, vmConfig)
+    if not vmDisks:
+        raise RestoreError("Unable to parse disks from config")
+
+    restConfig: bytes = b""
+    for disk in vmDisks:
+        if args.disk not in (None, disk.target):
+            logging.info("Skipping disk [%s] for restore", disk.target)
+            continue
+
+        restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
+        logging.debug("Restoring disk: [%s]", restoreDisk)
+        if len(restoreDisk) < 1:
+            logging.warning(
+                "No backup file for disk [%s] found, assuming it has been excluded.",
+                disk.target,
+            )
+            if args.adjust_config is True:
+                restConfig = virtClient.adjustDomainConfigRemoveDisk(
+                    vmConfig, disk.target
+                )
+            continue
+
+        targetFile = files.target(args, disk)
+
+        if args.raw and disk.format == "raw":
+            logging.info("Restoring raw image to [%s]", targetFile)
+            lib.copy(args, restoreDisk[0], targetFile)
+            continue
+
+        if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
+            logging.error(
+                "[%s]: Unable to locate base full or copy backup.", restoreDisk[0]
+            )
+            raise RestoreError("Failed to locate backup.")
+
+        meta = header.get(restoreDisk[-1], stream)
+
+        try:
+            image.create(args, meta, targetFile, args.sshClient)
+        except RestoreError as errmsg:
+            raise RestoreError("Creating target image failed.") from errmsg
+
+        connection = server.start(args, meta["diskName"], targetFile, virtClient)
+
+        for dataFile in restoreDisk:
+            try:
+                data.restore(args, stream, dataFile, targetFile, connection)
+            except UntilCheckpointReached:
+                break
+            except RestoreError:
+                break
+
+        vmconfig.backingstore(args, disk)
+        if args.adjust_config is True:
+            restConfig = virtClient.adjustDomainConfig(args, disk, vmConfig, targetFile)
+        else:
+            restConfig = vmConfig.encode()
+
+        connection.disconnect()
+
+    return restConfig
