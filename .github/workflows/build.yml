@@ -55,7 +55,7 @@ jobs:
                     python3-colorlog
                   cd /work/
                   python3 setup.py --command-packages=stdeb.command bdist_deb
-                  mv deb_dist/* dist/
+                  mv deb_dist/*.* dist/
           - name: Archive Test Results
             if: always()
             uses: actions/upload-artifact@v1
