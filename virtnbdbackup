@@ -21,7 +21,7 @@ import signal
 import logging
 import argparse
 from argparse import Namespace
-from typing import List, Union, BinaryIO, Any
+from typing import List, BinaryIO, Any
 from datetime import datetime
 from functools import partial
 from threading import current_thread
@@ -48,8 +48,9 @@ from libvirtnbdbackup import exceptions
 from libvirtnbdbackup import chunk
 from libvirtnbdbackup import block
 from libvirtnbdbackup import partialfile
+from libvirtnbdbackup.backup import server
+from libvirtnbdbackup.backup import target
 from libvirtnbdbackup.ssh.exceptions import sshError
-from libvirtnbdbackup.nbdcli.exceptions import NbdClientException
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.virt.exceptions import (
     startBackupFailed,
@@ -576,20 +577,6 @@ def setTargetFile(args: Namespace, disk: DomainDisk, ext: str = "data"):
     return targetFile, targetFilePartial
 
 
-def openTargetFile(
-    args: Namespace, fileStream, targetFile: str, targetFilePartial: str
-) -> BinaryIO:
-    """Open target file based on output writer"""
-    if args.stdout is True:
-        logging.info("Writing data to zip archive.")
-        fileStream.open(targetFile)
-    else:
-        logging.info("Write data to target file: [%s].", targetFilePartial)
-        fileStream.open(targetFilePartial)
-
-    return fileStream
-
-
 def getExtentHandler(args: Namespace, nbdClient):
     """Query dirty blocks either via qemu client or self
     implemented extend handler"""
@@ -602,66 +589,6 @@ def getExtentHandler(args: Namespace, nbdClient):
         extentHandler = extenthandler.ExtentHandler(nbdClient, nbdClient.cType)
 
     return extentHandler
-
-
-def startOfflineNBD(
-    args: Namespace, disk: DomainDisk, remoteHost: str, port: int
-) -> processInfo:
-    """Start background qemu-nbd process used during backup
-    if domain is offline, in case of remote backup, initiate
-    ssh session and start process on remote system."""
-    bitMap: str = ""
-    if args.level in ("inc", "diff"):
-        bitMap = args.cpt.name
-    socket = f"{args.socketfile}.{disk.target}"
-    if remoteHost != "":
-        logging.info(
-            "Offline backup, starting remote NBD server, socket: [%s:%s], port: [%s]",
-            remoteHost,
-            socket,
-            port,
-        )
-        nbdProc = qemu.util(disk.target).startRemoteBackupNbdServer(
-            args, disk, bitMap, port
-        )
-        logging.info("Remote NBD server started, PID: [%s].", nbdProc.pid)
-        return nbdProc
-
-    logging.info("Offline backup, starting local NBD server, socket: [%s]", socket)
-    nbdProc = qemu.util(disk.target).startBackupNbdServer(
-        disk.format, disk.path, socket, bitMap
-    )
-    logging.info("Local NBD Service started, PID: [%s]", nbdProc.pid)
-    return nbdProc
-
-
-def connectNbd(
-    args: Namespace,
-    disk: DomainDisk,
-    metaContext: str,
-    remoteIP: str,
-    port: int,
-    virtClient: virt.client,
-):
-    """Connect to started nbd endpoint"""
-    socket = args.socketfile
-    if args.offline is True:
-        socket = f"{args.socketfile}.{disk.target}"
-
-    cType: Union[nbdcli.TCP, nbdcli.Unix]
-    if virtClient.remoteHost != "":
-        cType = nbdcli.TCP(disk.target, metaContext, remoteIP, args.tls, port)
-    else:
-        cType = nbdcli.Unix(disk.target, metaContext, socket)
-
-    nbdClient = nbdcli.client(cType)
-
-    try:
-        return nbdClient.connect()
-    except NbdClientException as e:
-        raise exceptions.DiskBackupFailed(
-            f"NBD endpoint: [{cType}]: connection failed: [{e}]"
-        )
 
 
 def backupDisk(
@@ -686,12 +613,12 @@ def backupDisk(
     if args.offline is True:
         port = args.nbd_port + count
         try:
-            nbdProc = startOfflineNBD(args, disk, virtClient.remoteHost, port)
+            nbdProc = server.setup(args, disk, virtClient.remoteHost, port)
         except ProcessError as errmsg:
             logging.error(errmsg)
             raise exceptions.DiskBackupFailed("Failed to start NBD server.")
 
-    connection = connectNbd(args, disk, metaContext, remoteIP, port, virtClient)
+    connection = server.connect(args, disk, metaContext, remoteIP, port, virtClient)
 
     extentHandler = getExtentHandler(args, connection)
     extents = extentHandler.queryBlockStatus()
@@ -720,7 +647,7 @@ def backupDisk(
     # opened output channel
     if not args.stdout:
         fileStream = stream.get(args, output.target())
-    writer = openTargetFile(args, fileStream, targetFile, targetFilePartial)
+    writer = target.get(args, fileStream, targetFile, targetFilePartial)
 
     if streamType == "raw":
         logging.info("Creating full provisioned raw backup image")
