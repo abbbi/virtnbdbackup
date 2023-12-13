@@ -20,27 +20,25 @@ import io
 import sys
 import logging
 import argparse
-import pprint
 import json
 from argparse import Namespace
-from typing import List, Dict
+from typing import List
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import virt
-from libvirtnbdbackup import chunk
-from libvirtnbdbackup import lz4
 from libvirtnbdbackup.restore import server
 from libvirtnbdbackup.restore import image
 from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.restore import files
+from libvirtnbdbackup.restore import header
+from libvirtnbdbackup.restore import sequence
+from libvirtnbdbackup.restore import data
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
-from libvirtnbdbackup.sparsestream.exceptions import StreamFormatException
 from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
-from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh import Mode
 from libvirtnbdbackup.virt.exceptions import connectionFailed
 
@@ -61,7 +59,7 @@ def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -
             sourceFile = os.path.join(args.input, dataFile)
 
         try:
-            meta = getHeader(sourceFile, stream)
+            meta = header.get(sourceFile, stream)
         except RestoreError:
             continue
 
@@ -73,186 +71,6 @@ def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -
     print(json.dumps(entries, indent=4))
 
     return True
-
-
-def restoreData(
-    args: Namespace,
-    stream: streamer.SparseStream,
-    dataFile: str,
-    targetFile: str,
-    connection,
-) -> bool:
-    """Restore data for disk"""
-    sTypes = types.SparseStreamTypes()
-
-    try:
-        # pylint: disable=consider-using-with
-        reader = open(dataFile, "rb")
-    except OSError as errmsg:
-        logging.error("Failed to open backup file for reading: [%s].", errmsg)
-        raise RestoreError from errmsg
-
-    try:
-        kind, start, length = stream.readFrame(reader)
-        meta = stream.loadMetadata(reader.read(length))
-    except StreamFormatException as errmsg:
-        logging.fatal(errmsg)
-        raise RestoreError from errmsg
-
-    trailer = None
-    if lib.isCompressed(meta) is True:
-        trailer = stream.readCompressionTrailer(reader)
-        logging.info("Found compression trailer.")
-        logging.debug("%s", trailer)
-
-    if meta["dataSize"] == 0:
-        logging.info("File [%s] contains no dirty blocks, skipping.", dataFile)
-        return True
-
-    logging.info(
-        "Applying data from backup file [%s] to target file [%s].", dataFile, targetFile
-    )
-    pprint.pprint(meta)
-    assert reader.read(len(sTypes.TERM)) == sTypes.TERM
-
-    progressBar = lib.progressBar(
-        meta["dataSize"], f"restoring disk [{meta['diskName']}]", args
-    )
-    dataSize = 0
-    dataBlockCnt = 0
-    while True:
-        try:
-            kind, start, length = stream.readFrame(reader)
-        except StreamFormatException as err:
-            logging.error("Can't read stream at pos: [%s]: [%s]", reader.tell(), err)
-            raise RestoreError from err
-        if kind == sTypes.ZERO:
-            logging.debug("Zero segment from [%s] length: [%s]", start, length)
-        elif kind == sTypes.DATA:
-            logging.debug(
-                "Processing data segment from [%s] length: [%s]", start, length
-            )
-
-            originalSize = length
-            if trailer:
-                logging.debug("Block: [%s]", dataBlockCnt)
-                logging.debug("Original block size: [%s]", length)
-                length = trailer[dataBlockCnt]
-                logging.debug("Compressed block size: [%s]", length)
-
-            if originalSize >= connection.maxRequestSize:
-                logging.debug(
-                    "Chunked read/write, start: [%s], len: [%s]", start, length
-                )
-                try:
-                    written = chunk.read(
-                        reader,
-                        start,
-                        length,
-                        connection,
-                        lib.isCompressed(meta),
-                    )
-                except Exception as e:
-                    logging.exception(e)
-                    raise RestoreError from e
-                logging.debug("Wrote: [%s]", written)
-            else:
-                try:
-                    data = reader.read(length)
-                    if lib.isCompressed(meta):
-                        data = lz4.decompressFrame(data)
-                    connection.nbd.pwrite(data, start)
-                    written = len(data)
-                except Exception as e:
-                    logging.exception(e)
-                    raise RestoreError from e
-
-            assert reader.read(len(sTypes.TERM)) == sTypes.TERM
-            dataSize += originalSize
-            progressBar.update(written)
-            dataBlockCnt += 1
-        elif kind == sTypes.STOP:
-            progressBar.close()
-            if dataSize != meta["dataSize"]:
-                logging.error(
-                    "Restored data size does not match [%s] != [%s]",
-                    dataSize,
-                    meta["dataSize"],
-                )
-                raise RestoreError("Data size mismatch")
-            break
-
-    logging.info("End of stream, [%s] bytes of data processed", dataSize)
-    if meta["checkpointName"] == args.until:
-        logging.info("Reached checkpoint [%s], stopping", args.until)
-        raise UntilCheckpointReached
-
-    return True
-
-
-def restoreSequence(
-    args: Namespace, dataFiles: List[str], virtClient: virt.client
-) -> bool:
-    """Reconstruct image from a given set of data files"""
-    stream = streamer.SparseStream(types)
-
-    result: bool = False
-
-    sourceFile = os.path.join(args.input, dataFiles[-1])
-    meta = getHeader(sourceFile, stream)
-    if not meta:
-        return result
-
-    diskName = meta["diskName"]
-    targetFile = os.path.join(args.output, diskName)
-    if lib.exists(args, targetFile):
-        raise RestoreError(f"Targetfile {targetFile} already exists.")
-
-    try:
-        image.create(args, meta, targetFile, args.sshClient)
-    except RestoreError as errmsg:
-        raise errmsg
-
-    connection = server.start(args, diskName, targetFile, virtClient)
-
-    for disk in dataFiles:
-        sourceFile = os.path.join(args.input, disk)
-        result = writeData(args, stream, sourceFile, targetFile, connection)
-
-    connection.disconnect()
-
-    return result
-
-
-def writeData(
-    args: Namespace,
-    stream: streamer.SparseStream,
-    disk: str,
-    targetFile: str,
-    connection,
-) -> bool:
-    """Restore the data stream to the target file"""
-    diskState = False
-    diskState = restoreData(args, stream, disk, targetFile, connection)
-    # no data has been processed
-    if diskState is None:
-        diskState = True
-
-    return diskState
-
-
-def getHeader(diskFile: str, stream: streamer.SparseStream) -> Dict[str, str]:
-    """Read header from data file"""
-    try:
-        return lib.dumpMetaData(diskFile, stream)
-    except StreamFormatException as errmsg:
-        raise RestoreError(
-            f"Reading metadata from [{diskFile}] failed: [{errmsg}]"
-        ) from errmsg
-    except OutputException as errmsg:
-        raise RestoreError(
-            f"Reading data file [{diskFile}] failed: [{errmsg}]"
-        ) from errmsg
 
 
 def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
@@ -295,7 +113,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
             )
             raise RestoreError("Failed to locate backup.")
 
-        meta = getHeader(restoreDisk[-1], stream)
+        meta = header.get(restoreDisk[-1], stream)
 
         try:
             image.create(args, meta, targetFile, args.sshClient)
@@ -306,7 +124,7 @@ def restore(args: Namespace, ConfigFile: str, virtClient: virt.client) -> bytes:
 
         for dataFile in restoreDisk:
             try:
-                writeData(args, stream, dataFile, targetFile, connection)
+                data.restore(args, stream, dataFile, targetFile, connection)
             except UntilCheckpointReached:
                 break
             except RestoreError:
@@ -533,7 +351,7 @@ def main() -> None:
         restConfig: bytes = b""
         try:
             if args.sequence is not None:
-                restoreSequence(args, dataFiles, virtClient)
+                sequence.restore(args, dataFiles, virtClient)
             else:
                 restConfig = restore(args, ConfigFile, virtClient)
         except RestoreError as errmsg:
