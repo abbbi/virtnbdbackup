@@ -1,9 +1,7 @@
 name: packages
 
 on:
-  push:
-    tags:
-    - '*'
+  push
 
 jobs:
     compile:
@@ -19,12 +17,11 @@ jobs:
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   yum -yq install rpm-build epel-release python3 util-linux
-                  mkdir -p /work/dist/rhel8
                   cd /work/
                   python --version
                   python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
-                  mv /work/dist/*.rpm /work/dist/rhel8
-                  mv /work/dist/*.tar.gz /work/dist/rhel8
+                  rm /work/dist/*.tar.gz
+                  rename .rpm .rhel8.rpm /work/dist/*.rpm
           - name: Build on rhel9
             uses: addnab/docker-run-action@v3
             with:
@@ -37,8 +34,8 @@ jobs:
                   cd /work/
                   python3.9 setup.py bdist_rpm --python /usr/bin/python3.9 \
                     --requires "python3-libvirt python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog"
-                  mv /work/dist/*.rpm /work/dist/rhel9
-                  mv /work/dist/*.tar.gz /work/dist/rhel9
+                  rm /work/dist/*.tar.gz
+                  rename .rpm .rhel8.rpm /work/dist/*.rpm
           - name: Build on debian
             uses: addnab/docker-run-action@v3
             with:
@@ -61,7 +58,7 @@ jobs:
                   mv deb_dist/*.tar.gz dist/
                   mv deb_dist/*.tar.xz dist/
                   mv deb_dist/*.deb dist/
-          - name: Archive Test Results
+          - name: Archive Results
             if: always()
             uses: actions/upload-artifact@v1
             with:
