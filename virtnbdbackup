@@ -37,7 +37,7 @@ from libvirtnbdbackup.output import stream
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup import exceptions
-from libvirtnbdbackup import partialfile
+from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import job
 from libvirtnbdbackup.backup import disk
 from libvirtnbdbackup.backup import metadata

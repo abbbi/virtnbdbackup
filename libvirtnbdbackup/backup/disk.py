@@ -28,7 +28,7 @@ from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup import exceptions
 from libvirtnbdbackup import chunk
 from libvirtnbdbackup import block
-from libvirtnbdbackup import partialfile
+from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import server
 from libvirtnbdbackup.backup import target
 from libvirtnbdbackup import extenthandler
