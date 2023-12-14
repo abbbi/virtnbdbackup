@@ -67,6 +67,7 @@ jobs:
                 image: almalinux:8
                 options: -v ${{ github.workspace }}:/work
                 run: |
+                  yum -yq install epel-release
                   yum -yq install /work/artifacts/*rhel8.rpm
                   virtnbdbackup -h
           - name: Test installation on rhel9
@@ -75,6 +76,7 @@ jobs:
                 image: almalinux:9
                 options: -v ${{ github.workspace }}:/work
                 run: |
+                  yum -yq install epel-release
                   yum -yq install /work/artifacts/*rhel9.rpm
                   virtnbdbackup -h
           - name: Test installation on debian
@@ -90,5 +92,5 @@ jobs:
             if: always()
             uses: actions/upload-artifact@v1
             with:
-              name: packages.zip
+              name: packages
               path: artifacts/
