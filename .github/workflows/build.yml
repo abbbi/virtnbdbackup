@@ -72,7 +72,7 @@ jobs:
           - name: Test installation on rhel9
             uses: addnab/docker-run-action@v3
             with:
-                image: almalinux9:
+                image: almalinux:9
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   yum -yq install /work/artifacts/*rhel9.rpm
