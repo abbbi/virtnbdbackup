@@ -1,6 +1,7 @@
 Version 1.9.52
 ---------
  * Code cleanup
+ * Build release packages using github actions.
 
 Version 1.9.51
 ---------
