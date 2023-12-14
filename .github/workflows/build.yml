@@ -68,7 +68,7 @@ jobs:
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   yum -yq install epel-release
-                  yum -yq install /work/artifacts/*rhel8.rpm
+                  yum -yq install /work/artifacts/*noarch*rhel8.rpm
                   virtnbdbackup -h
           - name: Test installation on rhel9
             uses: addnab/docker-run-action@v3
@@ -77,7 +77,7 @@ jobs:
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   yum -yq install epel-release
-                  yum -yq install /work/artifacts/*rhel9.rpm
+                  yum -yq install /work/artifacts/*noarch*rhel9.rpm
                   virtnbdbackup -h
           - name: Test installation on debian
             uses: addnab/docker-run-action@v3
