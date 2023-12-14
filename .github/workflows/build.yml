@@ -45,7 +45,7 @@ jobs:
                 image: debian:latest
                 options: -v ${{ github.workspace }}:/work
                 run: |
-                  apt-get update -qy
+                  apt-get update -qy > /dev/null
                   apt-get install -qy python3-all \
                     python3-stdeb \
                     dh-python \
@@ -61,6 +61,31 @@ jobs:
                   mv deb_dist/*.tar.gz artifacts/
                   mv deb_dist/*.tar.xz artifacts/
                   mv deb_dist/*.deb artifacts/
+          - name: Test installation on rhel8
+            uses: addnab/docker-run-action@v3
+            with:
+                image: almalinux:8
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  yum -yq install /work/artifacts/*rhel8.rpm
+                  virtnbdbackup -h
+          - name: Test installation on rhel9
+            uses: addnab/docker-run-action@v3
+            with:
+                image: almalinux9:
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  yum -yq install /work/artifacts/*rhel9.rpm
+                  virtnbdbackup -h
+          - name: Test installation on debian
+            uses: addnab/docker-run-action@v3
+            with:
+                image: debian:latest
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  apt update -qy > 7dev/null
+                  apt install -qy /work/artifacts/*.deb > /dev/null
+                  virtnbdbackup -h
           - name: Archive Results
             if: always()
             uses: actions/upload-artifact@v1
