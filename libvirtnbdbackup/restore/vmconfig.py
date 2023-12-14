@@ -21,7 +21,9 @@ import logging
 from argparse import Namespace
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
-from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.objects import DomainDisk
+from libvirtnbdbackup.virt import xml
+from libvirtnbdbackup.virt import disktype
 
 
 def read(ConfigFile: str) -> str:
@@ -33,16 +35,83 @@ def read(ConfigFile: str) -> str:
         raise
 
 
-def backingstore(args: Namespace, disk: DomainDisk) -> None:
-    """If an virtual machine was running on an snapshot image,
-    warn user, the virtual machine configuration has to be
-    adjusted before starting the VM is possible"""
-    if len(disk.backingstores) > 0 and not args.adjust_config:
-        logging.warning(
-            "Target image [%s] seems to be a snapshot image.", disk.filename
-        )
-        logging.warning("Target virtual machine configuration must be altered!")
-        logging.warning("Configured backing store images must be changed.")
+def removeDisk(vmConfig: str, excluded) -> bytes:
+    """Remove disk from config, in case it has been excluded
+    from the backup."""
+    tree = xml.asTree(vmConfig)
+    logging.info("Removing excluded disk [%s] from vm config.", excluded)
+    try:
+        target = tree.xpath(f"devices/disk/target[@dev='{excluded}']")[0]
+        disk = target.getparent()
+        disk.getparent().remove(disk)
+    except IndexError:
+        logging.warning("Removing excluded disk from config failed: no object found.")
+
+    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
+
+
+def adjust(
+    args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
+) -> bytes:
+    """Adjust virtual machine configuration after restoring. Changes
+    the paths to the virtual machine disks and attempts to remove
+    components excluded during restore."""
+    tree = xml.asTree(vmConfig)
+
+    try:
+        logging.info("Removing uuid setting from vm config.")
+        uuid = tree.xpath("uuid")[0]
+        tree.remove(uuid)
+    except IndexError:
+        pass
+
+    name = tree.xpath("name")[0]
+    if args.name is None:
+        domainName = f"restore_{name.text}"
+    else:
+        domainName = args.name
+    logging.info("Changing name from [%s] to [%s]", name.text, domainName)
+    name.text = domainName
+
+    for disk in tree.xpath("devices/disk"):
+        if disk.get("type") == "volume":
+            logging.info("Disk has type volume, resetting to type file.")
+            disk.set("type", "file")
+
+        dev = disk.xpath("target")[0].get("dev")
+        logging.debug("Handling target device: [%s]", dev)
+
+        device = disk.get("device")
+        driver = disk.xpath("driver")[0].get("type")
+
+        if disktype.Optical(device, dev):
+            logging.info("Removing device [%s], type [%s] from vm config", dev, device)
+            disk.getparent().remove(disk)
+            continue
+
+        if disktype.Raw(driver, device):
+            logging.warning(
+                "Removing raw disk [%s] from vm config, use --raw to copy as is.",
+                dev,
+            )
+            disk.getparent().remove(disk)
+            continue
+        backingStore = disk.xpath("backingStore")
+        if backingStore:
+            logging.info("Removing existent backing store settings")
+            disk.remove(backingStore[0])
+
+        originalFile = disk.xpath("source")[0].get("file")
+        if dev == restoreDisk.target:
+            logging.info(
+                "Change target file for disk [%s] from [%s] to [%s]",
+                restoreDisk.target,
+                originalFile,
+                targetFile,
+            )
+            disk.xpath("source")[0].set("file", targetFile)
+
+    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
 def restore(args: Namespace, vmConfig: str, adjustedConfig: bytes) -> None:

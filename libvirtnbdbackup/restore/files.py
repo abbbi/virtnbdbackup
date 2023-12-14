@@ -26,7 +26,7 @@ from libvirtnbdbackup import output
 from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.restore import header
 from libvirtnbdbackup import common as lib
-from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.exceptions import RestoreError
 

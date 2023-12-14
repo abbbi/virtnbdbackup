@@ -19,6 +19,7 @@ import logging
 from argparse import Namespace
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import common as lib
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.restore import server
 from libvirtnbdbackup.restore import files
 from libvirtnbdbackup.restore import image
@@ -28,6 +29,22 @@ from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
+
+
+def _backingstore(args: Namespace, disk: DomainDisk) -> None:
+    """If an virtual machine was running on an snapshot image,
+    warn user, the virtual machine configuration has to be
+    adjusted before starting the VM is possible.
+
+    User created external or internal Snapshots are not part of
+    the backup.
+    """
+    if len(disk.backingstores) > 0 and not args.adjust_config:
+        logging.warning(
+            "Target image [%s] seems to be a snapshot image.", disk.filename
+        )
+        logging.warning("Target virtual machine configuration must be altered!")
+        logging.warning("Configured backing store images must be changed.")
 
 
 def restore(  # pylint: disable=too-many-branches
@@ -55,9 +72,7 @@ def restore(  # pylint: disable=too-many-branches
                 disk.target,
             )
             if args.adjust_config is True:
-                restConfig = virtClient.adjustDomainConfigRemoveDisk(
-                    vmConfig, disk.target
-                )
+                restConfig = vmconfig.removeDisk(vmConfig, disk.target)
             continue
 
         targetFile = files.target(args, disk)
@@ -90,9 +105,9 @@ def restore(  # pylint: disable=too-many-branches
             except RestoreError:
                 break
 
-        vmconfig.backingstore(args, disk)
+        _backingstore(args, disk)
         if args.adjust_config is True:
-            restConfig = virtClient.adjustDomainConfig(args, disk, vmConfig, targetFile)
+            restConfig = vmconfig.adjust(args, disk, vmConfig, targetFile)
         else:
             restConfig = vmConfig.encode()
 
