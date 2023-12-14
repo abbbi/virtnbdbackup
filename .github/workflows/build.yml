@@ -18,10 +18,12 @@ jobs:
                 run: |
                   yum -yq install rpm-build epel-release python3 util-linux
                   cd /work/
+                  mkdir artifacts
                   python --version
                   python3.6 setup.py bdist_rpm --python /usr/bin/python3.6
                   rm /work/dist/*.tar.gz
                   rename .rpm .rhel8.rpm /work/dist/*.rpm
+                  mv /work/dist/* artifacts/
           - name: Build on rhel9
             uses: addnab/docker-run-action@v3
             with:
@@ -35,7 +37,8 @@ jobs:
                   python3.9 setup.py bdist_rpm --python /usr/bin/python3.9 \
                     --requires "python3-libvirt python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog"
                   rm /work/dist/*.tar.gz
-                  rename .rpm .rhel8.rpm /work/dist/*.rpm
+                  rename .rpm .rhel9.rpm /work/dist/*.rpm
+                  mv /work/dist/* artifacts/
           - name: Build on debian
             uses: addnab/docker-run-action@v3
             with:
@@ -52,15 +55,15 @@ jobs:
                     python3-libvirt \
                     python3-lxml \
                     python3-paramiko \
-                    python3-colorlog
+                    python3-colorlog > /dev/null
                   cd /work/
                   python3 setup.py --command-packages=stdeb.command bdist_deb
-                  mv deb_dist/*.tar.gz dist/
-                  mv deb_dist/*.tar.xz dist/
-                  mv deb_dist/*.deb dist/
+                  mv deb_dist/*.tar.gz artifacts/
+                  mv deb_dist/*.tar.xz artifacts/
+                  mv deb_dist/*.deb artifacts/
           - name: Archive Results
             if: always()
             uses: actions/upload-artifact@v1
             with:
               name: packages.zip
-              path: dist/
+              path: artifacts/
