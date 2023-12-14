@@ -21,8 +21,6 @@ import logging
 from socket import gethostname
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple, Union
-from lxml.etree import _Element
-from lxml import etree as ElementTree
 import libvirt
 from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.virt.exceptions import (
@@ -274,7 +272,7 @@ class client:
         except IndexError:
             log.warning("Removing excluded disk from config failed: no object found.")
 
-        return ElementTree.tostring(tree, encoding="utf8", method="xml")
+        return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
     def adjustDomainConfig(
         self, args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
@@ -337,10 +335,10 @@ class client:
                 )
                 disk.xpath("source")[0].set("file", targetFile)
 
-        return ElementTree.tostring(tree, encoding="utf8", method="xml")
+        return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
     @staticmethod
-    def getBackingStores(disk: _Element) -> List[str]:
+    def getBackingStores(disk: xml._Element) -> List[str]:
         """Get list of backing store files defined for disk, usually
         the case if virtual machine has external snapshots."""
         backingStoreFiles: List[str] = []
@@ -358,7 +356,7 @@ class client:
 
         return backingStoreFiles
 
-    def _getDiskPathByVolume(self, disk: _Element) -> Union[str, None]:
+    def _getDiskPathByVolume(self, disk: xml._Element) -> Union[str, None]:
         """If virtual machine disk is configured via type='volume'
         get path to disk via appropriate libvirt functions,
         pool and volume setting are mandatory as by xml schema definition"""
@@ -451,9 +449,9 @@ class client:
 
     def _createBackupXml(self, args: Namespace, diskList) -> str:
         """Create XML file for starting an backup task using libvirt API."""
-        top = ElementTree.Element("domainbackup", {"mode": "pull"})
+        top = xml.ElementTree.Element("domainbackup", {"mode": "pull"})
         if self.remoteHost == "":
-            ElementTree.SubElement(
+            xml.ElementTree.SubElement(
                 top, "server", {"transport": "unix", "socket": f"{args.socketfile}"}
             )
         else:
@@ -463,16 +461,16 @@ class client:
                 tls = "yes"
             if args.nbd_ip != "":
                 listen = args.nbd_ip
-            ElementTree.SubElement(
+            xml.ElementTree.SubElement(
                 top,
                 "server",
                 {"tls": f"{tls}", "name": f"{listen}", "port": f"{args.nbd_port}"},
             )
 
-        disks = ElementTree.SubElement(top, "disks")
+        disks = xml.ElementTree.SubElement(top, "disks")
 
         if args.cpt.parent != "":
-            inc = ElementTree.SubElement(top, "incremental")
+            inc = xml.ElementTree.SubElement(top, "incremental")
             inc.text = args.cpt.parent
 
         for disk in diskList:
@@ -481,8 +479,8 @@ class client:
             )
             scratchFile = f"{args.scratchdir}/backup.{scratchId}.{disk.target}"
             log.debug("Using scratch file: %s", scratchFile)
-            dE = ElementTree.SubElement(disks, "disk", {"name": disk.target})
-            ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
+            dE = xml.ElementTree.SubElement(disks, "disk", {"name": disk.target})
+            xml.ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
 
         return xml.indent(top)
 
@@ -490,16 +488,16 @@ class client:
         self, diskList: List[Any], parentCheckpoint: str, checkpointName: str
     ) -> str:
         """Create valid checkpoint XML file which is passed to libvirt API"""
-        top = ElementTree.Element("domaincheckpoint")
-        desc = ElementTree.SubElement(top, "description")
+        top = xml.ElementTree.Element("domaincheckpoint")
+        desc = xml.ElementTree.SubElement(top, "description")
         desc.text = "Backup checkpoint"
-        name = ElementTree.SubElement(top, "name")
+        name = xml.ElementTree.SubElement(top, "name")
         name.text = checkpointName
         if parentCheckpoint != "":
-            pct = ElementTree.SubElement(top, "parent")
-            cptName = ElementTree.SubElement(pct, "name")
+            pct = xml.ElementTree.SubElement(top, "parent")
+            cptName = xml.ElementTree.SubElement(pct, "name")
             cptName.text = parentCheckpoint
-        disks = ElementTree.SubElement(top, "disks")
+        disks = xml.ElementTree.SubElement(top, "disks")
         for disk in diskList:
             # No persistent checkpoint will be created for raw disks,
             # because it is not supported. Backup will only be crash
@@ -512,7 +510,7 @@ class client:
             # See also:
             # https://lists.gnu.org/archive/html/qemu-devel/2021-03/msg07448.html
             if disk.format != "raw":
-                ElementTree.SubElement(disks, "disk", {"name": disk.target})
+                xml.ElementTree.SubElement(disks, "disk", {"name": disk.target})
 
         return xml.indent(top)
 
