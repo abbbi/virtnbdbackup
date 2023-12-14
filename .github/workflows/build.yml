@@ -61,6 +61,8 @@ jobs:
                   mv deb_dist/*.tar.gz artifacts/
                   mv deb_dist/*.tar.xz artifacts/
                   mv deb_dist/*.deb artifacts/
+                  python3 setup.py sdist
+                  mv dist/*.tar.gz artifacts/
           - name: Test installation on rhel8
             uses: addnab/docker-run-action@v3
             with:
