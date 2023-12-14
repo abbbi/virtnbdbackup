@@ -85,7 +85,7 @@ jobs:
                 image: debian:latest
                 options: -v ${{ github.workspace }}:/work
                 run: |
-                  apt update -qy > 7dev/null
+                  apt update -qy > /dev/null
                   apt install -qy /work/artifacts/*.deb > /dev/null
                   virtnbdbackup -h
           - name: Archive Results
