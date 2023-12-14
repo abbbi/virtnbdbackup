@@ -1,4 +1,5 @@
 ![ci](https://github.com/abbbi/virtnbdbackup/actions/workflows/ci-ubuntu-latest.yml/badge.svg)
+[![package-build](https://github.com/abbbi/virtnbdbackup/actions/workflows/build.yml/badge.svg)](https://github.com/abbbi/virtnbdbackup/actions/workflows/build.yml)
 
 # virtnbdbackup
 
