@@ -70,6 +70,8 @@ jobs:
                   yum -yq install epel-release
                   yum -yq install /work/artifacts/*noarch*rhel8.rpm
                   virtnbdbackup -h
+                  virtnbdrestore -h
+                  virtnbdmap -h
           - name: Test installation on rhel9
             uses: addnab/docker-run-action@v3
             with:
@@ -79,6 +81,8 @@ jobs:
                   yum -yq install epel-release
                   yum -yq install /work/artifacts/*noarch*rhel9.rpm
                   virtnbdbackup -h
+                  virtnbdrestore -h
+                  virtnbdmap -h
           - name: Test installation on debian
             uses: addnab/docker-run-action@v3
             with:
@@ -88,6 +92,8 @@ jobs:
                   apt update -qy > /dev/null
                   apt install -qy /work/artifacts/*.deb > /dev/null
                   virtnbdbackup -h
+                  virtnbdrestore -h
+                  virtnbdmap -h
           - name: Archive Results
             if: always()
             uses: actions/upload-artifact@v1
