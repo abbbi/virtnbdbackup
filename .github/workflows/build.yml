@@ -83,7 +83,7 @@ jobs:
                 image: opensuse/leap:15.5
                 options: -v ${{ github.workspace }}:/work
                 run: |
-                  yum -yq --allow-unsigned-rpm install /work/artifacts/*noarch*opensuse.rpm
+                  yum -yq --allow-unsigned-rpm install /work/artifacts/*noarch*opensuse*.rpm
                   virtnbdbackup -h
                   virtnbdrestore -h
                   virtnbdmap -h
