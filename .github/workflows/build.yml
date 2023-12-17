@@ -39,6 +39,20 @@ jobs:
                   rm /work/dist/*.tar.gz
                   rename .rpm .rhel9.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
+          - name: Build on opensuse
+            uses: addnab/docker-run-action@v3
+            with:
+                image: opensuse/leap:15.5
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  zypper in -y  rpm-build python3 python3-setuptools
+                  mkdir -p /work/dist/opensuse15
+                  cd /work/
+                  python3.9 setup.py bdist_rpm \
+                  python3 setup.py bdist_rpm --requires "python3-libvirt-python python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog python3-dataclasses"
+                  rm /work/dist/*.tar.gz
+                  rename .rpm .opensuse15.rpm /work/dist/*.rpm
+                  mv /work/dist/* artifacts/
           - name: Build on debian
             uses: addnab/docker-run-action@v3
             with:
@@ -63,6 +77,16 @@ jobs:
                   mv deb_dist/*.deb artifacts/
                   python3 setup.py sdist
                   mv dist/*.tar.gz artifacts/
+          - name: Test installation on opensuse
+            uses: addnab/docker-run-action@v3
+            with:
+                image: opensuse/leap:15.5
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  yum -yq --allow-unsigned-rpm install /work/artifacts/*noarch*opensuse.rpm
+                  virtnbdbackup -h
+                  virtnbdrestore -h
+                  virtnbdmap -h
           - name: Test installation on rhel8
             uses: addnab/docker-run-action@v3
             with:
