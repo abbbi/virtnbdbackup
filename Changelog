@@ -2,6 +2,7 @@ Version 1.9.52
 ---------
  * Move checksum related code to own function
  * Set a shorter thread name, makes logging messages are easier to read.
+ * Add opensuse/leap:15.5 to release build.
 
 Version 1.9.52
 ---------
