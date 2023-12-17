@@ -243,6 +243,7 @@ def main() -> None:
     args.quiet = False
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
 
+    lib.setThreadName()
     counter = logCount()  # pylint: disable=unreachable
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)

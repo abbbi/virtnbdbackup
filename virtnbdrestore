@@ -174,10 +174,10 @@ def main() -> None:
     # default values for common usage of lib.getDomainDisks
     args.exclude = None
     args.include = args.disk
+    lib.setThreadName()
     stream = streamer.SparseStream(types)
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
     counter = logCount()  # pylint: disable=unreachable
-
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
 

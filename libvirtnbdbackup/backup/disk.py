@@ -18,7 +18,6 @@
 import logging
 from argparse import Namespace
 from typing import List, Any
-from threading import current_thread
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
@@ -31,6 +30,7 @@ from libvirtnbdbackup import block
 from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import server
 from libvirtnbdbackup.backup import target
+from libvirtnbdbackup.backup.metadata import backupChecksum
 from libvirtnbdbackup import extenthandler
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
@@ -72,7 +72,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     """Backup domain disk data."""
     dStream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
-    current_thread().name = disk.target
+    lib.setThreadName(disk.target)
     streamType = _setStreamType(args, disk)
     metaContext = nbdcli.context.get(args, disk)
     nbdProc: processInfo
@@ -199,11 +199,8 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
 
     progressBar.close()
     writer.close()
-
-    if not args.stdout:
-        checksum = fileStream.checksum()
-        logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
     connection.disconnect()
+
     if args.offline is True and virtClient.remoteHost == "":
         logging.info("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)
@@ -217,11 +214,6 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                 "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
         partialfile.rename(targetFilePartial, targetFile)
-
-    if not args.stdout:
-        chksumfile = f"{targetFile}.chksum"
-        logging.info("Saving checksum to: [%s]", chksumfile)
-        with output.openfile(chksumfile, "w") as cf:
-            cf.write(f"{checksum}")
+        backupChecksum(fileStream, targetFile)
 
     return True

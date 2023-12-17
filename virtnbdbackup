@@ -258,6 +258,7 @@ def main() -> None:
     repository = output.target()
     args = lib.argparse(parser)
 
+    lib.setThreadName()
     args.stdout = args.output == "-"
     args.sshClient = None
     args.diskInfo = []

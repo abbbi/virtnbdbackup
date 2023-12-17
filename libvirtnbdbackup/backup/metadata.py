@@ -32,6 +32,17 @@ from libvirtnbdbackup.output.exceptions import OutputException
 log = logging.getLogger()
 
 
+def backupChecksum(fileStream, targetFile):
+    """Save the calculated adler32 checksum, it can be varified
+    by virtnbdbrestore's verify function.'"""
+    checksum = fileStream.checksum()
+    logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
+    chksumfile = f"{targetFile}.chksum"
+    logging.info("Saving checksum to: [%s]", chksumfile)
+    with output.openfile(chksumfile, "w") as cf:
+        cf.write(f"{checksum}")
+
+
 def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
     """Save domain XML config file"""
     configFile = f"{args.output}/vmconfig.{lib.getIdent(args)}.xml"

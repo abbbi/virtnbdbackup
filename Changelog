@@ -1,5 +1,10 @@
 Version 1.9.52
 ---------
+ * Move checksum related code to own function
+ * Set a shorter thread name, makes logging messages are easier to read.
+
+Version 1.9.52
+---------
  * Code cleanup
  * Build release packages using github actions.
 

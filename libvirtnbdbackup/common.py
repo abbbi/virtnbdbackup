@@ -24,6 +24,7 @@ import signal
 import shutil
 import pprint
 from time import time
+from threading import current_thread
 from argparse import Namespace
 from typing import Optional, List, Any, Union, Dict
 from tqdm import tqdm
@@ -58,6 +59,11 @@ def argparse(parser) -> Namespace:
 def printVersion(version) -> None:
     """Print version and passed arguments"""
     log.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
+
+
+def setThreadName(tn="main") -> None:
+    """Set thread name reported by logging function"""
+    current_thread().name = tn
 
 
 def setLogLevel(verbose: bool) -> int:
