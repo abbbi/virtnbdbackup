@@ -82,7 +82,7 @@ jobs:
                 image: opensuse/leap:15.5
                 options: -v ${{ github.workspace }}:/work
                 run: |
-                  zypper in -y --allow-unsigned-rpm install /work/artifacts/*noarch*opensuse*.rpm
+                  zypper in -y --allow-unsigned-rpm /work/artifacts/*noarch*opensuse*.rpm
                   virtnbdbackup -h
                   virtnbdrestore -h
                   virtnbdmap -h
