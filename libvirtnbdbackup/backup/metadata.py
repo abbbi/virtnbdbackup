@@ -33,7 +33,7 @@ log = logging.getLogger()
 
 
 def backupChecksum(fileStream, targetFile):
-    """Save the calculated adler32 checksum, it can be varified
+    """Save the calculated adler32 checksum, it can be verified
     by virtnbdbrestore's verify function.'"""
     checksum = fileStream.checksum()
     logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)

@@ -1,4 +1,4 @@
-Version 1.9.52
+Version 1.9.53
 ---------
  * Move checksum related code to own function
  * Set a shorter thread name, makes logging messages are easier to read.
