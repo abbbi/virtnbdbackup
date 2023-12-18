@@ -15,12 +15,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from typing import List, Any, Tuple, IO
-
 from libvirtnbdbackup import block
 from libvirtnbdbackup import lz4
 
 
-def write(writer: IO[Any], blk, nbdCon, btype, compress) -> Tuple[int, List[int]]:
+def write(
+    writer: IO[Any], blk, nbdCon, btype: str, compress: bool
+) -> Tuple[int, List[int]]:
     """During extent processing, consecutive blocks with
     the same type(data or zeroed) are unified into one big chunk.
     This helps to reduce requests to the NBD Server.
