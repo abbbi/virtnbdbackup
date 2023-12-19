@@ -14,7 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from typing import List, Any, Tuple, IO
+from typing import List, Any, Tuple, IO, Union
 from libvirtnbdbackup import block
 from libvirtnbdbackup import lz4
 
@@ -22,7 +22,7 @@ from libvirtnbdbackup import lz4
 
 
 def write(
-    writer: IO[Any], blk, nbdCon, btype: str, compress: bool, pbar
+    writer: IO[Any], blk, nbdCon, btype: str, compress: Union[bool, int], pbar
 ) -> Tuple[int, List[int]]:
     """During extent processing, consecutive blocks with
     the same type(data or zeroed) are unified into one big chunk.
@@ -64,7 +64,7 @@ def read(
     offset: int,
     length: int,
     nbdCon,
-    compression: int,
+    compression: bool,
     pbar,
 ) -> int:
     """Read data from reader and write to nbd connection

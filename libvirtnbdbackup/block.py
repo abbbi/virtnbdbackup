@@ -14,7 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from typing import Generator, IO, Any
+from typing import Generator, IO, Any, Union
 from libvirtnbdbackup import lz4
 
 
@@ -42,7 +42,9 @@ def step(offset: int, length: int, maxRequestSize: int) -> Generator:
             blockOffset += blocklen
 
 
-def write(writer: IO[Any], block, nbdCon, btype: str, compress: bool) -> int:
+def write(
+    writer: IO[Any], block, nbdCon, btype: str, compress: Union[bool, int]
+) -> int:
     """Write single block that does not exceed nbd maxRequestSize
     setting. In case compression is enabled, single blocks are
     compressed using lz4.
@@ -51,7 +53,7 @@ def write(writer: IO[Any], block, nbdCon, btype: str, compress: bool) -> int:
         writer.seek(block.offset)
     data = nbdCon.nbd.pread(block.length, block.offset)
 
-    if compress is not False and btype != "raw":
+    if compress is not False:
         data = lz4.compressFrame(data, compress)
 
     return writer.write(data)

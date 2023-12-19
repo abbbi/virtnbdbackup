@@ -287,10 +287,10 @@ def main() -> None:
     lib.printVersion(__version__)
 
     logging.info("Backup level: [%s]", args.level)
-    if args.compress:
+    if args.compress is not False:
         logging.info("Compression enabled, level [%s]", args.compress)
 
-    if args.compress and args.type == "raw":
+    if args.compress is not False and args.type == "raw":
         logging.error("Compression not supported with raw output.")
         sys.exit(1)
 
