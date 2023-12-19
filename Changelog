@@ -3,8 +3,12 @@ Version 1.9.54
  * Exit with error if both compress option and raw output format
  is specified: options are mutually exclusive.
  * Update progressbar during chunked data read/write. If big portions
- of the disk are backed up, it would appear as if now progress is made
+ of the disk are backed up, it would appear as if no progress is made
  (#133)
+ * If an active remote backup is aborted (ctrl+c), stopping the libvirt backup job
+ failed because the signal is sent to the used ssh connection, too. Now the
+ signal handler attempts to re establish the connection to the remote system
+ in order to correctly stop the backup operation.
 
 
 Version 1.9.53

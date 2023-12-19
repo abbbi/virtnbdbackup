@@ -39,10 +39,24 @@ class Backup:
         _,
     ) -> None:
         """Catch signal, attempt to stop running backup job."""
-        log.error("Caught signal: %s", signum)
-        log.error("Cleanup: Stopping backup job")
-        if args.offline is not True:
-            virtClient.stopBackup(domObj)
+        log.error("Signal caught: %s", signum)
+
+        if args.offline is True:
+            log.error("Exiting.")
+            sys.exit(1)
+
+        if virtClient.remoteHost != "":
+            log.info("Reconnecting remote system to stop backup job.")
+            try:
+                virtClient = virt.client(args)
+                domObj = virtClient.getDomain(args.domain)
+            except virt.exceptions.connectionFailed as e:
+                log.error("Reconnecting remote host failed: [%s]", e)
+                log.error("Unable to stop backup job on remote system.", e)
+                sys.exit(1)
+
+        log.info("Cleanup: Stopping backup job.")
+        virtClient.stopBackup(domObj)
         sys.exit(1)
 
 
