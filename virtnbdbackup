@@ -290,6 +290,10 @@ def main() -> None:
     if args.compress:
         logging.info("Compression enabled, level [%s]", args.compress)
 
+    if args.compress and args.type == "raw":
+        logging.error("Compression not supported with raw output.")
+        sys.exit(1)
+
     if args.stdout is True and args.type == "raw":
         logging.error("Output type raw not supported to stdout.")
         sys.exit(1)
