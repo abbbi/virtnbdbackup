@@ -121,6 +121,7 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
                         length,
                         connection,
                         lib.isCompressed(meta),
+                        progressBar,
                     )
                 except Exception as e:
                     logging.exception(e)

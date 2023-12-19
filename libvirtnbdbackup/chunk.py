@@ -18,9 +18,11 @@ from typing import List, Any, Tuple, IO
 from libvirtnbdbackup import block
 from libvirtnbdbackup import lz4
 
+# pylint: disable=too-many-arguments
+
 
 def write(
-    writer: IO[Any], blk, nbdCon, btype: str, compress: bool
+    writer: IO[Any], blk, nbdCon, btype: str, compress: bool, pbar
 ) -> Tuple[int, List[int]]:
     """During extent processing, consecutive blocks with
     the same type(data or zeroed) are unified into one big chunk.
@@ -45,12 +47,14 @@ def write(
 
         data = nbdCon.nbd.pread(blocklen, blockOffset)
 
-        if compress is not False and btype != "raw":
+        if compress is not False:
             compressed = lz4.compressFrame(data, compress)
             wSize += writer.write(compressed)
             cSizes.append(len(compressed))
         else:
             wSize += writer.write(data)
+
+        pbar.update(wSize)
 
     return wSize, cSizes
 
@@ -61,6 +65,7 @@ def read(
     length: int,
     nbdCon,
     compression: int,
+    pbar,
 ) -> int:
     """Read data from reader and write to nbd connection
 
@@ -89,5 +94,7 @@ def read(
             data = reader.read(blocklen)
             nbdCon.nbd.pwrite(data, blockOffset)
             wSize += len(data)
+
+        pbar.update(wSize)
 
     return wSize

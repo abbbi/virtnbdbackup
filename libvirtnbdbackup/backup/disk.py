@@ -156,11 +156,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                     save.length,
                 )
                 size, cSizes = chunk.write(
-                    writer,
-                    save,
-                    connection,
-                    streamType,
-                    args.compress,
+                    writer, save, connection, streamType, args.compress, progressBar
                 )
             else:
                 size = block.write(
