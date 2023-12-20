@@ -9,7 +9,8 @@ Version 1.9.54
  failed because the signal is sent to the used ssh connection, too. Now the
  signal handler attempts to re establish the connection to the remote system
  in order to correctly stop the backup operation.
-
+ * Add close() function to libvirt client class: disconnect libvirt after
+ backup has finished.
 
 Version 1.9.53
 ---------

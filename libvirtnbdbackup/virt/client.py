@@ -153,6 +153,11 @@ class client:
 
         return self._connectOpen(args.uri)
 
+    def close(self) -> None:
+        """Disconnect"""
+        log.debug("Close connection to libvirt.")
+        self._conn.close()
+
     def getDomain(self, name: str) -> libvirt.virDomain:
         """Lookup domain"""
         try:

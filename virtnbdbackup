@@ -500,6 +500,8 @@ def main() -> None:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
 
+    virtClient.close()
+
     metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
 
     if domObj.autostart() == 1:

@@ -57,6 +57,7 @@ class Backup:
 
         log.info("Cleanup: Stopping backup job.")
         virtClient.stopBackup(domObj)
+        virtClient.close()
         sys.exit(1)
 
 
