@@ -11,6 +11,7 @@ Version 1.9.54
  in order to correctly stop the backup operation.
  * Add close() function to libvirt client class: disconnect libvirt after
  backup has finished.
+ * virtnbdmap: code reorg.
 
 Version 1.9.53
 ---------

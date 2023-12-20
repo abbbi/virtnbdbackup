@@ -26,20 +26,22 @@ import argparse
 import logging
 from functools import partial
 from argparse import Namespace
-from typing import List, Tuple, Dict, IO
+from typing import List, IO
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import sighandle
+from libvirtnbdbackup.map import changes
+from libvirtnbdbackup.map import ranges
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError, QemuHelperError
 from libvirtnbdbackup import output
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
-from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
-from libvirtnbdbackup.sparsestream import exceptions
+
+# pylint: disable=unreachable
 
 
 def checkRequirements():
@@ -72,77 +74,6 @@ def locatePlugin(args: Namespace) -> str:
         logging.error("Failed to locate nbdkit plugin: [%s]", pluginFileName)
 
     return nbdkitModule
-
-
-def replayChanges(dataRanges: List, args: Namespace) -> None:
-    """Replay the changes from an incremental or differential
-    backup file to the NBD device"""
-    logging.info("Replaying changes from incremental backups")
-    blockListInc = list(
-        filter(
-            lambda x: x["inc"] is True,
-            dataRanges,
-        )
-    )
-    dataSize = sum(extent["length"] for extent in blockListInc)
-    progressBar = lib.progressBar(dataSize, "replaying..", args)
-    with output.openfile(args.device, "wb") as replayDevice:
-        for extent in blockListInc:
-            if args.noprogress:
-                logging.info(
-                    "Replaying offset %s from %s", extent["offset"], extent["file"]
-                )
-            with output.openfile(os.path.abspath(extent["file"]), "rb") as replaySrc:
-                replaySrc.seek(extent["offset"])
-                replayDevice.seek(extent["originalOffset"])
-                replayDevice.write(replaySrc.read(extent["length"]))
-            replayDevice.seek(0)
-            replayDevice.flush()
-            progressBar.update(extent["length"])
-
-    progressBar.close()
-
-
-def getDataRanges(stream, sTypes, reader) -> Tuple[List, Dict]:
-    """Read block offsets from backup stream image"""
-    try:
-        kind, start, length = stream.readFrame(reader)
-        meta = stream.loadMetadata(reader.read(length))
-    except exceptions.StreamFormatException as errmsg:
-        logging.error("Unable to read metadata header: %s", errmsg)
-        raise RestoreError from errmsg
-
-    if lib.isCompressed(meta):
-        logging.error("Mapping compressed images currently not supported.")
-        raise RestoreError
-
-    assert reader.read(len(sTypes.TERM)) == sTypes.TERM
-
-    dataRanges: List = []
-    while True:
-        kind, start, length = stream.readFrame(reader)
-        if kind == sTypes.STOP:
-            dataRanges[-1]["nextBlockOffset"] = None
-            break
-
-        blockInfo = {}
-        blockInfo["offset"] = reader.tell()
-        blockInfo["originalOffset"] = start
-        blockInfo["nextOriginalOffset"] = start + length
-        blockInfo["length"] = length
-        blockInfo["data"] = kind == sTypes.DATA
-        blockInfo["file"] = os.path.abspath(reader.name)
-        blockInfo["inc"] = meta["incremental"]
-
-        if kind == sTypes.DATA:
-            reader.seek(length, os.SEEK_CUR)
-            assert reader.read(len(sTypes.TERM)) == sTypes.TERM
-
-        nextBlockOffset = reader.tell() + sTypes.FRAME_LEN
-        blockInfo["nextBlockOffset"] = nextBlockOffset
-        dataRanges.append(blockInfo)
-
-    return dataRanges, meta
 
 
 def dumpBlockMap(tfile: IO, dataRanges: List) -> bool:
@@ -244,7 +175,7 @@ def main() -> None:
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
 
     lib.setThreadName()
-    counter = logCount()  # pylint: disable=unreachable
+    counter = logCount()
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
     nbdkitModule = locatePlugin(args)
@@ -280,11 +211,11 @@ def main() -> None:
             logging.error("[%s]: [%s]", dFile, e)
             sys.exit(1)
 
-        ranges, meta = getDataRanges(stream, sTypes, reader)
-        dataRanges.extend(ranges)
-        if ranges is False or meta is False:
+        Range, meta = ranges.get(stream, sTypes, reader)
+        if Range is False or meta is False:
             logging.error("Unable to read meta header from backup file.")
             sys.exit(1)
+        dataRanges.extend(Range)
 
         if args.verbose is True:
             logging.info(json.dumps(dataRanges, indent=4))
@@ -354,7 +285,7 @@ def main() -> None:
 
     if len(dataFiles) > 1:
         try:
-            replayChanges(dataRanges, args)
+            changes.replay(dataRanges, args)
         except OutputException as e:
             logging.error("Failed to replay changes: %s", e)
             lib.killProc(nbdkitProcess.pid)
