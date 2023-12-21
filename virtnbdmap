@@ -34,7 +34,7 @@ from libvirtnbdbackup.map import changes
 from libvirtnbdbackup.map import ranges
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError, QemuHelperError
-from libvirtnbdbackup import output
+from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
@@ -203,27 +203,11 @@ def main() -> None:
     blockMap = tempfile.NamedTemporaryFile(delete=False, prefix="block.", suffix=".map")
     logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
 
-    dataRanges = []
-    for dFile in dataFiles:
-        try:
-            reader = output.openfile(dFile, "rb")
-        except OutputException as e:
-            logging.error("[%s]: [%s]", dFile, e)
-            sys.exit(1)
-
-        Range, meta = ranges.get(stream, sTypes, reader)
-        if Range is False or meta is False:
-            logging.error("Unable to read meta header from backup file.")
-            sys.exit(1)
-        dataRanges.extend(Range)
-
-        if args.verbose is True:
-            logging.info(json.dumps(dataRanges, indent=4))
-        else:
-            logging.info(
-                "Parsed [%s] block offsets from file [%s]", len(dataRanges), dFile
-            )
-        reader.close()
+    try:
+        dataRanges = ranges.get(args, stream, sTypes, dataFiles)
+    except RestoreError as e:
+        logging.error(e)
+        sys.exit(1)
 
     dumpBlockMap(blockMap, dataRanges)
     blockMap.flush()

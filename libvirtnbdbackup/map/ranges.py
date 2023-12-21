@@ -17,13 +17,16 @@
 """
 import os
 import logging
+import json
 from typing import List, Dict, Tuple
 from libvirtnbdbackup import common as lib
+from libvirtnbdbackup import output
+from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.sparsestream.exceptions import StreamFormatException
 
 
-def get(stream, sTypes, reader) -> Tuple[List, Dict]:
+def _parse(stream, sTypes, reader) -> Tuple[List, Dict]:
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
@@ -63,3 +66,30 @@ def get(stream, sTypes, reader) -> Tuple[List, Dict]:
         dataRanges.append(blockInfo)
 
     return dataRanges, meta
+
+
+def get(args, stream, sTypes, dataFiles: List) -> List:
+    """Get data ranges for each file specified"""
+    dataRanges = []
+    for dFile in dataFiles:
+        try:
+            reader = output.openfile(dFile, "rb")
+        except OutputException as e:
+            logging.error("[%s]: [%s]", dFile, e)
+            raise RestoreError from e
+
+        Range, meta = _parse(stream, sTypes, reader)
+        if Range is False or meta is False:
+            logging.error("Unable to read meta header from backup file.")
+            raise RestoreError("Invalid header")
+        dataRanges.extend(Range)
+
+        if args.verbose is True:
+            logging.info(json.dumps(dataRanges, indent=4))
+        else:
+            logging.info(
+                "Parsed [%s] block offsets from file [%s]", len(dataRanges), dFile
+            )
+        reader.close()
+
+    return dataRanges
