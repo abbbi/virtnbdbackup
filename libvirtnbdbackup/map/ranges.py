@@ -18,7 +18,7 @@
 import os
 import logging
 import json
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, IO
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup import output
 from libvirtnbdbackup.output.exceptions import OutputException
@@ -93,3 +93,13 @@ def get(args, stream, sTypes, dataFiles: List) -> List:
         reader.close()
 
     return dataRanges
+
+
+def dump(tfile: IO, dataRanges: List) -> bool:
+    """Dump block map to temporary file"""
+    try:
+        tfile.write(json.dumps(dataRanges, indent=4).encode())
+        return True
+    except OSError as e:
+        logging.error("Unable to write blockmap file: %s", e)
+        return False

@@ -17,21 +17,18 @@
 """
 import os
 import sys
-import shutil
 import tempfile
 import signal
-import json
 import time
 import argparse
 import logging
 from functools import partial
-from argparse import Namespace
-from typing import List, IO
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import sighandle
 from libvirtnbdbackup.map import changes
 from libvirtnbdbackup.map import ranges
+from libvirtnbdbackup.map import requirements
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError, QemuHelperError
 from libvirtnbdbackup.exceptions import RestoreError
@@ -42,48 +39,6 @@ from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 
 # pylint: disable=unreachable
-
-
-def checkRequirements():
-    """Check if required utils are installed"""
-    for exe in ("nbdkit", "qemu-nbd"):
-        if not shutil.which(exe):
-            logging.error("Please install required [%s] utility.", exe)
-
-
-def checkDevice(args: Namespace, device: str) -> None:
-    """Check if /dev/nbdX exists, otherwise it is likely
-    nbd module isn't loaded on the system"""
-    if not device.startswith("/dev/nbd"):
-        logging.error("Target device [%s] seems not to be an NBD device?", device)
-
-    if not lib.exists(args, device):
-        logging.error(
-            "Target device [%s] does not exist, nbd module not loaded?", device
-        )
-
-
-def locatePlugin(args: Namespace) -> str:
-    """Attempt to locate the nbdkit plugin that is passed to the
-    nbdkit process"""
-    pluginFileName = "virtnbd-nbdkit-plugin"
-    installDir = os.path.dirname(sys.argv[0])
-    nbdkitModule = f"{installDir}/{pluginFileName}"
-
-    if not lib.exists(args, nbdkitModule):
-        logging.error("Failed to locate nbdkit plugin: [%s]", pluginFileName)
-
-    return nbdkitModule
-
-
-def dumpBlockMap(tfile: IO, dataRanges: List) -> bool:
-    """Dump block map to temporary file"""
-    try:
-        tfile.write(json.dumps(dataRanges, indent=4).encode())
-        return True
-    except OSError as e:
-        logging.error("Unable to write blockmap file: %s", e)
-        return False
 
 
 def main() -> None:
@@ -178,12 +133,12 @@ def main() -> None:
     counter = logCount()
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
-    nbdkitModule = locatePlugin(args)
+    nbdkitModule = requirements.plugin(args)
     logging.info("Logfile: [%s]", args.logfile)
     logging.info("Plugin location: [%s]", nbdkitModule)
 
-    checkRequirements()
-    checkDevice(args, args.device)
+    requirements.executables()
+    requirements.device(args)
     dataFiles = args.file.split(",")
 
     if len(dataFiles) > 1 and not "full.data" in dataFiles[0]:
@@ -202,14 +157,14 @@ def main() -> None:
     # pylint: disable=consider-using-with
     blockMap = tempfile.NamedTemporaryFile(delete=False, prefix="block.", suffix=".map")
     logging.info("Write blockmap to temporary file: [%s]", blockMap.name)
-
     try:
         dataRanges = ranges.get(args, stream, sTypes, dataFiles)
     except RestoreError as e:
         logging.error(e)
         sys.exit(1)
 
-    dumpBlockMap(blockMap, dataRanges)
+    if not ranges.dump(blockMap, dataRanges):
+        sys.exit(1)
     blockMap.flush()
     blockMap.close()
 
