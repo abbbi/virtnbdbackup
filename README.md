@@ -184,7 +184,7 @@ python3 setup.py install
 
 ## RPM package
 
-Packages compatible with RHEL derivates are available via
+Packages for RHEL/Fedora and OpenSUSE are available via
 [releases](https://github.com/abbbi/virtnbdbackup/releases).
 
 To create an RPM package from source by yourself you can follow
