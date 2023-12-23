@@ -18,7 +18,9 @@
 import json
 import os
 import datetime
-
+from typing import List, Any, Tuple, Dict
+from argparse import Namespace
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.sparsestream import exceptions
 
 
@@ -26,23 +28,23 @@ class SparseStream:
 
     """Sparse Stream writer/reader class"""
 
-    def __init__(self, types, version=2):
+    def __init__(self, types, version: int = 2) -> None:
         """Stream version:
 
         1: base version
         2: stream version with compression support
         """
         self.version = version
-        self.compressionMethod = "lz4"
+        self.compressionMethod: str = "lz4"
         self.types = types.SparseStreamTypes()
 
     def dumpMetadata(
         self,
-        args,
-        virtualSize,
-        dataSize,
-        disk,
-    ):
+        args: Namespace,
+        virtualSize: int,
+        dataSize: int,
+        disk: DomainDisk,
+    ) -> bytes:
         """First block in backup stream is Meta data information
         about virtual size of the disk being backed up, as well
         as various information regarding backup.
@@ -64,13 +66,13 @@ class SparseStream:
         }
         return json.dumps(meta, indent=4).encode("utf-8")
 
-    def writeCompressionTrailer(self, writer, trailer):
+    def writeCompressionTrailer(self, writer, trailer: List[Any]) -> None:
         """Dump compression trailer to end of stream"""
         size = writer.write(json.dumps(trailer).encode())
         writer.write(self.types.TERM)
         self.writeFrame(writer, self.types.COMP, 0, size)
 
-    def _readHeader(self, reader):
+    def _readHeader(self, reader) -> Tuple[str, str, str]:
         """Attempt to read header"""
         header = reader.read(self.types.FRAME_LEN)
         try:
@@ -83,7 +85,7 @@ class SparseStream:
         return kind, start, length
 
     @staticmethod
-    def _parseHeader(kind, start, length):
+    def _parseHeader(kind, start: str, length: str) -> Tuple[str, int, int]:
         """Return parsed header information"""
         try:
             return kind, int(start, 16), int(length, 16)
@@ -92,7 +94,7 @@ class SparseStream:
                 f"Invalid frame format: [{err}]"
             ) from err
 
-    def readCompressionTrailer(self, reader):
+    def readCompressionTrailer(self, reader) -> Dict[int, Any]:
         """If compressed stream is found, information about compressed
         block sizes is appended as last json payload.
 
@@ -108,7 +110,7 @@ class SparseStream:
         return trailer
 
     @staticmethod
-    def loadMetadata(s):
+    def loadMetadata(s: bytes) -> Any:
         """Load and parse metadata information
         Parameters:
             s:  (str)   Json string as received during data file read
@@ -122,14 +124,14 @@ class SparseStream:
                 f"Invalid meta header format: [{err}]"
             ) from err
 
-    def writeFrame(self, writer, kind, start, length):
+    def writeFrame(self, writer, kind, start: int, length: int) -> None:
         """Write backup frame
         Parameters:
             writer: (fh)    Writer object that implements .write()
         """
         writer.write(self.types.FRAME % (kind, start, length))
 
-    def readFrame(self, reader):
+    def readFrame(self, reader) -> Tuple[str, int, int]:
         """Read backup frame
         Parameters:
             reader: (fh)    Reader object which implements .read()

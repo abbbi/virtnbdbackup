@@ -88,8 +88,8 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
     progressBar = lib.progressBar(
         meta["dataSize"], f"restoring disk [{meta['diskName']}]", args
     )
-    dataSize = 0
-    dataBlockCnt = 0
+    dataSize: int = 0
+    dataBlockCnt: int = 0
     while True:
         try:
             kind, start, length = stream.readFrame(reader)
