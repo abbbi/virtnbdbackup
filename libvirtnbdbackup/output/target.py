@@ -78,16 +78,16 @@ class target:
                     f"Opening target file [{targetFile}] failed: {e}"
                 ) from e
 
-        def write(self, data):
+        def write(self, data: bytes) -> int:
             """Write wrapper"""
             self.chksum = zlib.adler32(data, self.chksum)
             return self.fileHandle.write(data)
 
-        def read(self, size=-1):
+        def read(self, size=-1) -> int:
             """Read wrapper"""
             return self.fileHandle.read(size)
 
-        def flush(self):
+        def flush(self) -> None:
             """Flush wrapper"""
             return self.fileHandle.flush()
 
@@ -101,16 +101,16 @@ class target:
                     f"Failed to truncate target file: [{e}]"
                 ) from e
 
-        def close(self):
+        def close(self) -> None:
             """Close wrapper"""
             log.debug("Close file")
-            return self.fileHandle.close()
+            self.fileHandle.close()
 
-        def seek(self, tgt: int, whence: int = 0):
+        def seek(self, tgt: int, whence: int = 0) -> int:
             """Seek wrapper"""
             return self.fileHandle.seek(tgt, whence)
 
-        def checksum(self):
+        def checksum(self) -> int:
             """Return computed checksum"""
             cur = self.chksum
             self.chksum = 1
@@ -173,15 +173,15 @@ class target:
             """Truncate target file"""
             raise RuntimeError("Not implemented")
 
-        def write(self, data):
+        def write(self, data: bytes) -> int:
             """Write wrapper"""
             return self.zipFileStream.write(data)
 
-        def close(self):
+        def close(self) -> None:
             """Close wrapper"""
             log.debug("Close file")
-            return self.zipFileStream.close()
+            self.zipFileStream.close()
 
-        def checksum(self):
+        def checksum(self) -> None:
             """Checksum: not implemented for zip file"""
             return
