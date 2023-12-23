@@ -119,7 +119,7 @@ class target:
     class Zip:
         """Backup to zip file"""
 
-        def __init__(self):
+        def __init__(self) -> None:
             self.zipStream: zipfile.ZipFile
             self.zipFileStream: IO[bytes]
 
