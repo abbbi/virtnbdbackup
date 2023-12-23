@@ -309,7 +309,8 @@ def main() -> None:
         if not lib.hasFullBackup(args):
             logging.error(
                 "Can't execute switch to auto incremental backup: "
-                "target folder seems not to include full backup."
+                "specified target folder [%s] does not contain full backup.",
+                args.output,
             )
             sys.exit(1)
         logging.info("Backup mode auto: executing incremental backup.")
