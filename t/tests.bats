@@ -643,7 +643,14 @@ toOut() {
     run ls ${TMPDIR}/autotest/*inc*.data
     [ "$status" -eq 0 ]
 }
-
+@test "Backup: create backup in auto mode to existing directory with missing full backup must fail" {
+    [ -z $INCTEST ] && skip "skipping"
+    mkdir -p ${TMPDIR}/autotestfail
+    touch ${TMPDIR}/autotestfail/sda.copy.data
+    run ../virtnbdbackup -d $VM -l auto -o ${TMPDIR}/autotestfail
+    echo "output = ${output}"
+    [ "$status" -eq 1 ]
+}
 @test "Backup: test remote backup functionality via localhost" {
     [ -z $GITHUB_JOB ] && skip "skip locally"
     run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -v -o  ${TMPDIR}/remotebackup
