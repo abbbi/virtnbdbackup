@@ -18,14 +18,13 @@ import logging
 import socket
 from typing import Tuple, Callable
 from enum import Enum
-from paramiko import (  # pylint: disable=import-error
+from paramiko import (
     AutoAddPolicy,
     SSHClient,
     SFTPClient,
     SSHException,
     AuthenticationException,
 )
-
 from libvirtnbdbackup.ssh import exceptions
 from libvirtnbdbackup.objects import processInfo
 
