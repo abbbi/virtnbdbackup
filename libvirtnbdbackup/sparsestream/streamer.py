@@ -72,7 +72,7 @@ class SparseStream:
         writer.write(self.types.TERM)
         self.writeFrame(writer, self.types.COMP, 0, size)
 
-    def _readHeader(self, reader) -> Tuple[str, str, str]:
+    def _readHeader(self, reader) -> Tuple[bytes, bytes, bytes]:
         """Attempt to read header"""
         header: bytes = reader.read(self.types.FRAME_LEN)
         try:
@@ -82,10 +82,12 @@ class SparseStream:
                 f"Invalid block format: [{err}]"
             ) from err
 
-        return str(kind), str(start), str(length)
+        return kind, start, length
 
     @staticmethod
-    def _parseHeader(kind, start: str, length: str) -> Tuple[str, int, int]:
+    def _parseHeader(
+        kind: bytes, start: bytes, length: bytes
+    ) -> Tuple[bytes, int, int]:
         """Return parsed header information"""
         try:
             return kind, int(start, 16), int(length, 16)
@@ -131,7 +133,7 @@ class SparseStream:
         """
         writer.write(self.types.FRAME % (kind, start, length))
 
-    def readFrame(self, reader) -> Tuple[str, int, int]:
+    def readFrame(self, reader) -> Tuple[bytes, int, int]:
         """Read backup frame
         Parameters:
             reader: (fh)    Reader object which implements .read()
