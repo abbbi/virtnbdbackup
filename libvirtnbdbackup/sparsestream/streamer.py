@@ -34,7 +34,7 @@ class SparseStream:
         1: base version
         2: stream version with compression support
         """
-        self.version = version
+        self.version: int = version
         self.compressionMethod: str = "lz4"
         self.types = types.SparseStreamTypes()
 
@@ -68,13 +68,13 @@ class SparseStream:
 
     def writeCompressionTrailer(self, writer, trailer: List[Any]) -> None:
         """Dump compression trailer to end of stream"""
-        size = writer.write(json.dumps(trailer).encode())
+        size: int = writer.write(json.dumps(trailer).encode())
         writer.write(self.types.TERM)
         self.writeFrame(writer, self.types.COMP, 0, size)
 
     def _readHeader(self, reader) -> Tuple[str, str, str]:
         """Attempt to read header"""
-        header = reader.read(self.types.FRAME_LEN)
+        header: bytes = reader.read(self.types.FRAME_LEN)
         try:
             kind, start, length = header.split(b" ", 2)
         except ValueError as err:
@@ -82,7 +82,7 @@ class SparseStream:
                 f"Invalid block format: [{err}]"
             ) from err
 
-        return kind, start, length
+        return str(kind), str(start), str(length)
 
     @staticmethod
     def _parseHeader(kind, start: str, length: str) -> Tuple[str, int, int]:
@@ -124,7 +124,7 @@ class SparseStream:
                 f"Invalid meta header format: [{err}]"
             ) from err
 
-    def writeFrame(self, writer, kind, start: int, length: int) -> None:
+    def writeFrame(self, writer, kind: bytes, start: int, length: int) -> None:
         """Write backup frame
         Parameters:
             writer: (fh)    Writer object that implements .write()
