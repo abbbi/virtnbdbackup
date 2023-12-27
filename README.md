@@ -162,8 +162,9 @@ virt:rhel module, the feature is enabled by default. [(Details)](https://access.
 # Installation
 
 There are several ways to install the utility, below you will find an short
-description for each of them. For Debian and RHEL based derivates see
-[releases](https://github.com/abbbi/virtnbdbackup/releases) for pre-built packages.
+description for each of them. For Debian and RHEL/SuSE based derivates see
+[releases](https://github.com/abbbi/virtnbdbackup/releases) for pre-built
+packages.
 
 `Note`:
 > Please consider to check [past issues related to
@@ -187,8 +188,9 @@ python3 setup.py install
 Packages for RHEL/Fedora and OpenSUSE are available via
 [releases](https://github.com/abbbi/virtnbdbackup/releases).
 
-To create an RPM package from source by yourself you can follow
-the steps from the github build workflow.
+To create an RPM package from source by yourself you can follow the steps from
+the github [build
+workflow](https://github.com/abbbi/virtnbdbackup/actions/workflows/build.yml).
 
 
 ## Debian package
@@ -197,13 +199,12 @@ Official packages are available:
 [https://packages.debian.org/virtnbdbackup](http://packages.debian.org/virtnbdbackup) and are maintained on
 the [Debian salsa codespace](https://salsa.debian.org/debian/virtnbdbackup).
 
-To create a Debian package from source (Debian bullseye and above required)
-use:
+For the latest packages available check
+[releases](https://github.com/abbbi/virtnbdbackup/releases).
 
-```
-sudo apt-get install python3-all python3-stdeb dh-python python3-libnbd python3-tqdm python3-lz4 python3-lxml
-python3 setup.py --command-packages=stdeb.command bdist_deb
-```
+To create an Debian package from source by yourself you can follow the steps
+from the github [build
+workflow](https://github.com/abbbi/virtnbdbackup/actions/workflows/build.yml).
 
 
 ## Virtualenv
