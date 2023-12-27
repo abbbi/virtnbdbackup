@@ -39,7 +39,7 @@ of your `kvm/qemu` virtual machines.
   - [Compression](#compression)
   - [Remote Backup](#remote-backup)
     - [QEMU Sessions](#qemu-sessions)
-    - [NBD with TLS](#nbd-with-tls)
+    - [NBD with TLS (NBDSSL)](#nbd-with-tls-nbdssl)
     - [Using a separate network for data transfer](#using-a-separate-network-for-data-transfer)
     - [Piping data to other hosts](#piping-data-to-other-hosts)
   - [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
@@ -504,12 +504,13 @@ See also: [Authentication](#authentication)
 > an unique port for the NBD service used for data transfer via --nbd-port
 > option for each backup session.
 
-### NBD with TLS
+### NBD with TLS (NBDSSL)
 
 By default disk data received from a remote system will be transferred via
 regular NBD protocol. You can enable TLS for this connection, using the `--tls`
 option. Before being able to use TLS, you *must* configure the required
-certificates on both sides.
+certificates on both sides. [See this
+script](https://github.com/abbbi/virtnbdbackup/blob/master/scripts/create-cert.sh).
 
 See the following documentation by the libvirt project for detailed
 instructions how setup:
