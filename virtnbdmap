@@ -195,7 +195,7 @@ def main() -> None:
         "qemu-nbd",
         "-c",
         f"{args.device}",
-        f"nbd://127.0.0.1:{args.listen_port}/{args.export_name}",
+        f"nbd://{args.listen_address}:{args.listen_port}/{args.export_name}",
         "-f",
         "raw",
     ]
