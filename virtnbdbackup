@@ -20,12 +20,10 @@ import sys
 import signal
 import logging
 import argparse
-from argparse import Namespace
 from typing import List
 from datetime import datetime
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from libvirt import virDomain
 from libvirtnbdbackup import sighandle
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
@@ -49,20 +47,8 @@ from libvirtnbdbackup.virt.exceptions import (
 from libvirtnbdbackup.output.exceptions import OutputException
 
 
-def setOfflineArguments(args: Namespace, domObj: virDomain) -> None:
-    """Check if to be saved VM is offline and set
-    proper options/overwrite backup mode"""
-    args.offline = False
-    if domObj.isActive() == 0:
-        if args.level == "full":
-            logging.warning("Domain is offline, resetting backup options.")
-            args.level = "copy"
-            logging.warning("New Backup level: [%s].", args.level)
-        args.offline = True
-
-
 def main() -> None:
-    """Handle backup operation"""
+    """Handle backup operation and settings."""
     parser = argparse.ArgumentParser(
         description="Backup libvirt/qemu virtual machines",
         epilog=(
@@ -262,6 +248,7 @@ def main() -> None:
     args.stdout = args.output == "-"
     args.sshClient = None
     args.diskInfo = []
+    args.offline = False
 
     if args.quiet is True:
         args.noprogress = True
@@ -369,7 +356,13 @@ def main() -> None:
     except exceptions.CheckpointException:
         sys.exit(1)
 
-    setOfflineArguments(args, domObj)
+    if domObj.isActive() == 0:
+        if args.level == "full":
+            logging.warning("Domain is offline, resetting backup options.")
+            args.level = "copy"
+            logging.warning("New Backup level: [%s].", args.level)
+        args.offline = True
+
     if args.offline is True and args.startonly is True:
         logging.error("Virtual machine is currently offline")
         logging.error("Virtual machine must be active for this function.")
