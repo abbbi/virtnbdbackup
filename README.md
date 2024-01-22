@@ -112,7 +112,7 @@ already has an almost complete support for incremental backup, although it
 doesn't work properly with migration or some block jobs.
 
 If you don't want to use migration or other blockjobs you can enable the 
-incremental backup feature on these libvirt versions change the virtual 
+incremental backup feature on these libvirt versions. Change the virtual
 machine config using `virsh edit <vm>` like so: (the first line must be 
 changed, too!):
 
@@ -127,7 +127,7 @@ changed, too!):
  ```
 
 `Note`:
-> You must restart the virtual machine after enabling the feature!
+> You must power cycle the virtual machine after enabling the feature!
 > Upstream libvirt strongly discourages enabling the feature on production
 > systems for these libvirt versions.
 
