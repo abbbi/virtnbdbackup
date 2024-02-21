@@ -29,7 +29,7 @@ of your `kvm/qemu` virtual machines.
 - [Backup Operation](#backup-operation)
 - [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
 - [Backup Examples](#backup-examples)
-  - [Local backups](#local-backups)
+  - [Local full/incremental backup](#local-fullincremental-backup)
   - [Application consistent backups](#application-consistent-backups)
   - [Rotating backups](#rotating-backups)
   - [Excluding disks](#excluding-disks)
@@ -303,26 +303,30 @@ must not be processed using `virtnbdrestore`.
 
 # Backup Examples
 
-## Local backups
+Each backup for a virtual machine should be saved to an individual target
+directory. Once the target directory includes an full backup, it can be used as
+base for further incremental or differential backups.
 
-* Start full backup of domain `vm1`, save data to `/tmp/backupset`:
+## Local full/incremental backup
 
-```
-virtnbdbackup -d vm1 -l full -o /tmp/backupset
-```
-
-* Start incremental backup for domain `vm1`, backup only changed blocks to the
-  last full backup:
+Start full backup of domain `vm1`, save data to `/tmp/backupset/vm1`:
 
 ```
-virtnbdbackup -d vm1 -l inc -o /tmp/backupset
+virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1
+```
+
+Start incremental backup for domain `vm1`, backup only changed blocks to the
+last full backup, the same directory is used for as backup target:
+
+```
+virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1
 ```
 
 The resulting directory will contain all information for restoring the virtual
 machine, including logfiles that can be used for analyzing backup issues:
 
 ```
-/tmp/backupset/
+/tmp/backupset/vm1
 ├── backup.full.05102021161752.log
 ├── backup.inc.05102021161813.log
 ├── backup.inc.05102021161814.log
@@ -357,7 +361,7 @@ running in the domain.
 It is also possible to specify one or multiple mountpoints used within
 the virtual machine to freeze only specific filesystems, like so:
 
-`virtnbdbackup -d vm1 -l inc -o /tmp/backupset -F /mnt,/var`
+`virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1 -F /mnt,/var`
 
 this way only the underlying filesystems on */mnt* and */var* are frozen
 and thawed.
@@ -389,7 +393,7 @@ the disk to be excluded must match the disks target device name as configured
 in the domains xml definition, for example:
 
 ```
-virtnbdbackup -d vm1 -l full -o /tmp/backupset -x sda
+virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1 -x sda
 ```
 
 Special devices such as `cdrom/floppy` or `direct attached luns` are excluded
@@ -399,7 +403,7 @@ It is also possible to only backup specific disks using the include option
 (`--include`, or `-i`):
 
 ```
-virtnbdbackup -d vm1 -l full -o /tmp/backupset -i sdf
+virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1 -i sdf
 ```
 
 ## Estimating backup size
@@ -410,7 +414,7 @@ option `-p` which will query the virtual machine checkpoint information for the
 current size:
 
 ```
-virtnbdbackup -d vm1 -l inc -o /tmp/backupset -p
+virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1 -p
 [..]
 [..] INFO virtnbdbackup - handleCheckpoints [MainThread]: Using checkpoint name: [virtnbdbackup.1].
 [..] INFO virtnbdbackup - main [MainThread]: Estimated checkpoint backup size: [24248320] Bytes
@@ -429,7 +433,7 @@ using the `--threshold` option. The backup will then only be executed if the
 amount of data changed meets the specified threshold (in bytes):
 
 ```
-virtnbdbackup -d vm1 -l inc -o /tmp/backupset --threshold 3311264
+virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1 --threshold 3311264
 [..]
 [..] INFO virtnbdbackup - handleCheckpoints [MainThread]: Using checkpoint name: [virtnbdbackup.1].
 [..] ]virtnbdbackup - main [MainThread]: Backup size [3211264] does not meet required threshold [3311264], skipping backup.
@@ -489,12 +493,12 @@ files will be copied from the remote system via SSH(SFTP).
 In order to backup virtual machines from a remote host, you must specify an
 [libvirt URI](https://libvirt.org/uri.html) to the remote system.
 
-The following example saves the virtual machine `src` from the remote libvirt
-host `hypervisor` to the local directory `/tmp/backupset`, it uses the `root`
+The following example saves the virtual machine `vm1` from the remote libvirt
+host `hypervisor` to the local directory `/tmp/backupset/vm1`, it uses the `root`
 user for both the libvirt and ssh authentication:
 
 ```
-virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d src -o  /tmp/backupset
+virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d vm1 -o  /tmp/backupset/vm1
 ```
 
 See also: [Authentication](#authentication)
@@ -597,10 +601,10 @@ order to recover required files.
 ## Dumping backup information
 
 As a first start, the `dump` parameter can be used to dump the saveset
-information of an existing backupset:
+information of an existing backup:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -o dump
+virtnbdrestore -i /tmp/backupset/vm1 -o dump
 INFO:root:Dumping saveset meta information
 {'checkpointName': 'virtnbdbackup',
  'dataSize': 704643072,
@@ -622,9 +626,9 @@ each created data file. Using `virtnbdrestore` you can check the integrity
 for the created data files without having to restore:
 
 ```
-virtnbdrestore -i /tmp/backup -o verify
-[..] INFO lib common - printVersion [MainThread]: Version: 1.9.39 Arguments: ./virtnbdrestore -i /tmp/backup -o verify
-[..] INFO root virtnbdrestore - verify [MainThread]: Computing checksum for: /tmp/backup/sda.full.data
+virtnbdrestore -i /tmp/backup/vm1 -o verify
+[..] INFO lib common - printVersion [MainThread]: Version: 1.9.39 Arguments: ./virtnbdrestore -i /tmp/backup/vm1 -o verify
+[..] INFO root virtnbdrestore - verify [MainThread]: Computing checksum for: /tmp/backup/vm1/sda.full.data
 [..] INFO root virtnbdrestore - verify [MainThread]: Checksum result: 541406837
 [..] INFO root virtnbdrestore - verify [MainThread]: Comparing checksum with stored information
 [..] INFO root virtnbdrestore - verify [MainThread]: OK
@@ -639,7 +643,7 @@ To restore all disks within the backupset into a usable qcow image use
 command:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -o /tmp/restore
+virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore
 ```
 
 All incremental backups found will be applied to the target images
@@ -656,7 +660,7 @@ A single disk can be restored by using the option `-d`, the disk name has
 to match the virtual disks target name, for example:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -o /tmp/restore -d sda
+virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore -d sda
 ```
 
 ## Point in time recovery
@@ -666,7 +670,7 @@ checkpoint. The checkpoint name has to be specified as reported by the
 dump output (field `checkpointName`), for example:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -o /tmp/restore --until virtnbdbackup.2
+virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore --until virtnbdbackup.2
 ```
 
 It is also possible to specify the source data files specifically used for the
@@ -675,7 +679,7 @@ apply has the right order, otherwise the restored image might be errnous,
 example:
 
 ```
-virtnbdrestore -i /tmp/backupset/ -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
+virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
 ```
 
 ## Restoring with modified virtual machine config
@@ -700,7 +704,7 @@ A restored virtual machine can then been defined and started right from the
 restored directory (or use option `-D` to define automatically):
 
 ```
-virtnbdrestore -c -i /tmp/backupset/ -o /tmp/restore
+virtnbdrestore -c -i /tmp/backupset/vm1 -o /tmp/restore
 [..]
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Adjusted config placed in: [/tmp/restore/vmconfig.virtnbdbackup.0.xml]
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Use 'virsh define /tmp/restore/vmconfig.virtnbdbackup.0.xml' to define VM
@@ -714,7 +718,7 @@ directory `/tmp/backupset` to the remote system "hypervisor", alter its
 configuration and register the virtual machine:
 
 ```
-virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset -o /remote/target
+virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset/vm1 -o /remote/target
 ```
 
 # Post restore steps and considerations
@@ -741,7 +745,7 @@ device `/dev/nbd0`:
 
 ```
  # modprobe nbd max_partitions=15
- # virtnbdmap -f /backup/sda.full.data
+ # virtnbdmap -f /backupset/vm1/sda.full.data
  [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd0]
  [..] INFO virtnbdmap - <module> [MainThread]: Press CTRL+C to disconnect
 ```
@@ -760,7 +764,7 @@ incremental backups will then be replayed to the block device on the fly and
 the image will represent the latest state:
 
 ```
-virtnbdmap -f /backup/sda.full.data,/backup/sda.inc.virtnbdbackup.1.data,/backup/sda.inc.virtnbdbackup.2.data
+virtnbdmap -f /backupset/vm1/sda.full.data,/backupset/vm1/sda.inc.virtnbdbackup.1.data,/backupset/vm1/sda.inc.virtnbdbackup.2.data
 [..]
 [..] INFO virtnbdmap - main [MainThread]: Need to replay incremental backups
 [..] INFO virtnbdmap - main [MainThread]: Replaying offset 420 from /backup/sda.inc.virtnbdbackup.1.data
@@ -893,7 +897,7 @@ authentication methods. Use the `-U` parameter in order to specify an
 authentication file:
 
 ```
-virtnbdbackup -U qemu:///system?authfile=/etc/ovirt-hosted-engine/virsh_auth.conf -d src -o /tmp/backupset
+virtnbdbackup -U qemu:///system?authfile=/etc/ovirt-hosted-engine/virsh_auth.conf -d vm1 -o /tmp/backupset/vm1
 ```
 
 
