@@ -19,7 +19,7 @@ load $TEST/config.bash
 
 if [ ! -z $HAS_RAW ] && [ -z $OPT ]; then
     export OPT="--raw"
-    echo "Raw disk attached Additional options: $OPT" >&3
+    echo "Raw disk attached Additional options: $OPT" >&2
 fi
 
 
