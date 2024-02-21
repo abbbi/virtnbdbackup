@@ -303,7 +303,7 @@ must not be processed using `virtnbdrestore`.
 
 # Backup Examples
 
-Each backup for a virtual machine should be saved to an individual target
+Each backup for a virtual machine must be saved to an individual target
 directory. Once the target directory includes an full backup, it can be used as
 base for further incremental or differential backups.
 
@@ -316,33 +316,29 @@ virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1
 ```
 
 Start incremental backup for domain `vm1`, backup only changed blocks to the
-last full backup, the same directory is used for as backup target:
+last full backup, the same directory is used as backup target:
 
 ```
 virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1
 ```
 
-The resulting directory will contain all information for restoring the virtual
-machine, including logfiles that can be used for analyzing backup issues:
+The resulting directory will contain both backups and all other files required
+to restore the virtual machine. Created logfiles can be used for analyzing
+backup issues:
 
 ```
 /tmp/backupset/vm1
 ├── backup.full.05102021161752.log
 ├── backup.inc.05102021161813.log
-├── backup.inc.05102021161814.log
 ├── checkpoints
 │   ├── virtnbdbackup.0.xml
 │   ├── virtnbdbackup.1.xml
-│   └── virtnbdbackup.2.xml
 ├── sda.full.data
 ├── sda.inc.virtnbdbackup.1.data
-├── sda.inc.virtnbdbackup.2.data
 ├── vm1.cpt
 ├── vmconfig.virtnbdbackup.0.xml
 ├── vmconfig.virtnbdbackup.1.xml
-└── vmconfig.virtnbdbackup.2.xml
 ```
-
 
 ## Application consistent backups
 
