@@ -1,6 +1,8 @@
 Version 1.9.56
 ---------
  * Update README
+ * Fail early during incremental or differential backup if no
+ full backup is found in target directory.
 
 Version 1.9.55
 ---------

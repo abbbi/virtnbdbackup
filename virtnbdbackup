@@ -289,6 +289,18 @@ def main() -> None:
         logging.error("Saving raw images to stdout is not supported.")
         sys.exit(1)
 
+    if (
+        args.level not in ("copy", "full", "auto")
+        and not lib.hasFullBackup(args)
+        and not args.stdout
+    ):
+        logging.error(
+            "Unable to execute [%s] backup: No full backup found in target directory: [%s]",
+            args.level,
+            args.output,
+        )
+        sys.exit(1)
+
     if lib.targetIsEmpty(args) and args.level == "auto":
         logging.info("Backup mode auto, target folder is empty: executing full backup.")
         args.level = "full"
