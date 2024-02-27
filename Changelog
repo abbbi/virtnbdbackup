@@ -1,4 +1,4 @@
-Version 1.9.56
+Version 2.0
 ---------
  * Update README
  * Fail early during incremental or differential backup if no
