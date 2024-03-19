@@ -224,6 +224,7 @@ def progressBar(total: int, desc: str, args: Namespace, count=0) -> tqdm:
         desc=desc,
         unit="B",
         unit_scale=True,
+        unit_divisor=1000,
         disable=args.noprogress,
         position=count,
         leave=False,

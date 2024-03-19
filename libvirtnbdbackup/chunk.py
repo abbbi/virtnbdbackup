@@ -54,7 +54,7 @@ def write(
         else:
             wSize += writer.write(data)
 
-        pbar.update(wSize)
+        pbar.update(blocklen)
 
     return wSize, cSizes
 

@@ -169,6 +169,8 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                 if streamType == "raw":
                     size = writer.seek(save.offset)
 
+                progressBar.update(save.length)
+
             if streamType == "stream":
                 writer.write(sTypes.TERM)
                 if args.compress:
@@ -181,8 +183,6 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                         compressedSizes.append(size)
                 else:
                     assert size == save.length
-
-            progressBar.update(save.length)
         else:
             if streamType == "raw":
                 writer.seek(save.offset)
