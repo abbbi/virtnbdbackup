@@ -696,7 +696,7 @@ restore accordingly, the following changes are done:
 > If missing, Kernel, UEFI or NVRAM files are restored to their original
 > location as set in the virtual machine configuration.
 
-A restored virtual machine can then been defined and started right from the
+A restored virtual machine can then be defined and started right from the
 restored directory (or use option `-D` to define automatically):
 
 ```
