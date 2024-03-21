@@ -6,6 +6,10 @@ Version 2.2
  * Call flush() on NBD connection during restore.
  * Pass pidFile to qemu-nbd process for local NBD server during restore,
  report PID of forked process instead of parent.
+ * Add option -S (--start-domain): if specified and virtual domain is offline
+ during backup, domain will be started in pause mode, allowing to execute
+ full/diff/inc backups. Domain is destroyed as soon as operation finished
+ by using libvirt's AUTODESTROY flag. (#164)
 
 Version 2.1
 ---------
