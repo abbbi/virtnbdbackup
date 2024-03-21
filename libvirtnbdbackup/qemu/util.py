@@ -92,6 +92,7 @@ class util:
 
     def startRestoreNbdServer(self, targetFile: str, socketFile: str) -> processInfo:
         """Start local nbd server process for restore operation"""
+        pidFile = self._gt("qemu-nbd", ".pid")
         cmd = [
             "qemu-nbd",
             "--discard=unmap",
@@ -101,9 +102,11 @@ class util:
             f"{targetFile}",
             "-k",
             f"{socketFile}",
+            "--pid-file",
+            f"{pidFile}",
             "--fork",
         ]
-        return command.run(cmd)
+        return command.run(cmd, pidFile=pidFile)
 
     @staticmethod
     def _gt(prefix: str, suffix: str, delete: bool = False) -> str:
