@@ -1,8 +1,12 @@
+Version 2.2
+---------
+ * Fix Progressbar during restore: wrong values used. (#160)
+
 Version 2.1
 ---------
  * Fix Progressbar: Since change for issue #133 the Progressbar was
  updated with wrong values and as result progressed too fast for the amount of
- data actually written.
+ data actually written. (#160)
 
 Version 2.0
 ---------

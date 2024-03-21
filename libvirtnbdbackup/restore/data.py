@@ -137,10 +137,10 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
                 except Exception as e:
                     logging.exception(e)
                     raise RestoreError from e
+                progressBar.update(written)
 
             assert reader.read(len(sTypes.TERM)) == sTypes.TERM
             dataSize += originalSize
-            progressBar.update(written)
             dataBlockCnt += 1
         elif kind == sTypes.STOP:
             progressBar.close()

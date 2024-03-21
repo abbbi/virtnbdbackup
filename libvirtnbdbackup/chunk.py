@@ -95,6 +95,6 @@ def read(
             nbdCon.nbd.pwrite(data, blockOffset)
             wSize += len(data)
 
-        pbar.update(wSize)
+        pbar.update(blocklen)
 
     return wSize
