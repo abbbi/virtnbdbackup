@@ -3,7 +3,9 @@ Version 2.2
  * Fix Progressbar during restore: wrong values used. (#160)
  * Catch exception if during restore connection to NBD server fails (#163)
  * Provide better info message what NBD connection is waiting for.
- * Call flush() on NBD connection during restore.
+ * Call flush() on NBD connection during restore: restore of domains
+ with multiple disks could fail with NbdConnectionTimeout due to race
+ condition (#163)
  * Pass pidFile to qemu-nbd process for local NBD server during restore,
  report PID of forked process instead of parent.
  * Add option -S (--start-domain): if specified and virtual domain is offline
