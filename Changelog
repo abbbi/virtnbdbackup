@@ -2,6 +2,7 @@ Version 2.2
 ---------
  * Fix Progressbar during restore: wrong values used. (#160)
  * Catch exception if during restore connection to NBD server fails (#163)
+ * Provide better info message what NBD connection is waiting for.
 
 Version 2.1
 ---------

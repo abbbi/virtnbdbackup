@@ -93,7 +93,7 @@ class client:
                 )
 
             if self.cType.backupSocket and not os.path.exists(self.cType.backupSocket):
-                log.info("Waiting for NBD Server, Retry: %s", retry)
+                log.info("Waiting for NBD Server unix socket, Retry: %s", retry)
                 retry = retry + 1
                 continue
 
@@ -101,7 +101,7 @@ class client:
                 connection = self._connect()
             except exceptions.NbdConnectionError as e:
                 self.nbd = nbd.NBD()
-                log.info("Waiting for NBD Server, Retry: %s [%s]", retry, e)
+                log.info("Waiting for NBD Server connection, Retry: %s [%s]", retry, e)
                 retry = retry + 1
                 continue
 
