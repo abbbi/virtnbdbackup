@@ -29,6 +29,7 @@ from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.exceptions import RestoreError, UntilCheckpointReached
+from libvirtnbdbackup.nbdcli.exceptions import NbdConnectionTimeout
 
 
 def _backingstore(args: Namespace, disk: DomainDisk) -> None:
@@ -95,7 +96,10 @@ def restore(  # pylint: disable=too-many-branches
         except RestoreError as errmsg:
             raise RestoreError("Creating target image failed.") from errmsg
 
-        connection = server.start(args, meta["diskName"], targetFile, virtClient)
+        try:
+            connection = server.start(args, meta["diskName"], targetFile, virtClient)
+        except NbdConnectionTimeout as e:
+            raise RestoreError(e) from e
 
         for dataFile in restoreDisk:
             try:
