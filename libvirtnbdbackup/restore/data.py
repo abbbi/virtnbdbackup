@@ -158,4 +158,8 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
         logging.info("Reached checkpoint [%s], stopping", args.until)
         raise UntilCheckpointReached
 
+    if connection.nbd.can_flush() is True:
+        logging.debug("Flushing NBD connection handle")
+        connection.nbd.flush()
+
     return True

@@ -115,6 +115,7 @@ def restore(  # pylint: disable=too-many-branches
         else:
             restConfig = vmConfig.encode()
 
+        logging.debug("Closing NBD connection")
         connection.disconnect()
 
     return restConfig
