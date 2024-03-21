@@ -354,7 +354,7 @@ def main() -> None:
             else:
                 logging.info("Failed to start VM in paused mode.")
 
-    if args.offline is True:
+    if args.level == "full" and args.offline is True:
         logging.warning("Domain is offline, resetting backup options.")
         args.level = "copy"
         logging.warning("New Backup level: [%s].", args.level)
