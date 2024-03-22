@@ -79,7 +79,7 @@ def vmstate(args, virtClient: virt.client, domObj: virDomain) -> None:
     """Check virtual machine state before executing backup
     and based on situation, either fallback to regular copy
     backup or attempt to bring VM into paused state"""
-    if args.level in ("full", "inc", "diff") and domObj.isActive() == 0:
+    if domObj.isActive() == 0:
         args.offline = True
         if args.start_domain is True:
             log.info("Starting domain in paused state")

@@ -350,6 +350,7 @@ def main() -> None:
         logging.error("Unable to detect disks suitable for backup.")
         metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
         sys.exit(1)
+
     if (
         not args.killonly
         and not args.offline
