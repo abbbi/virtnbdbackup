@@ -1,11 +1,11 @@
 Version 2.3
 ---------
- * Add option -S (--start-domain): with this option it is possible
- to put an offline domain into paused state: CPU for domain is in halted state
- (not executing any code), but it is possible to execute full/inc/diff
- backups and create checkpoints. Domain is destroyed automatically after
- backup finishes. (#164)
-
+ * Update README
+ * Add option -S (--start-domain): if specified and virtual domain is offline
+ during backup, domain will be started in pause mode, allowing to execute
+ full/diff/inc backups. Domain is destroyed as soon as operation finished
+ by using libvirt's AUTODESTROY flag. (#164)
+ * Move code for preflight tests to separate module.
 
 Version 2.2
 ---------
@@ -17,10 +17,6 @@ Version 2.2
  condition (#163)
  * Pass pidFile to qemu-nbd process for local NBD server during restore,
  report PID of forked process instead of parent.
- * Add option -S (--start-domain): if specified and virtual domain is offline
- during backup, domain will be started in pause mode, allowing to execute
- full/diff/inc backups. Domain is destroyed as soon as operation finished
- by using libvirt's AUTODESTROY flag. (#164)
 
 Version 2.1
 ---------
