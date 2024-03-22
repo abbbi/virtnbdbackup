@@ -25,6 +25,25 @@ from libvirtnbdbackup import exceptions
 log = logging.getLogger()
 
 
+def arguments(args: Namespace) -> None:
+    """Check passed arguments vor validity"""
+    if args.compress is not False and args.type == "raw":
+        raise exceptions.BackupException("Compression not supported with raw output.")
+
+    if args.stdout is True and args.type == "raw":
+        raise exceptions.BackupException("Output type raw not supported to stdout.")
+
+    if args.stdout is True and args.raw is True:
+        raise exceptions.BackupException(
+            "Saving raw images to stdout is not supported."
+        )
+
+    if args.type == "raw" and args.level in ("inc", "diff"):
+        raise exceptions.BackupException(
+            "Stream format raw does not support incremental or differential backup."
+        )
+
+
 def targetDir(args: Namespace) -> None:
     """Check if target directory backup is started to meets
     all requirements based on the backup level executed"""

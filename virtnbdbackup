@@ -285,18 +285,6 @@ def main() -> None:
     if args.compress is not False:
         logging.info("Compression enabled, level [%s]", args.compress)
 
-    if args.compress is not False and args.type == "raw":
-        logging.error("Compression not supported with raw output.")
-        sys.exit(1)
-
-    if args.stdout is True and args.type == "raw":
-        logging.error("Output type raw not supported to stdout.")
-        sys.exit(1)
-
-    if args.stdout is True and args.raw is True:
-        logging.error("Saving raw images to stdout is not supported.")
-        sys.exit(1)
-
     if args.raw is True and args.level in ("inc", "diff"):
         logging.warning(
             "Raw disks can't be included during incremental or differential backup."
@@ -304,10 +292,10 @@ def main() -> None:
         logging.warning("Excluding raw disks.")
         args.raw = False
 
-    if args.type == "raw" and args.level in ("inc", "diff"):
-        logging.error(
-            "Stream format raw does not support incremental or differential backup."
-        )
+    try:
+        check.arguments(args)
+    except exceptions.BackupException as e:
+        logging.error(e)
         sys.exit(1)
 
     if partialfile.exists(args):
