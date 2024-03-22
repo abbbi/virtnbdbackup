@@ -47,7 +47,7 @@ def targetDir(args: Namespace) -> None:
                 "Can't execute switch to auto incremental backup: "
                 f"specified target folder [{args.output}] does not contain full backup.",
             )
-        logging.info("Backup mode auto: executing incremental backup.")
+        log.info("Backup mode auto: executing incremental backup.")
         args.level = "inc"
     elif not args.stdout and not args.startonly and not args.killonly:
         if not lib.targetIsEmpty(args):
