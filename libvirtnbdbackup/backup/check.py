@@ -85,8 +85,6 @@ def vmfeature(virtClient: virt.client, domObj: virDomain) -> None:
     """Check if required features are enabled in domain config"""
     if virtClient.hasIncrementalEnabled(domObj) is False:
         raise exceptions.BackupException(
-            (
-                "Virtual machine does not support required backup features, "
-                "please adjust virtual machine configuration."
-            )
+            "Virtual machine does not support required backup features, "
+            "please adjust virtual machine configuration."
         )
