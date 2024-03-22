@@ -327,8 +327,8 @@ def main() -> None:
 
     try:
         check.vmfeature(virtClient, domObj)
-        check.targetDir(args)
         check.vmstate(args, virtClient, domObj)
+        check.targetDir(args)
     except exceptions.BackupException as e:
         logging.error(e)
         sys.exit(1)
