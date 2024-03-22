@@ -339,10 +339,11 @@ backup issues:
 If the virtual domain is not in running state (powered off) `virtnbdbackup`
 supports `copy` and `inc/diff` backup modes. Incremental and differential
 backups will then save the changed blocks since last created checkpoint. As no
-new checkpoints can be defined for offline domains, the Backup mode `full` is
-changed to mode `copy`.
+new checkpoints can be defined for offline domains.
 
-This behavior can be changed using the `-S` (--start-domain) option: prior to
+Backup mode `full` is changed to mode `copy`.
+
+This behavior can be changed using the `-S` (`--start-domain`) option: prior to
 executing the backup, the virtual domain will then be started in `paused`
 state: The virtual machines CPU's are halted, but the running QEMU Process will
 allow all operations required to execute backups.
