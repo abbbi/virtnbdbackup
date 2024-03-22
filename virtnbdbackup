@@ -39,6 +39,7 @@ from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import job
 from libvirtnbdbackup.backup import disk
 from libvirtnbdbackup.backup import metadata
+from libvirtnbdbackup.backup import check
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.virt.exceptions import (
     domainNotFound,
@@ -331,69 +332,18 @@ def main() -> None:
 
     logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
 
-    if virtClient.hasIncrementalEnabled(domObj) is False:
-        logging.error(
-            (
-                "Virtual machine does not support required backup features, "
-                "please adjust virtual machine configuration."
-            )
-        )
-        sys.exit(1)
-
     try:
         checkpoint.checkForeign(args, domObj)
     except exceptions.CheckpointException:
         sys.exit(1)
 
-    if args.level in ("full", "inc", "diff") and domObj.isActive() == 0:
-        args.offline = True
-        if args.start_domain is True:
-            logging.info("Starting offline VM in paused state")
-            if virtClient.startDomain(domObj) == 0:
-                args.offline = False
-            else:
-                logging.info("Failed to start VM in paused mode.")
-
-    if args.level == "full" and args.offline is True:
-        logging.warning("Domain is offline, resetting backup options.")
-        args.level = "copy"
-        logging.warning("New Backup level: [%s].", args.level)
-        args.offline = True
-
-    if args.offline is True and args.startonly is True:
-        logging.error("Virtual machine is currently offline")
-        logging.error("Virtual machine must be active for this function.")
+    try:
+        check.vmfeature(virtClient, domObj)
+        check.targetDir(args)
+        check.vmstate(args, virtClient, domObj)
+    except exceptions.BackupException as e:
+        logging.error(e)
         sys.exit(1)
-
-    if (
-        args.level not in ("copy", "full", "auto")
-        and not lib.hasFullBackup(args)
-        and not args.stdout
-    ):
-        logging.error(
-            "Unable to execute [%s] backup: No full backup found in target directory: [%s]",
-            args.level,
-            args.output,
-        )
-        sys.exit(1)
-
-    if lib.targetIsEmpty(args) and args.level == "auto":
-        logging.info("Backup mode auto, target folder is empty: executing full backup.")
-        args.level = "full"
-    elif not lib.targetIsEmpty(args) and args.level == "auto":
-        if not lib.hasFullBackup(args):
-            logging.error(
-                "Can't execute switch to auto incremental backup: "
-                "specified target folder [%s] does not contain full backup.",
-                args.output,
-            )
-            sys.exit(1)
-        logging.info("Backup mode auto: executing incremental backup.")
-        args.level = "inc"
-    elif not args.stdout and not args.startonly and not args.killonly:
-        if not lib.targetIsEmpty(args):
-            logging.error("Target directory already contains full or copy backup.")
-            sys.exit(1)
 
     signal.signal(
         signal.SIGINT,
