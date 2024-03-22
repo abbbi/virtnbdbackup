@@ -2,7 +2,7 @@ Version 2.3
 ---------
  * Add option -S (--start-domain): with this option it is possible
  to put an offline domain into paused state: CPU for domain is in halted state
- (not executing any cocde), but it is possible to execute full/inc/diff
+ (not executing any code), but it is possible to execute full/inc/diff
  backups and create checkpoints. Domain is destroyed automatically after
  backup finishes. (#164)
 
