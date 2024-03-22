@@ -503,6 +503,16 @@ toOut() {
     [ "$status" -eq 0 ]
     run virsh start $VM
 }
+@test "Offline Backup: full backup with vm startup option" {
+    run virsh destroy $VM
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/offline-full-option -S
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    [[ "${output}" =~  "Starting domain in paused state" ]]
+    run virsh start $VM
+    [ "$status" -eq 0 ]
+}
+
 @test "Restore: restore vm and adjust vm config" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTORECONFIG/

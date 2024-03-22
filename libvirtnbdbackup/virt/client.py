@@ -227,6 +227,13 @@ class client:
         return domObj.XMLDesc(0)
 
     @staticmethod
+    def startDomain(domObj: libvirt.virDomain) -> bool:
+        """Start virtual machine in paused state to allow full / inc backup"""
+        return domObj.createWithFlags(
+            flags=libvirt.VIR_DOMAIN_START_PAUSED | libvirt.VIR_DOMAIN_START_AUTODESTROY
+        )
+
+    @staticmethod
     def domainAutoStart(domObj: libvirt.virDomain) -> None:
         """Mark virtual machine for autostart"""
         try:

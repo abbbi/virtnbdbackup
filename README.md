@@ -30,6 +30,7 @@ of your `kvm/qemu` virtual machines.
 - [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
 - [Backup Examples](#backup-examples)
   - [Local full/incremental backup](#local-fullincremental-backup)
+  - [Backing up offline virtual domains](#backing-up-offline-virtual-domains)
   - [Application consistent backups](#application-consistent-backups)
   - [Rotating backups](#rotating-backups)
   - [Excluding disks](#excluding-disks)
@@ -263,13 +264,6 @@ listening on a local unix socket. This nbd backend provides consistent access
 to the virtual machines, disk data and dirty blocks. After the backup process
 finishes, the job is stopped and the nbd server quits operation.
 
-`Note`:
-> If the virtual domain is not in running state (powered off) `virtnbdbackup` 
-> supports `copy` and `inc/diff` backup modes. Incremental and differential backups
-> will then save the changed blocks since last created checkpoint. As no new
-> checkpoints can be defined for offline domains, the Backup mode `full` is
-> changed to mode `copy`.
-
 It is possible to backup multiple virtual machines on the same host system at
 the same time, using separate calls to the application with a different target
 directory to store the data.
@@ -339,6 +333,22 @@ backup issues:
 ├── vmconfig.virtnbdbackup.0.xml
 ├── vmconfig.virtnbdbackup.1.xml
 ```
+
+## Backing up offline virtual domains
+
+If the virtual domain is not in running state (powered off) `virtnbdbackup`
+supports `copy` and `inc/diff` backup modes. Incremental and differential
+backups will then save the changed blocks since last created checkpoint. As no
+new checkpoints can be defined for offline domains.
+
+Backup mode `full` is changed to mode `copy`.
+
+This behavior can be changed using the `-S` (`--start-domain`) option: prior to
+executing the backup, the virtual domain will then be started in `paused`
+state: The virtual machines CPU's are halted, but the running QEMU Process will
+allow all operations required to execute backups.
+
+As the backup process is finished, the domain will be destroyed automatically.
 
 ## Application consistent backups
 

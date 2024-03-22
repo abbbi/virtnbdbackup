@@ -39,6 +39,7 @@ from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import job
 from libvirtnbdbackup.backup import disk
 from libvirtnbdbackup.backup import metadata
+from libvirtnbdbackup.backup import check
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.virt.exceptions import (
     domainNotFound,
@@ -111,12 +112,19 @@ def main() -> None:
         help="Persistent libvirt checkpoint storage directory",
     )
     opt.add_argument(
-        "-S",
         "--scratchdir",
         default="/var/tmp",
         required=False,
         type=str,
         help="Target dir for temporary scratch file. (default: %(default)s)",
+    )
+    opt.add_argument(
+        "-S",
+        "--start-domain",
+        default=False,
+        required=False,
+        action="store_true",
+        help="Start virtual machine if it is offline. (default: %(default)s)",
     )
     opt.add_argument(
         "-i",
@@ -277,48 +285,6 @@ def main() -> None:
     if args.compress is not False:
         logging.info("Compression enabled, level [%s]", args.compress)
 
-    if args.compress is not False and args.type == "raw":
-        logging.error("Compression not supported with raw output.")
-        sys.exit(1)
-
-    if args.stdout is True and args.type == "raw":
-        logging.error("Output type raw not supported to stdout.")
-        sys.exit(1)
-
-    if args.stdout is True and args.raw is True:
-        logging.error("Saving raw images to stdout is not supported.")
-        sys.exit(1)
-
-    if (
-        args.level not in ("copy", "full", "auto")
-        and not lib.hasFullBackup(args)
-        and not args.stdout
-    ):
-        logging.error(
-            "Unable to execute [%s] backup: No full backup found in target directory: [%s]",
-            args.level,
-            args.output,
-        )
-        sys.exit(1)
-
-    if lib.targetIsEmpty(args) and args.level == "auto":
-        logging.info("Backup mode auto, target folder is empty: executing full backup.")
-        args.level = "full"
-    elif not lib.targetIsEmpty(args) and args.level == "auto":
-        if not lib.hasFullBackup(args):
-            logging.error(
-                "Can't execute switch to auto incremental backup: "
-                "specified target folder [%s] does not contain full backup.",
-                args.output,
-            )
-            sys.exit(1)
-        logging.info("Backup mode auto: executing incremental backup.")
-        args.level = "inc"
-    elif not args.stdout and not args.startonly and not args.killonly:
-        if not lib.targetIsEmpty(args):
-            logging.error("Target directory already contains full or copy backup.")
-            sys.exit(1)
-
     if args.raw is True and args.level in ("inc", "diff"):
         logging.warning(
             "Raw disks can't be included during incremental or differential backup."
@@ -326,10 +292,10 @@ def main() -> None:
         logging.warning("Excluding raw disks.")
         args.raw = False
 
-    if args.type == "raw" and args.level in ("inc", "diff"):
-        logging.error(
-            "Stream format raw does not support incremental or differential backup."
-        )
+    try:
+        check.arguments(args)
+    except exceptions.BackupException as e:
+        logging.error(e)
         sys.exit(1)
 
     if partialfile.exists(args):
@@ -354,30 +320,17 @@ def main() -> None:
 
     logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
 
-    if virtClient.hasIncrementalEnabled(domObj) is False:
-        logging.error(
-            (
-                "Virtual machine does not support required backup features, "
-                "please adjust virtual machine configuration."
-            )
-        )
-        sys.exit(1)
-
     try:
         checkpoint.checkForeign(args, domObj)
     except exceptions.CheckpointException:
         sys.exit(1)
 
-    if domObj.isActive() == 0:
-        if args.level == "full":
-            logging.warning("Domain is offline, resetting backup options.")
-            args.level = "copy"
-            logging.warning("New Backup level: [%s].", args.level)
-        args.offline = True
-
-    if args.offline is True and args.startonly is True:
-        logging.error("Virtual machine is currently offline")
-        logging.error("Virtual machine must be active for this function.")
+    try:
+        check.vmfeature(virtClient, domObj)
+        check.vmstate(args, virtClient, domObj)
+        check.targetDir(args)
+    except exceptions.BackupException as e:
+        logging.error(e)
         sys.exit(1)
 
     signal.signal(
@@ -397,6 +350,7 @@ def main() -> None:
         logging.error("Unable to detect disks suitable for backup.")
         metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
         sys.exit(1)
+
     if (
         not args.killonly
         and not args.offline
