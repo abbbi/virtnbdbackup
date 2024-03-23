@@ -35,7 +35,7 @@ jobs:
                   mkdir -p /work/dist/rhel9
                   cd /work/
                   python3.9 setup.py bdist_rpm --python /usr/bin/python3.9 \
-                    --requires "python3-libvirt python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog qemu-img"
+                    --requires "python3-libvirt python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog qemu-img openssh-clients"
                   rm /work/dist/*.tar.gz
                   rename .rpm .rhel9.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
@@ -48,7 +48,7 @@ jobs:
                   zypper in -y  rpm-build python3 python3-setuptools
                   mkdir -p /work/dist/opensuse15
                   cd /work/
-                  python3 setup.py bdist_rpm --requires "python3-libvirt-python python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog python3-dataclasses qemu-tools"
+                  python3 setup.py bdist_rpm --requires "python3-libvirt-python python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog python3-dataclasses qemu-tools openssh-clients"
                   rm /work/dist/*.tar.gz
                   rename .rpm .opensuse15.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
