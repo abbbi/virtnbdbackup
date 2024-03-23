@@ -1,3 +1,10 @@
+Version 2.4
+---------
+ * Update RADME
+ * Add qemu-utils to package dependencies: if installed on a system without
+ libvirt/qemu, backup fails because of missing qemu-img executable.
+ * Code cleanup
+
 Version 2.3
 ---------
  * Update README
