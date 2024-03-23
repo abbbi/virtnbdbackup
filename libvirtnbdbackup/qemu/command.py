@@ -60,34 +60,37 @@ def run(cmdLine: List[str], pidFile: str = "", toPipe: bool = False) -> processI
         logFileName = logFile.name
 
     log.debug("CMD: %s", " ".join(cmdLine))
-    with subprocess.Popen(
-        cmdLine,
-        close_fds=True,
-        stderr=logFile,
-        stdout=logFile,
-    ) as p:
-        p.wait()
-        log.debug("Return code: %s", p.returncode)
-        err: str = ""
-        out: str = ""
-        if p.returncode != 0:
-            log.error("CMD: %s", " ".join(cmdLine))
-            log.debug("Read error messages from logfile")
+    try:
+        with subprocess.Popen(
+            cmdLine,
+            close_fds=True,
+            stderr=logFile,
+            stdout=logFile,
+        ) as p:
+            p.wait()
+            log.debug("Return code: %s", p.returncode)
+            err: str = ""
+            out: str = ""
+            if p.returncode != 0:
+                log.error("CMD: %s", " ".join(cmdLine))
+                log.debug("Read error messages from logfile")
+                if toPipe is True:
+                    out, err = _readpipe(p)
+                else:
+                    err = _readlog(logFileName, cmdLine[0])
+                raise ProcessError(f"Unable to start [{cmdLine[0]}] error: [{err}]")
+
             if toPipe is True:
                 out, err = _readpipe(p)
+
+            if pidFile != "":
+                realPid = int(_readlog(pidFile, ""))
             else:
-                err = _readlog(logFileName, cmdLine[0])
-            raise ProcessError(f"Unable to start [{cmdLine[0]}] error: [{err}]")
+                realPid = p.pid
 
-        if toPipe is True:
-            out, err = _readpipe(p)
-
-        if pidFile != "":
-            realPid = int(_readlog(pidFile, ""))
-        else:
-            realPid = p.pid
-
-        process = processInfo(realPid, logFileName, err, out, pidFile)
-        log.debug("Started [%s] process: [%s]", cmdLine[0], process)
+            process = processInfo(realPid, logFileName, err, out, pidFile)
+            log.debug("Started [%s] process: [%s]", cmdLine[0], process)
+    except FileNotFoundError as e:
+        raise ProcessError(e) from e
 
     return process
