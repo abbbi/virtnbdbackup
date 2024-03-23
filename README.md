@@ -338,10 +338,10 @@ backup issues:
 
 If the virtual domain is not in running state (powered off) `virtnbdbackup`
 supports `copy` and `inc/diff` backup modes. Incremental and differential
-backups will then save the changed blocks since last created checkpoint. As no
-new checkpoints can be defined for offline domains.
+backups will then save the changed blocks since last created checkpoint.
 
-Backup mode `full` is changed to mode `copy`.
+Backup mode `full` is changed to mode `copy`, because libvirt does not allow to
+create checkpoints for offline domains.
 
 This behavior can be changed using the `-S` (`--start-domain`) option: prior to
 executing the backup, the virtual domain will then be started in `paused`
