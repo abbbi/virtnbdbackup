@@ -321,16 +321,14 @@ def main() -> None:
     logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
 
     try:
-        checkpoint.checkForeign(args, domObj)
-    except exceptions.CheckpointException:
-        sys.exit(1)
-
-    try:
         check.vmfeature(virtClient, domObj)
+        checkpoint.checkForeign(args, domObj)
         check.vmstate(args, virtClient, domObj)
         check.targetDir(args)
     except exceptions.BackupException as e:
         logging.error(e)
+        sys.exit(1)
+    except exceptions.CheckpointException:
         sys.exit(1)
 
     signal.signal(
@@ -342,25 +340,20 @@ def main() -> None:
     disks: List[DomainDisk] = virtClient.getDomainDisks(args, vmConfig)
     args.info = virtClient.getDomainInfo(vmConfig)
 
-    if args.level != "copy" and lib.hasQcowDisks(disks) is False:
-        args.level = "copy"
-        logging.info("Only raw disks attached, switching to backup mode copy.")
+    try:
+        check.diskformat(args, disks)
+    except exceptions.BackupException as e:
+        logging.info(e)
 
     if not disks:
         logging.error("Unable to detect disks suitable for backup.")
         metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
         sys.exit(1)
 
-    if (
-        not args.killonly
-        and not args.offline
-        and virtClient.blockJobActive(domObj, disks)
-    ):
-        logging.error("Detected an active backup operation for running domain.")
-        logging.error(
-            "Check with [virsh domjobinfo %s] or use option -k to kill the active job.",
-            args.domain,
-        )
+    try:
+        check.blockjobs(args, virtClient, domObj, disks)
+    except exceptions.BackupException as e:
+        logging.error(e)
         sys.exit(1)
 
     logging.info(

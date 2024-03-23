@@ -16,6 +16,7 @@
 """
 
 import logging
+from typing import List, Any
 from argparse import Namespace
 from libvirt import virDomain
 from libvirtnbdbackup import virt
@@ -106,4 +107,30 @@ def vmfeature(virtClient: virt.client, domObj: virDomain) -> None:
         raise exceptions.BackupException(
             "Virtual machine does not support required backup features, "
             "please adjust virtual machine configuration."
+        )
+
+
+def diskformat(args: Namespace, disks: List[Any]) -> None:
+    """Check if disks meet requirements for backup mode, if not, switch
+    backup job to type copy."""
+    if args.level != "copy" and lib.hasQcowDisks(disks) is False:
+        args.level = "copy"
+        raise exceptions.BackupException(
+            "Only raw disks attached, switching to backup mode copy."
+        )
+
+
+def blockjobs(
+    args, virtClient: virt.client, domObj: virDomain, disks: List[Any]
+) -> None:
+    """Check if there is an already active backup operation on the domain
+    disks. If so, fail accordingly"""
+    if (
+        not args.killonly
+        and not args.offline
+        and virtClient.blockJobActive(domObj, disks)
+    ):
+        raise exceptions.BackupException(
+            "Active block job for running domain:"
+            f" Check with [virsh domjobinfo {args.domain}] or use option -k to kill the active job."
         )
