@@ -25,6 +25,7 @@ from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.ssh.exceptions import sshError
 
 
 def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
@@ -97,6 +98,6 @@ def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
         qFh.create(
             targetFile, int(meta["virtualSize"]), meta["diskFormat"], options, sshClient
         )
-    except ProcessError as e:
-        logging.error("Can't create restore target: [%s]", e)
+    except (ProcessError, sshError) as e:
+        logging.error("Failed to create restore target: [%s]", e)
         raise RestoreError from e
