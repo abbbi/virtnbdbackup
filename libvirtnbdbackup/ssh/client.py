@@ -130,9 +130,13 @@ class client:
         log.debug("Executing remote command: [%s]", cmd)
         ret, err, out = self._execute(cmd)
         logerr = ""
+        if ret == 127:
+            raise exceptions.sshError(
+                err
+            )
         if ret != 0:
             log.error(
-                "Executing command failed, return code: [%s] stderr: [%s], stdout: [%s]",
+                "Executing remote command failed, return code: [%s] stderr: [%s], stdout: [%s]",
                 ret,
                 err,
                 out,
