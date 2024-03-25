@@ -96,8 +96,8 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     diskSize = connection.nbd.get_size()
 
     if extents is None:
-        logging.error("No extents found.")
-        return True
+        logging.error("No extents returned by NBD server.")
+        return False
 
     thinBackupSize = sum(extent.length for extent in extents if extent.data is True)
     logging.info("Got %s extents to backup.", len(extents))
