@@ -33,6 +33,6 @@ def get(args: Namespace, disk: DomainDisk) -> str:
     else:
         metaContext = f"qemu:dirty-bitmap:backup-{disk.target}"
 
-    logging.info("Using NBD meta context [%s]", metaContext)
+    logging.debug("Using NBD meta context [%s]", metaContext)
 
     return metaContext
