@@ -41,14 +41,6 @@ class client:
         self.nbd = nbd.NBD()
         self.connection = None
 
-        self.printVersion()
-
-    @staticmethod
-    def printVersion() -> None:
-        """Log libnbd, so it is included within the backup logfiles,
-        to know which components are involved."""
-        log.info("libnbd version: %s", nbd.__version__)
-
     def _getBlockInfo(self) -> None:
         """Read maximum request/block size as advertised by the nbd
         server. This is the value which will then be used by default
@@ -57,7 +49,7 @@ class client:
         if maxSize != 0:
             self.maxRequestSize = maxSize
 
-        log.info("Using Maximum Block size supported by NBD server: [%s]", maxSize)
+        log.debug("Block size supported by NBD server: [%s]", maxSize)
 
     def _connect(self) -> nbd.NBD:
         """Setup connection to NBD server endpoint, return

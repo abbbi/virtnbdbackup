@@ -24,6 +24,7 @@ from typing import List
 from datetime import datetime
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from nbd import __version__ as __nbdversion__
 from libvirtnbdbackup import sighandle
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
@@ -319,6 +320,7 @@ def main() -> None:
         sys.exit(1)
 
     logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
+    logging.info("NBD library version: [%s]", __nbdversion__)
 
     try:
         check.vmfeature(virtClient, domObj)
