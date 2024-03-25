@@ -1,3 +1,8 @@
+Version 2.5
+---------
+ * Move some log messages from info to debug loglevel
+ * Log information about libnbd version only once
+
 Version 2.4
 ---------
  * Update RADME
