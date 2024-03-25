@@ -34,7 +34,7 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
     qcowConfig = None
     qcowConfigFile = lib.getLatest(args.input, f"{meta['diskName']}*.qcow.json*", -1)
     if not qcowConfigFile:
-        logging.info("No QCOW image config found, will use default options.")
+        logging.warning("No qcow image config found, will use default options.")
         return opt
 
     lastConfigFile = qcowConfigFile[0]
