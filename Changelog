@@ -2,6 +2,12 @@ Version 2.5
 ---------
  * Move some log messages from info to debug loglevel
  * Log information about libnbd version only once
+ * Catch command not found error during remote backup if qemu-img
+ is missing: change loglevel to warning.
+ * Catch command not found error during remote restore: fail with
+ proper error message.
+ * If no qcow image info has been created during backup, issue warning
+ during restore that default options are used.
 
 Version 2.4
 ---------
