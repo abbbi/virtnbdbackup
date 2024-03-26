@@ -949,8 +949,8 @@ deleting lots of data while the backup is active) you might consider using the
 `--scratchdir` option to change the default scratch file location.
 
 During the backup operation qemu will use the created scratch files for
-fleecing, thus it can be critical to store these files on storage that meets
-the same I/O performance requirements as the backup target.
+fleecing, thus it is recommended to store these files on storage that meets the
+same I/O performance requirements as the backup target.
 
 The free space on the default scratch directory (`/var/tmp`) must be enough to
 be able to keep all fleecing data while the backup is active.
