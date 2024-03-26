@@ -349,8 +349,8 @@ executing the backup, the virtual domain will then be started in `paused` state
 for the time the backup is created: The virtual machines CPU's are halted, but
 the running QEMU Process will allow all operations required to execute backups.
 
-The option won't alter the virtual domain state if it is already online, thus it
-an be used for backing up virtual machines whose state is unknown prior to
+The option won't alter the virtual domain state if it is already online, thus
+it can be used for backing up virtual machines whose state is unknown prior to
 backup.
 
 ## Application consistent backups
