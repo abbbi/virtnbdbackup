@@ -942,9 +942,9 @@ like it would be possible using the `virsh -c` option:
 
 # Backup I/O and performance: scratch files
 
-If virtual domains handling heavy I/O load during backup or do write lots of
-data you might consider using the `--scratchdir` option to change the default
-scratch file location.
+If virtual domains handle heavy I/O load during backup (such as writing or
+deleting lots of data while the backup is active) you might consider using the
+`--scratchdir` option to change the default scratch file location.
 
 During the backup operation qemu will use the created scratch files for
 fleecing, thus it can be critical to store these files on storage that meets
