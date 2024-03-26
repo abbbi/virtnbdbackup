@@ -8,6 +8,7 @@ Version 2.5
  proper error message.
  * If no qcow image info has been created during backup, issue warning
  during restore that default options are used.
+ * Update README: add note about scratch files.
 
 Version 2.4
 ---------

@@ -60,6 +60,7 @@ of your `kvm/qemu` virtual machines.
   - [Ovirt or RHEV](#ovirt-or-rhev)
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
+- [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
 - [FAQ](#faq)
   - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
   - [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
@@ -939,6 +940,18 @@ like it would be possible using the `virsh -c` option:
 > case if virtual machines operate as root user. Use the `qemu:///session` URI
 > to backup virtual machines as regular user.
 
+# Backup I/O and performance: scratch files
+
+If virtual domains handling heavy I/O load during backup or do write lots of
+data you might consider using the `--scratchdir` option to change the default
+scratch file location.
+
+During the backup operation qemu will use the created scratch files for
+fleecing, thus it can be critical to store these files on storage that meets
+the same I/O performance requirements as the backup target.
+
+The free space on the default scratch directory (`/var/tmp`) must be enough to
+be able to keep all fleecing data while the backup is active.
 
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images
