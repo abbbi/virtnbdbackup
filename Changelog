@@ -9,7 +9,7 @@ Version 2.5
  * If no qcow image info has been created during backup, issue warning
  during restore that default options are used.
  * Update README: add note about scratch files.
- * Do not attempt to freeze filesystems if virtal machine is in paused state
+ * Do not attempt to freeze filesystems if virtual machine is in paused state
  (#166)
 
 
