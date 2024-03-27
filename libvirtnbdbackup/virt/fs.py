@@ -22,6 +22,11 @@ log = logging.getLogger("fs")
 
 def freeze(domObj: libvirt.virDomain, mountpoints: None) -> bool:
     """Attempt to freeze domain filesystems using qemu guest agent"""
+    state, _ = domObj.state()
+    if state == libvirt.VIR_DOMAIN_PAUSED:
+        log.info("Skip freezing filesystems: vm is in paused state")
+        return False
+
     log.debug("Attempting to freeze filesystems.")
     try:
         if mountpoints is not None:
