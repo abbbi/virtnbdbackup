@@ -61,12 +61,14 @@ class client:
         """Use openAuth if connection string includes authfile or
         username/password are set"""
 
-        def _cred(credentials, user_data) -> None:
+        def _cred(credentials, user_data) -> int:
             for credential in credentials:
                 if credential[0] == libvirt.VIR_CRED_AUTHNAME:
                     credential[4] = user_data[0]
                 elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
                     credential[4] = user_data[1]
+
+            return 0
 
         log.debug("Username: %s", user)
         log.debug("Password: %s", password)
@@ -132,7 +134,14 @@ class client:
                 raise connectionFailed(
                     "Username (--user) and password (--password) required."
                 )
-            if not self._isSsh(args.uri) and not self._reqAuth(args.uri):
+
+            if (
+                self._isSsh(args.uri)
+                and args.user is not None
+                and args.password is not None
+            ):
+                conn = self._connectAuth(args.uri, args.user, args.password)
+            elif self._isSsh(args.uri) and not self._reqAuth(args.uri):
                 conn = self._connectAuth(args.uri, args.user, args.password)
             else:
                 conn = self._connectOpen(args.uri)
