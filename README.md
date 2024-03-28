@@ -57,7 +57,7 @@ of your `kvm/qemu` virtual machines.
 - [Extents](#extents)
 - [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
 - [Hypervisors](#hypervisors)
-  - [Ovirt or RHEV](#ovirt-or-rhev)
+  - [Ovirt, RHEV or OLVM](#ovirt-rhev-or-olvm)
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
 - [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
