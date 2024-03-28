@@ -141,7 +141,12 @@ class client:
                 and args.password is not None
             ):
                 conn = self._connectAuth(args.uri, args.user, args.password)
-            elif self._isSsh(args.uri) and not self._reqAuth(args.uri):
+            elif (
+                self._isSsh(args.uri)
+                and not self._reqAuth(args.uri)
+                and args.user is not None
+                and args.password is not None
+            ):
                 conn = self._connectAuth(args.uri, args.user, args.password)
             else:
                 conn = self._connectOpen(args.uri)
