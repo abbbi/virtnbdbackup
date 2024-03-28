@@ -891,7 +891,7 @@ functionality, you can also use it with more advanced hypervisors solutions
 such as [ovirt](https://www.ovirt.org/), RHEV or OpenNebula, but please bear in
 mind that it was not developed to target all of those solutions specifically!
 
-## Ovirt or RHEV
+## Ovirt, RHEV or OLVM
 
 If you are using the ovirt node based hypervisor hosts you should consider
 creating a virtualenv via the [venv scripts](venv/) and transferring it to the
@@ -903,10 +903,27 @@ management interface.
 
 Usually ovirt restricts access to the libvirt daemon via different
 authentication methods. Use the `-U` parameter in order to specify an
-authentication file:
+authentication file, if you chose to run the utility locally on the
+hypervisor:
 
 ```
 virtnbdbackup -U qemu:///system?authfile=/etc/ovirt-hosted-engine/virsh_auth.conf -d vm1 -o /tmp/backupset/vm1
+```
+
+You can also use remote backup functionality:
+
+ * System must be reachable via ssh public key auth as described in the
+ [Remote Backup](#remote-backup) section.
+ * Firewall port for NBD must be open:
+
+```
+ root@hv-node~# firewall-cmd --zone=public --add-port=10809/tcp
+```
+
+and then backup via:
+
+```
+virtnbdbackup -U qemu+ssh://root@hv-node/session -d vm -o /backup --password password --user root --ssh-user root 
 ```
 
 
