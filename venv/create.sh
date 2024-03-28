@@ -13,7 +13,7 @@ if [ ! -z $1 ]; then
 fi
 rm -rf virtnbdbackup
 rm -rf ${VENVDIR}
-rm -f ${LIBNBD_VERSION}
+rm -rf ${LIBNBD_VERSION}
 rm -rf libnbd-*
 
 virtualenv -p $(which python3) ${VENVDIR}
