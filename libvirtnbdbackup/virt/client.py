@@ -132,7 +132,7 @@ class client:
                 raise connectionFailed(
                     "Username (--user) and password (--password) required."
                 )
-            if not self._isSsh(args.uri):
+            if not self._isSsh(args.uri) and not self._reqAuth(args.uri):
                 conn = self._connectAuth(args.uri, args.user, args.password)
             else:
                 conn = self._connectOpen(args.uri)

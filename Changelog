@@ -1,3 +1,8 @@
+Version 2.6
+---------
+ * Fix IndexError exception if auth file is used in qemu uri (#167)
+
+
 Version 2.5
 ---------
  * Move some log messages from info to debug loglevel
