@@ -58,8 +58,8 @@ class client:
 
     @staticmethod
     def _connectAuth(uri: str, user: str, password: str) -> libvirt.virConnect:
-        """Use openAuth if connection string includes authfile or
-        username/password are set"""
+        """Use openAuth if connection for advanced SASL authentication mechanisms
+        if username and password are set"""
 
         def _cred(credentials, user_data) -> int:
             for credential in credentials:
@@ -87,34 +87,15 @@ class client:
 
     @staticmethod
     def _connectOpen(uri: str) -> libvirt.virConnect:
-        """Open connection with regular libvirt URI for local authentication"""
+        """Open connection with regular libvirt URI for local authentication
+        without further authentication mechanisms required"""
         try:
             return libvirt.open(uri)
         except libvirt.libvirtError as e:
-            raise connectionFailed(e) from e
-
-    @staticmethod
-    def _reqAuth(uri: str) -> bool:
-        """If authentication file is passed or qemu+ssh is used,
-        no user and password are required."""
-        return "authfile" in uri
-
-    @staticmethod
-    def _isSsh(uri: str) -> bool:
-        """If authentication file is passed or qemu+ssh is used,
-        no user and password are required."""
-        return uri.startswith("qemu+ssh")
-
-    def _useAuth(self, args: Namespace) -> bool:
-        """Check if we want to use advanced auth method"""
-        if args.uri.startswith("qemu+"):
-            return True
-        if self._reqAuth(args.uri):
-            return True
-        if args.user or args.password:
-            return True
-
-        return False
+            if e.get_error_code() == 45:
+                errmsg = f"{e}: --user and --password options for SASL authentication are required."
+                raise connectionFailed(errmsg) from e
+        return None
 
     def _connect(self, args: Namespace) -> libvirt.virConnect:
         """return libvirt connection handle"""
@@ -122,50 +103,22 @@ class client:
         localHostname = gethostname()
         log.debug("Hostname: [%s]", localHostname)
 
-        if self._useAuth(args):
-            log.debug(
-                "Login information specified, connect libvirtd using openAuth function."
+        if args.user and args.password:
+            conn = self._connectAuth(args.uri, args.user, args.password)
+        else:
+            conn = self._connectOpen(args.uri)
+
+        remoteHostname = conn.getHostname()
+        log.debug("Hostname returned by libvirt API: [%s]", remoteHostname)
+        if localHostname != remoteHostname:
+            log.info(
+                "Connected to remote host: [%s], local host: [%s]",
+                conn.getHostname(),
+                gethostname(),
             )
-            if (
-                not self._reqAuth(args.uri)
-                and not self._isSsh(args.uri)
-                and (not args.user or not args.password)
-            ):
-                raise connectionFailed(
-                    "Username (--user) and password (--password) required."
-                )
+            self.remoteHost = remoteHostname
 
-            if (
-                self._isSsh(args.uri)
-                and args.user is not None
-                and args.password is not None
-            ):
-                conn = self._connectAuth(args.uri, args.user, args.password)
-            elif (
-                self._isSsh(args.uri)
-                and not self._reqAuth(args.uri)
-                and args.user is not None
-                and args.password is not None
-            ):
-                conn = self._connectAuth(args.uri, args.user, args.password)
-            else:
-                conn = self._connectOpen(args.uri)
-
-            remoteHostname = conn.getHostname()
-            log.debug("Hostname returned by libvirt API: [%s]", remoteHostname)
-            if localHostname != remoteHostname:
-                log.info(
-                    "Connected to remote host: [%s], local host: [%s]",
-                    conn.getHostname(),
-                    gethostname(),
-                )
-                self.remoteHost = remoteHostname
-
-            return conn
-
-        log.debug("Connect libvirt using open function.")
-
-        return self._connectOpen(args.uri)
+        return conn
 
     def close(self) -> None:
         """Disconnect"""
