@@ -914,6 +914,9 @@ You can also use remote backup functionality:
 
  * System must be reachable via ssh public key auth as described in the
  [Remote Backup](#remote-backup) section.
+ * Some OVIRT based setups may deny SASL based authentication if the hostname
+   used to connect to does not match the hostname from the libvirt certificate.
+   [more info](https://github.com/abbbi/virtnbdbackup/issues/167#issuecomment-2028467071)
  * Firewall port for NBD must be open:
 
 ```
@@ -923,9 +926,8 @@ You can also use remote backup functionality:
 and then backup via:
 
 ```
-virtnbdbackup -U qemu+ssh://root@hv-node/session -d vm -o /backup --password password --user root --ssh-user root 
+virtnbdbackup -U qemu+ssh://root@hv-node/session -d vm -o /backup --password password --user root --ssh-user root
 ```
-
 
 `Note:`
 > `virtnbdrestore` has not been adopted to cope with the ovirt specific
