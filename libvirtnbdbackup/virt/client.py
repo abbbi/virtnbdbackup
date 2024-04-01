@@ -18,7 +18,7 @@ import os
 import string
 import random
 import logging
-from socket import gethostname
+from socket import getfqdn
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple, Union
 import libvirt
@@ -100,7 +100,7 @@ class client:
     def _connect(self, args: Namespace) -> libvirt.virConnect:
         """return libvirt connection handle"""
         log.debug("Libvirt URI: [%s]", args.uri)
-        localHostname = gethostname()
+        localHostname = getfqdn()
         log.debug("Hostname: [%s]", localHostname)
 
         if args.user and args.password:
@@ -114,7 +114,7 @@ class client:
             log.info(
                 "Connected to remote host: [%s], local host: [%s]",
                 conn.getHostname(),
-                gethostname(),
+                localHostname,
             )
             self.remoteHost = remoteHostname
 
