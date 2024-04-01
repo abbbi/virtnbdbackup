@@ -98,7 +98,8 @@ class client:
         return None
 
     def _connect(self, args: Namespace) -> libvirt.virConnect:
-        """return libvirt connection handle"""
+        """return libvirt connection handle and check if connection
+        is established to a remote host."""
         log.debug("Libvirt URI: [%s]", args.uri)
         localHostname = getfqdn()
         log.debug("Hostname: [%s]", localHostname)
@@ -108,9 +109,15 @@ class client:
         else:
             conn = self._connectOpen(args.uri)
 
+        # Detect if we are connected to a remote libvirt daemon by
+        # comparing the local and remote hostname. If qemu+ssh is
+        # part of the libvirt URI, set the remote host as well.
+        # This will spawn the NBD service for data transfer via
+        # TCP socket instead of local socket file and related virtual
+        # domain files will be copied via SFTP.
         remoteHostname = conn.getHostname()
         log.debug("Hostname returned by libvirt API: [%s]", remoteHostname)
-        if localHostname != remoteHostname:
+        if localHostname != remoteHostname or "qemu+ssh" in args.uri:
             log.info(
                 "Connected to remote host: [%s], local host: [%s]",
                 conn.getHostname(),

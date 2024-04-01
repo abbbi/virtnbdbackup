@@ -662,7 +662,6 @@ toOut() {
     [ "$status" -eq 1 ]
 }
 @test "Backup: test remote backup functionality via localhost" {
-    skip "required environment"
     run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -v -o  ${TMPDIR}/remotebackup
     echo "output = ${output}"
     [[ "${output}" =~  "Connecting remote system" ]]
@@ -673,14 +672,12 @@ toOut() {
     fi
 }
 @test "Backup: test remote backup functionality via localhost to zip file" {
-    skip "required environment"
     run ../virtnbdbackup -U qemu+ssh://root@localhost/system --ssh-user root -d $VM -o - >  ${TMPDIR}/remotebackup.zip
     echo "output = ${output}"
     [[ "${output}" =~  "Connecting remote system" ]]
     [ "$status" -eq 0 ]
 }
 @test "Backup: test remote backup functionality: backup offline vm " {
-    skip "required environment"
     run virsh destroy $VM
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -693,7 +690,6 @@ toOut() {
     [ "$status" -eq 0 ]
 }
 @test "Restore: test remote restore functionality via localhost" {
-    skip "required environment"
     run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore --logfile ${TMPDIR}/remoterestore.log
     echo "output = ${output}"
     [[ "${output}" =~  "Connecting remote system" ]]
