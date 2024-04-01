@@ -3,10 +3,10 @@ Version 2.6
  * Fix IndexError exception if auth file is used in qemu uri (#167)
  * Credential function for libvirt must return integer: fix NoneType
  exception if actual libvirt authentication is required.
- * Simply libvirt authentication code: attempt to use SASL based mechanism
+ * Simplify libvirt authentication code: attempt to use SASL based mechanism
  only if --user and --password options are set.
  * If authentication fails because of missing SASL mechs, ajdust error
- message.
+ message, provide hint for --user and --password options.
  * Update README regards OVIRT/RHEV/OLVM (no mechanism available: No worthy
  mechs found)
 
