@@ -630,9 +630,9 @@ space that is required for recovery, date of the backup and checkpoint chain.
 
 ## Verifying created backups
 
-As with more recent versions, `virtnbdbackup` creates an check sum for
-each created data file. Using `virtnbdrestore` you can check the integrity
-for the created data files without having to restore:
+As with version >= 1.9.40  `virtnbdbackup` creates an check sum for each
+created data file. Using `virtnbdrestore` you can check the integrity for the
+created data files without having to restore:
 
 ```
 virtnbdrestore -i /tmp/backup/vm1 -o verify
