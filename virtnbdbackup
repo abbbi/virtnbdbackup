@@ -342,7 +342,11 @@ def main() -> None:
     disks: List[DomainDisk] = virtClient.getDomainDisks(args, vmConfig)
     args.info = virtClient.getDomainInfo(vmConfig)
     if virtClient.getTPMDevice(vmConfig):
-        logging.warning("VM has emulated TPM device: manual backup for files required.")
+        logging.warning("VM has emulated TPM device: User action required.")
+        logging.warning(
+            "Please manually backup contents of: [/var/lib/libvirt/swtpm/%s/]",
+            domObj.UUIDString(),
+        )
 
     try:
         check.diskformat(args, disks)
