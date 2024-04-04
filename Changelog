@@ -1,3 +1,10 @@
+Version 2.7
+---------
+ * Update README
+ * End backup with warning if software emulated TPM device is attached
+ (#169)
+
+
 Version 2.6
 ---------
  * Fix IndexError exception if auth file is used in qemu uri (#167)
