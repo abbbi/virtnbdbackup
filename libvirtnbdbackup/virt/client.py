@@ -246,6 +246,16 @@ class client:
         log.debug("Domain Info: [%s]", settings)
         return settings
 
+    def getTPMDevice(self, vmConfig: str) -> bool:
+        """Check if virtual machine has configured an emulated (swtpm based) TPM device"""
+        tree = xml.asTree(vmConfig)
+        device = tree.find("devices/tpm")
+        if device is not None:
+            tpm = device.xpath("backend")[0].get("type")
+            return tpm == "emulator"
+
+        return False
+
     @staticmethod
     def getBackingStores(disk: xml._Element) -> List[str]:
         """Get list of backing store files defined for disk, usually
