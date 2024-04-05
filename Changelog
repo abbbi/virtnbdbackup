@@ -3,9 +3,8 @@ Version 2.7
  * Update README
  * End backup with warning if software emulated TPM device is attached
  (#169)
- * Revert code to use gethostname() instead of getfqdn() again to check if
- connected to local or remote libvirt system. Could lead to situation where
- local backup is detected as remote backup (#170)
+ * Detect remote connection based on libvirt URI, hecking hostnames could lead
+ to situation where local backup is detected as remote backup (#170)
 
 
 Version 2.6
