@@ -18,7 +18,7 @@ import os
 import string
 import random
 import logging
-from socket import getfqdn
+from socket import gethostname
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple, Union
 import libvirt
@@ -101,7 +101,7 @@ class client:
         """return libvirt connection handle and check if connection
         is established to a remote host."""
         log.debug("Libvirt URI: [%s]", args.uri)
-        localHostname = getfqdn()
+        localHostname = gethostname()
         log.debug("Hostname: [%s]", localHostname)
 
         if args.user and args.password:
