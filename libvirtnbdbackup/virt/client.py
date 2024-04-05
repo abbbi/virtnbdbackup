@@ -101,8 +101,6 @@ class client:
         """return libvirt connection handle and check if connection
         is established to a remote host."""
         log.debug("Libvirt URI: [%s]", args.uri)
-        localHostname = gethostname()
-        log.debug("Hostname: [%s]", localHostname)
 
         if args.user and args.password:
             conn = self._connectAuth(args.uri, args.user, args.password)
@@ -115,13 +113,11 @@ class client:
         # This will spawn the NBD service for data transfer via
         # TCP socket instead of local socket file and related virtual
         # domain files will be copied via SFTP.
-        remoteHostname = conn.getHostname()
-        log.debug("Hostname returned by libvirt API: [%s]", remoteHostname)
-        if localHostname != remoteHostname or "qemu+ssh" in args.uri:
+        if "qemu+ssh" in args.uri:
+            remoteHostname = conn.getHostname()
             log.info(
-                "Connected to remote host: [%s], local host: [%s]",
-                conn.getHostname(),
-                localHostname,
+                "Connected to remote host: [%s]",
+                remoteHostname,
             )
             self.remoteHost = remoteHostname
 
