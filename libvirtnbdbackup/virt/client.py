@@ -18,7 +18,6 @@ import os
 import string
 import random
 import logging
-from socket import gethostname
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple, Union
 import libvirt
