@@ -68,7 +68,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     count: int,
     fileStream,
     virtClient: virt.client,
-):
+) -> bool:
     """Backup domain disk data."""
     dStream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
