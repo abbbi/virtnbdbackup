@@ -1,6 +1,7 @@
 Version 2.8
 ---------
  * Add packages compatible to fedora 39 to package build (#174)
+ * Show total saved disk size in human readable output (#173)
 
 
 Version 2.7
@@ -8,7 +9,7 @@ Version 2.7
  * Update README
  * End backup with warning if software emulated TPM device is attached
  (#169)
- * Detect remote connection based on libvirt URI, hecking hostnames could lead
+ * Detect remote connection based on libvirt URI, checking hostnames could lead
  to situation where local backup is detected as remote backup (#170)
 
 
