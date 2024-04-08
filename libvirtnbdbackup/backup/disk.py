@@ -215,4 +215,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
         partialfile.rename(targetFilePartial, targetFile)
         backupChecksum(fileStream, targetFile)
 
+    if args.compress:
+        backupSize = sum(blen for blen in compressedSizes)
+
     return backupSize, True
