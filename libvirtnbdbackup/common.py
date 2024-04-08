@@ -61,6 +61,15 @@ def printVersion(version) -> None:
     log.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
 
+def humanize(num, suffix="B"):
+    """Print size in human readable output"""
+    for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"
+
+
 def setThreadName(tn="main") -> None:
     """Set thread name reported by logging function"""
     current_thread().name = tn

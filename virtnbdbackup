@@ -438,6 +438,7 @@ def main() -> None:
         logging.info("Started backup job for debugging, exiting.")
         sys.exit(0)
 
+    backupSize: int = 0
     try:
         with ThreadPoolExecutor(max_workers=args.worker) as executor:
             futures = {
@@ -447,7 +448,9 @@ def main() -> None:
                 for count, Disk in enumerate(disks)
             }
             for future in as_completed(futures):
-                if future.result() is not True:
+                size, state = future.result()
+                backupSize += size
+                if state is not True:
                     raise exceptions.DiskBackupFailed("Backup of one disk failed")
     except exceptions.BackupException as e:
         logging.error("Disk backup failed: [%s]", e)
@@ -460,6 +463,7 @@ def main() -> None:
     if args.offline is False:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
+    logging.info("Total saved disk size: [%s]", lib.humanize(backupSize))
 
     virtClient.close()
 
