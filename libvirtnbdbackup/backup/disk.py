@@ -188,6 +188,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
         else:
             if streamType == "raw":
                 writer.seek(save.offset)
+                backupSize += save.length
             elif streamType == "stream" and args.level not in ("inc", "diff"):
                 dStream.writeFrame(writer, sTypes.ZERO, save.offset, save.length)
     if streamType == "stream":

@@ -463,7 +463,6 @@ def main() -> None:
     if args.offline is False:
         logging.info("Backup jobs finished, stopping backup task.")
         virtClient.stopBackup(domObj)
-    logging.info("Total saved disk size: [%s]", lib.humanize(backupSize))
 
     virtClient.close()
 
@@ -486,6 +485,7 @@ def main() -> None:
         )
         sys.exit(2)
 
+    logging.info("Total saved disk data: [%s]", lib.humanize(backupSize))
     logging.info("Finished successfully")
 
 
