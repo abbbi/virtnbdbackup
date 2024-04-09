@@ -17,7 +17,7 @@
 """
 import logging
 from argparse import Namespace
-from typing import List, Any
+from typing import List, Any, Tuple
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
@@ -68,7 +68,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     count: int,
     fileStream,
     virtClient: virt.client,
-) -> bool:
+) -> Tuple[int, bool]:
     """Backup domain disk data."""
     dStream = streamer.SparseStream(types)
     sTypes = types.SparseStreamTypes()
@@ -97,7 +97,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
 
     if extents is None:
         logging.error("No extents returned by NBD server.")
-        return False
+        return 0, False
 
     thinBackupSize = sum(extent.length for extent in extents if extent.data is True)
     logging.info("Got %s extents to backup.", len(extents))
@@ -139,6 +139,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
         thinBackupSize, f"saving disk {disk.target}", args, count=count
     )
     compressedSizes: List[Any] = []
+    backupSize: int = 0
     for save in extents:
         if save.data is True:
             if streamType == "stream":
@@ -183,9 +184,11 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                         compressedSizes.append(size)
                 else:
                     assert size == save.length
+            backupSize += save.length
         else:
             if streamType == "raw":
                 writer.seek(save.offset)
+                backupSize += save.length
             elif streamType == "stream" and args.level not in ("inc", "diff"):
                 dStream.writeFrame(writer, sTypes.ZERO, save.offset, save.length)
     if streamType == "stream":
@@ -212,4 +215,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
         partialfile.rename(targetFilePartial, targetFile)
         backupChecksum(fileStream, targetFile)
 
-    return True
+    if args.compress:
+        backupSize = sum(blen for blen in compressedSizes)
+
+    return backupSize, True
