@@ -153,7 +153,7 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
                 raise RestoreError("Data size mismatch")
             break
 
-    logging.info("End of stream, [%s] bytes of data processed", dataSize)
+    logging.info("End of stream, [%s] of data processed", lib.humanize(dataSize))
     if meta["checkpointName"] == args.until:
         logging.info("Reached checkpoint [%s], stopping", args.until)
         raise UntilCheckpointReached
