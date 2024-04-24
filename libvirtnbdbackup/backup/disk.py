@@ -176,6 +176,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                 writer.write(sTypes.TERM)
                 if args.compress:
                     logging.debug("Compressed size: %s", size)
+                    backupSize += size
                     if cSizes:
                         blockList = {}
                         blockList[size] = cSizes
@@ -184,7 +185,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                         compressedSizes.append(size)
                 else:
                     assert size == save.length
-            backupSize += save.length
+                    backupSize += save.length
         else:
             if streamType == "raw":
                 writer.seek(save.offset)
@@ -214,8 +215,5 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
             )
         partialfile.rename(targetFilePartial, targetFile)
         backupChecksum(fileStream, targetFile)
-
-    if args.compress:
-        backupSize = sum(blen for blen in compressedSizes)
 
     return backupSize, True

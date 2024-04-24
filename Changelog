@@ -1,3 +1,9 @@
+Version 2.9
+---------
+ * Fix: backup with compression enabled fails: unsupported operand type(s) for
+ +: 'int' and 'dict' (#177)
+
+
 Version 2.8
 ---------
  * Add packages compatible to fedora 39 to package build (#174)
