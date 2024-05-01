@@ -20,7 +20,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/abbbi/virtnbdbackup/
+            ghcr.io/${{ github.repository_owner }}/virtnbdbackup
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -45,8 +45,7 @@ jobs:
       - name: Build and Publish Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: docker/
-          file: Dockerfile
+          file: ./docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
