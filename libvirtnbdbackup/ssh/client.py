@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import logging
 import socket
 from typing import Tuple, Callable
@@ -42,10 +43,13 @@ class client:
     """Wrapper around paramiko/sftp put and get functions, to be able to
     remote copy files from hypervisor host"""
 
-    def __init__(self, host: str, user: str, mode: Mode = Mode.DOWNLOAD):
+    def __init__(
+        self, host: str, user: str, port: int = 22, mode: Mode = Mode.DOWNLOAD
+    ):
         self.client = None
         self.host = host
         self.user = user
+        self.port = port
         self.copy = Callable[[str, str], None]
         self.copy = self.copyFrom
         if mode == Mode.UPLOAD:
@@ -66,6 +70,7 @@ class client:
             cli.connect(
                 self.host,
                 username=self.user,
+                port=self.port,
                 timeout=5000,
             )
             return cli

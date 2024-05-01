@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import os
 import sys
 import glob
@@ -89,7 +90,7 @@ def sshSession(
 ) -> Union[ssh.client, None]:
     """Use ssh to copy remote files"""
     try:
-        return ssh.client(remoteHost, args.ssh_user, mode)
+        return ssh.client(remoteHost, args.ssh_user, args.ssh_port, mode)
     except sshError as err:
         log.warning("Failed to setup SSH connection: [%s]", err)
 

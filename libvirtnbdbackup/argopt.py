@@ -56,6 +56,16 @@ def addRemoteArgs(opt: _ArgumentGroup) -> None:
         ),
     )
     opt.add_argument(
+        "--ssh-port",
+        default=22,
+        required=False,
+        type=int,
+        help=(
+            "Port to connect to remote sshd: "
+            "used for remote copy of files. (default: %(default)s)"
+        ),
+    )
+    opt.add_argument(
         "--password",
         default=None,
         required=False,
