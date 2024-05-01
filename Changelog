@@ -1,5 +1,6 @@
 Version 2.10
 ---------
+ * Add --ssh-port option.
 
 
 Version 2.9
