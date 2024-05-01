@@ -215,7 +215,14 @@ For setup within an virtualenv see [venv scripts](venv/).
 
 ## Docker images
 
-You can build an docker image using the existing [Dockerfile](docker/)
+You can build an docker image using the existing [Dockerfile README](docker/)
+
+All released versions and master branch are published via github container
+registry, too. Example:
+
+```
+ docker run -it ghcr.io/abbbi/virtnbdbackup:master virtnbdbackup
+```
 
 # Backup Format
 
