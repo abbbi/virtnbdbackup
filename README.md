@@ -224,6 +224,8 @@ registry, too. Example:
  docker run -it ghcr.io/abbbi/virtnbdbackup:master virtnbdbackup
 ```
 
+See [packages](https://github.com/abbbi/virtnbdbackup/pkgs/container/virtnbdbackup).
+
 # Backup Format
 
 Currently, there are two output formats implemented:
