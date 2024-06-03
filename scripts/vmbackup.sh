@@ -83,7 +83,7 @@ for name in "${VMs[@]}"; do
     # middle of the current month.
     if [ $? -eq 0 ] && [ "$DAY_OF_MONTH" -eq 15 ]; then
         LAST_MONTH=$(date -d "$(date +%Y-%m-1) -1 month" +%Y-%m)
-    	LAST_MONTHS_BACKUPS_DIR=${BACKUP_DIR}/${name}/${LAST_MONTH}
+        LAST_MONTHS_BACKUPS_DIR=${BACKUP_DIR}/${name}/${LAST_MONTH}
 
         if [ -d "${LAST_MONTHS_BACKUPS_DIR}" ]; then
             printf "Removing backups for %s for %s" "${name}" "${LAST_MONTH}"
