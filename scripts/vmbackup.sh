@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (C) 2024  Michael Ablassmeier
-# Copyright (C) 2024  Sentry0
+# Copyright (C) 2024  Phil (Sentry0) Guinchard, Michael Ablassmeier
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
