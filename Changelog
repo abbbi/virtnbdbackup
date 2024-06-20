@@ -1,3 +1,11 @@
+Version 2.11
+---------
+ * Raise NBD connection error if `--tls` option is set but installed libnbd
+ bindings for python do not support required features.
+ * Set TLS connection options to TLS_REQUIRE instead of TLS_ALLOW which would
+ fallback to non-encrypted data transfer.
+
+
 Version 2.10
 ---------
  * Add --ssh-port option.
