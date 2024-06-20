@@ -55,9 +55,14 @@ class client:
         """Setup connection to NBD server endpoint, return
         connection handle
         """
+        if self.cType.tls and not self.nbd.supports_tls():
+            raise exceptions.NbdConnectionError(
+                "Installed python nbd binding is missing required tls features."
+            )
+
         try:
             if self.cType.tls:
-                self.nbd.set_tls(nbd.TLS_ALLOW)
+                self.nbd.set_tls(nbd.TLS_REQUIRE)
             self.nbd.add_meta_context(self._metaContext)
             self.nbd.set_export_name(self._exportName)
             self.nbd.connect_uri(self.cType.uri)
