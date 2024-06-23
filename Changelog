@@ -5,6 +5,7 @@ Version 2.11
  bindings for python do not support required features.
  * Set TLS connection options to TLS_REQUIRE instead of TLS_ALLOW which would
  fallback to non-encrypted data transfer.
+ * If LIBNBD_DEBUG is set, add NBD trace messages to logfile.
 
 Version 2.10
 ---------

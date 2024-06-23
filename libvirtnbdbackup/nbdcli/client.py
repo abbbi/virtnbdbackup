@@ -39,6 +39,13 @@ class client:
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
         self.nbd = nbd.NBD()
+
+        def debug(func, args):
+            """Write NBD debugging messages to logfile instead of
+            stderr"""
+            log.debug("%s: %s", func, args)
+
+        self.nbd.set_debug_callback(debug)
         self.connection = None
 
     def _getBlockInfo(self) -> None:
