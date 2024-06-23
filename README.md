@@ -992,6 +992,7 @@ executing the backup or restore:
 
 ```
 export LIBNBD_DEBUG=1
+virtnbdbackup [..] --verbose
 ```
 
 # FAQ
