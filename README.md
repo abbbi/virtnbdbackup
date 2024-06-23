@@ -61,6 +61,7 @@ of your `kvm/qemu` virtual machines.
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
 - [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
+- [Debugging](#debugging)
 - [FAQ](#faq)
   - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
   - [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
@@ -982,6 +983,16 @@ same I/O performance requirements as the backup target.
 
 The free space on the default scratch directory (`/var/tmp`) must be enough to
 be able to keep all fleecing data while the backup is active.
+
+# Debugging
+
+To get more detailed debug output use `--verbose` option. To enable NBD
+specific debugging output export LIBNBD_DEBUG environment variable prior to
+executing the backup or restore:
+
+```
+export LIBNBD_DEBUG=1
+```
 
 # FAQ
 ## The thin provisioned backups are bigger than the original qcow images

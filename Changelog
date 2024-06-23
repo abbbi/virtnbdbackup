@@ -1,27 +1,24 @@
 Version 2.11
 ---------
+ * Update README
  * Raise NBD connection error if `--tls` option is set but installed libnbd
  bindings for python do not support required features.
  * Set TLS connection options to TLS_REQUIRE instead of TLS_ALLOW which would
  fallback to non-encrypted data transfer.
 
-
 Version 2.10
 ---------
  * Add --ssh-port option.
-
 
 Version 2.9
 ---------
  * Fix: backup with compression enabled fails: unsupported operand type(s) for
  +: 'int' and 'dict' (#177)
 
-
 Version 2.8
 ---------
  * Add packages compatible to fedora 39 to package build (#174)
  * Show total saved disk size in human readable output (#173)
-
 
 Version 2.7
 ---------
@@ -30,7 +27,6 @@ Version 2.7
  (#169)
  * Detect remote connection based on libvirt URI, checking hostnames could lead
  to situation where local backup is detected as remote backup (#170)
-
 
 Version 2.6
 ---------
@@ -43,7 +39,6 @@ Version 2.6
  message, provide hint for --user and --password options.
  * Update README regards OVIRT/RHEV/OLVM (no mechanism available: No worthy
  mechs found)
-
 
 Version 2.5
 ---------
@@ -58,7 +53,6 @@ Version 2.5
  * Update README: add note about scratch files.
  * Do not attempt to freeze filesystems if virtual machine is in paused state
  (#166)
-
 
 Version 2.4
 ---------
