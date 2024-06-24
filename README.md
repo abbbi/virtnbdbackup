@@ -25,9 +25,9 @@ of your `kvm/qemu` virtual machines.
   - [Debian package](#debian-package)
   - [Virtualenv](#virtualenv)
   - [Docker images](#docker-images)
-- [Backup Format](#backup-format)
-- [Backup Operation](#backup-operation)
+- [Backup modes and concept](#backup-modes-and-concept)
 - [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
+- [Backup Format](#backup-format)
 - [Backup Examples](#backup-examples)
   - [Local full/incremental backup](#local-fullincremental-backup)
   - [Backing up offline virtual domains](#backing-up-offline-virtual-domains)
@@ -227,41 +227,29 @@ registry, too. Example:
 
 See [packages](https://github.com/abbbi/virtnbdbackup/pkgs/container/virtnbdbackup).
 
-# Backup Format
-
-Currently, there are two output formats implemented:
-
- * `stream`: the resulting backup image is saved in a streamlined format,
-   where the backup file consists of metadata about offsets and lengths
-   of zeroed or allocated contents of the virtual machines disk. This is
-   the default. The resulting backup image is thin provisioned.
- * `raw`: The resulting backup image will be a full provisioned raw image,
-   this should mostly be used for debugging any problems with the extent
-   handler, it won't work with incremental backups.
-
-# Backup Operation
+# Backup modes and concept
 
 Following backup modes can be used:
 
-* `copy`: Full, thin provisioned backup of the virtual machine disks, no
-  checkpoint is created for further incremental backups, existing checkpoints
-  will be left untouched. This is the default mode and works with qcow images
-  not supporting persistent bitmaps.
+* `auto`: If the target folder is empty, attempt to execute full backup,
+  otherwise switch to backup mode incremental: allows rotation of backup
+  into monthly folders.
 
 * `full`: Full, thin provisioned backup of the virtual machine, a new checkpoint
   named `virtnbdbackup` will be created, all existent checkpoints from prior
   backups matching this name will be removed: a new backup chain is created.
   The Virtual machine must be online and running for this backup mode to work.
 
+* `copy`: Full, thin provisioned backup of the virtual machine disks, no
+  checkpoint is created for further incremental backups, existing checkpoints
+  will be left untouched. This is the default mode and works with qcow images
+  not supporting persistent bitmaps.
+
 * `inc`: Perform incremental backup, based on the last full or incremental
   backup. A checkpoint for each incremental backup is created and saved.
 
 * `diff`: Perform differential backup: saves the current delta to the last
   incremental or full backup.
-
-* `auto`: If the target folder is empty, attempt to execute full backup,
-  otherwise switch to backup mode incremental: allows rotation of backup
-  into monthly folders.
 
 All required information for restore is stored to the same directory,
 including the latest virtual machine configuration, checkpoint information,
@@ -295,7 +283,7 @@ metadata and do not support incremental/differential backup.
 [(more info)](https://patchew.org/QEMU/20210320093235.461485-1-pj@patrikjanousek.cz/)
 
 This behavior can be changed if option `--raw` is specified, raw disks will
-then be included during a `full` backup.  This of course means that no thin
+then be included during a `full` backup. This of course means that no thin
 provisioned backup is created for these particular disks.
 
 During restore, these files can be copied "as is" from the backup folder and
@@ -304,6 +292,19 @@ must not be processed using `virtnbdrestore`.
 `Note:`
 > The backup data for raw disks will only be crash consistent, be aware
 > that this might result in inconsistent filesystems after restoring!
+
+
+# Backup Format
+
+Currently, there are two output formats implemented:
+
+ * `stream`: the resulting backup image is saved in a streamlined format,
+   where the backup file consists of metadata about offsets and lengths
+   of zeroed or allocated contents of the virtual machines disk. This is
+   the default. The resulting backup image is thin provisioned.
+ * `raw`: The resulting backup image will be a full provisioned raw image,
+   this should mostly be used for debugging any problems with the extent
+   handler, it won't work with incremental backups.
 
 
 # Backup Examples
