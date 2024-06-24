@@ -27,7 +27,6 @@ of your `kvm/qemu` virtual machines.
   - [Docker images](#docker-images)
 - [Backup modes and concept](#backup-modes-and-concept)
 - [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
-- [Backup Format](#backup-format)
 - [Backup Examples](#backup-examples)
   - [Local full/incremental backup](#local-fullincremental-backup)
   - [Backing up offline virtual domains](#backing-up-offline-virtual-domains)
@@ -60,7 +59,7 @@ of your `kvm/qemu` virtual machines.
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
 - [Internals](#internals)
-  - [Backup Format](#backup-format-1)
+  - [Backup Format](#backup-format)
   - [Extents](#extents)
   - [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
 - [Debugging](#debugging)
@@ -294,20 +293,6 @@ must not be processed using `virtnbdrestore`.
 `Note:`
 > The backup data for raw disks will only be crash consistent, be aware
 > that this might result in inconsistent filesystems after restoring!
-
-
-# Backup Format
-
-Currently, there are two output formats implemented:
-
- * `stream`: the resulting backup image is saved in a streamlined format,
-   where the backup file consists of metadata about offsets and lengths
-   of zeroed or allocated contents of the virtual machines disk. This is
-   the default. The resulting backup image is thin provisioned.
- * `raw`: The resulting backup image will be a full provisioned raw image,
-   this should mostly be used for debugging any problems with the extent
-   handler, it won't work with incremental backups.
-
 
 # Backup Examples
 
