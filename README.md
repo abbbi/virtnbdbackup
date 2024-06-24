@@ -54,13 +54,15 @@ of your `kvm/qemu` virtual machines.
   - [Remote Restore](#remote-restore)
 - [Post restore steps and considerations](#post-restore-steps-and-considerations)
 - [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
-- [Extents](#extents)
-- [Transient virtual machines: checkpoint persistency](#transient-virtual-machines-checkpoint-persistency)
+- [Transient virtual machines: checkpoint persistency on clusters](#transient-virtual-machines-checkpoint-persistency-on-clusters)
 - [Hypervisors](#hypervisors)
   - [Ovirt, RHEV or OLVM](#ovirt-rhev-or-olvm)
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
-- [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
+- [Internals](#internals)
+  - [Backup Format](#backup-format-1)
+  - [Extents](#extents)
+  - [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
 - [Debugging](#debugging)
 - [FAQ](#faq)
   - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
@@ -825,14 +827,7 @@ To remove the mappings, stop the utility via "CTRL-C"
 > to mount the filesystems. This may also be the case if no qemu agent was
 > installed within the virtual machine during backup.
 
-# Extents
-
-In order to save only used data from the images, dirty blocks are queried from
-the NBD server. The behavior can be changed by using the option `-q` to use
-common qemu tools (nbdinfo). By default `virtnbdbackup` uses a custom
-implemented extent handler.
-
-# Transient virtual machines: checkpoint persistency
+# Transient virtual machines: checkpoint persistency on clusters
 
 In case virtual machines are started in transient environments, such as using
 cluster solutions like `pacemaker` situations can appear where the checkpoints
@@ -972,7 +967,27 @@ like it would be possible using the `virsh -c` option:
 > case if virtual machines operate as root user. Use the `qemu:///session` URI
 > to backup virtual machines as regular user.
 
-# Backup I/O and performance: scratch files
+# Internals
+## Backup Format
+
+Currently, there are two output formats implemented:
+
+ * `stream`: the resulting backup image is saved in a streamlined format,
+   where the backup file consists of metadata about offsets and lengths
+   of zeroed or allocated contents of the virtual machines disk. This is
+   the default. The resulting backup image is thin provisioned.
+ * `raw`: The resulting backup image will be a full provisioned raw image,
+   this should mostly be used for debugging any problems with the extent
+   handler, it won't work with incremental backups.
+
+## Extents
+
+In order to save only used data from the images, dirty blocks are queried from
+the NBD server. The behavior can be changed by using the option `-q` to use
+common qemu tools (nbdinfo). By default `virtnbdbackup` uses a custom
+implemented extent handler.
+
+## Backup I/O and performance: scratch files
 
 If virtual domains handle heavy I/O load during backup (such as writing or
 deleting lots of data while the backup is active) you might consider using the
