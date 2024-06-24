@@ -54,7 +54,7 @@ of your `kvm/qemu` virtual machines.
 - [Post restore steps and considerations](#post-restore-steps-and-considerations)
 - [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
 - [Transient virtual machines: checkpoint persistency on clusters](#transient-virtual-machines-checkpoint-persistency-on-clusters)
-- [Hypervisors](#hypervisors)
+- [Supported Hypervisors](#supported-hypervisors)
   - [Ovirt, RHEV or OLVM](#ovirt-rhev-or-olvm)
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
@@ -62,7 +62,7 @@ of your `kvm/qemu` virtual machines.
   - [Backup Format](#backup-format)
   - [Extents](#extents)
   - [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
-- [Debugging](#debugging)
+  - [Debugging](#debugging)
 - [FAQ](#faq)
   - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
   - [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
@@ -875,7 +875,7 @@ redefineCheckpoints: Redefine missing checkpoint virtnbdbackup.0
 
 See also: https://github.com/abbbi/virtnbdbackup/pull/10
 
-# Hypervisors
+# Supported Hypervisors
 
 `virtnbdbackup` uses the lowest layer on top of libvirt to allow its
 functionality, you can also use it with more advanced hypervisors solutions
@@ -985,7 +985,7 @@ same I/O performance requirements as the backup target.
 The free space on the default scratch directory (`/var/tmp`) must be enough to
 be able to keep all fleecing data while the backup is active.
 
-# Debugging
+## Debugging
 
 To get more detailed debug output use `--verbose` option. To enable NBD
 specific debugging output export LIBNBD_DEBUG environment variable prior to
