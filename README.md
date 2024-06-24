@@ -233,18 +233,21 @@ See [packages](https://github.com/abbbi/virtnbdbackup/pkgs/container/virtnbdback
 Following backup modes can be used:
 
 * `auto`: If the target folder is empty, attempt to execute full backup,
-  otherwise switch to backup mode incremental: allows rotation of backup
-  into monthly folders.
+  otherwise switch to backup mode incremental: allows [rotating
+  backups](#rotating-backups) into monthly folders.
+  `This is the default backup mode.`
 
 * `full`: Full, thin provisioned backup of the virtual machine, a new checkpoint
   named `virtnbdbackup` will be created, all existent checkpoints from prior
   backups matching this name will be removed: a new backup chain is created.
-  The Virtual machine must be online and running for this backup mode to work.
+  The Virtual machine must be online and running for this backup mode to work,
+  see [Backing up offline virtual domains](#backing-up-offline-virtual-domains)
+  for more information.
 
 * `copy`: Full, thin provisioned backup of the virtual machine disks, no
   checkpoint is created for further incremental backups, existing checkpoints
-  will be left untouched. This is the default mode and works with qcow images
-  not supporting persistent bitmaps.
+  will be left untouched. This backup mode works with qcow images not
+  supporting persistent bitmaps.
 
 * `inc`: Perform incremental backup, based on the last full or incremental
   backup. A checkpoint for each incremental backup is created and saved.
@@ -354,7 +357,7 @@ backup.
 ## Application consistent backups
 
 During backup `virtnbdbackup` attempts to freeze all file systems within the
-domain using the qemu guest agent filesystem freeze and thaw functions.  In
+domain using the qemu guest agent filesystem freeze and thaw functions. In
 case no qemu agent is installed or filesystem freeze fails, a warning is shown
 during backup:
 
@@ -380,17 +383,17 @@ and thawed.
 
 ## Rotating backups
 
-With backup mode `auto` it is possible to have a monthly rotation/retention.  If
-the target folder is empty, backup mode auto will create an full backup. On the
+With the default backup mode `auto` it is possible to rotate backups. If the
+target folder is empty, backup mode auto will create an full backup. On the
 following executions, it will automatically switch to backup mode incremental,
 if the target folder already includes an full backup. Example:
 
 ```
-virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates full backup
-virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates inc backup
-virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates inc backup
-virtnbdbackup -d vm1 -l auto -o /tmp/2022-07 -> creates full backup
-virtnbdbackup -d vm1 -l auto -o /tmp/2022-07 -> creates inc backup
+virtnbdbackup -d vm1 -o /tmp/2022-06 -> creates full backup
+virtnbdbackup -d vm1 -o /tmp/2022-06 -> creates inc backup
+virtnbdbackup -d vm1 -o /tmp/2022-06 -> creates inc backup
+virtnbdbackup -d vm1 -o /tmp/2022-07 -> creates full backup
+virtnbdbackup -d vm1 -o /tmp/2022-07 -> creates inc backup
 ```
 
 ## Excluding disks

@@ -1,6 +1,7 @@
 Version 2.11
 ---------
  * Update README
+ * Change default backup mode to `auto`.
  * Raise NBD connection error if `--tls` option is set but installed libnbd
  bindings for python do not support required features.
  * Set TLS connection options to TLS_REQUIRE instead of TLS_ALLOW which would

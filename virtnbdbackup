@@ -81,7 +81,7 @@ def main() -> None:
     opt.add_argument(
         "-l",
         "--level",
-        default="copy",
+        default="auto",
         choices=["copy", "full", "inc", "diff", "auto"],
         type=str,
         help="Backup level. (default: %(default)s)",
