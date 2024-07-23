@@ -50,8 +50,7 @@ class client:
         self.host = host
         self.user = user
         self.port = port
-        self.copy = Callable[[str, str], None]
-        self.copy = self.copyFrom
+        self.copy: Callable[[str, str], None] = self.copyFrom
         if mode == Mode.UPLOAD:
             self.copy = self.copyTo
         self.connection = self.connect()
