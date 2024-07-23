@@ -33,7 +33,7 @@ of your `kvm/qemu` virtual machines.
   - [Application consistent backups](#application-consistent-backups)
   - [Rotating backups](#rotating-backups)
   - [Excluding disks](#excluding-disks)
-  - [Estimating backup size](#estimating-backup-size)
+  - [Estimating differential/incremental backup size](#estimating-differentialincremental-backup-size)
   - [Backup threshold](#backup-threshold)
   - [Backup concurrency](#backup-concurrency)
   - [Compression](#compression)
@@ -413,7 +413,7 @@ It is also possible to only backup specific disks using the include option
 virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1 -i sdf
 ```
 
-## Estimating backup size
+## Estimating differential/incremental backup size
 
 Sometimes it can be useful to estimate the data size prior to executing the
 next `incremental` or `differential` backup. This can be done by using the
