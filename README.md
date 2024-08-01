@@ -1038,7 +1038,7 @@ This inconsistency can be caused by several situations:
     clusters](#transient-virtual-machines-checkpoint-persistency-on-clusters))
  2) A change to the libvirt environment between backups (such as re-installing
     the libvirt daemon) caused the system to lose track of the existing
-    checkpoints, but the bitmaps are still existant in the disk files.
+    checkpoints, but the bitmaps are still existent in the disk files.
  3) Between backups, the disk image contents were reset and now the image has
     already defined bitmaps (if disk was restored from a storage snapshot, for
     example )
