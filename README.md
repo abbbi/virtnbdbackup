@@ -1087,7 +1087,7 @@ qemu-img info /tmp/tmp.Y2PskFFeVv/vm1-sda.qcow2
 
 Now, compare which checkpoints are listed and which bitmaps exist in the qcow
 image. In this example `virsh` only lists the checkpoint "virtnbdbackup.0" but
-the bitmap is called "virtnbdbackpu.1", indicating there is an inconsistency.
+the bitmap is called "virtnbdbackup.1", indicating there is an inconsistency.
 
 Remove the dangling bitmap(s) via:
 
