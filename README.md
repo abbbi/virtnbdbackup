@@ -1066,10 +1066,14 @@ You can also check which disks were included in the checkpoint:
 ```
 
 The example command shows one existing checkpoint for disk "sda". An bitmap
-must be listed using the `qemu-img` tool. Beware: depending on the version used
-you might have to shutdown or pause the virtual machine or command won't show
-bitmaps!
+with the same name should be listed using the `qemu-img` tool for each
+checkpoint.
 
+Note:
+> Depending on the version used you might have to shutdown or pause the virtual
+> machine or the `qemu-img` command won't show bitmaps!
+
+To list the bitmaps use:
 
 ```
 virsh destroy vm1       # shutdown vm
