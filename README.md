@@ -1043,9 +1043,10 @@ This inconsistency can be caused by several situations:
     already defined bitmaps (if disk was restored from a storage snapshot, for
     example )
  4) `virtnbdbackup` is started on an backup target directory with an old state
-    and starts from a wrong checkpoint count, attempting to re-define an
+    and starts from a wrong checkpoint count, now attempting to create an
     checkpoint whose bitmap already exists (might happen if you rotate backup
-    directories and pick the wrong target directory for some reason)
+    directories and pick the wrong target directory with an older state for
+    some reason)
 
 To troubleshoot this situation, use virsh to list the checkpoints that libvirt
 thinks are existent using:
