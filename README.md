@@ -1036,8 +1036,9 @@ This inconsistency can be caused by several situations:
  1) A virtual machine is operated on a cluster and is migrated between host
     systems (See also: [Transient virtual machines: checkpoint persistency on
     clusters](#transient-virtual-machines-checkpoint-persistency-on-clusters))
- 2) A prior backup failed at a state where the checkpoint was created but
-    libvirt was unable to write the bitmap to the qcow image (unlikely)
+ 2) A change to the libvirt environment between backups (such as re-installing
+    the libvirt daemon) caused the system to lose track of the existing
+    checkpoints, but the bitmaps are still existant in the disk files.
  3) The virtual machine domains disk image was converted to another format
     between backups and bitmaps were not considered during conversion.
  4) `virtnbdbackup` is started on an backup target directory with an old state
