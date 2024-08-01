@@ -66,6 +66,7 @@ of your `kvm/qemu` virtual machines.
 - [FAQ](#faq)
   - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
   - [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
+  - [Backup fails with "unable to execute QEMU command 'transaction': Bitmap already exists"](#backup-fails-with-unable-to-execute-qemu-command-transaction-bitmap-already-exists)
   - [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
   - [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
   - [High memory usage during backup](#high-memory-usage-during-backup)
@@ -1018,6 +1019,83 @@ ERROR [..] internal error: unable to execute QEMU command dirty bitmaps in qcow2
 consider migrating your qcow files to version 3 format. QEMU qcow image version
 2 does not support storing advanced bitmap information, as such only backup
 mode `copy` is supported.
+
+
+## Backup fails with "unable to execute QEMU command 'transaction': Bitmap already exists"
+
+During backup `virtnbdbackup` creates a so called "checkpoint" using the
+libvirt API. This checkpoint represents an "bitmap" that is saved in the
+virtual machines disk image.
+
+If you receive this error during backup, there is an inconsistency between the
+checkpoints that the libvirt daemon thinks exist, and the bitmaps that are
+stored in the disk image.
+
+This inconsistency can be caused by several situations:
+
+ 1) A virtual machine is operated on a cluster and is migrated between host
+    systems (See also: [Transient virtual machines: checkpoint persistency on
+    clusters](#transient-virtual-machines-checkpoint-persistency-on-clusters))
+ 2) A prior backup failed at a state where the checkpoint was created but
+    libvirt was unable to write the bitmap to the qcow image (unlikely)
+ 3) The virtual machine domains disk image was converted to another format
+    between backups and bitmaps were not considered during conversion.
+ 4) virtnbackup is started on an backup target directory with an old state and
+    starts from a wrong checkpoint count, attempting to re-define an checkpoint
+    whose bitmap already exists (might happen if you rotate backup directories)
+
+To troubleshoot this situation, use virsh to list the checkpoints that libvirt
+thinks are existent using:
+
+```
+virsh checkpoint-list <domain>
+ Name              Creation Time
+ ----------------------------------------------
+ virtnbdbackup.0   2024-08-01 20:45:44 +0200
+```
+
+You can also check which disks were included in the checkpoint:
+
+```
+ virsh checkpoint-dumpxml vm1 virtnbdbackup.0 | grep "<disk.*checkpoint="
+    <disk name='sda' checkpoint='bitmap' bitmap='virtnbdbackup.0'/>
+    <disk name='sdb' checkpoint='no'/>
+    <disk name='fda' checkpoint='no'/>
+```
+
+The example command shows one existing checkpoint for disk "sda". An bitmap
+must be listed using the `qemu-img` tool. Beware: depending on the version used
+you might have to shutdown or pause the virtual machine or command won't show
+bitmaps!
+
+
+```
+virsh destroy vm1       # shutdown vm
+virsh domblklist vm1 | grep sda
+ sda      /tmp/tmp.Y2PskFFeVv/vm1-sda.qcow2
+qemu-img info /tmp/tmp.Y2PskFFeVv/vm1-sda.qcow2
+[..]
+    bitmaps:
+        [0]:
+            flags:
+                [0]: auto
+            name: virtnbdbackup.1
+            granularity: 65536
+[..]
+```
+
+Now, compare which checkpoints are listed and which bitmaps exist in the qcow
+image. In this example `virsh` only lists the checkpoint "virtnbdbackup.0" but
+the bitmap is called "virtnbdbackpu.1", indicating there is an inconsistency.
+
+Remove the dangling bitmap(s) via:
+
+```
+  qemu-img bitmap /tmp/tmp.Y2PskFFeVv/vm1-sda.qcow2 --remove virtnbdbackup.1
+```
+
+Start with an new full backup to a fresh directory.
+
 
 ## Backup fails with "Timed out during operation: cannot acquire state change lock"
 
