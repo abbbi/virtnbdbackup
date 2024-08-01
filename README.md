@@ -1040,9 +1040,10 @@ This inconsistency can be caused by several situations:
     libvirt was unable to write the bitmap to the qcow image (unlikely)
  3) The virtual machine domains disk image was converted to another format
     between backups and bitmaps were not considered during conversion.
- 4) virtnbackup is started on an backup target directory with an old state and
-    starts from a wrong checkpoint count, attempting to re-define an checkpoint
-    whose bitmap already exists (might happen if you rotate backup directories)
+ 4) `virtnbdbackup` is started on an backup target directory with an old state
+    and starts from a wrong checkpoint count, attempting to re-define an
+    checkpoint whose bitmap already exists (might happen if you rotate backup
+    directories and pick the wrong target directory for some reason)
 
 To troubleshoot this situation, use virsh to list the checkpoints that libvirt
 thinks are existent using:
