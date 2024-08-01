@@ -1039,8 +1039,9 @@ This inconsistency can be caused by several situations:
  2) A change to the libvirt environment between backups (such as re-installing
     the libvirt daemon) caused the system to lose track of the existing
     checkpoints, but the bitmaps are still existant in the disk files.
- 3) The virtual machine domains disk image was converted to another format
-    between backups and bitmaps were not considered during conversion.
+ 3) Between backups, the disk image contents were reset and now the image has
+    already defined bitmaps (if disk was restored from a storage snapshot, for
+    example )
  4) `virtnbdbackup` is started on an backup target directory with an old state
     and starts from a wrong checkpoint count, attempting to re-define an
     checkpoint whose bitmap already exists (might happen if you rotate backup
