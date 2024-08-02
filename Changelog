@@ -1,3 +1,9 @@
+Version 2.12
+---------
+ * Update README
+ * virtnbdrestore: fix exception if no $HOME environment variable is set
+ (#197)
+
 Version 2.11
 ---------
  * Update README
