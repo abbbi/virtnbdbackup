@@ -1072,8 +1072,9 @@ with the same name should be listed using the `qemu-img` tool for each
 checkpoint.
 
 Note:
-> Depending on the version used you might have to shutdown or pause the virtual
-> machine or the `qemu-img` command won't show bitmaps!
+> Bitmap information is written into the qcow2 metadata only once qemu will
+> close the image. As such you need to turn off the virtual machine prior to
+> checking the bitmaps.
 
 To list the bitmaps use:
 
