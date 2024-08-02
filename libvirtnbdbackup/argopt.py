@@ -134,9 +134,9 @@ def addDebugArgs(opt: _ArgumentGroup) -> None:
 def addLogArgs(opt, prog):
     """Logging related arguments"""
     try:
-        HOME=os.environ['HOME']
+        HOME = os.environ["HOME"]
     except KeyError:
-        HOME="/tmp"
+        HOME = "/tmp"
     opt.add_argument(
         "-L",
         "--logfile",
