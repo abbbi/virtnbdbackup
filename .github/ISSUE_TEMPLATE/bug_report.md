@@ -7,6 +7,11 @@ assignees: ''
 
 ---
 
+**Check README/FAQ/Discussions first**
+
+Before filing an issue, please check if your problem is listed in the
+README FAQ Section or was already part of an past discussion.
+
 **Version used**
 Provide output of `virtnbdbackup -V`
 
