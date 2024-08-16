@@ -264,9 +264,7 @@ def main() -> None:
             sys.exit(1)
 
         files.restore(args, ConfigFile, virtClient)
-        if args.config_file != defaultConfig:
-            ConfigFile = args.config_file
-        vmconfig.restore(args, ConfigFile, restConfig)
+        vmconfig.restore(args, ConfigFile, restConfig, args.config_file)
         virtClient.refreshPool(args.output)
         if args.define is True:
             if not virtClient.defineDomain(restConfig, autoStart):
