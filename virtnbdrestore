@@ -152,7 +152,7 @@ def main() -> None:
         "--config-file",
         default=defaultConfig,
         type=str,
-        help="Name of the vm config file used for restore. (default: vmconfig.xml)",
+        help=f"Name of the vm config file used for restore. (default: {defaultConfig})",
     )
     opt.add_argument(
         "-N",
