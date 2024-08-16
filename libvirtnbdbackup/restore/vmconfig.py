@@ -19,7 +19,6 @@ import os
 import tempfile
 import logging
 from argparse import Namespace
-from typing import Union
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.objects import DomainDisk
