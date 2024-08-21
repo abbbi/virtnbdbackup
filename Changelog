@@ -1,3 +1,7 @@
+Version 2.13
+---------
+ * virtnbdrestore: add option -C to adjust config file name during restore.
+
 Version 2.12
 ---------
  * Update README

@@ -114,10 +114,15 @@ def adjust(
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
-def restore(args: Namespace, vmConfig: str, adjustedConfig: bytes) -> None:
+def restore(
+    args: Namespace,
+    vmConfig: str,
+    adjustedConfig: bytes,
+    targetFileName: str,
+) -> None:
     """Restore either original or adjusted vm configuration
     to new directory"""
-    targetFile = os.path.join(args.output, os.path.basename(vmConfig))
+    targetFile = os.path.join(args.output, os.path.basename(targetFileName))
     if args.adjust_config is True:
         if args.sshClient:
             with tempfile.NamedTemporaryFile(delete=True) as fh:

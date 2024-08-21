@@ -40,6 +40,7 @@ from libvirtnbdbackup.exceptions import RestoreError
 
 def main() -> None:
     """main function"""
+    defaultConfig = "vmconfig.xml"
     parser = argparse.ArgumentParser(
         description="Restore virtual machine disks",
         epilog=(
@@ -145,6 +146,13 @@ def main() -> None:
         default=False,
         action="store_true",
         help="Register/define VM after restore. (default: %(default)s)",
+    )
+    opt.add_argument(
+        "-C",
+        "--config-file",
+        default=defaultConfig,
+        type=str,
+        help=f"Name of the vm config file used for restore. (default: {defaultConfig})",
     )
     opt.add_argument(
         "-N",
@@ -256,7 +264,7 @@ def main() -> None:
             sys.exit(1)
 
         files.restore(args, ConfigFile, virtClient)
-        vmconfig.restore(args, ConfigFile, restConfig)
+        vmconfig.restore(args, ConfigFile, restConfig, args.config_file)
         virtClient.refreshPool(args.output)
         if args.define is True:
             if not virtClient.defineDomain(restConfig, autoStart):
