@@ -94,6 +94,7 @@ class client:
             if e.get_error_code() == 45:
                 errmsg = f"{e}: --user and --password options for SASL authentication are required."
                 raise connectionFailed(errmsg) from e
+            raise connectionFailed(e) from e
         return None
 
     def _connect(self, args: Namespace) -> libvirt.virConnect:
