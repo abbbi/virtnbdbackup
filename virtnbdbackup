@@ -309,6 +309,23 @@ def main() -> None:
 
     fileStream.create(args.checkpointdir)
 
+    def connectionError(_, __, args):
+        """Callback for if the libvirt connection drops during
+        backup operation, used to potentially cleanup the
+        leftover backup job.
+        """
+        logging.error("Libvirt connection error detected, reconnecting")
+        try:
+            virtClient = virt.client(args)
+        except connectionFailed as e:
+            logging.error("Unrecoverable connection error: %s", e)
+            sys.exit(1)
+        domObj = virtClient.getDomain(args.domain)
+        if not args.offline:
+            logging.error("Attempting to stop backup task")
+            virtClient.stopBackup(domObj)
+        sys.exit(1)
+
     try:
         virtClient = virt.client(args)
         domObj = virtClient.getDomain(args.domain)
@@ -318,6 +335,10 @@ def main() -> None:
     except connectionFailed as e:
         logging.error("Can't connect libvirt daemon: [%s]", e)
         sys.exit(1)
+
+    virtClient._conn.registerCloseCallback(  # pylint: disable=W0212
+        connectionError, args
+    )
 
     logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
     logging.info("NBD library version: [%s]", __nbdversion__)
