@@ -14,8 +14,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from nbd import Error as nbdError
 from typing import Generator, IO, Any, Union
 from libvirtnbdbackup import lz4
+from libvirtnbdbackup.exceptions import BackupException
 
 
 def step(offset: int, length: int, maxRequestSize: int) -> Generator:
@@ -51,7 +53,11 @@ def write(
     """
     if btype == "raw":
         writer.seek(block.offset)
-    data = nbdCon.nbd.pread(block.length, block.offset)
+
+    try:
+        data = nbdCon.nbd.pread(block.length, block.offset)
+    except nbdError as e:
+        raise BackupException(e) from e
 
     if compress is not False:
         data = lz4.compressFrame(data, compress)

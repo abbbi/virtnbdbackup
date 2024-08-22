@@ -3,6 +3,7 @@ Version 2.13
  * virtnbdbackup: If libvirt daemon is unreachable, it would fail with an
  misleading error code due exception not raised.
  * virtnbdbackup: setup callback function using registerCloseCallback, if
+ * virtnbdbackup: catch exceptions if nbd read fails.
  libvirt connection drops during backup, it is attempted to re-establish the
  connection in order to stop leftover backup tasks
  * virtnbdrestore: add option -C to adjust config file name during restore.
