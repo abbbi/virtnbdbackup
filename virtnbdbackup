@@ -52,6 +52,7 @@ from libvirtnbdbackup.output.exceptions import OutputException
 MAX_RETRIES = 5
 RETRY_DELAY_SECONDS = 5
 
+
 def main() -> None:
     """Handle backup operation and settings."""
     parser = argparse.ArgumentParser(
@@ -342,7 +343,12 @@ def main() -> None:
                 sys.exit(1)
 
             except connectionFailed as e:
-                logging.error("Failed to reconnect: %s. Attempt %d/%d.", e, attempt + 1, MAX_RETRIES)
+                logging.error(
+                    "Failed to reconnect: %s. Attempt %d/%d.",
+                    e,
+                    attempt + 1,
+                    MAX_RETRIES,
+                )
 
             logging.info("Waiting %d seconds before retrying...", RETRY_DELAY_SECONDS)
             time.sleep(RETRY_DELAY_SECONDS)
