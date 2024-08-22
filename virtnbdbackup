@@ -327,19 +327,18 @@ def main() -> None:
             "Libvirt connection error detected (%s), reconnecting",
             reasonStrings[reason],
         )
-
         for attempt in range(MAX_RETRIES):
             try:
                 virtClient = virt.client(args)
-                
+
                 logging.info("Successfully reconnected on attempt %d.", attempt + 1)
 
                 domObj = virtClient.getDomain(args.domain)
-                
+
                 if not args.offline:
                     logging.error("Attempting to stop backup task")
                     virtClient.stopBackup(domObj)
-                
+
                 sys.exit(1)
 
             except connectionFailed as e:
