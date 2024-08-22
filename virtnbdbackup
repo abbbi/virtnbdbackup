@@ -314,15 +314,16 @@ def main() -> None:
         data transfer, used to potentially cleanup the
         leftover backup job.
         """
-        reasonStrings = (
-            "Error",
-            "Server side connection reset",
-            "Keepalive",
-            "Client connection close",
+        virConnectCloseReason = (
+            "Misc I/O error",
+            "End-of-file from server",
+            "Keepalive timer triggered",
+            "Client side connection close",
+            "Unknown",
         )
         logging.error(
-            "Libvirt connection error detected (%s), reconnecting",
-            reasonStrings[reason],
+            "Libvirt connection error [%s], trying to reconnect",
+            virConnectCloseReason[reason],
         )
         try:
             virtClient = virt.client(args)
