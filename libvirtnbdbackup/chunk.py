@@ -17,6 +17,7 @@
 from typing import List, Any, Tuple, IO, Union
 from libvirtnbdbackup import block
 from libvirtnbdbackup import lz4
+from libvirtnbdbackup.exceptions import DiskBackupFailed
 
 # pylint: disable=too-many-arguments
 
@@ -45,7 +46,10 @@ def write(
         if btype == "raw":
             writer.seek(blockOffset)
 
-        data = nbdCon.nbd.pread(blocklen, blockOffset)
+        try:
+            data = nbdCon.nbd.pread(blocklen, blockOffset)
+        except nbdCon.nbd.Error as e:
+            raise DiskBackupFailed(e) from e
 
         if compress is not False:
             compressed = lz4.compressFrame(data, compress)

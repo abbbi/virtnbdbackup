@@ -14,8 +14,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from nbd import Error as nbdError
 from typing import Generator, IO, Any, Union
+from nbd import Error as nbdError
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.exceptions import BackupException
 
