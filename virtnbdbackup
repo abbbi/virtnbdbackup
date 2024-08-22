@@ -20,6 +20,7 @@ import sys
 import signal
 import logging
 import argparse
+import time
 from typing import List
 from datetime import datetime
 from functools import partial
@@ -48,6 +49,8 @@ from libvirtnbdbackup.virt.exceptions import (
 )
 from libvirtnbdbackup.output.exceptions import OutputException
 
+MAX_RETRIES = 5
+RETRY_DELAY_SECONDS = 5
 
 def main() -> None:
     """Handle backup operation and settings."""
@@ -324,15 +327,28 @@ def main() -> None:
             "Libvirt connection error detected (%s), reconnecting",
             reasonStrings[reason],
         )
-        try:
-            virtClient = virt.client(args)
-        except connectionFailed as e:
-            logging.error("Unrecoverable connection error: %s", e)
-            sys.exit(1)
-        domObj = virtClient.getDomain(args.domain)
-        if not args.offline:
-            logging.error("Attempting to stop backup task")
-            virtClient.stopBackup(domObj)
+
+        for attempt in range(MAX_RETRIES):
+            try:
+                virtClient = virt.client(args)
+                
+                logging.info("Successfully reconnected on attempt %d.", attempt + 1)
+
+                domObj = virtClient.getDomain(args.domain)
+                
+                if not args.offline:
+                    logging.error("Attempting to stop backup task")
+                    virtClient.stopBackup(domObj)
+                
+                sys.exit(1)
+
+            except connectionFailed as e:
+                logging.error("Failed to reconnect: %s. Attempt %d/%d.", e, attempt + 1, MAX_RETRIES)
+
+            logging.info("Waiting %d seconds before retrying...", RETRY_DELAY_SECONDS)
+            time.sleep(RETRY_DELAY_SECONDS)
+
+        logging.error("Unable to reconnect after %d attempts. Exiting...", MAX_RETRIES)
         sys.exit(1)
 
     try:
