@@ -35,5 +35,5 @@ class logCount(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         if record.levelno == logging.WARNING:
             self.count.warnings += 1
-        if record.levelno == logging.ERROR:
+        if record.levelno in (logging.ERROR, logging.CRITICAL):
             self.count.errors += 1

@@ -126,7 +126,12 @@ def configLogger(
         formatter = colorlog.ColoredFormatter(
             logFormatColored,
             datefmt=logDateFormat,
-            log_colors={"WARNING": "yellow", "ERROR": "red", "DEBUG": "cyan"},
+            log_colors={
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "DEBUG": "cyan",
+                "CRITICAL": "red",
+            },
         )
         stderrh.setFormatter(formatter)
     if args.quiet is False:

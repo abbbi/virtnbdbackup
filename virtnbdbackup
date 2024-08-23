@@ -488,7 +488,7 @@ def main() -> None:
     except sshError as e:
         logging.error("Remote Disk backup failed: [%s]", e)
     except Exception as e:  # pylint: disable=broad-except
-        logging.fatal("Unknown Exception during backup: %s", e)
+        logging.critical("Unknown Exception during backup: %s", e)
         logging.exception(e)
 
     if args.offline is False:
