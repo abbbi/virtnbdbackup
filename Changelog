@@ -1,3 +1,8 @@
+Version 2.14
+---------
+ * virtnbdrestore: Add option -A (--preallocate) to create thick, full
+ pre-allocated target images during restore.
+
 Version 2.13
 ---------
  * virtnbdbackup: If libvirt daemon is unreachable, it would fail with an

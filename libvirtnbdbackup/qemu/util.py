@@ -56,7 +56,8 @@ class util:
         return json.loads(extentMap.stdout)
 
     @staticmethod
-    def create(
+    def create(  # pylint: disable=R0913: disable=R0913
+        args: Namespace,
         targetFile: str,
         fileSize: int,
         diskFormat: str,
@@ -73,6 +74,10 @@ class util:
             "-o",
             f"size={fileSize}",
         ]
+
+        if args.preallocate:
+            cmd.append("-o")
+            cmd.append("preallocation=full")
 
         if qcowOptions:
             cmd = cmd + qcowOptions
