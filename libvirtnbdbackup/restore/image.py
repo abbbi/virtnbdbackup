@@ -81,20 +81,18 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
 def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
     """Create target image file"""
     logging.info(
-        "Create virtual disk [%s] format: [%s] size: [%s] based on: [%s]",
+        "Create virtual disk [%s] format: [%s] size: [%s] based on: [%s] preallocated: [%s]",
         targetFile,
         meta["diskFormat"],
         meta["virtualSize"],
         meta["checkpointName"],
+        args.preallocate,
     )
 
     options = getConfig(args, meta)
     if lib.exists(args, targetFile):
         logging.error("Target file already exists: [%s], won't overwrite.", targetFile)
         raise RestoreError
-
-    if args.preallocate is True:
-        logging.info("Creating preallocated restore image.")
 
     qFh = qemu.util(meta["diskName"])
     try:
