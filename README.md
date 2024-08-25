@@ -665,6 +665,10 @@ in the output directory `/tmp/restore`
 > target directory, but won't alter its contents. You have to adjust the config
 > file for the new paths and/or excluded disks to be able to define and run it.
 
+`Note`:
+> Created disk images will be thin provisioned by default, you can change this
+> behavior using option `--preallocate` to create thick provisioned images.
+
 ## Process only specific disks during restore
 
 A single disk can be restored by using the option `-d`, the disk name has
