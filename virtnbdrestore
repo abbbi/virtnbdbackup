@@ -168,6 +168,14 @@ def main() -> None:
         type=int,
         help="Buffer size to use during verify (default: %(default)s)",
     )
+    opt.add_argument(
+        "-A",
+        "--preallocate",
+        default=False,
+        action="store_true",
+        help="Preallocate restored qcow images. (default: %(default)s)",
+    )
+
     remopt = parser.add_argument_group("Remote Restore options")
     argopt.addRemoteArgs(remopt)
     logopt = parser.add_argument_group("Logging options")

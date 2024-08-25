@@ -93,10 +93,18 @@ def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
         logging.error("Target file already exists: [%s], won't overwrite.", targetFile)
         raise RestoreError
 
+    if args.preallocate is True:
+        logging.info("Creating preallocated restore image.")
+
     qFh = qemu.util(meta["diskName"])
     try:
         qFh.create(
-            targetFile, int(meta["virtualSize"]), meta["diskFormat"], options, sshClient
+            args,
+            targetFile,
+            int(meta["virtualSize"]),
+            meta["diskFormat"],
+            options,
+            sshClient,
         )
     except (ProcessError, sshError) as e:
         logging.error("Failed to create restore target: [%s]", e)
