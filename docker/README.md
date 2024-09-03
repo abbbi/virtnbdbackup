@@ -1,116 +1,86 @@
-## Overview:
+## Overview
 
-This dockerfile is intended for scenarios where isn't viable for SysAdmins to
-provide a up-to-date dependencies (stable distros); or when this is totally
-impossible due to system constraints (inmutable / embedded rootfs, docker
-oriented OSes, etc.)
+This dockerfile is intended for scenarios where isn't viable to provide the necessary environment, such as dependencies or tools, due to system limitations; such as an old OS version, inmutable or embedded rootfs, live distros, docker oriented OSes, etc.
 
-This image includes 'virtnbdbackup' and 'virtnbdrestore' utils installed along
-with required dependencies, and currently is being built from
-`debian:bookworm-slim` as base.
+Originally was created to be used on Unraid OS (tested since v6.9.2), and should work equally fine on any other GNU/Linux distro as much as [requirements](#requirements) are accomplished.
 
-It has been successfully tested on UnRaid v6.9.2, but should work the same on
-many other distros, as much as below requirements can be accomplished.
+Includes `virtnbdbackup`, `virtnbdrestore` and similar utils, installed along with their required dependecies. Other utilities, such as latest Qemu Utils and OpenSSH Client, are also included to leverage all available features.
 
-## Requirements:
-- Docker Engine. See [Docker
-  Documentation](https://docs.docker.com/get-docker/) for further instructions
-- libvirt >=6.0.0
-- To have performed the punctual modifications on VM's XML file and image
-  format, as pointed at [source code's
-  README](https://github.com/abbbi/virtnbdbackup), so this tool will work for
-  you.
+Currently, is being built from latest `debian:bookworm-slim` official image.
 
-Note: This image carries latest 'qemu-utils' as of its base OS for internal
-processing of images during restoration.
+## Requirements
+
+- Docker Engine on the host server. See [Docker Documentation](https://docs.docker.com/get-docker/) for further instructions
+- libvirt >=v6.0.0. on the host server (minimal). A version >=7.6.0 is necessary to avoid [patching XML VM definitions](https://github.com/abbbi/virtnbdbackup#libvirt-versions--760-debian-bullseye-ubuntu-20x)
+- Qemu Guest Agent installed and running inside the guest OS. For *NIX guests, use the latest available version according the distro (installed by default on Debian 12 when provisioned via ISO). For Windows guests, install latest [VirtIO drivers](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
 
 ## Bind mounts:
 
-- Virtnbdbackup needs to access libvirt's socket in order to work correctly,
-  and attempts this via `/var/run/libvirt` path.
+*All the trick consists into set the right bind mounts for your OS case*
 
-  In basically all mainstream distros of today (Debian, RedHat, Archlinux and
-  the countless distros based on these) as in this image, `/var/run` is a
-  symlink to `/run` and `/var/lock` a symlink to `run/lock`.  For the vast
-  majority of scenarios the correct bind mount is: `-v /run:/run`
+- Virtnbdbackup needs to access libvirt's socket in order to work correctly, and attempts this via `/var/run/libvirt` path.
 
-  But in certain cases (e.g. UnRaid) `/run` and `/var/run` are different
-  folders. Under this scenario you need to bind mount with `-v /var/run:/run`
-  And most likely, also with either `-v /var/lock:/run/lock` or `-v
-  /var/run/lock:/run/lock` in order to run this container correctly.
+  In basically all mainstream distros of today (Debian, RedHat, Archlinux and the countless distros based on these) as in this image, `/var/run` is a symlink to `/run` and `/var/lock` a symlink to `run/lock`.
+  Therefore, for the vast majority of scenarios the correct bind mount is: `-v /run:/run`
 
-  If you're in trouble with this, *read source FAQ* and create a persistent
-  container (as described below) in order to debug, and get the correct bind
-  mounts that work for your main host (you're encouraged to commit to improve
-  this image.)
+  But in some operating systems, `/run` and `/var/run` are still separated folders. Under this scenario you need to bind mount with `-v /var/run:/run`
+  And most likely, you will need to mount with either `-v /var/lock:/run/lock` or `-v /var/run/lock:/run/lock` in order to run this container correctly.
 
-- Virtnbdbackup and virtnbdrestore create sockets for backup/restoration jobs
-  tasks at `/var/tmp`. Ensure to always add a bind mount with `-v
-  /var/tmp:/var/tmp`
+  If you're in trouble with this, read first [Virtnbdbackup's FAQ](https://github.com/abbbi/virtnbdbackup#faq) and identify the error you're getting in order to set the correct bind mounts that work for the specific host that serves Docker.
 
-- Finally, to warrant clearness with all input commands, it's convenient to use
-  same paths for backup (and restoration) bind mounts at both endpoints, such
-  as `-v /mnt/backups:/mnt/backups` in order to parse commands in same way as
-  you were running it natively on your main host.
+- Virtnbdbackup and virtnbdrestore create sockets for backup/restoration jobs tasks at `/var/tmp`. Ensure to *always* add a bind mount with `-v /var/tmp:/var/tmp`
 
-## Usage Examples:
+- When working with VMs that require to boot with UEFI emulation (e.g. Windows 10 and up), `/etc/libvirt/qemu/nvram` is required to backup/restore nvram files. And depending on your scenario, access to host's OVMF binaries may be required too (e.g. `/usr/share/qemu/ovmf-x64` on Unraid and `/usr/share/OVMF` on Debian & based on.)
 
-### Full Backup:
+- Finally, using identical *host:container* paths nvram files and restoration, is necessary to allow backup/restore commands to find out the files at the expected locations, in concordance with VM definitions at the host side. (see [examples](#Usage Examples) below.)
 
+## Usage Examples
 
-`docker run --rm \`
+### Full or incremental backup:
 
-`-v /run:/run -v /var/tmp:/var/tmp -v /mnt/backups:/mnt/backups \`
+```
+docker run --rm \
+-v /run:/run \
+-v /var/tmp:/var/tmp \
+-v /etc/libvirt/qemu/nvram:/etc/libvirt/qemu/nvram \
+-v /<path-to-backups>:/backups \
+ghcr.io/abbbi/virtnbdbackup:master \
+virtnbdbackup -d <domain> -l auto -o /backups/<domain>
+```
 
-`docker-virtnbdbackup \`
+Where `<path-to-backups>` is an example of the actual master backups folder where VM sub-folders are being stored in your system, and `<domain>` the VM name (actual path to disk images is not required.)
 
-`virtnbdbackup -d <domain-name> -l full -o /mnt/backups/<domain-name>`
+### Full Backup Restoration to an existing VM:
 
+```
+docker run --rm \
+-v /run:/run \
+-v /var/tmp:/var/tmp \
+-v /etc/libvirt/qemu/nvram:/etc/libvirt/qemu/nvram \
+-v /mnt/backups:/backups \
+-v /<path-to-virtual-disks>:/<path-to-virtual-disks> \
+ghcr.io/abbbi/virtnbdbackup:master \
+bash -c \
+"mkdir -p /<path-to-virtual-disks>/<domain>.old && \
+mv <path-to-virtual-disks>/<domain>/* <path-to-virtual-disks>/<domain>.old/ && \
+virtnbdrestore -i /backups/<domain> -o /<path-to-virtual-disks>/<domain>"
+```
 
-### Incremental Backup:
+Where `/<path-to-virtual-disks>/<domain>` is the actual folder where the specific disk image(s) of the VM to restore, are stored on the host system. In this case, bind mounts should be identical.
 
+*Note that on this example, virtnbdrestore would fail if it finds the same image(s) that is attempting to restore on the destination, so any existing files are being moved to a folder named* `<domain>.old`.
 
-`docker run --rm \`
+## Interactive Mode:
 
-`-v /run:/run -v /var/tmp:/var/tmp -v /mnt/backups:/mnt/backups \`
+This starts a session inside the container, provisioning all bind mounts and allowing to do manual backups and restores, as well testing/troubleshooting:
 
-`docker-virtnbdbackup \`
-
-`virtnbdbackup -d <domain-name> -l inc -o /mnt/backups/<domain-name>`
-
-
-### Restoration of Backup:
-
-
-`docker run --rm \`
-
-`-v /run:/run -v /var/tmp:/var/tmp -v /mnt/backups:/mnt/backups -v /mnt/restored:/mnt/restored \`
-
-`docker-virtnbdbackup \`
-
-`virtnbdrestore -i /mnt/-backups/<domain-backup> -a restore -o /mnt/restored`
-
-
-Where `/mnt/restored` is an example folder in your system, where virtnbdrestore
-will rebuild virtual disk(s) based on existing backups, with its internal block
-device name, such as 'sda', 'vda', 'hdc', etc.
-
-### Persistent container:
-In the above examples, the container will be removed as soon the invoked
-command has been executed. This is the optimal behaviour when you intend to
-automate operations (such as incremental backups.)
-
-In addition, you can set a persistent container with all necessary bind mounts
-with:
-
-`docker create --name <container-name>`
-
-`-v /var/tmp:/var/tmp -v /run:/run -v /mnt/backups:/mnt/backups -v /mnt/restored:/mnt/restored' \`
-
-`docker-virtnbdbackup \`
-
-`/bin/bash`
-
-And attach to its Shell with: `docker start -i <container-name>` to perform
-manual backups/restorations or for debugging purposes. Exiting the Shell will
-stop it immediately.
+```
+docker run -it --rm \
+-v /run:/run \
+-v /var/tmp:/var/tmp \
+-v /etc/libvirt/qemu/nvram:/etc/libvirt/qemu/nvram \
+-v /mnt/backups:/backups \
+-v /<path-to-virtual-disks>:/<path-to-virtual-disks> \
+ghcr.io/abbbi/virtnbdbackup \
+bash
+```
