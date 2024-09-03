@@ -26,7 +26,7 @@ Currently, is being built from latest `debian:bookworm-slim` official image.
   But in some operating systems, `/run` and `/var/run` are still separated folders. Under this scenario you need to bind mount with `-v /var/run:/run`
   And most likely, you will need to mount with either `-v /var/lock:/run/lock` or `-v /var/run/lock:/run/lock` in order to run this container correctly.
 
-  If you're in trouble with this, read first [Main FAQ](../README.md#faq) and identify the error you're getting in order to set the correct bind mounts that work for the specific host that serves Docker.
+  If you're in trouble with this, read [Main FAQ](../README.md#faq) first, and identify the error you're getting in order to set the correct bind mounts that work for the specific host that serves Docker.
 
 - Virtnbdbackup and virtnbdrestore create sockets for backup/restoration jobs tasks at `/var/tmp`. Ensure to *always* add a bind mount with `-v /var/tmp:/var/tmp`
 
