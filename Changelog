@@ -1,3 +1,7 @@
+Version 2.15
+---------
+ * Update Dockerfile and README
+
 Version 2.14
 ---------
  * virtnbdrestore: Add option -A (--preallocate) to create thick, full
