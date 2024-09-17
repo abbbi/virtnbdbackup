@@ -175,6 +175,13 @@ def main() -> None:
         action="store_true",
         help="Preallocate restored qcow images. (default: %(default)s)",
     )
+    opt.add_argument(
+        "-R",
+        "--restore-root",
+        default=None,
+        type=str,
+        help="Store restored misc VM files (loader, firmware vars, etc) under alternative root directory (default /)",
+    )
 
     remopt = parser.add_argument_group("Remote Restore options")
     argopt.addRemoteArgs(remopt)

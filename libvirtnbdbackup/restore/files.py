@@ -38,6 +38,9 @@ def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
 
     for setting, val in info.items():
         f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
+        if args.restore_root is not None:
+            _, _, val_as_relative = os.path.splitroot(val)
+            val = os.path.join(args.restore_root, val_as_relative)
         if lib.exists(args, val):
             logging.info(
                 "File [%s]: for boot option [%s] already exists, skipping.",
