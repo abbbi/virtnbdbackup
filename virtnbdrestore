@@ -278,7 +278,7 @@ def main() -> None:
             logging.error("Disk restore failed: [%s]", errmsg)
             sys.exit(1)
 
-        files.restore(args, ConfigFile, virtClient)
+        restConfig = files.restore(args, ConfigFile, virtClient, restConfig)
         vmconfig.restore(args, ConfigFile, restConfig, args.config_file)
         virtClient.refreshPool(args.output)
         if args.define is True:
