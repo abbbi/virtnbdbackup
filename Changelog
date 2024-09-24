@@ -1,7 +1,7 @@
 Version 2.15
 ---------
  * Update Dockerfile and README
- * virtnbdrestore: use absolute path to disk files during local restore.  *
+ * virtnbdrestore: use absolute path to disk files during local restore.
  * virtnbdrestore: make absolute path mandatory for remote restore.
 
 Version 2.14
