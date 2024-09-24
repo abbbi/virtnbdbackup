@@ -236,7 +236,14 @@ def main() -> None:
         except connectionFailed as e:
             logging.error("Unable to connect libvirt: [%s]", e)
             sys.exit(1)
+
         if virtClient.remoteHost:
+            if not args.output.startswith("/"):
+                logging.error(
+                    "Absolute target path required for restore to remote system"
+                )
+                sys.exit(1)
+
             args.sshClient = lib.sshSession(
                 args, virtClient.remoteHost, mode=Mode.UPLOAD
             )
