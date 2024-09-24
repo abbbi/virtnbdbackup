@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 import logging
 import json
 from argparse import Namespace
@@ -91,7 +92,10 @@ def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
 
     options = getConfig(args, meta)
     if lib.exists(args, targetFile):
-        logging.error("Target file already exists: [%s], won't overwrite.", targetFile)
+        logging.error(
+            "Target file already exists: [%s], won't overwrite.",
+            os.path.abspath(targetFile),
+        )
         raise RestoreError
 
     qFh = qemu.util(meta["diskName"])

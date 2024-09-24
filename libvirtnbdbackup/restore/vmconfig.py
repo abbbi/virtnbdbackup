@@ -103,13 +103,14 @@ def adjust(
 
         originalFile = disk.xpath("source")[0].get("file")
         if dev == restoreDisk.target:
+            abspath = os.path.abspath(targetFile)
             logging.info(
                 "Change target file for disk [%s] from [%s] to [%s]",
                 restoreDisk.target,
                 originalFile,
-                targetFile,
+                abspath,
             )
-            disk.xpath("source")[0].set("file", targetFile)
+            disk.xpath("source")[0].set("file", abspath)
 
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 

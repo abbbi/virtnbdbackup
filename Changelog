@@ -1,6 +1,7 @@
 Version 2.15
 ---------
  * Update Dockerfile and README
+ * virtnbdrestore: use absolute path to disk files during restore.
 
 Version 2.14
 ---------
