@@ -67,6 +67,7 @@ of your `kvm/qemu` virtual machines.
   - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
   - [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
   - [Backup fails with "unable to execute QEMU command 'transaction': Bitmap already exists"](#backup-fails-with-unable-to-execute-qemu-command-transaction-bitmap-already-exists)
+  - [Backup fails with "Error during checkpoint removal: [internal error: bitmap 'XX' not found in backing chain of 'XX']"](#backup-fails-with-error-during-checkpoint-removal-internal-error-bitmap-xx-not-found-in-backing-chain-of-xx)
   - [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
   - [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
   - [High memory usage during backup](#high-memory-usage-during-backup)
@@ -1112,6 +1113,19 @@ Remove the dangling bitmap(s) via:
 
 Start with an new full backup to a fresh directory.
 
+
+## Backup fails with "Error during checkpoint removal: [internal error: bitmap 'XX' not found in backing chain of 'XX']"
+
+In this situation the checkpoints are still defined in the libvirt ecosystem
+but the required bitmaps in the qcow files do not exist anymore. This is a
+situation that is not automatically cleaned up by the backup process because it
+may require manual intervention and should usually not happen.
+
+You can cleanup this situation by removing the reported checkpoints via:
+
+```
+ virsh checkpoint-delete <domain> --checkpointname <checkpoint_name> --metadata
+```
 
 ## Backup fails with "Timed out during operation: cannot acquire state change lock"
 
