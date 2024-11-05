@@ -54,7 +54,6 @@ def removeUuid(vmConfig: str) -> bytes:
     """Remove the auto generated UUID from the config file to allow
     for restore into new name"""
     tree = xml.asTree(vmConfig)
-
     try:
         logging.info("Removing uuid setting from vm config.")
         uuid = tree.xpath("uuid")[0]
@@ -65,7 +64,7 @@ def removeUuid(vmConfig: str) -> bytes:
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
-def setVMName(args: Namespace, vmConfig: bytes) -> bytes:
+def setVMName(args: Namespace, vmConfig: str) -> bytes:
     """Change / set the VM name to be restored"""
     tree = xml.asTree(vmConfig)
     name = tree.xpath("name")[0]

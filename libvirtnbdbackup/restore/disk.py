@@ -118,6 +118,6 @@ def restore(  # pylint: disable=too-many-branches
 
     if args.adjust_config is True:
         restConfig = vmconfig.removeUuid(restConfig.decode())
-        restConfig = vmconfig.setVMName(args, restConfig)
+        restConfig = vmconfig.setVMName(args, restConfig.decode())
 
     return restConfig
