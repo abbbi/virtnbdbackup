@@ -50,12 +50,9 @@ def removeDisk(vmConfig: str, excluded) -> bytes:
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
-def adjust(
-    args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
-) -> bytes:
-    """Adjust virtual machine configuration after restoring. Changes
-    the paths to the virtual machine disks and attempts to remove
-    components excluded during restore."""
+def removeUuid(vmConfig: str) -> bytes:
+    """Remove the auto generated UUID from the config file to allow
+    for restore into new name"""
     tree = xml.asTree(vmConfig)
 
     try:
@@ -65,14 +62,29 @@ def adjust(
     except IndexError:
         pass
 
-    name = tree.xpath("name")[0]
-    if args.name is None:
-        domainName = f"restore_{name.text}"
-    else:
-        domainName = args.name
-    logging.info("Changing name from [%s] to [%s]", name.text, domainName)
-    name.text = domainName
+    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
+
+def setVMName(args: Namespace, vmConfig: bytes) -> bytes:
+    """Change / set the VM name to be restored"""
+    tree = xml.asTree(vmConfig)
+    name = tree.xpath("name")[0]
+    if args.name is None and not name.text.startswith("restore"):
+        domainName = f"restore_{name.text}"
+        logging.info("Change VM name from [%s] to [%s]", name.text, domainName)
+        name.text = domainName
+    else:
+        logging.info("Set name from [%s] to [%s]", name.text, args.name)
+        name.text = args.name
+
+    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
+
+
+def adjust(restoreDisk: DomainDisk, vmConfig: str, targetFile: str) -> bytes:
+    """Adjust virtual machine configuration after restoring. Changes
+    the paths to the virtual machine disks and attempts to remove
+    components excluded during restore."""
+    tree = xml.asTree(vmConfig)
     for disk in tree.xpath("devices/disk"):
         if disk.get("type") == "volume":
             logging.info("Disk has type volume, resetting to type file.")

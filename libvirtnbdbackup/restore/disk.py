@@ -111,9 +111,13 @@ def restore(  # pylint: disable=too-many-branches
 
         _backingstore(args, disk)
         if args.adjust_config is True:
-            restConfig = vmconfig.adjust(args, disk, restConfig.decode(), targetFile)
+            restConfig = vmconfig.adjust(disk, restConfig.decode(), targetFile)
 
         logging.debug("Closing NBD connection")
         connection.disconnect()
+
+    if args.adjust_config is True:
+        restConfig = vmconfig.removeUuid(restConfig.decode())
+        restConfig = vmconfig.setVMName(args, restConfig)
 
     return restConfig
