@@ -59,7 +59,7 @@ def restore(  # pylint: disable=too-many-branches
     if not vmDisks:
         raise RestoreError("Unable to parse disks from config")
 
-    restConfig: bytes = b""
+    restConfig: bytes = vmConfig.encode()
     for disk in vmDisks:
         if args.disk not in (None, disk.target):
             logging.info("Skipping disk [%s] for restore", disk.target)
@@ -73,7 +73,7 @@ def restore(  # pylint: disable=too-many-branches
                 disk.target,
             )
             if args.adjust_config is True:
-                restConfig = vmconfig.removeDisk(vmConfig, disk.target)
+                restConfig = vmconfig.removeDisk(restConfig.decode(), disk.target)
             continue
 
         targetFile = files.target(args, disk)
@@ -111,9 +111,7 @@ def restore(  # pylint: disable=too-many-branches
 
         _backingstore(args, disk)
         if args.adjust_config is True:
-            restConfig = vmconfig.adjust(args, disk, vmConfig, targetFile)
-        else:
-            restConfig = vmConfig.encode()
+            restConfig = vmconfig.adjust(args, disk, restConfig.decode(), targetFile)
 
         logging.debug("Closing NBD connection")
         connection.disconnect()
