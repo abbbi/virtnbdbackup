@@ -1,6 +1,8 @@
 Version 2.16
 ---------
-
+ * virtnbdrestore: If domain with multiple disks is restored and config
+ adjustment is requested, only the path to the last disk is updated. (#232).
+ Thanks Richard Stephens for report and fix.
 
 Version 2.15
 ---------
