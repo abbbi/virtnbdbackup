@@ -54,7 +54,7 @@ jobs:
                   rm /work/dist/*.tar.gz
                   rename .rpm .fedora39.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
-          - name: Build on fedora39
+          - name: Build on fedora41
             uses: addnab/docker-run-action@v3
             with:
                 image: fedora:41
