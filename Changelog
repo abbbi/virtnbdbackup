@@ -2,6 +2,8 @@ Version 2.17
 ---------
  * Add rpm package build for fedora 41 (#234)
  * virtnbdbackup: Backup fails if spaces exist in image path (#235)
+ * virtnbdrestore: Remote restore would fail if target path contains
+ spaces.
 
 Version 2.16
 ---------
