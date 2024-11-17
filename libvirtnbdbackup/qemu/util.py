@@ -89,7 +89,14 @@ class util:
 
     def info(self, targetFile: str, sshClient=None) -> processInfo:
         """Return qemu image information"""
-        cmd = ["qemu-img", "info", f"{targetFile}", "--output", "json", "--force-share"]
+        cmd = [
+            "qemu-img",
+            "info",
+            f"'{targetFile}'",
+            "--output",
+            "json",
+            "--force-share",
+        ]
         if not sshClient:
             return command.run(cmd, toPipe=True)
 

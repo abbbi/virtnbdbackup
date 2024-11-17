@@ -1,6 +1,7 @@
 Version 2.17
 ---------
  * Add rpm package build for fedora 41 (#234)
+ * virtnbdbackup: Backup fails if spaces exist in image path (#235)
 
 Version 2.16
 ---------
