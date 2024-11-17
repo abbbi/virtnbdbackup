@@ -65,12 +65,16 @@ class util:
         sshClient=None,
     ) -> processInfo:
         """Create the target qcow image"""
+        fileParam = f"{targetFile}"
+        if sshClient:
+            fileParam = f"'{targetFile}'"
+
         cmd = [
             "qemu-img",
             "create",
             "-f",
             f"{diskFormat}",
-            f"'{targetFile}'",
+            fileParam,
             "-o",
             f"size={fileSize}",
         ]
@@ -89,10 +93,14 @@ class util:
 
     def info(self, targetFile: str, sshClient=None) -> processInfo:
         """Return qemu image information"""
+        fileParam = f"{targetFile}"
+        if sshClient:
+            fileParam = f"'{targetFile}'"
+
         cmd = [
             "qemu-img",
             "info",
-            f"'{targetFile}'",
+            fileParam,
             "--output",
             "json",
             "--force-share",
