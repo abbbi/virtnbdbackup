@@ -70,7 +70,7 @@ class util:
             "create",
             "-f",
             f"{diskFormat}",
-            f"{targetFile}",
+            f"'{targetFile}'",
             "-o",
             f"size={fileSize}",
         ]
