@@ -286,13 +286,6 @@ def main() -> None:
     if args.compress is not False:
         logging.info("Compression enabled, level [%s]", args.compress)
 
-    if args.raw is True and args.level in ("inc", "diff"):
-        logging.warning(
-            "Raw disks can't be included during incremental or differential backup."
-        )
-        logging.warning("Excluding raw disks.")
-        args.raw = False
-
     try:
         check.arguments(args)
     except exceptions.BackupException as e:
@@ -363,6 +356,13 @@ def main() -> None:
         sys.exit(1)
     except exceptions.CheckpointException:
         sys.exit(1)
+
+    if args.raw is True and args.level in ("inc", "diff"):
+        logging.warning(
+            "Raw disks can't be included during incremental or differential backup."
+        )
+        logging.warning("Excluding raw disks.")
+        args.raw = False
 
     signal.signal(
         signal.SIGINT,

@@ -15,4 +15,4 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = "2.17"
+__version__ = "2.18"
