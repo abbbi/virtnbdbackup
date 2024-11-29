@@ -636,7 +636,7 @@ toOut() {
 }
 @test "Backup: create backup in auto mode to empty directory: full backup must be executed" {
     [ -z $INCTEST ] && skip "skipping"
-    run ../virtnbdbackup -d $VM -l auto -o ${TMPDIR}/autotest
+    run ../virtnbdbackup -d $VM -l auto -o ${TMPDIR}/autotest $OPT
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     [[ "${output}" =~  "Backup mode auto, target folder is empty: executing full backup" ]]
@@ -646,7 +646,7 @@ toOut() {
 }
 @test "Backup: create backup in auto mode to existing directory: incremental backup must be executed" {
     [ -z $INCTEST ] && skip "skipping"
-    run ../virtnbdbackup -d $VM -l auto -o ${TMPDIR}/autotest
+    run ../virtnbdbackup -d $VM -l auto -o ${TMPDIR}/autotest $OPT
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     [[ "${output}" =~  "Backup mode auto: executing incremental backup" ]]
