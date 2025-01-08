@@ -180,8 +180,8 @@ packages.
 
 ## Python package
 ```
-pip3 install -r requirements.txt
-python3 setup.py install
+ git clone https://github.com/abbbi/virtnbdbackup && cd virtnbdbackup
+ pip install .
 ```
 
 `Note`:
