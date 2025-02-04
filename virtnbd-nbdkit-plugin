@@ -171,23 +171,28 @@ def pread(h, buf, offset, flags):
             log(f"received: {len(data)}")
     else:
         remaining = dataRange - blockRange
-        data += os.pread(h, blockRange - fileOffset, fileOffset)
-        if remaining > 0:
-            log(
-                f"Read spans multiple blocks, need to read: {remaining} from next block."
-            )
-            next_block = next(
-                (b for b in blockMap if b["originalOffset"] > block["originalOffset"]),
-                None,
-            )
-            if next_block:
-                if next_block["data"]:
-                    data += os.pread(h, remaining, next_block["offset"])
-                else:
-                    log("next block contains zeroes")
-                    data += b"\0" * len(remaining)
-            else:
-                raise RuntimeError("Unable to find next block")
+        while remaining > 0:
+            data += os.pread(h, blockRange - fileOffset, fileOffset)
+
+        log(f"Read spans multiple blocks, need to read: {remaining} from next block.")
+
+        next_block = next(
+            (b for b in blockMap if b["originalOffset"] > block["originalOffset"]),
+            None,
+        )
+
+        if not next_block:
+            raise RuntimeError("Unable to find next block")
+
+        if next_block["data"]:
+            read_size = min(remaining, next_block["size"])
+            data += os.pread(h, read_size, next_block["offset"])
+            remaining -= read_size
+        else:
+            log("Next block contains zeroes")
+            zero_size = min(remaining, next_block["size"])
+            data += b"\0" * zero_size
+            remaining -= zero_size
 
     if len(data) != len(buf):
         raise RuntimeError("Unexpected short read from file.")
