@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  """
+
 import os
 import builtins
 import json
@@ -124,10 +125,16 @@ def pread(h, buf, offset, flags):
 
     # get block where offset sort of matches
     data = bytearray()
-    blockListFull = list(
-        filter(
-            lambda x: x["originalOffset"] <= offset and x["inc"] is not True, blockMap
-        )
+
+    blockListFull = sorted(
+        [
+            b
+            for b in blockMap
+            if b["originalOffset"] <= offset
+            and offset < (b["originalOffset"] + b["length"])
+            and not b["inc"]
+        ],
+        key=lambda x: x["originalOffset"],
     )
     log("-------------------------------------------")
     log(f"matching blocklist from full backup: {blockListFull}")
@@ -154,7 +161,7 @@ def pread(h, buf, offset, flags):
     log(f"DATA-RANGE: {dataRange}")
     log(f"BLOCK-RANGE: {blockRange}")
 
-    if dataRange < blockRange or dataRange == blockRange:
+    if dataRange <= blockRange:
         if isData is False:
             log("handle zero")
             data += b"\0" * len(buf)
@@ -163,7 +170,20 @@ def pread(h, buf, offset, flags):
             data += os.pread(h, len(buf), fileOffset)
             log(f"received: {len(data)}")
     else:
-        raise RuntimeError("Unexpected block range size.")
+        remaining = dataRange - blockRange
+        data += os.pread(h, blockRange - fileOffset, fileOffset)
+        if remaining > 0:
+            log(
+                f"Read spans multiple blocks, need to read: {remaining} from next block."
+            )
+            next_block = next(
+                (b for b in blockMap if b["originalOffset"] > block["originalOffset"]),
+                None,
+            )
+            if next_block:
+                data += os.pread(h, remaining, next_block["offset"])
+            else:
+                raise RuntimeError("Unable to find next block")
 
     if len(data) != len(buf):
         raise RuntimeError("Unexpected short read from file.")
