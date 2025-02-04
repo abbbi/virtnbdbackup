@@ -173,7 +173,9 @@ def pread(h, buf, offset, flags):
         remaining = dataRange - blockRange
         while remaining > 0:
             data += os.pread(h, blockRange - fileOffset, fileOffset)
-            log(f"Read spans multiple blocks, need to read: {remaining} from next block.")
+            log(
+                f"Read spans multiple blocks, need to read: {remaining} from next block."
+            )
             next_block = next(
                 (b for b in blockMap if b["originalOffset"] > block["originalOffset"]),
                 None,
