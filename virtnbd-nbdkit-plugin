@@ -163,7 +163,7 @@ def pread(h, buf, offset, flags):
 
     if dataRange <= blockRange:
         if isData is False:
-            log("handle zero")
+            log("block is zero")
             data += b"\0" * len(buf)
         else:
             log("can read everything")
@@ -181,7 +181,11 @@ def pread(h, buf, offset, flags):
                 None,
             )
             if next_block:
-                data += os.pread(h, remaining, next_block["offset"])
+                if next_block["data"]:
+                    data += os.pread(h, remaining, next_block["offset"])
+                else:
+                    log("next block contains zeroes")
+                    data += b"\0" * len(remaining)
             else:
                 raise RuntimeError("Unable to find next block")
 
