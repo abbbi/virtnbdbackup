@@ -1,8 +1,8 @@
 Version 2.19
 ---------
  * virtnbdmap sometimes fails to correctly map disk images due to
- block offsets spanning multiple frames in the strema format, resulting in
- Input/Output errors acessing the disk partition data (#249)
+ block offsets spanning multiple frames in the stream format, resulting in
+ Input/Output errors accessing the disk partition data (#249)
 ￼
 Version 2.18
 ---------
