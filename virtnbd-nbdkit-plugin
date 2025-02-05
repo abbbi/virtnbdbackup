@@ -183,17 +183,19 @@ def pread(h, buf, offset, flags):
             if not next_block:
                 raise RuntimeError("Unable to find next block")
 
+            log(f"Found next block: {next_block}")
+
             if next_block["data"]:
-                read_size = min(remaining, next_block["size"])
-                data += os.pread(h, read_size, next_block["offset"])
-                remaining -= read_size
+                data += os.pread(h, remaining, next_block["offset"])
+                remaining -= remaining
             else:
                 log("Next block contains zeroes")
-                zero_size = min(remaining, next_block["size"])
-                data += b"\0" * zero_size
-                remaining -= zero_size
+                data += b"\0" * remaining
+                remaining -= remaining
 
     if len(data) != len(buf):
-        raise RuntimeError("Unexpected short read from file.")
+        raise RuntimeError(
+            f"Unexpected short read from file. Read: {len(data)} requested: {len(buf)}"
+        )
 
     buf[:] = data
