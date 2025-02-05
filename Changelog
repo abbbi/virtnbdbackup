@@ -3,7 +3,7 @@ Version 2.19
  * virtnbdmap sometimes fails to correctly map disk images due to
  block offsets spanning multiple frames in the stream format, resulting in
  Input/Output errors accessing the disk partition data (#249)
-￼
+
 Version 2.18
 ---------
  * If auto backup mode is switched to incremental and --raw option
