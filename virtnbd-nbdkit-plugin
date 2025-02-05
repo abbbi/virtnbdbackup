@@ -171,11 +171,12 @@ def pread(h, buf, offset, flags):
             log(f"received: {len(data)}")
     else:
         remaining = dataRange - blockRange
+        included = blockRange - fileOffset
+        log(f"Read spans multiple blocks, need to read: {remaining} from next block.")
+        log(f"Read available data size {included} from current block.")
+        data += os.pread(h, included, fileOffset)
+        log("Locate next available blocks")
         while remaining > 0:
-            data += os.pread(h, blockRange - fileOffset, fileOffset)
-            log(
-                f"Read spans multiple blocks, need to read: {remaining} from next block."
-            )
             next_block = next(
                 (b for b in blockMap if b["originalOffset"] > block["originalOffset"]),
                 None,
@@ -186,10 +187,11 @@ def pread(h, buf, offset, flags):
             log(f"Found next block: {next_block}")
 
             if next_block["data"]:
+                log(f"Read {remaining} data size from next block.")
                 data += os.pread(h, remaining, next_block["offset"])
                 remaining -= remaining
             else:
-                log("Next block contains zeroes")
+                log(f"Next block contains zeroes, return {remaining} zeroes")
                 data += b"\0" * remaining
                 remaining -= remaining
 
