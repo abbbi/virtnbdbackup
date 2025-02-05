@@ -148,6 +148,7 @@ def pread(h, buf, offset, flags):
 
     log(f"Processing block: {block}")
 
+    # where to read in the stream file
     fileOffset = block["offset"] - block["originalOffset"] + offset
 
     dataFile = block["file"]
@@ -182,13 +183,16 @@ def pread(h, buf, offset, flags):
                 None,
             )
             if not next_block:
-                raise RuntimeError("Unable to find next block")
+                raise RuntimeError("Unable to locate next block")
 
             log(f"Found next block: {next_block}")
 
             if next_block["data"]:
                 log(f"Read {remaining} data size from next block.")
-                data += os.pread(h, remaining, next_block["offset"])
+                fileOffset = (
+                    next_block["offset"] - next_block["originalOffset"] + offset
+                )
+                data += os.pread(h, remaining, fileOffset)
                 remaining -= remaining
             else:
                 log(f"Next block contains zeroes, return {remaining} zeroes")
