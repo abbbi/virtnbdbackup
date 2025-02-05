@@ -42,6 +42,7 @@ def _parse(stream, sTypes, reader) -> Tuple[List, Dict]:
     assert reader.read(len(sTypes.TERM)) == sTypes.TERM
 
     dataRanges: List = []
+    count: int = 0
     while True:
         kind, start, length = stream.readFrame(reader)
         if kind == sTypes.STOP:
@@ -49,6 +50,7 @@ def _parse(stream, sTypes, reader) -> Tuple[List, Dict]:
             break
 
         blockInfo = {}
+        blockInfo["count"] = count
         blockInfo["offset"] = reader.tell()
         blockInfo["originalOffset"] = start
         blockInfo["nextOriginalOffset"] = start + length
@@ -64,6 +66,7 @@ def _parse(stream, sTypes, reader) -> Tuple[List, Dict]:
         nextBlockOffset = reader.tell() + sTypes.FRAME_LEN
         blockInfo["nextBlockOffset"] = nextBlockOffset
         dataRanges.append(blockInfo)
+        count += 1
 
     return dataRanges, meta
 
