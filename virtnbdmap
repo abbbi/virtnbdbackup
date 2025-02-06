@@ -123,6 +123,13 @@ def main() -> None:
         action="store_true",
         help="Map image readonly (default: %(default)s)",
     )
+    debopt.add_argument(
+        "-H",
+        "--hexdump",
+        required=False,
+        action="store_true",
+        help="Hexdump data to logfile for debugging (default: %(default)s)",
+    )
     argopt.addDebugArgs(debopt)
     args = lib.argparse(parser)
     args.sshClient = None

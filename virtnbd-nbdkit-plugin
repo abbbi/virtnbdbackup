@@ -27,6 +27,7 @@ blockMap = None
 blockMapFile = None
 image = None
 debug = "0"
+hexdump = "0"
 
 
 def config(key, value):
@@ -36,6 +37,7 @@ def config(key, value):
     global blockMapFile
     global image
     global debug
+    global hexdump
     if key == "blockmap":
         blockMapFile = value
         with builtins.open(blockMapFile, "rb") as fh:
@@ -46,6 +48,9 @@ def config(key, value):
         return
     if key == "debug":
         debug = value
+        return
+    if key == "hexdump":
+        hexdump = value
         return
 
     raise RuntimeError(f"Unsupported parameter: {key}")
@@ -103,6 +108,32 @@ def get_size(h):
     return size
 
 
+def _hexdump(data: bytearray, width: int = 16):
+    """Hexdump for debugging"""
+    zero_count = 0
+    skip_mode = False  # Tracks whether we're skipping zero blocks
+
+    for i in range(0, len(data), width):
+        chunk = data[i : i + width]
+
+        if all(byte == 0 for byte in chunk):  # Check if the chunk is all zeroes
+            zero_count += len(chunk)
+            skip_mode = True
+            continue  # Skip this block
+
+        if skip_mode:  # Print a message when exiting zero-skipping mode
+            log(f"... ({zero_count} zero bytes skipped)")
+            zero_count = 0  # Reset counter
+            skip_mode = False
+
+        hex_part = " ".join(f"{byte:02X}" for byte in chunk)
+        ascii_part = "".join(chr(byte) if 32 <= byte < 127 else "." for byte in chunk)
+        log(f"{i:08X}  {hex_part:<{width * 3}}  |{ascii_part}|")
+
+    if zero_count > 0:  # Print remaining skipped zeroes at the end if applicable
+        log(f"... ({zero_count} zero bytes skipped)")
+
+
 def pread(h, buf, offset, flags):
     """Return the right data during read operation.
 
@@ -120,6 +151,7 @@ def pread(h, buf, offset, flags):
     sector size .. hopefully
     """
     global blockMap
+    global hexdump
 
     log(f"Handle: {h}")
 
@@ -206,4 +238,6 @@ def pread(h, buf, offset, flags):
             f"Unexpected short read from file. Read: {len(data)} requested: {len(buf)}"
         )
 
+    if hexdump == "1":
+        _hexdump(data)
     buf[:] = data

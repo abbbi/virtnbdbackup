@@ -182,8 +182,12 @@ class util:
     ) -> processInfo:
         """Execute nbdkit process for virtnbdmap"""
         debug = "0"
+        hexdump = "0"
         pidFile = self._gt("nbdkit", ".pid")
         if args.verbose:
+            debug = "1"
+        if args.hexdump:
+            hexdump = "1"
             debug = "1"
         cmd = [
             "nbdkit",
@@ -204,6 +208,7 @@ class util:
             f"blockmap={blockMap}",
             f"disk={fullImage}",
             f"debug={debug}",
+            f"hexdump={hexdump}",
             "-t",
             f"{args.threads}",
         ]
