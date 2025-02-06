@@ -1,6 +1,8 @@
 Version 2.20
 ---------
  * virtnbdmap: add option -H for better debugging, code cleanup
+ * virtnbdmap: fix situations where multiple blocks in row are
+ required to map the correct data.
 
 Version 2.19
 ---------

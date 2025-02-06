@@ -29,7 +29,7 @@ image = None
 debug = "0"
 hexdump = "0"
 
-# pylint: disable=global-statement,global-variable-not-assigned,redefined-builtin,too-many-statements
+# pylint: disable=global-statement,global-variable-not-assigned,redefined-builtin,too-many-statements,too-many-branches
 
 
 def config(key, value):
@@ -187,56 +187,59 @@ def pread(h, buf, offset, _):
 
     # where to read in the stream file
     fileOffset = block["offset"] - block["originalOffset"] + offset
-
     dataFile = block["file"]
 
-    dataRange = fileOffset + len(buf)
-    blockRange = fileOffset + block["length"]
-    isData = block["data"]
     log(f"READ FROM: {dataFile}")
     log(f"READ AT: {fileOffset}")
     log(f"READ: {len(buf)}")
-    log(f"DATA-RANGE: {dataRange}")
-    log(f"BLOCK-RANGE: {blockRange}")
+    log(f"BLOCK LENGTH: {block['length']}")
 
-    if dataRange <= blockRange:
-        if isData is False:
-            log("block is zero")
+    if len(buf) <= block["length"]:
+        log("Block found contains all required data")
+        if block["data"] is False:
             data += b"\0" * len(buf)
         else:
-            log("can read everything")
             data += os.pread(h, len(buf), fileOffset)
-            log(f"received: {len(data)}")
-    else:
-        remaining = dataRange - blockRange
-        included = blockRange - fileOffset
-        log(f"Read spans multiple blocks, need to read: {remaining} from next block.")
-        log(f"Read available data size {included} from current block.")
-        data += os.pread(h, included, fileOffset)
-        log("Locate next available blocks")
-        while remaining > 0:
-            next_block = next(
-                (b for b in blockMap if b["originalOffset"] > block["originalOffset"]),
-                None,
-            )
-            if not next_block:
-                raise RuntimeError("Unable to locate next block")
 
-            log(f"Found next block: {next_block}")
+        buf[:] = data
+        return
 
-            if next_block["data"]:
-                log(f"Read {remaining} data size from next block.")
-                fileOffset = (
-                    next_block["offset"] - next_block["originalOffset"] + offset
-                )
-                data += os.pread(h, remaining, fileOffset)
-                remaining -= remaining
-            else:
-                log(f"Next block contains zeroes, return {remaining} zeroes")
-                data += b"\0" * remaining
-                remaining -= remaining
+    remaining = len(buf) - block["length"]
+    included = block["length"]
+    log(f"Read spans multiple blocks, need to read: {remaining} from next block.")
+    log(f"Read available data size {included} from current block.")
+    data += os.pread(h, included, fileOffset)
 
-            block = next_block
+    count = block["count"] + 1
+    while len(data) != len(buf):
+        log(f"Locate next available block number {count}")
+        next_block = [b for b in blockMap if b["count"] == count]
+        if not next_block:
+            raise RuntimeError("Unable to locate next block")
+
+        next_block = next_block[0]
+
+        log(f"Found next block: {next_block}")
+        if remaining >= next_block["length"]:
+            log("Next block does not contain all remaining data")
+            to_read = next_block["length"]
+            count += 1
+        else:
+            to_read = remaining
+
+        if next_block["data"]:
+            log(f"Read {to_read} data size from this block.")
+            fileOffset = next_block["offset"] - next_block["originalOffset"] + offset
+            data += os.pread(h, to_read, fileOffset)
+        else:
+            log(f"Next block contains zeroes, return {remaining} zeroes")
+            data += b"\0" * to_read
+
+        remaining -= to_read
+        if remaining == 0:
+            log("All requested data read")
+        else:
+            log(f"{remaining} data left to read, next block to request: {count}")
 
     if len(data) != len(buf):
         raise RuntimeError(
