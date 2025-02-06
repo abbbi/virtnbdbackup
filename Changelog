@@ -1,3 +1,7 @@
+Version 2.20
+---------
+ * virtnbdmap: add option -H for better debugging, code cleanup
+
 Version 2.19
 ---------
  * virtnbdmap sometimes fails to correctly map disk images due to
