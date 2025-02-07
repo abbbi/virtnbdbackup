@@ -228,9 +228,9 @@ def pread(h, buf, offset, _):
             to_read = remaining
 
         if next_block["data"]:
-            log(f"Read {to_read} data size from this block.")
-            fileOffset = next_block["offset"] - next_block["originalOffset"] + offset
-            data += os.pread(h, to_read, fileOffset)
+            fileOffset = next_block["offset"]
+            log(f"Read {to_read} data size at {next_block['offset']} from this block.")
+            data += os.pread(h, to_read, next_block["offset"])
         else:
             log(f"Next block contains zeroes, return {remaining} zeroes")
             data += b"\0" * to_read
