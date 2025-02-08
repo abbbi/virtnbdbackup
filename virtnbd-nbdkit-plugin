@@ -202,6 +202,8 @@ def pread(h, buf, offset, _):
             data += os.pread(h, len(buf), fileOffset)
 
         buf[:] = data
+        if hexdump == "1":
+            _hexdump(data)
         return
 
     remaining = len(buf) - block["length"]
@@ -228,7 +230,6 @@ def pread(h, buf, offset, _):
             to_read = remaining
 
         if next_block["data"]:
-            fileOffset = next_block["offset"]
             log(f"Read {to_read} data size at {next_block['offset']} from this block.")
             data += os.pread(h, to_read, next_block["offset"])
         else:
