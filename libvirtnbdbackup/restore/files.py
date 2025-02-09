@@ -31,13 +31,20 @@ from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.exceptions import RestoreError
 
 
-def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
+def restore(
+    args: Namespace, vmConfig: str, virtClient: virt.client, restConfig: bytes
+) -> bytes:
     """Notice user if backed up vm had loader / nvram"""
     config = vmconfig.read(vmConfig)
     info = virtClient.getDomainInfo(config)
+    restored_files = {}
 
     for setting, val in info.items():
         f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
+        if args.restore_root is not None:
+            _, _, val_as_relative = os.path.splitroot(val)
+            val = os.path.join(args.restore_root, val_as_relative)
+            restored_files[setting] = os.path.abspath(val)
         if lib.exists(args, val):
             logging.info(
                 "File [%s]: for boot option [%s] already exists, skipping.",
@@ -50,6 +57,10 @@ def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
             "Restoring configured file [%s] for boot option [%s]", val, setting
         )
         lib.copy(args, f[0], val)
+    if restConfig != b"" and args.adjust_config is True:
+        return vmconfig.apply_paths(restConfig, restored_files)
+    else:
+        return restConfig
 
 
 def verify(args: Namespace, dataFiles: List[str]) -> bool:
