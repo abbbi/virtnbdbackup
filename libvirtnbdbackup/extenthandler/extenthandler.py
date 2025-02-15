@@ -15,7 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from typing import List, Any, Generator
+from typing import List, Any, Generator, Dict
 from nbd import CONTEXT_BASE_ALLOCATION
 from libvirtnbdbackup.objects import Extent, _ExtentObj
 
@@ -37,13 +37,23 @@ class ExtentHandler:
             self.useQemu = True
         self._nbdFh = nbdFh
         self._cType = cType
-        self._extentEntries: List[Any] = []
+        self._extentEntries: Dict = {}
         if cType.metaContext == "":
             self._metaContext = CONTEXT_BASE_ALLOCATION
         else:
             self._metaContext = cType.metaContext
 
-        log.debug("Meta context: %s", self._metaContext)
+        self.contexts = []
+        self.offset = 0
+        contexts = self._nbdFh.nbd.get_nr_meta_contexts()
+        log.debug("NBD server exports [%d] metacontexts:", contexts)
+        for i in range(0, contexts):
+            ctx = self._nbdFh.nbd.get_meta_context(i)
+            self._extentEntries[ctx] = []
+            self.contexts.append(ctx)
+        log.debug(self.contexts)
+
+        log.debug("Primary meta context for backup: %s", self._metaContext)
         self._maxRequestBlock: int = 4294967295
         self._align: int = 512
 
@@ -56,10 +66,13 @@ class ExtentHandler:
         log.debug("Metacontext is: %s", metacontext)
         log.debug("Offset is: %s", offset)
         log.debug("Status is: %s", status)
-        assert metacontext == self._metaContext
+        self._extentEntries[metacontext] = []
         for entry in entries:
-            self._extentEntries.append(entry)
-        log.debug("entries: %s", len(self._extentEntries))
+            self._extentEntries[metacontext].append(entry)
+        log.debug("entries: %s", len(self._extentEntries[metacontext]))
+        for x in self._extentEntries[metacontext][::2]:
+            self.offset += x
+        log.debug("Processed offsets: %s", self.offset)
 
     def _setRequestAligment(self) -> int:
         """Align request size to nbd server"""
@@ -96,15 +109,16 @@ class ExtentHandler:
         """Go through extents and create a list of extent
         objects
         """
-        extentSizes = self._extentEntries[0::2]
-        extentTypes = self._extentEntries[1::2]
-        assert len(extentSizes) == len(extentTypes)
-        ct = 0
         extentList = []
-        while ct < len(extentSizes):
-            extentObj = _ExtentObj(extentSizes[ct], extentTypes[ct])
-            extentList.append(extentObj)
-            ct += 1
+        for context, values in self._extentEntries.items():
+            extentSizes = values[0::2]
+            extentTypes = values[1::2]
+            assert len(extentSizes) == len(extentTypes)
+            ct = 0
+            while ct < len(extentSizes):
+                extentObj = _ExtentObj(context, extentSizes[ct], extentTypes[ct])
+                extentList.append(extentObj)
+                ct += 1
 
         return extentList
 
@@ -117,6 +131,7 @@ class ExtentHandler:
         """
         log.debug("Attempting to unify %s extents", len(extentObjects))
         cur = None
+        print(extentObjects)
         for myExtent in extentObjects:
             if cur is None:
                 cur = myExtent
@@ -131,30 +146,23 @@ class ExtentHandler:
     def queryExtentsNbd(self) -> List[_ExtentObj]:
         """Request used blocks/extents from the nbd service"""
         maxRequestLen = self._setRequestAligment()
-        offset = 0
+        # log.debug("Size returned from NBD server: %s", size)
         size = self._nbdFh.nbd.get_size()
-        log.debug("Size returned from NBD server: %s", size)
-        lastExtentLen = len(self._extentEntries)
-        while offset < size:
+        while self.offset < size:
             if size < maxRequestLen:
                 request_length = size
             else:
-                request_length = min(size - offset, maxRequestLen)
+                request_length = min(size - self.offset, maxRequestLen)
             log.debug("Block status request length: %s", request_length)
             self._nbdFh.nbd.block_status(
-                request_length, offset, self._getExtentCallback
+                request_length, self.offset, self._getExtentCallback
             )
-            assert self._extentEntries != 0
 
-            offset += sum(self._extentEntries[lastExtentLen::2])
-            lastExtentLen = len(self._extentEntries)
-
-        log.debug("Extents: %s", self._extentEntries)
-        log.debug("Got %s extents", len(self._extentEntries[::2]))
+            log.debug("Extents: %s", self._extentEntries)
 
         return self._extentsToObj()
 
-    def setBlockType(self, blockType: int) -> bool:
+    def setBlockType(self, context: str, blockType: int) -> bool:
         """Returns block type
 
         The extent types are as follows:
@@ -169,7 +177,7 @@ class ExtentHandler:
             case 1: ("dirty")
         """
         data = None
-        if self._metaContext == CONTEXT_BASE_ALLOCATION:
+        if context == CONTEXT_BASE_ALLOCATION:
             assert blockType in (0, 1, 2, 3)
             if blockType == 0:
                 data = True
@@ -196,7 +204,12 @@ class ExtentHandler:
         extentList: List[Extent] = []
         start = 0
         for extent in self._unifyExtents(self.queryExtentsNbd()):
-            extObj = Extent(self.setBlockType(extent.type), start, extent.length)
+            extObj = Extent(
+                extent.context,
+                self.setBlockType(extent.context, extent.type),
+                start,
+                extent.length,
+            )
             extentList.append(extObj)
             start += extent.length
 
