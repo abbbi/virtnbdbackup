@@ -24,8 +24,7 @@ log = logging.getLogger("extenthandler")
 
 class ExtentHandler:
     """Query extent information about allocated and
-    zeroed regions from the NBD server started by
-    libvirt/qemu
+    zeroed regions from the NBD server started by libvirt/qemu
 
     This implementation should return the same
     extent information as nbdinfo or qemu-img map
@@ -66,7 +65,6 @@ class ExtentHandler:
         log.debug("Metacontext is: %s", metacontext)
         log.debug("Offset is: %s", offset)
         log.debug("Status is: %s", status)
-        self._extentEntries[metacontext] = []
         for entry in entries:
             self._extentEntries[metacontext].append(entry)
         log.debug("entries: %s", len(self._extentEntries[metacontext]))
@@ -204,6 +202,9 @@ class ExtentHandler:
         extentList: List[Extent] = []
         start = 0
         for extent in self._unifyExtents(self.queryExtentsNbd()):
+            if extent.context != self._metaContext:
+                log.debug("Skipping extent: does not match requested context.")
+                continue
             extObj = Extent(
                 extent.context,
                 self.setBlockType(extent.context, extent.type),
