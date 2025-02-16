@@ -192,6 +192,41 @@ class ExtentHandler:
         assert data is not None
         return data
 
+    def overlap(self, extents: List[Extent]) -> List[Extent]:
+        """Find overlaps between base allocation and incremental
+        bitmap to detect zero regions"""
+        overlapping_regions = []
+        # Sort extents by their offset
+        extents = sorted(extents, key=lambda x: x.offset)
+
+        for i in range(len(extents)):
+            start1 = extents[i].offset
+            end1 = extents[i].offset + extents[i].length
+
+            for j in range(i + 1, len(extents)):
+                start2 = extents[j].offset
+                end2 = extents[j].offset + extents[j].length
+
+                if start2 >= end1:
+                    break  # No need to check further
+
+                if start1 < end2 and start2 < end1:
+                    # Calculate overlap
+                    overlap_start = max(start1, start2)
+                    overlap_end = min(end1, end2)
+                    overlap_length = overlap_end - overlap_start
+
+                    overlapping_regions.append(
+                        Extent(
+                            context="{extents[i].context} and {extents[j].context}",
+                            data=True,
+                            offset=overlap_start,
+                            length=overlap_length,
+                        )
+                    )
+
+        return overlapping_regions
+
     def queryBlockStatus(self) -> List[Extent]:
         """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
@@ -199,12 +234,10 @@ class ExtentHandler:
         if self.useQemu is True:
             return self.queryExtentsQemu()
 
+        extents = self.queryExtentsNbd()
         extentList: List[Extent] = []
         start = 0
-        for extent in self._unifyExtents(self.queryExtentsNbd()):
-            if extent.context != self._metaContext:
-                log.debug("Skipping extent: does not match requested context.")
-                continue
+        for extent in self._unifyExtents(extents):
             extObj = Extent(
                 extent.context,
                 self.setBlockType(extent.context, extent.type),
@@ -213,6 +246,19 @@ class ExtentHandler:
             )
             extentList.append(extObj)
             start += extent.length
+
+        overlapping_regions = self.overlap(extentList)
+        if overlapping_regions:
+            log.debug("Overlapping regions:")
+            for region in overlapping_regions:
+                log.debug(
+                    "Overlapping in %s: Start %s, Length %s",
+                    region.context,
+                    region.offset,
+                    region.length,
+                )
+        else:
+            log.debug("No overlapping regions found.")
 
         log.debug("Returning extent list with %s objects", len(extentList))
         return extentList
