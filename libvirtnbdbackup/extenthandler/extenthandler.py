@@ -15,7 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from typing import List, Any, Generator, Dict
+from typing import List, Any, Generator, Dict, Tuple
 from nbd import CONTEXT_BASE_ALLOCATION
 from libvirtnbdbackup.objects import Extent, _ExtentObj
 from libvirtnbdbackup.common import dumpExtentJson
@@ -196,48 +196,26 @@ class ExtentHandler:
         return data
 
     def overlap(self, extents: List[Extent]) -> List[Extent]:
-        """Find overlaps between base allocation and incremental
-        bitmap to detect zero regions"""
-        overlapping_regions = []
-        # Sort extents by their offset
-        extents = sorted(extents, key=lambda x: x.offset)
+        """Find overlaps between base allocation and incremental bitmap to detect zero regions"""
+        base_extents = [
+            e for e in extents if e.context == CONTEXT_BASE_ALLOCATION and not e.data
+        ]
+        backup_extents = [
+            e for e in extents if e.context == self._metaContext and not e.data
+        ]
 
-        logging.debug("%s", dumpExtentJson(extents))
+        skippable_extents = []
 
-        for i in range(len(extents)):
-            start1 = extents[i].offset
-            end1 = extents[i].offset + extents[i].length
+        for backup in backup_extents:
+            for base in base_extents:
+                base_end = base.offset + base.length
+                backup_end = backup.offset + backup.length
 
-            for j in range(i + 1, len(extents)):
-                start2 = extents[j].offset
-                end2 = extents[j].offset + extents[j].length
+                if not (base_end <= backup.offset or backup_end <= base.offset):
+                    skippable_extents.append(backup)
+                    break
 
-                if start2 >= end1:
-                    break  # No need to check further
-
-                # same context
-                if extents[i].context == extents[j].context:
-                    continue
-
-                if extents[i].data is False and extents[j].data is False:
-                    continue
-
-                if start1 < end2 and start2 < end1:
-                    # Calculate overlap
-                    overlap_start = max(start1, start2)
-                    overlap_end = min(end1, end2)
-                    overlap_length = overlap_end - overlap_start
-
-                    overlapping_regions.append(
-                        Extent(
-                            context=f"{extents[i].context} and {extents[j].context}",
-                            data=True,
-                            offset=overlap_start,
-                            length=overlap_length,
-                        )
-                    )
-
-        return overlapping_regions
+        return skippable_extents
 
     def queryBlockStatus(self) -> List[Extent]:
         """Check the status for each extent, whether if it is
@@ -268,19 +246,21 @@ class ExtentHandler:
             extentList.append(extObj)
             start += extent.length
 
+        log.warning("----------")
+        log.warning("%s", extentList)
         overlapping_regions = self.overlap(fullExtentList)
-        if overlapping_regions:
-            log.warning("Overlapping regions:")
-            for region in overlapping_regions:
-                log.warning(
-                    "%s: Start %s, Length %s Data %s",
-                    region.context,
-                    region.offset,
-                    region.length,
-                    region.data,
-                )
+        if not overlapping_regions:
+            log.warning("No overlapping regions found")
         else:
-            log.warning("No overlapping regions found.")
+            log.warning("%s overlapping regions found", len(overlapping_regions))
+            for skipme in overlapping_regions:
+                log.warning("Omittable extent found: %s\n", skipme)
 
-        log.debug("Returning extent list with %s objects", len(extentList))
-        return extentList
+        filtered_extents = [e for e in extentList if e not in overlapping_regions]
+
+        log.warning(
+            "Returning filtered extent list with %s objects", len(filtered_extents)
+        )
+        log.warning("%s", filtered_extents)
+        log.warning("----------")
+        return filtered_extents
