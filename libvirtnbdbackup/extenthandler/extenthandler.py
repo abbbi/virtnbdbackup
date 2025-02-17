@@ -219,20 +219,19 @@ class ExtentHandler:
                 if extents[i].context == extents[j].context:
                     continue
 
+                if extents[i].data is False and extents[j].data is False:
+                    continue
+
                 if start1 < end2 and start2 < end1:
                     # Calculate overlap
                     overlap_start = max(start1, start2)
                     overlap_end = min(end1, end2)
                     overlap_length = overlap_end - overlap_start
 
-                    data = True
-                    if extents[i].data is True and extents[j].data is False:
-                        data = False
-
                     overlapping_regions.append(
                         Extent(
                             context=f"{extents[i].context} and {extents[j].context}",
-                            data=data,
+                            data=True,
                             offset=overlap_start,
                             length=overlap_length,
                         )
