@@ -18,6 +18,7 @@ import logging
 from typing import List, Any, Generator, Dict
 from nbd import CONTEXT_BASE_ALLOCATION
 from libvirtnbdbackup.objects import Extent, _ExtentObj
+from libvirtnbdbackup.common import dumpExtentJson
 
 log = logging.getLogger("extenthandler")
 
@@ -55,6 +56,7 @@ class ExtentHandler:
         log.debug("Primary meta context for backup: %s", self._metaContext)
         self._maxRequestBlock: int = 4294967295
         self._align: int = 512
+        self.lastExtentLen = 0
 
     def _getExtentCallback(
         self, metacontext: str, offset: int, entries: List, status: str
@@ -65,12 +67,15 @@ class ExtentHandler:
         log.debug("Metacontext is: %s", metacontext)
         log.debug("Offset is: %s", offset)
         log.debug("Status is: %s", status)
+        self.lastExtentLen = len(self._extentEntries[self._metaContext])
         for entry in entries:
             self._extentEntries[metacontext].append(entry)
         log.debug("entries: %s", len(self._extentEntries[metacontext]))
-        for x in self._extentEntries[metacontext][::2]:
-            self.offset += x
         log.debug("Processed offsets: %s", self.offset)
+        self.offset += sum(
+            self._extentEntries[self._metaContext][self.lastExtentLen :: 2]
+        )
+        self.lastExtentLen = len(self._extentEntries[self._metaContext])
 
     def _setRequestAligment(self) -> int:
         """Align request size to nbd server"""
@@ -129,7 +134,6 @@ class ExtentHandler:
         """
         log.debug("Attempting to unify %s extents", len(extentObjects))
         cur = None
-        print(extentObjects)
         for myExtent in extentObjects:
             if cur is None:
                 cur = myExtent
@@ -155,7 +159,6 @@ class ExtentHandler:
             self._nbdFh.nbd.block_status(
                 request_length, self.offset, self._getExtentCallback
             )
-
             log.debug("Extents: %s", self._extentEntries)
 
         return self._extentsToObj()
@@ -199,6 +202,8 @@ class ExtentHandler:
         # Sort extents by their offset
         extents = sorted(extents, key=lambda x: x.offset)
 
+        logging.debug("%s", dumpExtentJson(extents))
+
         for i in range(len(extents)):
             start1 = extents[i].offset
             end1 = extents[i].offset + extents[i].length
@@ -210,16 +215,24 @@ class ExtentHandler:
                 if start2 >= end1:
                     break  # No need to check further
 
+                # same context
+                if extents[i].context == extents[j].context:
+                    continue
+
                 if start1 < end2 and start2 < end1:
                     # Calculate overlap
                     overlap_start = max(start1, start2)
                     overlap_end = min(end1, end2)
                     overlap_length = overlap_end - overlap_start
 
+                    data = True
+                    if extents[i].data is True and extents[j].data is False:
+                        data = False
+
                     overlapping_regions.append(
                         Extent(
-                            context="{extents[i].context} and {extents[j].context}",
-                            data=True,
+                            context=f"{extents[i].context} and {extents[j].context}",
+                            data=data,
                             offset=overlap_start,
                             length=overlap_length,
                         )
@@ -236,7 +249,9 @@ class ExtentHandler:
 
         extents = self.queryExtentsNbd()
         extentList: List[Extent] = []
+        fullExtentList: List[Extent] = []
         start = 0
+        fullStart = 0
         for extent in self._unifyExtents(extents):
             extObj = Extent(
                 extent.context,
@@ -244,21 +259,29 @@ class ExtentHandler:
                 start,
                 extent.length,
             )
+
+            fullExtentList.append(extObj)
+            fullStart += extent.length
+
+            if extent.context != self._metaContext:
+                continue
+
             extentList.append(extObj)
             start += extent.length
 
-        overlapping_regions = self.overlap(extentList)
+        overlapping_regions = self.overlap(fullExtentList)
         if overlapping_regions:
-            log.debug("Overlapping regions:")
+            log.warning("Overlapping regions:")
             for region in overlapping_regions:
-                log.debug(
-                    "Overlapping in %s: Start %s, Length %s",
+                log.warning(
+                    "%s: Start %s, Length %s Data %s",
                     region.context,
                     region.offset,
                     region.length,
+                    region.data,
                 )
         else:
-            log.debug("No overlapping regions found.")
+            log.warning("No overlapping regions found.")
 
         log.debug("Returning extent list with %s objects", len(extentList))
         return extentList
