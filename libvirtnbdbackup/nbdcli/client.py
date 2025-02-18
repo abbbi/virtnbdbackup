@@ -32,10 +32,11 @@ class client:
         """
         self.cType = cType
         self._exportName = cType.exportName
-        if cType.metaContext == "":
-            self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
-        else:
+        self._metaContext = ""
+        if cType.metaContext != "":
             self._metaContext = cType.metaContext
+        else:
+            self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
         self.nbd = nbd.NBD()
@@ -70,7 +71,12 @@ class client:
         try:
             if self.cType.tls:
                 self.nbd.set_tls(nbd.TLS_REQUIRE)
-            self.nbd.add_meta_context(self._metaContext)
+            self.nbd.add_meta_context(nbd.CONTEXT_BASE_ALLOCATION)
+            if self._metaContext != "":
+                log.debug(
+                    "Adding meta context to NBD connection: [%s]", self._metaContext
+                )
+                self.nbd.add_meta_context(self._metaContext)
             self.nbd.set_export_name(self._exportName)
             self.nbd.connect_uri(self.cType.uri)
         except nbd.Error as e:

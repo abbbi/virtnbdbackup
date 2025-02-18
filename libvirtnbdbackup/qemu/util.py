@@ -37,13 +37,9 @@ class util:
         self.exportName = exportName
 
     @staticmethod
-    def map(cType) -> str:
+    def map(cType, context: str) -> str:
         """Read extent map using nbdinfo utility"""
-        metaOpt = "--map"
-        if cType.metaContext != "":
-            metaOpt = f"--map={cType.metaContext}"
-
-        cmd = f"nbdinfo --json {metaOpt} '{cType.uri}'"
+        cmd = f"nbdinfo --json --map={context} '{cType.uri}'"
         log.debug("Starting CMD: [%s]", cmd)
         extentMap = subprocess.run(
             cmd,
