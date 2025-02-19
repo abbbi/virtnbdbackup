@@ -41,6 +41,7 @@ class DomainDisk:
     filename: str
     path: str
     backingstores: list
+    discardOption: str
 
 
 @dataclass

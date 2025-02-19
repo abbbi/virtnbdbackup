@@ -89,6 +89,9 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
             logging.error(errmsg)
             raise exceptions.DiskBackupFailed("Failed to start NBD server.")
 
+    if disk.discardOption is not None:
+        logging.info("Virtual disk discard option: [%s]", disk.discardOption)
+
     connection = server.connect(args, disk, metaContext, remoteIP, port, virtClient)
 
     extentHandler = _getExtentHandler(args, connection)

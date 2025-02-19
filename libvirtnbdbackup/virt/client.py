@@ -298,9 +298,11 @@ class client:
             excludeList = args.exclude.split(",")
 
         for disk in tree.xpath("devices/disk"):
+            discardOption = None
             dev = disk.xpath("target")[0].get("dev")
             device = disk.get("device")
             diskFormat = disk.xpath("driver")[0].get("type")
+            discardOption = disk.xpath("driver")[0].get("discard")
 
             if excludeList is not None and dev in excludeList:
                 log.warning("Excluding disk [%s] from backup as requested", dev)
@@ -355,7 +357,14 @@ class client:
             backingStoreFiles = self.getBackingStores(disk)
 
             devices.append(
-                DomainDisk(dev, diskFormat, diskFileName, diskPath, backingStoreFiles)
+                DomainDisk(
+                    dev,
+                    diskFormat,
+                    diskFileName,
+                    diskPath,
+                    backingStoreFiles,
+                    discardOption,
+                )
             )
 
         log.debug("Device list: %s ", devices)
