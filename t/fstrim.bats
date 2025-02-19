@@ -61,6 +61,37 @@ setup() {
 	    sleep "$INTERVAL"
 	done
 }
+
+@test "Suspend VM" {
+    run virsh suspend $VM
+    [ "$status" -eq 0 ]
+}
+@test "Start backup job and nbd endpoint to create reference image" {
+    run ../virtnbdbackup -t raw -d $VM -s -o ${TMPDIR}/reference --socketfile ${TMPDIR}/sock
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Create reference backup image using qemu-img convert" {
+    run qemu-img convert -f raw nbd+unix:///sda?socket=${TMPDIR}/sock -O raw ${TMPDIR}/reference/raw.img
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run ../virtnbdbackup -t raw -d $VM -k -o ${TMPDIR}/reference --socketfile ${TMPDIR}/sock
+}
+@test "Create raw image backup" {
+    run ../virtnbdbackup -l copy $OPT -t raw -d $VM -o ${TMPDIR}/rawbackup
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Creating full provisioned" ]]
+}
+@test "Compare contents of both backups" {
+    run cmp ${TMPDIR}/rawbackup/sda.copy.data ${TMPDIR}/reference/raw.img
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Resume VM" {
+    run virsh resume $VM
+    [ "$status" -eq 0 ]
+}
 @test "Backup: create full backup" {
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/fstrim
     echo "output = ${output}"
