@@ -16,6 +16,7 @@ if [ -z "$TMPDIR" ]; then
 fi
 
 load $TEST/config.bash
+load agent-exec.sh
 
 
 setup() {
@@ -47,7 +48,7 @@ setup() {
 	INTERVAL=5
 	START_TIME=$(date +%s)
 	while true; do
-	    OUTPUT=$(virsh guestinfo fstrim 2>/dev/null || true)
+	    OUTPUT=$(virsh guestinfo $VM 2>/dev/null || true)
 	    if echo "$OUTPUT" | grep -q "arch"; then
 		echo "Match found: 'arch' detected in output." >&3
 		break
@@ -94,16 +95,58 @@ setup() {
 }
 @test "Backup: create full backup" {
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/fstrim
-    echo "output = ${output}"
     [[ "${output}" =~  "Saved qcow image config" ]]
     [ "$status" -eq 0 ]
 }
-@test "Execute fstrim" {
-    run virsh domfstrim ${VM}
+@test "Create data in VM 1" {
+    run execute_qemu_command $VM "cp" '["-a", "/etc", "/incdata"]'
     echo "output = ${output}"
     [ "$status" -eq 0 ]
+    run execute_qemu_command $VM sync
+    [ "$status" -eq 0 ]
 }
-@test "Backup: create inc backup" {
+@test "Execute fstrim" {
+    run execute_qemu_command $VM "fstrim" '["-v", "/"]'
+    echo "trimmed = ${output}" >&3
+    [ "$status" -eq 0 ]
+}
+@test "Create data in VM 2" {
+    run execute_qemu_command $VM "cp" '["-a", "/etc", "/incdata2"]'
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run execute_qemu_command $VM sync
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create inc backup 1" {
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
+    echo "output = ${output}"
+    [[ "${output}" =~  "sparse bytes for current bitmap" ]]
+    [ "$status" -eq 0 ]
+}
+@test "Create data in VM 3" {
+    run execute_qemu_command $VM "cp" '["-a", "/etc", "/incdata3"]'
+    [ "$status" -eq 0 ]
+    run execute_qemu_command $VM sync
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create inc backup 2" {
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
+    echo "output = ${output}"
+    [[ "${output}" =~  "sparse bytes for current bitmap" ]]
+    [ "$status" -eq 0 ]
+}
+@test "Remove data in VM" {
+    run execute_qemu_command $VM "rm" '["-rf", "/incdata3"]'
+    [ "$status" -eq 0 ]
+    run execute_qemu_command $VM sync
+    [ "$status" -eq 0 ]
+}
+@test "Execute fstrim 2" {
+    run execute_qemu_command $VM "fstrim" '["-v", "/"]'
+    echo "trimmed = ${output}" >&3
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create inc backup 3" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [[ "${output}" =~  "sparse bytes for current bitmap" ]]
@@ -115,6 +158,22 @@ setup() {
 }
 @test "Verify image contents" {
     run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /
-    [[ "${output}" =~  "boot" ]]
+    [[ "${output}" =~  "incdata" ]]
     [ "$status" -eq 0 ]
+
+    run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /incdata
+    [[ "${output}" =~  "sudoers" ]]
+    [ "$status" -eq 0 ]
+
+    run virt-cat -a ${TMPDIR}/restore/fstrim.qcow2 /incdata/sudoers
+    [[ "${output}" =~  "Uncomment" ]]
+    [ "$status" -eq 0 ]
+
+
+    run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /incdata2
+    [[ "${output}" =~  "sudoers" ]]
+    [ "$status" -eq 0 ]
+
+    run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /incdata3
+    [ "$status" -ne 0 ]
 }
