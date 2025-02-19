@@ -206,7 +206,7 @@ class ExtentHandler:
             for base in base_extents:
                 base_end = base.offset + base.length
                 log.debug(
-                    "-add base0 %d %d %d %d",
+                    "add base0 %d %d %d %d",
                     backup.offset,
                     base.offset,
                     base_end,
@@ -218,7 +218,7 @@ class ExtentHandler:
                 ext.length = max(0, ext_end - ext.offset)
                 if ext.length:
                     log.debug(
-                        "->extent %d %d %d",
+                        "-> extent %d %d %d",
                         ext.offset,
                         ext.offset + ext.length,
                         ext.length,
@@ -226,7 +226,11 @@ class ExtentHandler:
                     selected_extents.append(ext)
                     totalLength += ext.length
 
-        log.debug("totalLength %d", totalLength)
+        if totalLength > 0:
+            log.info(
+                "Detected [%d] sparse bytes for current bitmap.",
+                totalLength,
+            )
         return selected_extents
 
     def queryBlockStatus(self) -> List[Extent]:
