@@ -33,7 +33,6 @@
     <suspend-to-disk enabled='no'/>
   </pm>
   <devices>
-    <emulator>/usr/libexec/qemu-kvm</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2' discard="unmap"/>
       <source file='__TMPDIR__/fstrim.qcow2' index='2'/>
