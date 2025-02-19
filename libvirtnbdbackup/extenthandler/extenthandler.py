@@ -263,7 +263,7 @@ class ExtentHandler:
                 extObj.offset,
                 extObj.offset + extObj.length,
             )
-        log.debug("changed data %d", totalLength)
         if self._metaContext != CONTEXT_BASE_ALLOCATION:
+            log.debug("Detected [%d] bytes of changed data regions.", totalLength)
             extentList = self.overlap(extentList)
         return extentList
