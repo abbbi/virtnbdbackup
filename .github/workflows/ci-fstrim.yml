@@ -47,15 +47,3 @@ jobs:
         sudo modprobe nbd max_partitions=10
     - name: Execute tests (fstrim)
       run: cd t && sudo -E make fstrim.tests
-    - name: Create log archive
-      if: always()
-      run: |
-        sudo find /tmp/ -type d -name '.guestfs-*' | sudo xargs rm -rf
-        sudo tar -czvf /log.tar.gz /tmp/tmp.*
-        sudo chmod go+r /log.tar.gz
-    - name: Archive Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: /log.tar.gz
