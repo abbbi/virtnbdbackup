@@ -41,6 +41,7 @@ class DomainDisk:
     filename: str
     path: str
     backingstores: list
+    discardOption: str
 
 
 @dataclass
@@ -91,6 +92,7 @@ class Extent:
     """Extent description containing information if block contains
     data, offset and length of data to be read/written"""
 
+    context: str
     data: bool
     offset: int
     length: int
@@ -100,5 +102,6 @@ class Extent:
 class _ExtentObj:
     """Single Extent object as returned from the NBD server"""
 
+    context: str
     length: int
     type: int

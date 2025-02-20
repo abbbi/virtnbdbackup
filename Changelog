@@ -1,3 +1,21 @@
+Version 2.21
+---------
+ * virtnbdbackup: Detect dirty regions containing only zeroes during
+ incremental backup (fstrim) (#250)
+
+ Before, any dirty block being part of the incremental/differential bitmap
+ would be backed up, even if not required. Thanks to the input and
+ enhancements
+ of
+	Roman Grigoriev <grigoriev177 _at_ gmail.com>
+ and
+	Denis V. Lunev <den _at_ openvz.org>
+ the zeroed block regions are now compared to the base:allocation
+ bitmap and detected as such.
+
+ This reduces the amount of data backed up if virtual machines have disks
+ configured with discard=unmap option and use fstrim to free unused space.
+
 Version 2.20
 ---------
  * virtnbdmap: add option -H for better debugging, code cleanup

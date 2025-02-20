@@ -15,17 +15,17 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from typing import List, Any, Generator
+from typing import List, Any, Generator, Dict
 from nbd import CONTEXT_BASE_ALLOCATION
 from libvirtnbdbackup.objects import Extent, _ExtentObj
 
 log = logging.getLogger("extenthandler")
 
 
+# pylint: disable=too-many-instance-attributes
 class ExtentHandler:
     """Query extent information about allocated and
-    zeroed regions from the NBD server started by
-    libvirt/qemu
+    zeroed regions from the NBD server started by libvirt/qemu
 
     This implementation should return the same
     extent information as nbdinfo or qemu-img map
@@ -33,19 +33,33 @@ class ExtentHandler:
 
     def __init__(self, nbdFh, cType) -> None:
         self.useQemu = False
+        self._maxRequestBlock: int = 4294967295
+        self._align: int = 512
+        self.lastExtentLen: int = 0
+        self.offset: int = 0
+
         if nbdFh.__class__.__name__ == "util":
             self.useQemu = True
         self._nbdFh = nbdFh
         self._cType = cType
-        self._extentEntries: List[Any] = []
+        self._extentEntries: Dict = {}
+
         if cType.metaContext == "":
             self._metaContext = CONTEXT_BASE_ALLOCATION
         else:
             self._metaContext = cType.metaContext
 
-        log.debug("Meta context: %s", self._metaContext)
-        self._maxRequestBlock: int = 4294967295
-        self._align: int = 512
+        if self.useQemu is False:
+            contexts = self._nbdFh.nbd.get_nr_meta_contexts()
+            log.debug("NBD server exports [%d] metacontexts:", contexts)
+            for i in range(0, contexts):
+                ctx = self._nbdFh.nbd.get_meta_context(i)
+                self._extentEntries[ctx] = []
+        else:
+            self._extentEntries[CONTEXT_BASE_ALLOCATION] = []
+            self._extentEntries[self._metaContext] = []
+
+        log.debug("Primary meta context for backup: %s", self._metaContext)
 
     def _getExtentCallback(
         self, metacontext: str, offset: int, entries: List, status: str
@@ -56,10 +70,15 @@ class ExtentHandler:
         log.debug("Metacontext is: %s", metacontext)
         log.debug("Offset is: %s", offset)
         log.debug("Status is: %s", status)
-        assert metacontext == self._metaContext
+        self.lastExtentLen = len(self._extentEntries[self._metaContext])
         for entry in entries:
-            self._extentEntries.append(entry)
-        log.debug("entries: %s", len(self._extentEntries))
+            self._extentEntries[metacontext].append(entry)
+        log.debug("entries: %s", len(self._extentEntries[metacontext]))
+        log.debug("Processed offsets: %s", self.offset)
+        self.offset += sum(
+            self._extentEntries[self._metaContext][self.lastExtentLen :: 2]
+        )
+        self.lastExtentLen = len(self._extentEntries[self._metaContext])
 
     def _setRequestAligment(self) -> int:
         """Align request size to nbd server"""
@@ -69,42 +88,36 @@ class ExtentHandler:
         return self._maxRequestBlock - align + 1
 
     def queryExtents(self) -> List[Any]:
-        """Query extents either via qemu or custom extent
-        handler
-        """
+        """Query extents either via qemu or custom extent handler"""
         if self.useQemu:
             return self.queryExtentsQemu()
 
         return self.queryExtentsNbd()
 
     def queryExtentsQemu(self) -> List[Any]:
-        """Use qemu utils to query extents from nbd
-        server
-        """
+        """Use qemu utils to query extents from nbd server"""
         extents = []
-        for extent in self._nbdFh.map(self._cType):
-            extentObj = Extent(
-                self.setBlockType(extent["type"]), extent["offset"], extent["length"]
-            )
-            extents.append(extentObj)
+        for ctx in iter(self._extentEntries):
+            for extent in self._nbdFh.map(self._cType, ctx):
+                extentObj = _ExtentObj(ctx, extent["length"], extent["type"])
+                extents.append(extentObj)
 
         log.debug("Got %s extents from qemu command", len(extents))
 
         return extents
 
     def _extentsToObj(self) -> List[_ExtentObj]:
-        """Go through extents and create a list of extent
-        objects
-        """
-        extentSizes = self._extentEntries[0::2]
-        extentTypes = self._extentEntries[1::2]
-        assert len(extentSizes) == len(extentTypes)
-        ct = 0
+        """Go through extents and create a list of extent objects"""
         extentList = []
-        while ct < len(extentSizes):
-            extentObj = _ExtentObj(extentSizes[ct], extentTypes[ct])
-            extentList.append(extentObj)
-            ct += 1
+        for context, values in self._extentEntries.items():
+            extentSizes = values[0::2]
+            extentTypes = values[1::2]
+            assert len(extentSizes) == len(extentTypes)
+            ct = 0
+            while ct < len(extentSizes):
+                extentObj = _ExtentObj(context, extentSizes[ct], extentTypes[ct])
+                extentList.append(extentObj)
+                ct += 1
 
         return extentList
 
@@ -120,7 +133,7 @@ class ExtentHandler:
         for myExtent in extentObjects:
             if cur is None:
                 cur = myExtent
-            elif cur.type == myExtent.type:
+            elif cur.type == myExtent.type and cur.context == myExtent.context:
                 cur.length += myExtent.length
             else:
                 yield cur
@@ -131,30 +144,21 @@ class ExtentHandler:
     def queryExtentsNbd(self) -> List[_ExtentObj]:
         """Request used blocks/extents from the nbd service"""
         maxRequestLen = self._setRequestAligment()
-        offset = 0
         size = self._nbdFh.nbd.get_size()
-        log.debug("Size returned from NBD server: %s", size)
-        lastExtentLen = len(self._extentEntries)
-        while offset < size:
+        while self.offset < size:
             if size < maxRequestLen:
                 request_length = size
             else:
-                request_length = min(size - offset, maxRequestLen)
+                request_length = min(size - self.offset, maxRequestLen)
             log.debug("Block status request length: %s", request_length)
             self._nbdFh.nbd.block_status(
-                request_length, offset, self._getExtentCallback
+                request_length, self.offset, self._getExtentCallback
             )
-            assert self._extentEntries != 0
-
-            offset += sum(self._extentEntries[lastExtentLen::2])
-            lastExtentLen = len(self._extentEntries)
-
-        log.debug("Extents: %s", self._extentEntries)
-        log.debug("Got %s extents", len(self._extentEntries[::2]))
+            log.debug("Extents: %s", self._extentEntries)
 
         return self._extentsToObj()
 
-    def setBlockType(self, blockType: int) -> bool:
+    def setBlockType(self, context: str, blockType: int) -> bool:
         """Returns block type
 
         The extent types are as follows:
@@ -169,7 +173,7 @@ class ExtentHandler:
             case 1: ("dirty")
         """
         data = None
-        if self._metaContext == CONTEXT_BASE_ALLOCATION:
+        if context == CONTEXT_BASE_ALLOCATION:
             assert blockType in (0, 1, 2, 3)
             if blockType == 0:
                 data = True
@@ -186,19 +190,80 @@ class ExtentHandler:
         assert data is not None
         return data
 
+    def overlap(self, extents: List[Extent]) -> List[Extent]:
+        """Find overlaps between base allocation and incremental bitmap to detect zero regions"""
+        base_extents = [e for e in extents if e.context == CONTEXT_BASE_ALLOCATION]
+        backup_extents = [
+            e for e in extents if e.context == self._metaContext and e.data
+        ]
+
+        selected_extents = []
+        totalLength: int = 0
+
+        for backup in backup_extents:
+            backup_end = backup.offset + backup.length
+            log.debug("check extent backup %d %d", backup.offset, backup_end)
+            for base in base_extents:
+                base_end = base.offset + base.length
+                log.debug(
+                    "add base0 %d %d %d %d",
+                    backup.offset,
+                    base.offset,
+                    base_end,
+                    backup_end,
+                )
+                ext = Extent(base.context, base.data, base.offset, base.length)
+                ext.offset = max(base.offset, backup.offset)
+                ext_end = min(base_end, backup_end)
+                ext.length = max(0, ext_end - ext.offset)
+                if ext.length:
+                    log.debug(
+                        "-> extent %d %d %d",
+                        ext.offset,
+                        ext.offset + ext.length,
+                        ext.length,
+                    )
+                    selected_extents.append(ext)
+                    totalLength += ext.length
+
+        if totalLength > 0:
+            log.info(
+                "Detected [%d] sparse bytes for current bitmap.",
+                totalLength,
+            )
+        return selected_extents
+
     def queryBlockStatus(self) -> List[Extent]:
         """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
         """
-        if self.useQemu is True:
-            return self.queryExtentsQemu()
-
+        extents = self.queryExtents()
         extentList: List[Extent] = []
-        start = 0
-        for extent in self._unifyExtents(self.queryExtentsNbd()):
-            extObj = Extent(self.setBlockType(extent.type), start, extent.length)
+        start: int = 0
+        baseStart: int = 0
+        totalLength: int = 0
+        for extent in self._unifyExtents(extents):
+            extObj = Extent(
+                extent.context,
+                self.setBlockType(extent.context, extent.type),
+                baseStart if extent.context == CONTEXT_BASE_ALLOCATION else start,
+                extent.length,
+            )
             extentList.append(extObj)
-            start += extent.length
-
-        log.debug("Returning extent list with %s objects", len(extentList))
+            if extent.context == CONTEXT_BASE_ALLOCATION:
+                baseStart += extent.length
+            else:
+                start += extent.length
+                if extObj.data:
+                    totalLength += extent.length
+            log.debug(
+                "%s %d %d %d",
+                extObj.context,
+                extObj.data,
+                extObj.offset,
+                extObj.offset + extObj.length,
+            )
+        if self._metaContext != CONTEXT_BASE_ALLOCATION:
+            log.debug("Detected [%d] bytes of changed data regions.", totalLength)
+            extentList = self.overlap(extentList)
         return extentList
