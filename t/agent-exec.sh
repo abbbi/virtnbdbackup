@@ -1,6 +1,11 @@
 #!/bin/bash
-# helper functions to execute commands within test VM
-# using qemu guest agent
+# helper functions to execute commands within test VM using qemu guest agent
+#
+# like so:
+#
+# wait_for_agent VM_NAME
+# execute_qemu_command VM_NAME "mkdir" '["/incdata"]'
+# execute_qemu_command VM_NAME "/bin/ls" '["/"]'#
 
 execute_qemu_command() {
     vm_name="$1"
@@ -57,25 +62,21 @@ execute_qemu_command() {
 
 wait_for_agent() {
     vm_name="$1"
-	TIMEOUT=120
-	INTERVAL=5
-	START_TIME=$(date +%s)
-	while true; do
-	    OUTPUT=$(virsh guestinfo "$vm_name" 2>/dev/null || true)
-	    if echo "$OUTPUT" | grep -q "arch"; then
+    TIMEOUT=120
+    INTERVAL=5
+    START_TIME=$(date +%s)
+    while true; do
+        OUTPUT=$(virsh guestinfo "$vm_name" 2>/dev/null || true)
+        if echo "$OUTPUT" | grep -q "arch"; then
             echo "Guest agent within VM is reachable." >&3
             return 0
-	    fi
-	    CURRENT_TIME=$(date +%s)
-	    ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
-	    if [ "$ELAPSED_TIME" -ge "$TIMEOUT" ]; then
-		echo "Timeout reached: 2 minutes." >&3
-            return 1
-	    fi
-	    sleep "$INTERVAL"
-	done
+        fi
+        CURRENT_TIME=$(date +%s)
+        ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+        if [ "$ELAPSED_TIME" -ge "$TIMEOUT" ]; then
+            echo "Timeout reached: 2 minutes." >&3
+        return 1
+        fi
+        sleep "$INTERVAL"
+    done
 }
-
-
-#execute_qemu_command fstrim "mkdir" '["/incdata"]'
-#execute_qemu_command fstrim "/bin/ls" '["/"]'
