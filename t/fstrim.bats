@@ -135,6 +135,21 @@ setup() {
     [[ "${output}" =~  "sparse bytes for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
+@test "Create data in VM 4 and create checksum" {
+    run execute_qemu_command $VM "dd" '["if=/dev/urandom", "of=/testdata", "bs=1M", "count=500"]'
+    [ "$status" -eq 0 ]
+    run execute_qemu_command $VM sync
+    [ "$status" -eq 0 ]
+    run execute_qemu_command $VM "md5sum" '["/testdata"]'
+    [ "$status" -eq 0 ]
+    echo "checksum = ${output}"
+    echo ${output} > ${TMPDIR}/data.sum
+}
+@test "Backup: create inc backup 4" {
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
 @test "Restore: restore vm with new name" {
     run ../virtnbdrestore -cD --name restored -i ${TMPDIR}/fstrim -o ${TMPDIR}/restore
     [ "$status" -eq 0 ]
@@ -165,5 +180,14 @@ setup() {
 }
 @test "Verify restored VM boots" {
     run wait_for_agent restored
+    [ "$status" -eq 0 ]
+}
+@test "Verify checksums of data backed up during incremental backup" {
+    run execute_qemu_command $VM "md5sum" '["/testdata"]'
+    [ "$status" -eq 0 ]
+    echo "checksum = ${output}"
+    echo ${output} > ${TMPDIR}/restored.sum
+    run cmp ${TMPDIR}/restored.sum ${TMPDIR}/data.sum
+    echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
