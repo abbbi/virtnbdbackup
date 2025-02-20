@@ -44,25 +44,8 @@ setup() {
     echo "output = ${output}"
 }
 @test "Wait for VM to be reachable via guest agent" {
-	TIMEOUT=120
-	INTERVAL=5
-	START_TIME=$(date +%s)
-	while true; do
-	    OUTPUT=$(virsh guestinfo $VM 2>/dev/null || true)
-	    if echo "$OUTPUT" | grep -q "arch"; then
-		echo "Match found: 'arch' detected in output." >&3
-		break
-	    fi
-	    CURRENT_TIME=$(date +%s)
-	    ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
-	    if [ "$ELAPSED_TIME" -ge "$TIMEOUT" ]; then
-		echo "Timeout reached: 2 minutes." >&3
-		exit 1
-	    fi
-	    sleep "$INTERVAL"
-	done
+    run wait_for_agent $VM
 }
-
 @test "Suspend VM" {
     run virsh suspend $VM
     [ "$status" -eq 0 ]
@@ -152,8 +135,8 @@ setup() {
     [[ "${output}" =~  "sparse bytes for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
-@test "Restore: restore" {
-    run ../virtnbdrestore -i ${TMPDIR}/fstrim -o ${TMPDIR}/restore
+@test "Restore: restore vm with new name" {
+    run ../virtnbdrestore -cD --name restored -i ${TMPDIR}/fstrim -o ${TMPDIR}/restore
     [ "$status" -eq 0 ]
 }
 @test "Verify image contents" {
@@ -169,11 +152,18 @@ setup() {
     [[ "${output}" =~  "Uncomment" ]]
     [ "$status" -eq 0 ]
 
-
     run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /incdata2
     [[ "${output}" =~  "sudoers" ]]
     [ "$status" -eq 0 ]
 
     run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /incdata3
     [ "$status" -ne 0 ]
+}
+@test "Start restored VM" {
+    run virsh start restored
+    [ "$status" -eq 0 ]
+}
+@test "Verify restored VM boots" {
+    run wait_for_agent restored
+    [ "$status" -eq 0 ]
 }
