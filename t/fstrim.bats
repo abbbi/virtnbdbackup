@@ -183,7 +183,7 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Verify checksums of data backed up during incremental backup" {
-    run execute_qemu_command $VM "md5sum" '["/testdata"]'
+    run execute_qemu_command restored "md5sum" '["/testdata"]'
     [ "$status" -eq 0 ]
     echo "checksum = ${output}"
     echo ${output} > ${TMPDIR}/restored.sum
