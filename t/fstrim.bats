@@ -191,3 +191,8 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Check filesystem consistency after boot" {
+    run execute_qemu_command restored btrfs '["device","stats","-c", "/"]'
+    [ "$status" -eq 0 ]
+    echo "output = ${output}"
+}
