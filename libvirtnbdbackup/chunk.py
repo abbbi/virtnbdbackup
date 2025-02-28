@@ -15,6 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from typing import List, Any, Tuple, IO, Union
+from nbd import Error as nbdError
 from libvirtnbdbackup import block
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.exceptions import DiskBackupFailed
@@ -48,7 +49,7 @@ def write(
 
         try:
             data = nbdCon.nbd.pread(blocklen, blockOffset)
-        except nbdCon.nbd.Error as e:
+        except nbdError as e:
             raise DiskBackupFailed(e) from e
 
         if compress is not False:
