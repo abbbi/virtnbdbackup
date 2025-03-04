@@ -209,6 +209,9 @@ def copy(args: Namespace, source: str, target: str) -> None:
         if args.sshClient:
             args.sshClient.copy(source, target)
         else:
+            if hasattr(args, "restore_root") and args.restore_root is not None:
+                dir, _ = os.path.split(target)
+                os.makedirs(dir, exist_ok=True)
             shutil.copyfile(source, target)
     except OSError as e:
         log.warning("Failed to copy [%s] to [%s]: [%s]", source, target, e)
