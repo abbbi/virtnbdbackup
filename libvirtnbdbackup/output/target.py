@@ -81,7 +81,9 @@ class target:
         def write(self, data: bytes) -> int:
             """Write wrapper"""
             self.chksum = zlib.adler32(data, self.chksum)
-            return self.fileHandle.write(data)
+            written =  self.fileHandle.write(data)
+            assert written == len(data)
+            return written
 
         def read(self, size=-1) -> int:
             """Read wrapper"""
