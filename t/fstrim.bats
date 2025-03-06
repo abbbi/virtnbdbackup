@@ -150,8 +150,14 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Run checksum verify" {
+    run ../virtnbdrestore -a verify -i ${TMPDIR}/fstrim -o /tmp
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
 @test "Restore: restore vm with new name" {
     run ../virtnbdrestore -cD --name restored -i ${TMPDIR}/fstrim -o ${TMPDIR}/restore
+    echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
 @test "Verify image contents" {
