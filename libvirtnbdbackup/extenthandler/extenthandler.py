@@ -74,11 +74,11 @@ class ExtentHandler:
         for entry in entries:
             self._extentEntries[metacontext].append(entry)
         log.debug("entries: %s", len(self._extentEntries[metacontext]))
-        log.debug("Processed offsets: %s", self.offset)
         self.offset += sum(
-            self._extentEntries[self._metaContext][self.lastExtentLen :: 2]
+            self._extentEntries[CONTEXT_BASE_ALLOCATION][self.lastExtentLen :: 2]
         )
-        self.lastExtentLen = len(self._extentEntries[self._metaContext])
+        log.debug("Processed offsets: %s", self.offset)
+        self.lastExtentLen = len(self._extentEntries[CONTEXT_BASE_ALLOCATION])
 
     def _setRequestAligment(self) -> int:
         """Align request size to nbd server"""
@@ -155,6 +155,11 @@ class ExtentHandler:
                 request_length, self.offset, self._getExtentCallback
             )
             log.debug("Extents: %s", self._extentEntries)
+
+        if self._extentEntries[self._metaContext] == []:
+            self._extentEntries[self._metaContext].append(size)
+            self._extentEntries[self._metaContext].append(1)
+            log.debug("Dirty bitmap not specified, marking all dirty %s", self._extentEntries[self._metaContext])
 
         return self._extentsToObj()
 

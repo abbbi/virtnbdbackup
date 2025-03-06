@@ -22,6 +22,7 @@ from libvirt import virDomain
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt.exceptions import startBackupFailed
+from libvirtnbdbackup.virt.exceptions import startBackupFailedRetry
 
 
 def start(
@@ -33,6 +34,23 @@ def start(
     """Start backup job via libvirt API"""
     try:
         logging.info("Starting backup job.")
+        virtClient.startBackup(
+            args,
+            domObj,
+            disks,
+        )
+        logging.debug("Backup job started.")
+        return True
+    except startBackupFailedRetry as e:
+        pass
+    except startBackupFailed as e:
+        logging.error(e)
+        return False
+
+    args.cpt.parent = ''
+
+    try:
+        logging.info("Starting full backup job (retrying).")
         virtClient.startBackup(
             args,
             domObj,

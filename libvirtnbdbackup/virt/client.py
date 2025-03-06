@@ -26,6 +26,7 @@ from libvirtnbdbackup.virt.exceptions import (
     domainNotFound,
     connectionFailed,
     startBackupFailed,
+    startBackupFailedRetry,
 )
 from libvirtnbdbackup.virt import fs
 from libvirtnbdbackup.virt import xml
@@ -460,11 +461,28 @@ class client:
             domObj.backupBegin(backupXml, checkpointXml)
             log.debug("Started backup job via libvirt API.")
         except libvirt.libvirtError as errmsg:
-            raise startBackupFailed(f"Failed to start backup: [{errmsg}]") from errmsg
+            code = errmsg.get_error_code()
+
+            #
+            # It is legal that CBT inside QEMU could be lost f.e. once
+            # the power on the node would be lost and that should be
+            # handled by backup software automatically. Forcing the
+            # user to manually handle backup chain and start creating
+            # new full backup is controversal. The condition is rare
+            # and we should just create full backup in this case.
+            #
+            # Signal to restart the operation duing full backup as incremental
+            #
+            if (code == libvirt.VIR_ERR_CHECKPOINT_INCONSISTENT and
+                args.cpt.parent != ''):
+                raise startBackupFailedRetry(
+                        f"Failed to start backup: [{errmsg}]") from errmsg
+            raise startBackupFailed(
+                        f"Failed to start backup: [{errmsg}]") from errmsg
         except Exception as e:
             log.exception(e)
             raise startBackupFailed(
-                f"Unknown exception during backup start: [{e}]"
+                f"Unknown exception during backup start: [{e}]", -1
             ) from e
         finally:
             # check if filesystem is freezed and thaw

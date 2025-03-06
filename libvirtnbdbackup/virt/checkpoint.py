@@ -276,6 +276,7 @@ def create(
     Creates a new namespace in the argparse object,
     for easy pass around in further functions.
     """
+
     checkpointName: str = f"{defaultCheckpointName}.0"
     parentCheckpoint: str = ""
     cptFile: str = f"{args.output}/{args.domain}.cpt"

@@ -17,3 +17,6 @@ class connectionFailed(virtHelperError):
 
 class startBackupFailed(virtHelperError):
     """Can't start backup operation"""
+
+class startBackupFailedRetry(virtHelperError):
+    """Can't start backup operation, but retry with full backup"""
