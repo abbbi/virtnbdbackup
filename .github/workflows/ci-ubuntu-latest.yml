@@ -23,7 +23,7 @@ jobs:
         codespell Changelog
     - name: Python code format test
       run: |
-        sudo pip3 install black==22.3
+        sudo pip3 install black==25.1.0
         black --check .
         black --check virtnbdbackup
         black --check virtnbdrestore
