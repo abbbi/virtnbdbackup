@@ -1120,7 +1120,7 @@ Start with an new full backup to a fresh directory.
 
 If an qemu process for a virtual machine is forcefully shutdown after a backup
 (for example due to power outage or qemu process killed/crashed) the bitmaps
-required for further backups my not have yet been synced to the qcow image.
+required for further backups may not have yet been synced to the qcow image.
 
 In these cases, you need to delete the existent checkpoints using:
 
