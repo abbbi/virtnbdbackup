@@ -27,7 +27,7 @@ log = logging.getLogger()
 
 
 def arguments(args: Namespace) -> None:
-    """Check passed arguments vor validity"""
+    """Check passed arguments for validity"""
     if args.compress is not False and args.type == "raw":
         raise exceptions.BackupException("Compression not supported with raw output.")
 
