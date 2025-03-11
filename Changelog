@@ -3,7 +3,9 @@ Version 2.22
  * Test enhancements:
    - check btrfs filesystem stats in restored VM.
    - run checksum verify after all backups.
- * virtnbdbackup: If NBD connection drops, catch correct exception. (#254)
+ * virtnbdbackup:
+   - If NBD connection drops, catch correct exception. (#254)
+   - Provide better error message if checkpoint inconsistency is detected.
 
 Version 2.21
 ---------

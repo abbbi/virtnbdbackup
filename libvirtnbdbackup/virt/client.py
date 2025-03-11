@@ -461,6 +461,12 @@ class client:
             domObj.backupBegin(backupXml, checkpointXml)
             log.debug("Started backup job via libvirt API.")
         except libvirt.libvirtError as errmsg:
+            code = errmsg.get_error_code()
+            if code == libvirt.VIR_ERR_CHECKPOINT_INCONSISTENT:
+                raise startBackupFailed(
+                    "Bitmap inconsistency detected: please cleanup checkpoints using virsh "
+                    f"and execute new full backup: {errmsg}"
+                ) from errmsg
             raise startBackupFailed(f"Failed to start backup: [{errmsg}]") from errmsg
         except Exception as e:
             log.exception(e)
