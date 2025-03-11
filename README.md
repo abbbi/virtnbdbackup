@@ -67,6 +67,7 @@ of your `kvm/qemu` virtual machines.
   - [The thin provisioned backups are bigger than the original qcow images](#the-thin-provisioned-backups-are-bigger-than-the-original-qcow-images)
   - [Backup fails with "Cannot store dirty bitmaps in qcow2 v2 files"](#backup-fails-with-cannot-store-dirty-bitmaps-in-qcow2-v2-files)
   - [Backup fails with "unable to execute QEMU command 'transaction': Bitmap already exists"](#backup-fails-with-unable-to-execute-qemu-command-transaction-bitmap-already-exists)
+  - [Backup fails with "Bitmap inconsistency detected: please cleanup checkpoints using virsh and execute new full backup"](#backup-fails-with-bitmap-inconsistency-detected-please-cleanup-checkpoints-using-virsh-and-execute-new-full-backup)
   - [Backup fails with "Error during checkpoint removal: [internal error: bitmap 'XX' not found in backing chain of 'XX']"](#backup-fails-with-error-during-checkpoint-removal-internal-error-bitmap-xx-not-found-in-backing-chain-of-xx)
   - [Backup fails with "Virtual machine does not support required backup features, please adjust virtual machine configuration."](#backup-fails-with-virtual-machine-does-not-support-required-backup-features-please-adjust-virtual-machine-configuration)
   - [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
@@ -1113,6 +1114,21 @@ Remove the dangling bitmap(s) via:
 ```
 
 Start with an new full backup to a fresh directory.
+
+
+## Backup fails with "Bitmap inconsistency detected: please cleanup checkpoints using virsh and execute new full backup"
+
+If an qemu process for a virtual machine is forcefully shutdown after a backup
+(for example due to power outage or qemu process killed/crashed) the bitmaps
+required for further backups my not have yet been synced to the qcow image.
+
+In these cases, you need to delete the existent checkpoints using:
+
+```
+ virsh checkpoint-delete <domain> --checkpointname <checkpoint_name> --metadata
+```
+
+and start with a fresh full backup.
 
 
 ## Backup fails with "Error during checkpoint removal: [internal error: bitmap 'XX' not found in backing chain of 'XX']"
