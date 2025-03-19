@@ -446,7 +446,14 @@ def main() -> None:
                 args.nbd_port + args.worker,
             )
     else:
-        logging.info("Local NBD Endpoint socket: [%s]", args.socketfile)
+        logging.info("Local NBD Endpoint sockets:")
+        for sdisk in disks:
+            logging.info(
+                "%s: [nbd+unix:///%s?socket=%s]",
+                sdisk.target,
+                sdisk.target,
+                args.socketfile,
+            )
 
     if args.offline is not True:
         logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)

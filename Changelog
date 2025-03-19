@@ -1,3 +1,9 @@
+Version 2.23
+---------
+ * virtnbdbackup:
+  - Log created nbd socket information in URI format, so it can be re-used
+  with external tools more easily.
+
 Version 2.22
 ---------
  * Test enhancements:
