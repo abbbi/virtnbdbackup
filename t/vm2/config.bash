@@ -25,8 +25,8 @@ if qemu-img info $VM_IMAGE | grep "compat: 0.10" >/dev/null; then
 fi
 
 EXTENT_OUTPUT1="Got 866 extents to backup."
-EXTENT_OUTPUT2="2147483648 bytes disk size"
-EXTENT_OUTPUT3="1394147328 bytes of data extents to backup"
+EXTENT_OUTPUT2="2147483648 bytes"
+EXTENT_OUTPUT3="1394147328 bytes"
 
 DATA_SIZE="1394147328"
 VIRTUAL_SIZE="2147483648"

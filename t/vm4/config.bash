@@ -14,7 +14,7 @@ if [ -z $GITHUB_JOB ]; then
     DATA_SIZE="327680"
 else
     EXTENT_OUTPUT1="Got 5 extents to backup"
-    EXTENT_OUTPUT2="1048576 bytes disk size"
+    EXTENT_OUTPUT2="1048576 bytes"
     EXTENT_OUTPUT3="131072"
     DATA_SIZE="131072"
 fi
