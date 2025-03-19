@@ -9,14 +9,14 @@ VM_IMAGE="${VM}/vm3-*.qcow2"
 # following outputs are expected for this vm image
 if [ -z $GITHUB_JOB ]; then
     EXTENT_OUTPUT1="Got 7 extents to backup."
-    EXTENT_OUTPUT2="1048576 bytes disk size"
-    EXTENT_OUTPUT3="327680 bytes of data extents to backup"
+    EXTENT_OUTPUT2="1048576 bytes"
+    EXTENT_OUTPUT3="327680 bytes"
 
     DATA_SIZE="327680"
 else
     EXTENT_OUTPUT1="Got 5 extents to backup."
-    EXTENT_OUTPUT2="1048576 bytes disk size"
-    EXTENT_OUTPUT3="131072 bytes of data extents to backup"
+    EXTENT_OUTPUT2="1048576 bytes"
+    EXTENT_OUTPUT3="131072 bytes"
 
     DATA_SIZE="131072"
 fi
