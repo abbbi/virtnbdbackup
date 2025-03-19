@@ -105,8 +105,12 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     thinBackupSize = sum(extent.length for extent in extents if extent.data is True)
     logging.info("Got %s extents to backup.", len(extents))
     logging.debug("%s", lib.dumpExtentJson(extents))
-    logging.info("%s bytes disk size", diskSize)
-    logging.info("%s bytes of data extents to backup", thinBackupSize)
+    logging.info("%s bytes [%s] virtual disk size", diskSize, lib.humanize(diskSize))
+    logging.info(
+        "%s bytes [%s] of data extents to backup",
+        thinBackupSize,
+        lib.humanize(thinBackupSize),
+    )
 
     if args.level in ("inc", "diff") and thinBackupSize == 0:
         logging.info("No dirty blocks found")

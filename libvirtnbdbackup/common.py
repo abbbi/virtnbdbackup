@@ -64,7 +64,7 @@ def printVersion(version) -> None:
 
 def humanize(num, suffix="B"):
     """Print size in human readable output"""
-    for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(num) < 1024.0:
             return f"{num:3.1f}{unit}{suffix}"
         num /= 1024.0
@@ -239,7 +239,7 @@ def progressBar(total: int, desc: str, args: Namespace, count=0) -> tqdm:
         desc=desc,
         unit="B",
         unit_scale=True,
-        unit_divisor=1000,
+        unit_divisor=1024,
         disable=args.noprogress,
         position=count,
         leave=False,
