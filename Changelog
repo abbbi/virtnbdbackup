@@ -1,7 +1,7 @@
 Version 2.24
 ---------
  * virnbdbackup:
-  - Add option --no-sparse-detect (#263): The feature implemented as
+  - Add option --no-sparse-detection (#263): The feature implemented as
   with version 2.21 requires to query the complete base:allocation
   bitmap during incremental backup.
 
