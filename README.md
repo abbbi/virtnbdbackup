@@ -1194,6 +1194,17 @@ to the configuration files (might not exist by default):
 /etc/apparmor.d/local/usr.sbin.libvirtd
 ```
 
+or, on newer versions:
+
+```
+sudo mkdir -p /etc/apparmor.d/abstractions/libvirt-qemu.d
+cat <<EOF | sudo tee /etc/apparmor.d/abstractions/libvirt-qemu.d/virtnbdbackup
+/var/tmp/virtnbdbackup.* rw,
+/var/tmp/backup.* rw,
+EOF
+sudo service apparmor reload
+```
+
 See also: https://github.com/abbbi/virtnbdbackup/issues/7
 
 ## High memory usage during backup
