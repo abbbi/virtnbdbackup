@@ -75,7 +75,7 @@ def connect(  # pylint: disable=too-many-arguments
     else:
         cType = nbdcli.Unix(disk.target, metaContext, socket)
 
-    nbdClient = nbdcli.client(cType)
+    nbdClient = nbdcli.client(cType, args.no_sparse_detection)
 
     try:
         return nbdClient.connect()

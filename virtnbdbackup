@@ -196,6 +196,15 @@ def main() -> None:
         action="store_true",
     )
     opt.add_argument(
+        "--no-sparse-detection",
+        default=False,
+        help=(
+            "Skip detection of sparse ranges during incremental or differential backup. "
+            "(default: %(default)s)"
+        ),
+        action="store_true",
+    )
+    opt.add_argument(
         "-T",
         "--threshold",
         type=int,
@@ -368,6 +377,9 @@ def main() -> None:
         signal.SIGINT,
         partial(sighandle.Backup.catch, args, domObj, virtClient, logging),
     )
+
+    if args.level not in ("inc", "diff") and args.no_sparse_detection is True:
+        args.no_sparse_detection = False
 
     vmConfig = virtClient.getDomainConfig(domObj)
     disks: List[DomainDisk] = virtClient.getDomainDisks(args, vmConfig)
