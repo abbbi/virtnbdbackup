@@ -45,5 +45,5 @@ jobs:
         sudo systemctl start libvirtd
         sudo systemctl restart libvirtd
         sudo modprobe nbd max_partitions=10
-    - name: Execute tests (fstrim)
+    - name: Execute tests (nosparsedetect)
       run: cd t && sudo -E make nosparsedetect.tests
