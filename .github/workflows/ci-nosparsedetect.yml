@@ -1,4 +1,4 @@
-name: fstrim CI on ubuntu-22.04
+name: nosparsedetect CI on ubuntu-22.04
 
 on: [push, pull_request]
 
