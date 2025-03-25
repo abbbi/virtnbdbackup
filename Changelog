@@ -1,3 +1,18 @@
+Version 2.24
+---------
+ * virnbdbackup:
+  - Add option --no-sparse-detection (#263): The feature implemented as
+  with version 2.21 requires to query the complete base:allocation
+  bitmap during incremental backup.
+
+  Depending on the Hypervisor hardware and the virtual machine disk size,
+  querying the base:allocation bitmap may take longer than to simply treat
+  fstrimmed blocks the same way as changed blocks and include them in the
+  backup.
+
+  The option introduced can be used to disable the new behavior and can
+  enhance backup times for specific users.
+
 Version 2.23
 ---------
  * virtnbdbackup:

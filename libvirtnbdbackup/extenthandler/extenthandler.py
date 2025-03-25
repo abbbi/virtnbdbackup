@@ -32,7 +32,7 @@ class ExtentHandler:
     extent information as nbdinfo or qemu-img map
     """
 
-    def __init__(self, nbdFh, cType) -> None:
+    def __init__(self, nbdFh, cType, no_sparse_detection: bool) -> None:
         self.useQemu = False
         self._maxRequestBlock: int = 4294967295
         self._align: int = 512
@@ -44,6 +44,7 @@ class ExtentHandler:
         self._nbdFh = nbdFh
         self._cType = cType
         self._extentEntries: Dict = {}
+        self.no_sparse_detection = no_sparse_detection
 
         if cType.metaContext == "":
             self._metaContext = CONTEXT_BASE_ALLOCATION
@@ -55,9 +56,12 @@ class ExtentHandler:
             log.debug("NBD server exports [%d] metacontexts:", contexts)
             for i in range(0, contexts):
                 ctx = self._nbdFh.nbd.get_meta_context(i)
+                if self.no_sparse_detection is True and ctx == CONTEXT_BASE_ALLOCATION:
+                    continue
                 self._extentEntries[ctx] = []
         else:
-            self._extentEntries[CONTEXT_BASE_ALLOCATION] = []
+            if self.no_sparse_detection is False:
+                self._extentEntries[CONTEXT_BASE_ALLOCATION] = []
             self._extentEntries[self._metaContext] = []
 
         log.debug("Primary meta context for backup: %s", self._metaContext)
@@ -264,6 +268,10 @@ class ExtentHandler:
                 extObj.offset,
                 extObj.offset + extObj.length,
             )
+        if self.no_sparse_detection is True:
+            log.info("Skipping detection of sparse/fstrimmed blocks.")
+            return extentList
+
         if self._metaContext != CONTEXT_BASE_ALLOCATION:
             log.debug("Detected [%d] bytes of changed data regions.", totalLength)
             extentList = self.overlap(extentList)

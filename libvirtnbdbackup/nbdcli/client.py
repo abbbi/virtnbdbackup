@@ -24,10 +24,11 @@ from libvirtnbdbackup.nbdcli import exceptions
 log = logging.getLogger("nbd")
 
 
+# pylint: disable=too-many-instance-attributes
 class client:
     """Helper functions for NBD"""
 
-    def __init__(self, cType):
+    def __init__(self, cType, no_sparse_detection: bool):
         """
         Connect NBD backend
         """
@@ -40,6 +41,7 @@ class client:
             self._metaContext = nbd.CONTEXT_BASE_ALLOCATION
         self.maxRequestSize = 33554432
         self.minRequestSize = 65536
+        self.no_sparse_detection = no_sparse_detection
         self.nbd = nbd.NBD()
 
         def debug(func, args):
@@ -72,7 +74,8 @@ class client:
         try:
             if self.cType.tls:
                 self.nbd.set_tls(nbd.TLS_REQUIRE)
-            self.nbd.add_meta_context(nbd.CONTEXT_BASE_ALLOCATION)
+            if self.no_sparse_detection is False:
+                self.nbd.add_meta_context(nbd.CONTEXT_BASE_ALLOCATION)
             if self._metaContext != "":
                 log.debug(
                     "Adding meta context to NBD connection: [%s]", self._metaContext

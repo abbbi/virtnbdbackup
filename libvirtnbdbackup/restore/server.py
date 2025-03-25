@@ -48,7 +48,7 @@ def setup(args: Namespace, exportName: str, targetFile: str, virtClient: virt.cl
         proc = qFh.startRemoteRestoreNbdServer(args, targetFile)
         cType = nbdcli.TCP(exportName, "", remoteIP, args.tls, args.nbd_port)
 
-    nbdClient = nbdcli.client(cType)
+    nbdClient = nbdcli.client(cType, False)
     logging.info("Started NBD server, PID: [%s]", proc.pid)
     return nbdClient.connect()
 

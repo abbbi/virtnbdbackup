@@ -54,10 +54,14 @@ def _getExtentHandler(args: Namespace, nbdClient):
     if args.qemu:
         logging.info("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
-            qemu.util(nbdClient.cType.exportName), nbdClient.cType
+            qemu.util(nbdClient.cType.exportName),
+            nbdClient.cType,
+            args.no_sparse_detection,
         )
     else:
-        extentHandler = extenthandler.ExtentHandler(nbdClient, nbdClient.cType)
+        extentHandler = extenthandler.ExtentHandler(
+            nbdClient, nbdClient.cType, args.no_sparse_detection
+        )
 
     return extentHandler
 

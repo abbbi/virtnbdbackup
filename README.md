@@ -73,6 +73,7 @@ of your `kvm/qemu` virtual machines.
   - [Backup fails with "Timed out during operation: cannot acquire state change lock"](#backup-fails-with-timed-out-during-operation-cannot-acquire-state-change-lock)
   - [Backup fails with "Failed to bind socket to /var/tmp/virtnbdbackup.XX: Permission denied"](#backup-fails-with-failed-to-bind-socket-to-vartmpvirtnbdbackupxx-permission-denied)
   - [High memory usage during backup](#high-memory-usage-during-backup)
+  - [fstrim and (incremental) backup sizes](#fstrim-and-incremental-backup-sizes)
   - [Test your backups!](#test-your-backups)
   - [Links](#links)
 
@@ -1219,6 +1220,25 @@ The fix itself was released with libnbd 1.5.2, so be sure to use at least this
 version if using `virtnbdbackup` on any other distribution.
 
 See also: https://github.com/abbbi/virtnbdbackup/issues/8
+
+## fstrim and (incremental) backup sizes
+
+If virtual machines have configured disks with discard option and fstrim is
+running frequently, trimmed blocks are detected during backup operation by
+default.
+
+If, for example, the fstrim operation frees 30 GiB of disk space, and the
+virtual machine has only 5 GiB of changed data blocks, 30 GiB of data
+will be skipped during incremental backup.
+
+This works by comparing the complete allocation bitmap of the virtual machine
+disk images during incremental backup.
+
+Depending on your hardware and the size of the virtual disks, the operation to
+query the complete allocation bitmap during incremental backup, may take longer
+than to backup the complete changeset. Therefore, you can disable the detection
+of sparse/fstrimmed blocks using the `--no-sparse-detection` option.
+
 
 ## Test your backups!
 
