@@ -202,41 +202,41 @@ class ExtentHandler:
             e for e in extents if e.context == self._metaContext and e.data
         ]
 
-        selected_extents = []
-        totalLength: int = 0
+        result = []
+        i = 0  # index for base_extents
+        j = 0  # index for backup_extents
 
-        for backup in backup_extents:
-            backup_end = backup.offset + backup.length
-            log.debug("check extent backup %d %d", backup.offset, backup_end)
-            for base in base_extents:
-                base_end = base.offset + base.length
-                log.debug(
-                    "add base0 %d %d %d %d",
-                    backup.offset,
-                    base.offset,
-                    base_end,
-                    backup_end,
-                )
-                ext = Extent(base.context, base.data, base.offset, base.length)
-                ext.offset = max(base.offset, backup.offset)
-                ext_end = min(base_end, backup_end)
-                ext.length = max(0, ext_end - ext.offset)
-                if ext.length:
-                    log.debug(
-                        "-> extent %d %d %d",
-                        ext.offset,
-                        ext.offset + ext.length,
-                        ext.length,
-                    )
-                    selected_extents.append(ext)
-                    totalLength += ext.length
+        while i < len(base_extents) and j < len(backup_extents):
+            base = base_extents[i]
+            backup = backup_extents[j]
 
-        if totalLength > 0:
-            log.info(
-                "Detected [%d] sparse bytes for current bitmap.",
-                totalLength,
-            )
-        return selected_extents
+            # Skip if either extent has data=False
+            if not base.data or not backup.data:
+                if base.offset <= backup.offset:
+                    i += 1
+                else:
+                    j += 1
+                continue
+
+            # Compare offsets to find overlapping regions
+            if base.offset < backup.offset:
+                i += 1
+            elif backup.offset < base.offset:
+                j += 1
+            else:
+                # Extents align at the same offset
+                # Take the minimum length where they overlap
+                new_length = min(base.length, backup.length)
+                result.append(Extent(
+                    context=f"Merged from {base.context} and {backup.context}",
+                    data=True,
+                    offset=base.offset,
+                    length=new_length
+                ))
+                i += 1
+                j += 1
+
+        return result
 
     def queryBlockStatus(self) -> List[Extent]:
         """Check the status for each extent, whether if it is
