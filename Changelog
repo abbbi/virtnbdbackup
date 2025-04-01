@@ -1,3 +1,17 @@
+Version 2.25
+---------
+ * virtnbdbackup:
+  - Detect QCOW2 formatted direct attached RAW Volumes (#264):
+
+  Some solutions such as OpenNebula will use direct attached LVM volumes in
+  virtual machines. These LVM volumes were treated like a RAW device, but
+  allow all required operations for full/incremental backup.
+
+  Changes introduced in v2.18 would exclude these devices from backup even if
+  `--raw` option is passed. Now during disk detection, use the disk format in
+  the driver type setting to correctly detect a lvm volume backed by qcow2,
+  and handle them just like regular qcow based images.
+
 Version 2.24
 ---------
  * virnbdbackup:

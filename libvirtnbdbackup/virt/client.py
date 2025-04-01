@@ -313,14 +313,6 @@ class client:
             if disktype.Optical(device, dev):
                 continue
 
-            # include other direct attached devices if --raw option is enabled
-            if args.raw is False and (
-                disktype.Block(disk, dev)
-                or disktype.Lun(device, dev)
-                or disktype.Raw(diskFormat, dev)
-            ):
-                continue
-
             diskPath = None
             diskType = disk.get("type")
             if diskType == "volume":
@@ -330,7 +322,7 @@ class client:
                 log.debug("Disk [%s]: file notation", dev)
                 diskPath = disk.xpath("source")[0].get("file")
             elif diskType == "block":
-                if args.raw is False:
+                if args.raw is False and diskFormat == "raw":
                     log.warning(
                         "Skipping direct attached block device [%s], use option --raw to include.",
                         dev,
@@ -343,6 +335,14 @@ class client:
 
             if diskPath is None:
                 log.error("Unable to detect disk source for disk [%s]", dev)
+                continue
+
+            # include other direct attached devices if --raw option is enabled
+            if args.raw is False and (
+                disktype.Block(disk, dev)
+                or disktype.Lun(device, dev)
+                or disktype.Raw(diskFormat, dev)
+            ):
                 continue
 
             diskFileName = os.path.basename(diskPath)
