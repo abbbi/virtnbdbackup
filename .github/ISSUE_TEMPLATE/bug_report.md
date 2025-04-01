@@ -22,9 +22,10 @@ A clear and concise description of what the bug is.
 A clear and concise description of what you expected to happen.
 
 
-**Hypervisor information:**
+**Hypervisor and/or virtual machine information:**
  - OS: [e.g. Alma, Debian]
  - HV type [e.g. opennebula, plain libvirt, rhev]
+ - Virtual machine configuration [virsh dumpxml ..]
 
 **Logfiles:**
 Please attach generated logfiles relevant to the reported issue.
