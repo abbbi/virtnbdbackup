@@ -227,12 +227,14 @@ class ExtentHandler:
                 # Extents align at the same offset
                 # Take the minimum length where they overlap
                 new_length = min(base.length, backup.length)
-                result.append(Extent(
-                    context=f"Merged from {base.context} and {backup.context}",
-                    data=True,
-                    offset=base.offset,
-                    length=new_length
-                ))
+                result.append(
+                    Extent(
+                        context=f"Merged from {base.context} and {backup.context}",
+                        data=True,
+                        offset=base.offset,
+                        length=new_length,
+                    )
+                )
                 i += 1
                 j += 1
 
