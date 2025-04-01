@@ -205,6 +205,7 @@ class ExtentHandler:
         result = []
         i = 0  # index for base_extents
         j = 0  # index for backup_extents
+        totalLength = 0
 
         while i < len(base_extents) and j < len(backup_extents):
             base = base_extents[i]
@@ -235,8 +236,15 @@ class ExtentHandler:
                         length=new_length,
                     )
                 )
+                totalLength += new_length
                 i += 1
                 j += 1
+
+        if totalLength > 0:
+            log.info(
+                "Detected [%d] sparse bytes for current bitmap.",
+                totalLength,
+            )
 
         return result
 
