@@ -171,6 +171,13 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
+@test "Backup in stream format, use include option"  {
+    [ $DISK_COUNT -lt 2 ] && skip "vm has only one disk"
+    rm -rf $BACKUPSET
+    run ../virtnbdbackup -l copy -d $VM -i sda $OPT -o $BACKUPSET
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "as requested: does not match disk" ]]
+}
 @test "Backup in stream format, check if multiple writers are used"  {
     [ $DISK_COUNT -lt 2 ] && skip "vm has only one disk"
     rm -rf $BACKUPSET

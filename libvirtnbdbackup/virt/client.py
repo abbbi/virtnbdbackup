@@ -309,6 +309,14 @@ class client:
                 log.warning("Excluding disk [%s] from backup as requested", dev)
                 continue
 
+            if args.include is not None and dev != args.include:
+                log.info(
+                    "Skipping disk: [%s] as requested: does not match disk [%s]",
+                    dev,
+                    args.include,
+                )
+                continue
+
             # skip cdrom/floppy devices
             if disktype.Optical(device, dev):
                 continue
@@ -346,15 +354,6 @@ class client:
                 continue
 
             diskFileName = os.path.basename(diskPath)
-
-            if args.include is not None and dev != args.include:
-                log.info(
-                    "Skipping disk: [%s] as requested: does not match disk [%s]",
-                    dev,
-                    args.include,
-                )
-                continue
-
             backingStoreFiles = self.getBackingStores(disk)
 
             devices.append(
