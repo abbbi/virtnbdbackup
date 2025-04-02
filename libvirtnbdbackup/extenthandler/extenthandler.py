@@ -262,7 +262,9 @@ class ExtentHandler:
         """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
         """
+        log.info("Start receiving backup extents.")
         extents = self.queryExtents()
+        log.info("Finished receiving extents.")
         extentList: List[Extent] = []
         start: int = 0
         baseStart: int = 0

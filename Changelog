@@ -1,3 +1,9 @@
+Version 2.26
+---------
+ * virtnbdbackup:
+ - Add info log message before and after extent query has finished.
+
+
 Version 2.25
 ---------
  * virtnbdbackup:
