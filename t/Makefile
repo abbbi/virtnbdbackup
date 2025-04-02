@@ -18,12 +18,15 @@ vm5.tests: $(bats)
 fstrim.tests: $(bats)
 	$(call clean)
 	export TEST=fstrim ; ./bats-core/bin/bats fstrim.bats
+fstrimsmall.tests: $(bats)
+	$(call clean)
+	export TEST=fstrimsmall ; ./bats-core/bin/bats fstrimsmall.bats
 nosparsedetect.tests: $(bats)
 	$(call clean)
 	export TEST=nosparsedetect ; ./bats-core/bin/bats nosparsedetect.bats
 
 
-all: | $(bats) vm1.tests vm2.tests vm3.tests vm4.tests fstrim.tests nosparsedetect.tests
+all: | $(bats) vm1.tests vm2.tests vm3.tests vm4.tests fstrim.tests nosparsedetect.tests fstrimsmall.tests
 
 clean:
 	$(call clean)
@@ -37,7 +40,7 @@ define clean
 	@rm -rf checkpoints
 	@rm -f vmconfig*.xml
 	@umount -lf /empty || true
-	for vm in vm1 restore_vm1 vm2 vm3 vm4 vm5 fstrim nosparsedetect restored; do \
+	for vm in vm1 restore_vm1 vm2 vm3 vm4 vm5 fstrim nosparsedetect restored fstrimsmall; do \
 		if virsh list --all | grep $$vm; then \
 			virsh destroy $$vm; \
 			virsh undefine $$vm --checkpoints-metadata --nvram --managed-save; \
