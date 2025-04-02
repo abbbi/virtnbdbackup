@@ -204,11 +204,27 @@ class ExtentHandler:
 
         selected_extents = []
         totalLength: int = 0
+        base_index = 0
+        base_count = len(base_extents)
 
         for backup in backup_extents:
             backup_end = backup.offset + backup.length
-            log.debug("check extent backup %d %d", backup.offset, backup_end)
-            for base in base_extents:
+            while (
+                base_index < base_count
+                and base_extents[base_index].offset + base_extents[base_index].length
+                <= backup.offset
+            ):
+                base_index += 1
+
+            # Process relevant base extents
+            current_index = base_index
+            while current_index < base_count:
+                base = base_extents[current_index]
+
+                # Stop if the base extent starts after the backup extent ends
+                if base.offset > backup_end:
+                    break
+
                 base_end = base.offset + base.length
                 log.debug(
                     "add base0 %d %d %d %d",
@@ -217,6 +233,7 @@ class ExtentHandler:
                     base_end,
                     backup_end,
                 )
+
                 ext = Extent(base.context, base.data, base.offset, base.length)
                 ext.offset = max(base.offset, backup.offset)
                 ext_end = min(base_end, backup_end)
@@ -231,11 +248,14 @@ class ExtentHandler:
                     selected_extents.append(ext)
                     totalLength += ext.length
 
+                current_index += 1
+
         if totalLength > 0:
             log.info(
                 "Detected [%d] sparse bytes for current bitmap.",
                 totalLength,
             )
+
         return selected_extents
 
     def queryBlockStatus(self) -> List[Extent]:
