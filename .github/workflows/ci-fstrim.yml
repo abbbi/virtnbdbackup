@@ -47,3 +47,9 @@ jobs:
         sudo modprobe nbd max_partitions=10
     - name: Execute tests (fstrim)
       run: cd t && sudo -E make fstrim.tests
+    - name: Archive Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: logfiles
+        path: /var/log/
