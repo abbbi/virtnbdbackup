@@ -4,13 +4,15 @@ different actions in between.
 The image includes an Qemu agent that is used to alter data within the virtual
 machine while it is active. Actions between incremental backups involve:
 
- * alter some data by copying /etc to different target directory
+ * alter some data by copying /etc,/usr to different target directory
+ * extract the created files from the image using virt-tar-out
  * fstrim
  * create some folders
  * delete some data
  * fstrim again
  * create ~500 MB file and store checksum
- * restore disk image and check contents
+ * restore disk image and check contents, extract the restored files and
+   compare them against the reference files
  * boot virtual machine
  * verify checksum of created data file within booted VM
 

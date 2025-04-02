@@ -30,6 +30,7 @@ setup() {
 }
 
 @test "Setup: Define and start test VM ${VM}" {
+    rm -f /tmp/*.tar
     virsh destroy ${VM} || true
     echo "output = ${output}"
     virsh undefine ${VM} --remove-all-storage --checkpoints-metadata || true
@@ -81,11 +82,16 @@ setup() {
     [[ "${output}" =~  "Saved qcow image config" ]]
     [ "$status" -eq 0 ]
 }
-@test "Create data in VM 1" {
+@test "Create data in VM, extract changed data to tar file" {
     run execute_qemu_command $VM "cp" '["-a", "/etc", "/incdata"]'
     echo "output = ${output}"
     [ "$status" -eq 0 ]
+    run execute_qemu_command $VM "cp" '["-a", "/usr", "/incdata/usr"]'
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
     run execute_qemu_command $VM sync
+    [ "$status" -eq 0 ]
+    run virt-tar-out -d $VM /incdata /tmp/reference_incdata.tar
     [ "$status" -eq 0 ]
 }
 @test "Execute fstrim" {
@@ -93,26 +99,28 @@ setup() {
     echo "trimmed = ${output}" >&3
     [ "$status" -eq 0 ]
 }
-@test "Create data in VM 2" {
+@test "Create data in VM after fstrim, save data to tar file" {
     run execute_qemu_command $VM "cp" '["-a", "/etc", "/incdata2"]'
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
+    run virt-tar-out -d $VM /incdata2 /tmp/reference_incdata2.tar
+    [ "$status" -eq 0 ]
 }
-@test "Backup: create inc backup 1" {
+@test "Backup: create another incremental backup" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [[ "${output}" =~  "sparse blocks for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
-@test "Create data in VM 3" {
+@test "Create data in VM for next incremental backup" {
     run execute_qemu_command $VM "cp" '["-a", "/etc", "/incdata3"]'
     [ "$status" -eq 0 ]
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
 }
-@test "Backup: create inc backup 2" {
+@test "Backup: create third incremental backup" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [[ "${output}" =~  "sparse blocks for current bitmap" ]]
@@ -124,18 +132,18 @@ setup() {
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
 }
-@test "Execute fstrim 2" {
+@test "Execute fstrim after removing data" {
     run execute_qemu_command $VM "fstrim" '["-v", "/"]'
     echo "trimmed = ${output}" >&3
     [ "$status" -eq 0 ]
 }
-@test "Backup: create inc backup 3" {
+@test "Backup: create inc backup after fstrim and data removal" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [[ "${output}" =~  "sparse blocks for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
-@test "Create data in VM 4 and create checksum" {
+@test "Create random data in VM and create checksum" {
     run execute_qemu_command $VM "dd" '["if=/dev/urandom", "of=/testdata", "bs=1M", "count=500"]'
     [ "$status" -eq 0 ]
     run execute_qemu_command $VM sync
@@ -145,7 +153,7 @@ setup() {
     echo "checksum = ${output}"
     echo ${output} > ${TMPDIR}/data.sum
 }
-@test "Backup: create inc backup 4" {
+@test "Backup: create inc backup after creating random data" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -160,7 +168,23 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Verify image contents" {
+@test "Verify restored image contents" {
+    run virt-tar-out -d restored /incdata /tmp/restored_incdata.tar
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+
+    run cmp /tmp/restored_incdata.tar /tmp/reference_incdata.tar
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+
+    run virt-tar-out -d restored /incdata2 /tmp/restored_incdata2.tar
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+
+    run cmp /tmp/restored_incdata2.tar /tmp/reference_incdata2.tar
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+
     run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /
     [[ "${output}" =~  "incdata" ]]
     [ "$status" -eq 0 ]
