@@ -1234,10 +1234,7 @@ will be skipped during incremental backup.
 This works by comparing the complete allocation bitmap of the virtual machine
 disk images during incremental backup.
 
-Depending on your hardware and the size of the virtual disks, the operation to
-query the complete allocation bitmap during incremental backup, may take longer
-than to backup the complete changeset. Therefore, you can disable the detection
-of sparse/fstrimmed blocks using the `--no-sparse-detection` option.
+Behavior can be disabled, if desired, using the `--no-sparse-detection` option.
 
 
 ## Test your backups!
