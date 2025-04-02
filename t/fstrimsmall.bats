@@ -112,3 +112,25 @@ setup() {
     [[ "${output}" =~  "131072 bytes [128.0KiB] of data extents to backup" ]]
     [ "$status" -eq 0 ]
 }
+@test "Destroy VM 3" {
+    run virsh destroy $VM
+    [ "$status" -eq 0 ]
+}
+@test "Change one 64k block zeroes, overlapping 64k block with data" {
+    run qemu-io -c "write 5000k 64k" ${TMPDIR}/${VM_IMAGE}
+    run qemu-io -c "write -z 5012k 64k" ${TMPDIR}/${VM_IMAGE}
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Start VM 3" {
+    run virsh start $VM
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create incremental backup: two extents must be backed up again" {
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
+    echo "output = ${output}"
+    [[ "${output}" =~  "Got 3 extents to backup" ]]
+    [[ "${output}" =~  "Detected 131072 bytes [128.0KiB] non-sparse blocks for current bitmap" ]]
+    [[ "${output}" =~  "131072 bytes [128.0KiB] of data extents to backup" ]]
+    [ "$status" -eq 0 ]
+}
