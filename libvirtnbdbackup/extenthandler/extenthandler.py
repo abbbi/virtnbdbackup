@@ -19,6 +19,7 @@ import logging
 from typing import List, Any, Generator, Dict
 from nbd import CONTEXT_BASE_ALLOCATION
 from libvirtnbdbackup.objects import Extent, _ExtentObj
+from libvirtnbdbackup.common import humanize
 
 log = logging.getLogger("extenthandler")
 
@@ -252,8 +253,9 @@ class ExtentHandler:
 
         if totalLength > 0:
             log.info(
-                "Detected [%d] sparse bytes for current bitmap.",
+                "Detected %d bytes [%s] sparse blocks for current bitmap.",
                 totalLength,
+                humanize(totalLength),
             )
 
         return selected_extents

@@ -73,7 +73,7 @@ setup() {
 @test "Backup: create inc backup with sparse detection" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
-    [[ "${output}" =~  "sparse bytes for current bitmap" ]]
+    [[ "${output}" =~  "sparse blocks for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
 @test "Create data in VM 3" {
@@ -102,7 +102,7 @@ setup() {
 @test "Backup: create inc backup again, with sparse detection" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
-    [[ "${output}" =~  "sparse bytes for current bitmap" ]]
+    [[ "${output}" =~  "sparse blocks for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
 @test "Create data in VM 4 and create checksum" {
