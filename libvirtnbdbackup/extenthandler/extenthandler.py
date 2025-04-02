@@ -239,7 +239,7 @@ class ExtentHandler:
                 ext.offset = max(base.offset, backup.offset)
                 ext_end = min(base_end, backup_end)
                 ext.length = max(0, ext_end - ext.offset)
-                if ext.length:
+                if ext.length and ext.data:
                     log.debug(
                         "-> extent %d %d %d",
                         ext.offset,
