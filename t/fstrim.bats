@@ -92,6 +92,7 @@ setup() {
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
     run virt-tar-out -d $VM /incdata /tmp/reference_incdata.tar
+    echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
 @test "Execute fstrim" {
@@ -106,6 +107,7 @@ setup() {
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
     run virt-tar-out -d $VM /incdata2 /tmp/reference_incdata2.tar
+    echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
 @test "Backup: create another incremental backup" {
