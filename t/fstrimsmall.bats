@@ -126,7 +126,7 @@ setup() {
     run virsh start $VM
     [ "$status" -eq 0 ]
 }
-@test "Backup: create incremental backup: two extents must be backed up again" {
+@test "Backup: create incremental backup: three extents must be backed up" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [[ "${output}" =~  "Got 3 extents to backup" ]]
