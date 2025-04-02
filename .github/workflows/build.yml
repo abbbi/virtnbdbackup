@@ -171,7 +171,7 @@ jobs:
                   virtnbdbackup -h
                   virtnbdrestore -h
                   virtnbdmap -h
-          - name: Archive logfiles
+          - name: Archive Results
             if: always()
             uses: actions/upload-artifact@v4
             with:
