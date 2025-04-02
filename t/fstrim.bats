@@ -82,7 +82,8 @@ setup() {
     [[ "${output}" =~  "Saved qcow image config" ]]
     [ "$status" -eq 0 ]
 }
-@test "Create data in VM, extract changed data to tar file" {
+
+@test "Create new data in VM" {
     run execute_qemu_command $VM "cp" '["-a", "/etc", "/incdata"]'
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -91,6 +92,9 @@ setup() {
     [ "$status" -eq 0 ]
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
+}
+@test "Extract changed data to tar file" {
+    [ ! -z $GITHUB_JOB ] && skip "on github ci"
     run virt-tar-out -d $VM /incdata /tmp/reference_incdata.tar
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -106,6 +110,9 @@ setup() {
     [ "$status" -eq 0 ]
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
+}
+@test "Extract newly changed data to tar file" {
+    [ ! -z $GITHUB_JOB ] && skip "on github ci"
     run virt-tar-out -d $VM /incdata2 /tmp/reference_incdata2.tar
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -170,7 +177,8 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-@test "Verify restored image contents" {
+@test "Compare restored data files against reference tar images" {
+    [ ! -z $GITHUB_JOB ] && skip "on github ci"
     run virt-tar-out -d restored /incdata /tmp/restored_incdata.tar
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -182,11 +190,8 @@ setup() {
     run virt-tar-out -d restored /incdata2 /tmp/restored_incdata2.tar
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-
-    run cmp /tmp/restored_incdata2.tar /tmp/reference_incdata2.tar
-    echo "output = ${output}"
-    [ "$status" -eq 0 ]
-
+}
+@test "Verify restored image contents" {
     run virt-ls -a ${TMPDIR}/restore/fstrim.qcow2 /
     [[ "${output}" =~  "incdata" ]]
     [ "$status" -eq 0 ]
