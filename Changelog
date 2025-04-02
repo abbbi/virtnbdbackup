@@ -2,7 +2,7 @@ Version 2.26
 ---------
  * virtnbdbackup:
  - Add info log message before and after extent query has finished.
-
+ - Enhance function to detect sparse/fstrimmed regions.
 
 Version 2.25
 ---------
