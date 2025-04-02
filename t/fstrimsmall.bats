@@ -59,7 +59,7 @@ setup() {
     run virsh start $VM
     [ "$status" -eq 0 ]
 }
-@test "Backup: create incremental backup" {
+@test "Backup: create incremental backup: one data block must be detected" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [[ "${output}" =~  "65536 bytes [64.0KiB] of data extents to backup" ]]
@@ -69,7 +69,7 @@ setup() {
     run virsh destroy $VM
     [ "$status" -eq 0 ]
 }
-@test "Change one 64k block with data two 64k block with zeroes" {
+@test "Change one 64k block with data one 64k block with zeroes" {
     run qemu-io -c "write 1M 64k" ${TMPDIR}/${VM_IMAGE}
     run qemu-io -c "write -z 2M 64k" ${TMPDIR}/${VM_IMAGE}
     echo "output = ${output}"
@@ -79,7 +79,7 @@ setup() {
     run virsh start $VM
     [ "$status" -eq 0 ]
 }
-@test "Backup: create incremental backup 2" {
+@test "Backup: create incremental backup: one data, one sparse block must be detected" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
     [[ "${output}" =~  "Detected 65536 bytes [64.0KiB] sparse blocks for current bitmap" ]]
