@@ -19,6 +19,7 @@ import logging
 from typing import List, Any, Generator, Dict
 from nbd import CONTEXT_BASE_ALLOCATION
 from libvirtnbdbackup.objects import Extent, _ExtentObj
+from libvirtnbdbackup.common import humanize
 
 log = logging.getLogger("extenthandler")
 
@@ -205,7 +206,6 @@ class ExtentHandler:
         result = []
         i = 0  # index for base_extents
         j = 0  # index for backup_extents
-        totalLength = 0
 
         while i < len(base_extents) and j < len(backup_extents):
             base = base_extents[i]
@@ -236,15 +236,8 @@ class ExtentHandler:
                         length=new_length,
                     )
                 )
-                totalLength += new_length
                 i += 1
                 j += 1
-
-        if totalLength > 0:
-            log.info(
-                "Detected [%d] sparse bytes for current bitmap.",
-                totalLength,
-            )
 
         return result
 
@@ -283,6 +276,15 @@ class ExtentHandler:
             return extentList
 
         if self._metaContext != CONTEXT_BASE_ALLOCATION:
-            log.debug("Detected [%d] bytes of changed data regions.", totalLength)
-            extentList = self.overlap(extentList)
+            log.info(
+                "Detected [%s] bytes (%s) of changed data regions, [%s] extents.",
+                totalLength,
+                humanize(totalLength),
+                len(extentList),
+            )
+            optimizedList = self.overlap(extentList)
+            skipped = len(extentList) - len(optimizedList)
+            log.info("Detected [%s] skippable sparse extents.", skipped)
+
+            extentList = optimizedList
         return extentList

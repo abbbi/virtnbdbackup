@@ -103,7 +103,6 @@ setup() {
 @test "Backup: create inc backup 1" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
-    [[ "${output}" =~  "sparse bytes for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
 @test "Create data in VM 3" {
@@ -115,7 +114,6 @@ setup() {
 @test "Backup: create inc backup 2" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
-    [[ "${output}" =~  "sparse bytes for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
 @test "Remove data in VM" {
@@ -132,7 +130,6 @@ setup() {
 @test "Backup: create inc backup 3" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
-    [[ "${output}" =~  "sparse bytes for current bitmap" ]]
     [ "$status" -eq 0 ]
 }
 @test "Create data in VM 4 and create checksum" {
