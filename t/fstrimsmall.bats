@@ -62,6 +62,7 @@ setup() {
 @test "Backup: create incremental backup: one data block must be detected" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
+    [[ "${output}" =~  "Got 1 extents to backup" ]]
     [[ "${output}" =~  "65536 bytes [64.0KiB] of data extents to backup" ]]
     [ "$status" -eq 0 ]
 }
@@ -69,9 +70,10 @@ setup() {
     run virsh destroy $VM
     [ "$status" -eq 0 ]
 }
-@test "Change one 64k block with data one 64k block with zeroes" {
+@test "Change one 64k block with data two 64k block with zeroes" {
     run qemu-io -c "write 1M 64k" ${TMPDIR}/${VM_IMAGE}
     run qemu-io -c "write -z 2M 64k" ${TMPDIR}/${VM_IMAGE}
+    run qemu-io -c "write -z 3M 64k" ${TMPDIR}/${VM_IMAGE}
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
@@ -79,11 +81,34 @@ setup() {
     run virsh start $VM
     [ "$status" -eq 0 ]
 }
-@test "Backup: create incremental backup: one data, one sparse block must be detected" {
+@test "Backup: create incremental backup: only one data block must be detected" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
     echo "output = ${output}"
-    [[ "${output}" =~  "Detected 65536 bytes [64.0KiB] sparse blocks for current bitmap" ]]
+    [[ "${output}" =~  "Got 1 extents to backup" ]]
+    [[ "${output}" =~  "Detected 65536 bytes [64.0KiB] non-sparse blocks for current bitmap" ]]
     [[ "${output}" =~  "65536 bytes [64.0KiB] of data extents to backup" ]]
     [ "$status" -eq 0 ]
 }
+@test "Destroy VM 2" {
+    run virsh destroy $VM
+    [ "$status" -eq 0 ]
+}
 
+@test "Change one 64k block with data, overlapping 64k block with zeroes" {
+    run qemu-io -c "write -z 64k 64k" ${TMPDIR}/${VM_IMAGE}
+    run qemu-io -c "write 127k 64k" ${TMPDIR}/${VM_IMAGE}
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Start VM 2" {
+    run virsh start $VM
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create incremental backup: two extents must be backed up" {
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
+    echo "output = ${output}"
+    [[ "${output}" =~  "Got 2 extents to backup" ]]
+    [[ "${output}" =~  "Detected 131072 bytes [128.0KiB] non-sparse blocks for current bitmap" ]]
+    [[ "${output}" =~  "131072 bytes [128.0KiB] of data extents to backup" ]]
+    [ "$status" -eq 0 ]
+}

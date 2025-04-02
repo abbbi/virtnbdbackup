@@ -253,7 +253,7 @@ class ExtentHandler:
 
         if totalLength > 0:
             log.info(
-                "Detected %d bytes [%s] sparse blocks for current bitmap.",
+                "Detected %d bytes [%s] non-sparse blocks for current bitmap.",
                 totalLength,
                 humanize(totalLength),
             )
