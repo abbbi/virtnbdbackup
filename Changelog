@@ -2,7 +2,7 @@ Version 2.26
 ---------
  * virtnbdbackup:
  - Add info log message before and after extent query has finished.
- - Enhance function to detect sparse/fstrimmed regions.
+ - Enhance function to detect sparse/fstrimmed regions (#263).
  - Enhance CI tests
 
 Version 2.25
