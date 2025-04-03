@@ -114,9 +114,13 @@ setup() {
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
-
 @test "Copy image for reference" {
     run cp ${TMPDIR}/${VM_IMAGE} ${TMPDIR}/reference_before_backup.qcow2
+    [ "$status" -eq 0 ]
+}
+@test "Start VM again" {
+    run virsh start $VM
+    echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
 @test "Backup: incremental backup again" {
