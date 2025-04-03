@@ -23,10 +23,27 @@ setup() {
 }
 
 @test "Setup / download vm image ${IMG_URL} to ${TMPDIR}/${VM_IMAGE}" {
-    rm -f  ${TMPDIR}/${VM_IMAGE} 10M
-    qemu-img create -f qcow2 ${TMPDIR}/${VM_IMAGE} 10M
-}
+    rm -f  ${TMPDIR}/${VM_IMAGE}
+    qemu-img create -f qcow2 ${TMPDIR}/${VM_IMAGE} 20M
+    # create data blocks included in full backup that is then zeroed
+    # between incremental backup
+    qemu-io -c "write 15M 256k" ${TMPDIR}/${VM_IMAGE}
+    qemu-io -c "write 17M 256k" ${TMPDIR}/${VM_IMAGE}
 
+    # create reference image
+    REFIMAGE=${TMPDIR}/reference.qcow2
+    rm -f ${REFIMAGE}
+    qemu-img create -f qcow2 ${REFIMAGE} 20M
+
+    # how image should look like after restore (no zeroed blocks included)
+    # but same amount of data blocks
+    qemu-io -c "write 15M 256k" ${REFIMAGE}
+    qemu-io -c "write 17M 256k" ${REFIMAGE}
+    qemu-io -c "write 1M 64k" ${REFIMAGE}
+    qemu-io -c "write 1M 64k" ${REFIMAGE}
+    qemu-io -c "write 127k 64k" ${REFIMAGE}
+    qemu-io -c "write 5000k 64k" ${REFIMAGE}
+}
 @test "Setup: Define and start test VM ${VM}" {
     virsh destroy ${VM} || true
     echo "output = ${output}"
@@ -93,7 +110,6 @@ setup() {
     run virsh destroy $VM
     [ "$status" -eq 0 ]
 }
-
 @test "Change one 64k block with data, overlapping 64k block with zeroes" {
     run qemu-io -c "write -z 64k 64k" ${TMPDIR}/${VM_IMAGE}
     run qemu-io -c "write 127k 64k" ${TMPDIR}/${VM_IMAGE}
@@ -132,5 +148,58 @@ setup() {
     [[ "${output}" =~  "Got 3 extents to backup" ]]
     [[ "${output}" =~  "Detected 131072 bytes [128.0KiB] non-sparse blocks for current bitmap" ]]
     [[ "${output}" =~  "131072 bytes [128.0KiB] of data extents to backup" ]]
+    [ "$status" -eq 0 ]
+}
+@test "Destroy VM 4" {
+    run virsh destroy $VM
+    [ "$status" -eq 0 ]
+}
+@test "Overwrite data block from before full backup with zeroes" {
+    run qemu-io -c "write -z 15M 256k" ${TMPDIR}/${VM_IMAGE}
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Start VM 4" {
+    run virsh start $VM
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create incremental backup again" {
+    run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/fstrim
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Destroy VM 5" {
+    run virsh destroy $VM
+    [ "$status" -eq 0 ]
+}
+@test "Overwrite data block from before full backup with zeroes again" {
+    run qemu-io -c "write -z 17M 256k" ${TMPDIR}/${VM_IMAGE}
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Start VM 5" {
+    run virsh start $VM
+    [ "$status" -eq 0 ]
+}
+@test "Backup: create differencial backup with sparse detection: zero extents must be backed up" {
+    run ../virtnbdbackup -d $VM -l diff -o ${TMPDIR}/fstrim
+    echo "output = ${output}"
+    [[ "${output}" =~  "Got 0 extents to backup" ]]
+    [ "$status" -eq 0 ]
+}
+@test "Restore" {
+    run ../virtnbdrestore -i ${TMPDIR}/fstrim -o ${TMPDIR}/restore
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Compare allocation map between restored and reference image" {
+    run qemu-img map --output json ${TMPDIR}/reference.qcow2 > ${TMPDIR}/map_reference.json
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run qemu-img map --output json ${TMPDIR}/restore/fstrimsmall.qcow2 > ${TMPDIR}/map_restore.json
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    cmp ${TMPDIR}/map_reference.json ${TMPDIR}/map_restore.json
+    echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
