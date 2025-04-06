@@ -203,54 +203,7 @@ class ExtentHandler:
             e for e in extents if e.context == self._metaContext and e.data
         ]
 
-        selected_extents = []
         totalLength: int = 0
-        base_index = 0
-        base_count = len(base_extents)
-
-        for backup in backup_extents:
-            backup_end = backup.offset + backup.length
-            while (
-                base_index < base_count
-                and base_extents[base_index].offset + base_extents[base_index].length
-                <= backup.offset
-            ):
-                base_index += 1
-
-            # Process relevant base extents
-            current_index = base_index
-            while current_index < base_count:
-                base = base_extents[current_index]
-
-                # Stop if the base extent starts after the backup extent ends
-                if base.offset > backup_end:
-                    break
-
-                base_end = base.offset + base.length
-                log.debug(
-                    "add base0 %d %d %d %d",
-                    backup.offset,
-                    base.offset,
-                    base_end,
-                    backup_end,
-                )
-
-                ext = Extent(base.context, base.data, base.offset, base.length)
-                ext.offset = max(base.offset, backup.offset)
-                ext_end = min(base_end, backup_end)
-                ext.length = max(0, ext_end - ext.offset)
-                if ext.length and ext.data:
-                    log.debug(
-                        "-> extent %d %d %d",
-                        ext.offset,
-                        ext.offset + ext.length,
-                        ext.length,
-                    )
-                    selected_extents.append(ext)
-                    totalLength += ext.length
-
-                current_index += 1
-
         result = []
         i = 0  # index for base_extents
         j = 0  # index for backup_extents
@@ -287,23 +240,13 @@ class ExtentHandler:
                     length=end - offset,
                 )
             )
+            totalLength += end - offset
 
             # advance
             if end == base.offset + base.length:
                 i += 1
             if end == backup.offset + backup.length:
                 j += 1
-
-        if len(selected_extents) != len(result):
-            sys.exit(-1)
-
-        i = 0  # index for base_extents
-        while i < min(len(selected_extents), len(result)):
-            old = selected_extents[i]
-            new = result[i]
-            if old.length != new.length or old.offset != new.offset:
-                sys.exit(-1)
-            i += 1
 
         if totalLength > 0:
             log.info(
