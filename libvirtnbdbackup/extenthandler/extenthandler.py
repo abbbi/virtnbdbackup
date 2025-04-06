@@ -251,6 +251,52 @@ class ExtentHandler:
 
                 current_index += 1
 
+        result = []
+        i = 0  # index for base_extents
+        j = 0  # index for backup_extents
+        while i < len(base_extents) and j < len(backup_extents):
+            base = base_extents[i]
+            backup = backup_extents[j]
+
+            log.debug("base: %d:%d(%s) bitmap: %d:%d(%s)",
+                      base.length, base.offset, str(base.data),
+                      backup.length, backup.offset, str(backup.data))
+
+            # Skip if either extent has data=False or no real intersection
+            if not base.data or base.offset + base.length <= backup.offset:
+                i += 1
+                continue
+            if not backup.data or backup.offset + backup.length <= base.offset:
+                j += 1
+                continue
+
+            offset = max(base.offset, backup.offset)
+            end = min(backup.offset + backup.length, base.offset + base.length)
+            log.debug("-->: %d:%d", offset, end - offset)
+            result.append(Extent(
+                context=base.context,
+                data=True,
+                offset=offset,
+                length=end - offset,
+            ))
+
+            # advance
+            if end == base.offset + base.length:
+                i += 1
+            if end == backup.offset + backup.length:
+                j += 1
+
+        if len(selected_extents) != len(result):
+            sys.exit(-1)
+
+        i = 0  # index for base_extents
+        while i < min(len(selected_extents), len(result)):
+            old = selected_extents[i]
+            new = result[i]
+            if old.length != new.length or old.offset != new.offset:
+                sys.exit(-1)
+            i += 1
+
         if totalLength > 0:
             log.info(
                 "Detected %d bytes [%s] non-sparse blocks for current bitmap.",
@@ -258,7 +304,7 @@ class ExtentHandler:
                 humanize(totalLength),
             )
 
-        return selected_extents
+        return result
 
     def queryBlockStatus(self) -> List[Extent]:
         """Check the status for each extent, whether if it is
