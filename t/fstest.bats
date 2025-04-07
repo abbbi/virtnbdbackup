@@ -22,13 +22,13 @@ setup() {
  aa-teardown >/dev/null || true
 }
 
-@test "Create VM image in ${TMPDIR}/${VM_IMAGE}" {
+@test "Create VM image in ${TMPDIR}/${VM_IMAGE} based on $IMAGE_URL" {
     # setup and create image with filesystem
     mkdir -p "${TMPDIR}"/empty
+    curl -o "$TMPDIR"/alpine.tar.gz "$IMAGE_URL"
+    gunzip "$TMPDIR"/alpine.tar.gz
     rm -f  "${TMPDIR}"/"${VM_IMAGE}"
-    # create reference data tar
-    tar -cf "${TMPDIR}"/reference.tar /etc
-    run virt-make-fs --partition --type=ext4 --size=+2G --format=qcow2 "${TMPDIR}"/reference.tar "${TMPDIR}"/"${VM_IMAGE}"
+    run virt-make-fs --partition --type=ext4 --size=+2G --format=qcow2 "${TMPDIR}"/alpine.tar "${TMPDIR}"/"${VM_IMAGE}"
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run modprobe nbd
@@ -99,7 +99,7 @@ setup() {
     run sleep 5 && mount /dev/nbd5p1 "${TMPDIR}"/empty
     echo "output = ${output}"
     [ "$status" -eq 0 ]
-    run cp -a /etc "${TMPDIR}"/empty/etc_before_fstrim2 && sync
+    run cp -a "${TMPDIR}"/empty/etc "${TMPDIR}"/empty/etc_before_fstrim2 && sync
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run rm -rf "${TMPDIR}"/empty/* && sync
@@ -110,7 +110,7 @@ setup() {
     run fstrim -v "${TMPDIR}"/empty
     echo "trimmed = ${output}" >&3
     [ "$status" -eq 0 ]
-    run cp -a /etc "${TMPDIR}"/empty/etc_after_fstrim2 && sync
+    run tar -xf "${TMPDIR}"/alpine.tar -C "${TMPDIR}"/empty/ && sync
     echo "output = ${output}"
     [ "$status" -eq 0 ]
     run umount "${TMPDIR}"/empty
