@@ -225,6 +225,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
                 "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
         partialfile.rename(targetFilePartial, targetFile)
+    if streamType != "raw":
         backupChecksum(fileStream, targetFile)
 
     return backupSize, True
