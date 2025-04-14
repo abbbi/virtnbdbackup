@@ -1,3 +1,10 @@
+Version 2.27
+---------
+ * virtnbdbackup:
+ - Skip saving checksum information for raw images included with --raw option:
+ The checksum calculated does not actually match during verify because certain
+ parts of the images may be seeked instead of actually beeing written. (#269)
+
 Version 2.26
 ---------
  * virtnbdbackup:
