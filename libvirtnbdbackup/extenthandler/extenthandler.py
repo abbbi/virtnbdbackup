@@ -203,53 +203,50 @@ class ExtentHandler:
             e for e in extents if e.context == self._metaContext and e.data
         ]
 
-        selected_extents = []
         totalLength: int = 0
-        base_index = 0
-        base_count = len(base_extents)
+        result = []
+        i = 0  # index for base_extents
+        j = 0  # index for backup_extents
+        while i < len(base_extents) and j < len(backup_extents):
+            base = base_extents[i]
+            backup = backup_extents[j]
 
-        for backup in backup_extents:
-            backup_end = backup.offset + backup.length
-            while (
-                base_index < base_count
-                and base_extents[base_index].offset + base_extents[base_index].length
-                <= backup.offset
-            ):
-                base_index += 1
+            log.debug(
+                "base: %d:%d(%s) bitmap: %d:%d(%s)",
+                base.length,
+                base.offset,
+                str(base.data),
+                backup.length,
+                backup.offset,
+                str(backup.data),
+            )
 
-            # Process relevant base extents
-            current_index = base_index
-            while current_index < base_count:
-                base = base_extents[current_index]
+            # Skip if either extent has data=False or no real intersection
+            if not base.data or base.offset + base.length <= backup.offset:
+                i += 1
+                continue
+            if not backup.data or backup.offset + backup.length <= base.offset:
+                j += 1
+                continue
 
-                # Stop if the base extent starts after the backup extent ends
-                if base.offset > backup_end:
-                    break
-
-                base_end = base.offset + base.length
-                log.debug(
-                    "add base0 %d %d %d %d",
-                    backup.offset,
-                    base.offset,
-                    base_end,
-                    backup_end,
+            offset = max(base.offset, backup.offset)
+            end = min(backup.offset + backup.length, base.offset + base.length)
+            log.debug("-->: %d:%d", offset, end - offset)
+            result.append(
+                Extent(
+                    context=base.context,
+                    data=True,
+                    offset=offset,
+                    length=end - offset,
                 )
+            )
+            totalLength += end - offset
 
-                ext = Extent(base.context, base.data, base.offset, base.length)
-                ext.offset = max(base.offset, backup.offset)
-                ext_end = min(base_end, backup_end)
-                ext.length = max(0, ext_end - ext.offset)
-                if ext.length and ext.data:
-                    log.debug(
-                        "-> extent %d %d %d",
-                        ext.offset,
-                        ext.offset + ext.length,
-                        ext.length,
-                    )
-                    selected_extents.append(ext)
-                    totalLength += ext.length
-
-                current_index += 1
+            # advance
+            if end == base.offset + base.length:
+                i += 1
+            if end == backup.offset + backup.length:
+                j += 1
 
         if totalLength > 0:
             log.info(
@@ -258,7 +255,7 @@ class ExtentHandler:
                 humanize(totalLength),
             )
 
-        return selected_extents
+        return result
 
     def queryBlockStatus(self) -> List[Extent]:
         """Check the status for each extent, whether if it is
