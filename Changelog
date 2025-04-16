@@ -1,3 +1,9 @@
+Version 2.28
+---------
+ * virtnbdbackup:
+ [Denis V. Lunev <den@openvz.org>]
+ - improve overlap() performance. The call should be O(L) complexity (#265)
+
 Version 2.27
 ---------
  * virtnbdbackup:
