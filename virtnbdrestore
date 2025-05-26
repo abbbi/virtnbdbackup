@@ -256,13 +256,15 @@ def main() -> None:
         else:
             output.target.Directory().create(args.output)
 
-        ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml", -1)
+        ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml")
         if not ConfigFiles:
             logging.error("No domain config file found")
             sys.exit(1)
-
-        ConfigFile = ConfigFiles[0]
-        logging.info("Using latest config file: [%s]", ConfigFile)
+        if args.until is not None:
+            ConfigFile = ConfigFiles[int(args.until.split(".")[-1])]
+        else:
+            ConfigFile = ConfigFiles[-1]
+        logging.info("Using config file: [%s]", ConfigFile)
 
         autoStart = False
         if lib.getLatest(args.input, "autostart.*", -1):

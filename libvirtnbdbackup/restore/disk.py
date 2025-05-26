@@ -89,7 +89,12 @@ def restore(  # pylint: disable=too-many-branches
             )
             raise RestoreError("Failed to locate backup.")
 
-        meta = header.get(restoreDisk[-1], stream)
+        if args.until is not None:
+            number = int(args.until.split(".")[-1])
+        else:
+            number = -1
+
+        meta = header.get(restoreDisk[number], stream)
 
         try:
             image.create(args, meta, targetFile, args.sshClient)

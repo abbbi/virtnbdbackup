@@ -77,6 +77,9 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
 
     if meta["dataSize"] == 0:
         logging.info("File [%s] contains no dirty blocks, skipping.", dataFile)
+        if meta["checkpointName"] == args.until:
+            logging.info("Reached checkpoint [%s], stopping", args.until)
+            raise UntilCheckpointReached
         return True
 
     logging.info(

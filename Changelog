@@ -1,6 +1,6 @@
 Version 2.29
 ---------
-
+ * virtnbdrestore: wrong vm config XML used if until option is used (#270)
 
 Version 2.28
 ---------
