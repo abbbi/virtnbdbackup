@@ -48,7 +48,7 @@ def _backingstore(args: Namespace, disk: DomainDisk) -> None:
         logging.warning("Configured backing store images must be changed.")
 
 
-def restore(  # pylint: disable=too-many-branches
+def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     args: Namespace, ConfigFile: str, virtClient: virt.client
 ) -> bytes:
     """Handle disk restore operation and adjust virtual machine
@@ -89,12 +89,11 @@ def restore(  # pylint: disable=too-many-branches
             )
             raise RestoreError("Failed to locate backup.")
 
+        cptnum = -1
         if args.until is not None:
-            number = int(args.until.split(".")[-1])
-        else:
-            number = -1
+            cptnum = int(args.until.split(".")[-1])
 
-        meta = header.get(restoreDisk[number], stream)
+        meta = header.get(restoreDisk[cptnum], stream)
 
         try:
             image.create(args, meta, targetFile, args.sshClient)
