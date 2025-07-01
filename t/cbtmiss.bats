@@ -75,9 +75,10 @@ setup() {
     echo "output = ${output}"
     run wait_for_agent $VM
 }
-@test "Backup: create incremental backup" {
+@test "Backup: create incremental backup, check fallback to full" {
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/cbtmiss
     [[ "${output}" =~  "Saved qcow image config" ]]
+    [[ "${output}" =~  "switching backup to full" ]]
     [ "$status" -eq 0 ]
 }
 @test "Create data in VM 2" {
