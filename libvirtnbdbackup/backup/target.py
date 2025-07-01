@@ -40,14 +40,14 @@ def Set(args: Namespace, disk: DomainDisk, ext: str = "data"):
     """Set Target file name to write data to, used for both data files
     and qemu disk info"""
     targetFile: str = ""
-    if args.level in ("full", "copy"):
-        level = args.level
+    level = args.level_filename
+    if level in ("full", "copy"):
         if disk.format == "raw":
             level = "copy"
         targetFile = f"{args.output}/{disk.target}.{level}.{ext}"
-    elif args.level in ("inc", "diff"):
+    elif level in ("inc", "diff"):
         cptName = getIdent(args)
-        targetFile = f"{args.output}/{disk.target}.{args.level}.{cptName}.{ext}"
+        targetFile = f"{args.output}/{disk.target}.{level}.{cptName}.{ext}"
 
     targetFilePartial = f"{targetFile}.partial"
 

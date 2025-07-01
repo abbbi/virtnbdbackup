@@ -27,9 +27,12 @@ fstest.tests: $(bats)
 nosparsedetect.tests: $(bats)
 	$(call clean)
 	export TEST=nosparsedetect ; ./bats-core/bin/bats nosparsedetect.bats
+cbtmiss.tests: $(bats)
+	$(call clean)
+	export TEST=cbtmiss ; ./bats-core/bin/bats cbtmiss.bats
 
 
-all: | $(bats) vm1.tests vm2.tests vm3.tests vm4.tests fstrim.tests nosparsedetect.tests fstrimsmall.tests fstest.tests
+all: | $(bats) vm1.tests vm2.tests vm3.tests vm4.tests fstrim.tests nosparsedetect.tests fstrimsmall.tests fstest.tests cbtmiss.tests
 
 clean:
 	$(call clean)

@@ -20,7 +20,7 @@ load agent-exec.sh
 
 
 setup() {
- aa-teardown >/dev/null || true
+	echo aa
 }
 
 @test "Setup / download vm image ${IMG_URL} to ${TMPDIR}/${VM_IMAGE}" {

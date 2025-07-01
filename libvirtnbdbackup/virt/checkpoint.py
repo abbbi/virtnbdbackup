@@ -266,6 +266,27 @@ def save(args: Namespace) -> None:
         raise SaveCheckpointError from e
 
 
+def validate(domObj: libvirt.virDomain, checkpointName: str) -> bool:
+    """Validate that checkpoint exists and correct"""
+    try:
+        c = domObj.checkpointLookupByName(checkpointName)
+        checkpointXml = c.getXMLDesc(0)
+        flags = (
+            libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
+            | libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE_VALIDATE
+        )
+
+        # Redefine the checkpoint using the provided XML description
+        c = domObj.checkpointCreateXML(checkpointXml, flags)
+        if not c:
+            return False
+        return True
+
+    except libvirt.libvirtError as e:
+        log.warning("Failed to validate checkpoint: [%s]", e)
+        return False
+
+
 def create(
     args: Namespace,
     domObj: libvirt.virDomain,
@@ -287,6 +308,9 @@ def create(
     if args.offline is False:
         if redefine(domObj, args) is False:
             raise RedefineCheckpointError("Failed to redefine checkpoints.")
+
+    # save level to reuse it properly when filename is selected for the backup
+    args.level_filename = args.level
 
     log.info("Checkpoint handling.")
     if args.level == "full" and checkpoints:
@@ -310,6 +334,17 @@ def create(
         if args.offline is True:
             log.info("Offline backup, using latest checkpoint, saving only delta.")
             checkpointName = parentCheckpoint
+
+            # Autostart is disabled, validation could not be performed
+        elif not validate(domObj, parentCheckpoint):
+            log.warning(
+                "Checkpoint [%s] is invalid, switching backup to full.",
+                parentCheckpoint,
+            )
+
+            args.level = "full"
+            # reset back to defaults
+            parentCheckpoint = ""
 
     if args.level in ("inc", "diff") and len(checkpoints) < 1:
         raise NoCheckpointsFound(

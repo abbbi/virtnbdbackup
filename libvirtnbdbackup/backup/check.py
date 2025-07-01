@@ -93,7 +93,6 @@ def vmstate(args, virtClient: virt.client, domObj: virDomain) -> None:
         log.warning("Domain is offline, resetting backup options.")
         args.level = "copy"
         log.warning("New Backup level: [%s].", args.level)
-        args.offline = True
 
     if args.offline is True and args.startonly is True:
         raise exceptions.BackupException(
