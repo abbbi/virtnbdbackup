@@ -1,3 +1,9 @@
+Version 2.30
+---------
+ * virtnbdbackup: handle lost CBT case (#272): fallback to full backup in case
+ stored dirty bitmaps in the qcow images are not sync with libvirt
+ checkpoints. (Denis V. Lunev <den@openvz.org>)
+
 Version 2.29
 ---------
  * virtnbdrestore: wrong vm config XML used if until option is used (#270)
