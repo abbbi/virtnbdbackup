@@ -267,7 +267,7 @@ def save(args: Namespace) -> None:
 
 
 def validate(domObj: libvirt.virDomain, checkpointName: str) -> bool:
-    """Validate that checkpoint exists and correct"""
+    """Validate that checkpoint exists"""
     try:
         c = domObj.checkpointLookupByName(checkpointName)
         checkpointXml = c.getXMLDesc(0)
