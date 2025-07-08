@@ -1131,6 +1131,10 @@ In these cases, you need to delete the existent checkpoints using:
 
 and start with a fresh full backup.
 
+`Note`:
+> Since version 2.30 virtnbdbackup will handle these situations automatically
+> and falls back to a full backup in case it detects a broken bitmap chain.
+
 
 ## Backup fails with "Error during checkpoint removal: [internal error: bitmap 'XX' not found in backing chain of 'XX']"
 
@@ -1144,6 +1148,11 @@ You can cleanup this situation by removing the reported checkpoints via:
 ```
  virsh checkpoint-delete <domain> --checkpointname <checkpoint_name> --metadata
 ```
+
+`Note`:
+> Since version 2.30 virtnbdbackup will handle these situations automatically
+> and falls back to a full backup in case it detects a broken bitmap chain.
+
 
 ## Backup fails with "Virtual machine does not support required backup features, please adjust virtual machine configuration."
 
