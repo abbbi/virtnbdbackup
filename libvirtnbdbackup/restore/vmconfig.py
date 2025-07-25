@@ -79,7 +79,9 @@ def setVMName(args: Namespace, vmConfig: str) -> bytes:
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
-def adjust(restoreDisk: DomainDisk, vmConfig: str, targetFile: str) -> bytes:
+def adjust(
+    args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
+) -> bytes:
     """Adjust virtual machine configuration after restoring. Changes
     the paths to the virtual machine disks and attempts to remove
     components excluded during restore."""
@@ -100,7 +102,7 @@ def adjust(restoreDisk: DomainDisk, vmConfig: str, targetFile: str) -> bytes:
             disk.getparent().remove(disk)
             continue
 
-        if disktype.Raw(driver, device):
+        if disktype.Raw(driver, device) and args.raw is False:
             logging.warning(
                 "Removing raw disk [%s] from vm config, use --raw to copy as is.",
                 dev,
