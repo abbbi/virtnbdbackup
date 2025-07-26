@@ -34,7 +34,7 @@ def Lun(device: list, dev: str) -> bool:
     """Check if device is direct attached LUN"""
     if device == "lun":
         log.warning(
-            "Skipping direct attached lun [%s], use option --raw to include",
+            "Skipping direct attached lun [%s], use option --raw to include.",
             dev,
         )
         return True
