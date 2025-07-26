@@ -115,7 +115,7 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
 
         _backingstore(args, disk)
         if args.adjust_config is True:
-            restConfig = vmconfig.adjust(disk, restConfig.decode(), targetFile)
+            restConfig = vmconfig.adjust(args, disk, restConfig.decode(), targetFile)
 
         logging.debug("Closing NBD connection")
         connection.disconnect()
