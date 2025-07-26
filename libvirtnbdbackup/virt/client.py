@@ -330,8 +330,8 @@ class client:
                 log.debug("Disk [%s]: file notation", dev)
                 diskPath = disk.xpath("source")[0].get("file")
             elif diskType == "block":
-                # direct attached block devices can reside von lvm
-                # skip those only if format != qcow2 (#264)
+                # Direct attached block devices can be qcow formatted.
+                # Skip only if format != qcow2 (#264)
                 if args.raw is False and disktype.Raw(diskFormat, dev):
                     continue
                 diskPath = disk.xpath("source")[0].get("dev")
