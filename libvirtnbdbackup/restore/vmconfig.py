@@ -25,6 +25,8 @@ from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.virt import disktype
 
+from typing import Dict
+
 
 def read(ConfigFile: str) -> str:
     """Read saved virtual machine config'"""
@@ -152,3 +154,11 @@ def restore(
         lib.copy(args, vmConfig, targetFile)
         logging.info("Copied original vm config to [%s]", targetFile)
         logging.info("Note: virtual machine config must be adjusted manually.")
+
+
+def apply_paths(config: bytes, restored_files: Dict[str, str]):
+    tree = xml.asTree(config)
+    os_config = tree.find("os")
+    for flag, val in restored_files.items():
+        os_config.find(flag).text = val
+    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
