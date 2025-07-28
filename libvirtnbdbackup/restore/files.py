@@ -38,19 +38,20 @@ def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
 
     for setting, val in info.items():
         f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
-        if lib.exists(args, val):
-            logging.info(
-                "File [%s]: for boot option [%s] already exists, skipping.",
-                val,
-                setting,
-            )
-            continue
 
         if len(f) == 0:
             logging.warning(
                 "Unable to identify backup file for [%s] in specified backup folder [%s].",
                 os.path.basename(val),
                 args.input,
+            )
+            continue
+
+        if lib.exists(args, val):
+            logging.info(
+                "File [%s]: for boot option [%s] already exists, skipping.",
+                val,
+                setting,
             )
             continue
 
