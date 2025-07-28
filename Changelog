@@ -1,3 +1,8 @@
+Version 2.32
+---------
+ * virtnbdrestore: handle exception if files in the backup folder are missing,
+ show warning instead (#277)
+
 Version 2.31
 ---------
  * virtnbdrestore: remove raw devices from xml config only if option `--raw`
