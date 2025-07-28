@@ -46,6 +46,14 @@ def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
             )
             continue
 
+        if len(f) == 0:
+            logging.warning(
+                "Unable to identify backup file for [%s] in specified backup folder [%s].",
+                os.path.basename(val),
+                args.input,
+            )
+            continue
+
         logging.info(
             "Restoring configured file [%s] for boot option [%s]", val, setting
         )
