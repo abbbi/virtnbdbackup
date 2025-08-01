@@ -1,6 +1,16 @@
 Version 2.32
 ---------
+ * virtnbdrestore: Add support for data-file setting in qcow images:
 
+ As with versions (>= v10.10.0), libvirt supports the qcow image data-file
+ setting. This allows to create metadata QCOW Images for RAW disk images,
+ and direct attached LVM/ZFS/RBD volumes.
+
+ Bitmaps are then stored within the metadata QCOW image, allowing to create
+ incremental backups for these disks, too.
+
+ During restore, the QCOW image must be created with the correct data-file
+ setting.
 
 Version 2.31
 ---------
