@@ -776,6 +776,9 @@ restore accordingly, the following changes are done:
  * The disk paths to the virtual machine are changed to the new target directory.
  * If virtual machine was operating on snapshots/backing store images, the
    references to the configured backing stores will be removed.
+ * If the virtual machine disk has configured a data-file/diskStore backend,
+   the paths in the created qcow image and vm config will be adjusted
+   accordingly.
  * Raw devices are removed from VM config if `--raw` is not specified, as well
    as floppy or cdrom devices (which aren't part of the backup).
 
