@@ -26,7 +26,10 @@ of your `kvm/qemu` virtual machines.
   - [Virtualenv](#virtualenv)
   - [Docker images](#docker-images)
 - [Backup modes and concept](#backup-modes-and-concept)
-- [Supported disk formats / raw disks](#supported-disk-formats--raw-disks)
+- [Incremntal backups of RAW disks and direct attached volumes (LVM, ZFS, ..)](#incremntal-backups-of-raw-disks-and-direct-attached-volumes-lvm-zfs-)
+  - [QCOW Format versions](#qcow-format-versions)
+  - [Libvirt versions < v10.10.0](#libvirt-versions--v10100)
+  - [Libvirt versions >= v10.10.0](#libvirt-versions--v10100)
 - [Backup Examples](#backup-examples)
   - [Local full/incremental backup](#local-fullincremental-backup)
   - [Backing up offline virtual domains](#backing-up-offline-virtual-domains)
@@ -273,20 +276,27 @@ It is possible to backup multiple virtual machines on the same host system at
 the same time, using separate calls to the application with a different target
 directory to store the data.
 
-# Supported disk formats / raw disks
+# Incremntal backups of RAW disks and direct attached volumes (LVM, ZFS, ..)
 
-`libvirt/qemu` supports dirty bitmaps, required for incremental backups only
+## QCOW Format versions
+
+`libvirt/qemu` support dirty bitmaps, required for incremental backups only
 with qcow(v3) based disk images. If you are using older image versions, you can
-only create `copy` backups, or consider converting the images to a newer
-format using `qemu-img`:
+only create `copy` backups, or consider converting the images to a newer format
+using `qemu-img`:
 
 > qemu-img convert -O qcow2 -o compat=1.1 disk-old.qcow2 disk.qcow2
 
+
+## Libvirt versions < v10.10.0
+
+Older versions of `libvirt/qemu` do not support creation of checkpoints
+for direct attached volumes or RAW images, as there is no way to 
+persistently store the bitmap information.
+
 By default `virtnbdbackup` will exclude all disks with format `raw` as well
 as direct attached (passthrough) disks such as LVM or ZVOL and ISCSI
-volumes. These type of virtual disks do not support storing checkpoint/bitmap
-metadata and do not support incremental/differential backup.
-[(more info)](https://patchew.org/QEMU/20210320093235.461485-1-pj@patrikjanousek.cz/)
+volumes. 
 
 This behavior can be changed if option `--raw` is specified, raw disks will
 then be included during a `full` backup. This of course means that no thin
@@ -298,6 +308,60 @@ must not be processed using `virtnbdrestore`.
 `Note:`
 > The backup data for raw disks will only be crash consistent, be aware
 > that this might result in inconsistent filesystems after restoring!
+
+## Libvirt versions >= v10.10.0
+
+Recent libvirt versions have added the possibility to use a so called
+"data-file" setting for QCOW images. By doing this, a QCOW image is used for
+metadata storage and is configured as the virtual machines primary disk, but
+the the data of the virtual machine is stored in whatever storage is specified
+as "data-file" setting (LVM Volumes, RAW images, ZFS Volumes, RBD ..)
+
+Now, the metadata qcow image can be used for persistent bitmap storage,
+thus allowing to create incremental backups for RAW backend devices, too.
+
+In order to make this work, you need to ajdust you virtual machine
+configuration. A short example is outlined below:
+
+ 1) You need to create a QCOW image that has a data-file setting, matching the
+    virtual size of your RAW device:
+
+```
+ # point the data-file to a temporary file, as create will overwrite whatever it finds here
+ qemu-img create -f qcow2 /tmp/metadata.qcow2 -o data_file=/tmp/TEMPFILE,data_file_raw=true ..
+ rm -f /tmp/TEMPFILE
+```
+
+ 2) Modify the qcow image to point to whatever RAW device you have your virtual machine
+ disk data on:
+
+```
+ qemu-img amend /tmp/metadata.qcow2 -o data_file=/your/original/volume.raw,data_file_raw=true
+```
+
+ 3) Adjust your virtual machines disk configuration and point the disk to the metadata
+ device, adding additional information about the data-file backend:
+
+```
+     <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='none' io='native' discard='unmap'/>
+      <source file='/tmp/metadata.qcow2'>
+        <dataStore type='file'>
+          <format type='raw'/>
+          <source file='/your/original/volume.raw'/>
+        </dataStore>
+      </source>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+```
+
+From this point on, you can use mostly all features for backup that regular
+QCOW images support: doing incremental backups.
+
+`Note:`
+> One Limitation: FULL backups for these devices will always be full
+> provisioned, as in the complete RAW image.
+
 
 # Backup Examples
 
