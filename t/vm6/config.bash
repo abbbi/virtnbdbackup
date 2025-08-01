@@ -2,10 +2,9 @@ QEMU_FILE=${TMPDIR}/convert.full.raw
 CONVERT_FILE=${TMPDIR}/restored.full.raw
 BACKUPSET=${TMPDIR}/testset
 RESTORESET=${TMPDIR}/restoreset
+VM_IMAGE="vm.qcow2"
 VM="vm6"
-VM_IMAGE="${VM}/vm6-sda.qcow2"
-
-touch ${TMPDIR}/vm6-sda.raw
+IMG_URL="https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2"
 
 # following outputs are expected for this vm image
 EXTENT_OUTPUT1="Got 7 extents to backup"

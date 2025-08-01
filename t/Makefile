@@ -17,7 +17,7 @@ vm5.tests: $(bats)
 	export TEST=vm5 ; ./bats-core/bin/bats tests.bats
 vm6.tests: $(bats)
 	$(call clean)
-	export TEST=vm6 ; ./bats-core/bin/bats tests.bats
+	export TEST=vm6 ; ./bats-core/bin/bats vm6.bats
 fstrim.tests: $(bats)
 	$(call clean)
 	export TEST=fstrim ; ./bats-core/bin/bats fstrim.bats
