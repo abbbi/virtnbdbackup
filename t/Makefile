@@ -15,6 +15,9 @@ vm4.tests: $(bats)
 vm5.tests: $(bats)
 	$(call clean)
 	export TEST=vm5 ; ./bats-core/bin/bats tests.bats
+vm6.tests: $(bats)
+	$(call clean)
+	export TEST=vm6 ; ./bats-core/bin/bats vm6.bats
 fstrim.tests: $(bats)
 	$(call clean)
 	export TEST=fstrim ; ./bats-core/bin/bats fstrim.bats
@@ -46,7 +49,7 @@ define clean
 	@rm -rf checkpoints
 	@rm -f vmconfig*.xml
 	@umount -lf /empty || true
-	for vm in vm1 restore_vm1 vm2 vm3 vm4 vm5 fstrim nosparsedetect restored fstrimsmall fstest; do \
+	for vm in vm1 restore_vm1 vm2 vm3 vm4 vm5 vm6 fstrim nosparsedetect restored fstrimsmall fstest; do \
 		if virsh list --all | grep $$vm; then \
 			virsh destroy $$vm; \
 			virsh undefine $$vm --checkpoints-metadata --nvram --managed-save; \

@@ -76,6 +76,40 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
             "Unable apply QCOW specific lazy_refcounts option: [%s]", errmsg
         )
 
+    try:
+        if qcowConfig["format-specific"]["data"]["data-file"]:
+            if args.adjust_config is True:
+                dataFilePath = os.path.join(
+                    args.output,
+                    os.path.basename(
+                        qcowConfig["format-specific"]["data"]["data-file"]
+                    ),
+                )
+                logging.info(
+                    "QCOW image with data-file backend detected [%s], adjusting path to: [%s]",
+                    qcowConfig["format-specific"]["data"]["data-file"],
+                    dataFilePath,
+                )
+            else:
+                dataFilePath = qcowConfig["format-specific"]["data"]["data-file"]
+                logging.info(
+                    "QCOW image with data-file backend detected, keeping original path: [%s]",
+                    dataFilePath,
+                )
+
+            opt.append("-o")
+            opt.append(f"data_file={dataFilePath}")
+    except KeyError as errmsg:
+        logging.warning("Unable to apply qcow data-file path setting: %s", errmsg)
+
+    try:
+        if qcowConfig["format-specific"]["data"]["data-file-raw"] is True:
+            opt.append("-o")
+            opt.append("data_file_raw=true")
+        logging.info("QCOW image with RAW data-file backend detected.")
+    except KeyError as errmsg:
+        pass
+
     return opt
 
 

@@ -109,10 +109,27 @@ def adjust(
             )
             disk.getparent().remove(disk)
             continue
+
         backingStore = disk.xpath("backingStore")
         if backingStore:
             logging.info("Removing existent backing store settings")
             disk.remove(backingStore[0])
+
+        dataStore = disk.xpath("source/dataStore")
+        if dataStore and dev == restoreDisk.target:
+            originalFile = os.path.basename(
+                disk.xpath("source/dataStore/source")[0].get("file")
+            )
+            abspath = os.path.join(
+                os.path.abspath(os.path.dirname(targetFile)), originalFile
+            )
+            logging.info(
+                "Adjusting dataStore setting for disk [%s] from [%s] to [%s]",
+                restoreDisk.target,
+                disk.xpath("source/dataStore/source")[0].get("file"),
+                abspath,
+            )
+            disk.xpath("source/dataStore/source")[0].set("file", abspath)
 
         originalFile = disk.xpath("source")[0].get("file")
         if dev == restoreDisk.target:
