@@ -11,7 +11,7 @@ Version 2.33
 
  During restore, the QCOW image must be created with the correct data-file
  setting and the virtual machine configuration must be adopted. The utility
- will now adjust pathes accordingly if -c option is specified.
+ will now adjust paths accordingly if -c option is specified.
 
  See README for details on how to configure your virtual machine to support
  incremental backups with RAW devices.
