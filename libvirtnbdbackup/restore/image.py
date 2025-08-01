@@ -76,6 +76,24 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
             "Unable apply QCOW specific lazy_refcounts option: [%s]", errmsg
         )
 
+    try:
+        if qcowConfig["format-specific"]["data"]["data-file"]:
+            opt.append("-o")
+            opt.append(
+                f'data_file={qcowConfig["format-specific"]["data"]["data-file"]}'
+            )
+        logging.info("QCOW image with data-file backend detected.")
+    except KeyError as errmsg:
+        pass
+
+    try:
+        if qcowConfig["format-specific"]["data"]["data-file-raw"] is True:
+            opt.append("-o")
+            opt.append("data_file_raw=true")
+        logging.info("QCOW image with RAW data-file backend detected.")
+    except KeyError as errmsg:
+        pass
+
     return opt
 
 
