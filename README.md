@@ -26,7 +26,7 @@ of your `kvm/qemu` virtual machines.
   - [Virtualenv](#virtualenv)
   - [Docker images](#docker-images)
 - [Backup modes and concept](#backup-modes-and-concept)
-- [Incremntal backups of RAW disks and direct attached volumes (LVM, ZFS, ..)](#incremntal-backups-of-raw-disks-and-direct-attached-volumes-lvm-zfs-)
+- [Incremental backups of RAW disks and direct attached volumes (LVM, ZFS, ..)](#incremental-backups-of-raw-disks-and-direct-attached-volumes-lvm-zfs-)
   - [QCOW Format versions](#qcow-format-versions)
   - [Libvirt versions < v10.10.0](#libvirt-versions--v10100)
   - [Libvirt versions >= v10.10.0](#libvirt-versions--v10100)
@@ -276,7 +276,7 @@ It is possible to backup multiple virtual machines on the same host system at
 the same time, using separate calls to the application with a different target
 directory to store the data.
 
-# Incremntal backups of RAW disks and direct attached volumes (LVM, ZFS, ..)
+# Incremental backups of RAW disks and direct attached volumes (LVM, ZFS, ..)
 
 ## QCOW Format versions
 
