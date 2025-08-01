@@ -1,4 +1,4 @@
-Version 2.32
+Version 2.33
 ---------
  * virtnbdrestore: Add support for data-file setting in qcow images:
 
@@ -13,6 +13,11 @@ Version 2.32
  setting.
 
  See README for details.
+
+Version 2.32
+---------
+ * virtnbdrestore: handle exception if files in the backup folder are missing,
+ show warning instead (#277)
 
 Version 2.31
 ---------
