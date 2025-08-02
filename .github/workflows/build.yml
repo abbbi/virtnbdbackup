@@ -153,6 +153,17 @@ jobs:
                   virtnbdbackup -h
                   virtnbdrestore -h
                   virtnbdmap -h
+          - name: Test installation on rhel10
+            uses: addnab/docker-run-action@v3
+            with:
+                image: almalinux:9
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  yum -yq install epel-release
+                  yum -yq install /work/artifacts/*noarch*rhel10.rpm
+                  virtnbdbackup -h
+                  virtnbdrestore -h
+                  virtnbdmap -h
           - name: Test installation on fedora39
             uses: addnab/docker-run-action@v3
             with:
