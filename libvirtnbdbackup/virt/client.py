@@ -287,18 +287,30 @@ class client:
 
         return diskPath
 
+    def _hint(self, dev: str):
+        """Show hint about possibility to reconfigure virtual machine with raw
+        devices to support incremental backups"""
+
+        if self.libvirtVersion <= 1010000:
+            return
+
+        msg = (
+            "Check README on how to adjust virtual machine configuration"
+            f" to enable full support for disk: [{dev}]."
+        )
+        log.warning(msg)
+
     def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
-        all non supported devices
+        all unsupported or excluded devices
         """
-        tree = xml.asTree(vmConfig)
         devices = []
 
         excludeList = None
         if args.exclude is not None:
             excludeList = args.exclude.split(",")
 
-        for disk in tree.xpath("devices/disk"):
+        for disk in xml.asTree(vmConfig).xpath("devices/disk"):
             discardOption = None
             dev = disk.xpath("target")[0].get("dev")
             device = disk.get("device")
@@ -333,6 +345,7 @@ class client:
                 # Direct attached block devices can be qcow formatted.
                 # Skip only if format != qcow2 (#264)
                 if args.raw is False and disktype.Raw(diskFormat, dev):
+                    self._hint(dev)
                     continue
                 diskPath = disk.xpath("source")[0].get("dev")
             else:
@@ -349,6 +362,7 @@ class client:
                 or disktype.Lun(device, dev)
                 or disktype.Raw(diskFormat, dev)
             ):
+                self._hint(dev)
                 continue
 
             diskFileName = os.path.basename(diskPath)
