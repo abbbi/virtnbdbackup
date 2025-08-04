@@ -2,7 +2,10 @@ Version 2.34
 ---------
  * virtnbdbackup: show hint about virtual machine config adjustment
  possibility in case raw devices are attached.
+ * virtnbdrestore: do not show warning if no data-file setting is found in
+ qcow json file.
  * Add RHEL10 RPM build to github workflow
+ * Do not make vm6.tests fail if /tmp/datafile.raw is missing.
 
 Version 2.33
 ---------

@@ -36,7 +36,9 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
     qcowConfig = None
     qcowConfigFile = lib.getLatest(args.input, f"{meta['diskName']}*.qcow.json*", -1)
     if not qcowConfigFile:
-        logging.warning("No qcow image config found, will use default options.")
+        logging.warning(
+            "No QCOW image config found in [%s], will use default options.", args.input
+        )
         return opt
 
     lastConfigFile = qcowConfigFile[0]
@@ -77,30 +79,27 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
         )
 
     try:
-        if qcowConfig["format-specific"]["data"]["data-file"]:
-            if args.adjust_config is True:
-                dataFilePath = os.path.join(
-                    args.output,
-                    os.path.basename(
-                        qcowConfig["format-specific"]["data"]["data-file"]
-                    ),
-                )
-                logging.info(
-                    "QCOW image with data-file backend detected [%s], adjusting path to: [%s]",
-                    qcowConfig["format-specific"]["data"]["data-file"],
-                    dataFilePath,
-                )
-            else:
-                dataFilePath = qcowConfig["format-specific"]["data"]["data-file"]
-                logging.info(
-                    "QCOW image with data-file backend detected, keeping original path: [%s]",
-                    dataFilePath,
-                )
+        dataFile = qcowConfig["format-specific"]["data"]["data-file"]
+        if args.adjust_config is True:
+            dataFilePath = os.path.join(
+                args.output,
+                os.path.basename(dataFile),
+            )
+            logging.info(
+                "QCOW image with data-file backend detected: [%s], adjusting path to: [%s]",
+                dataFile,
+                dataFilePath,
+            )
+        else:
+            logging.info(
+                "QCOW image with data-file backend detected, keeping original path: [%s]",
+                dataFile,
+            )
 
-            opt.append("-o")
-            opt.append(f"data_file={dataFilePath}")
+        opt.append("-o")
+        opt.append(f"data_file={dataFilePath}")
     except KeyError as errmsg:
-        logging.warning("Unable to apply qcow data-file path setting: %s", errmsg)
+        pass
 
     try:
         if qcowConfig["format-specific"]["data"]["data-file-raw"] is True:
@@ -114,7 +113,9 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
 
 
 def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
-    """Create target image file"""
+    """Read QCOW image related backup json and craete target image file using
+    its original options"""
+    options = getConfig(args, meta)
     logging.info(
         "Create virtual disk [%s] format: [%s] size: [%s] based on: [%s] preallocated: [%s]",
         targetFile,
@@ -124,7 +125,6 @@ def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
         args.preallocate,
     )
 
-    options = getConfig(args, meta)
     if lib.exists(args, targetFile):
         logging.error(
             "Target file already exists: [%s], won't overwrite.",

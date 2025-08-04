@@ -30,6 +30,8 @@ setup() {
     # convert the original QCOW image to raw file, adjust
     # data-file setting and resize QCOW image to match the
     # RAW files disk.
+    rm -f /tmp/datafile.raw
+    touch /tmp/datafile.raw
     qemu-img convert "${TMPDIR}/${VM_IMAGE}"  "${TMPDIR}/vm6-sda.raw"
     cp "${VM}/vm6-sda.qcow2" "${TMPDIR}"
     qemu-img amend "${TMPDIR}"/vm6-sda.qcow2 -o  data_file="${TMPDIR}/vm6-sda.raw",data_file_raw=true
