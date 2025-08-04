@@ -113,7 +113,7 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
 
 
 def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
-    """Read QCOW image related backup json and craete target image file using
+    """Read QCOW image related backup json and create target image file using
     its original options"""
     options = getConfig(args, meta)
     logging.info(
