@@ -1,3 +1,9 @@
+Version 2.34
+---------
+ * virtnbdbackup: show hint about virtual machine config adjustment
+ possibility in case raw devices are attached.
+ * Add RHEL10 RPM build to github workflow
+
 Version 2.33
 ---------
  * virtnbdrestore: Add support for data-file setting in qcow images:
