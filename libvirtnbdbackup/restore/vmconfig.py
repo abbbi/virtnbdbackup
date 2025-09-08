@@ -47,10 +47,13 @@ def changeVolumePathes(args: Namespace, vmConfig: str) -> bytes:
         dev = disk.xpath("target")[0].get("dev")
         diskType = disk.get("type")
         if diskType == "volume":
+            source = disk.xpath("source")[0]
             disk.set("type", "file")
-            volume = disk.xpath("source")[0].get("volume")
+            volume = source.get("volume")
             volume = os.path.join(args.output, volume)
-            disk.xpath("source")[0].set("file", volume)
+            source.set("file", volume)
+            for attr in ["pool", "volume"]:
+                source.attrib.pop(attr, None)
             logging.warning(
                 "Disk [%s]: is using volume notation, overriding setting to [%s]",
                 dev,
