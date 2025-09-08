@@ -55,6 +55,7 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
     configuration accordingly."""
     stream = streamer.SparseStream(types)
     vmConfig = vmconfig.read(ConfigFile)
+    vmConfig = vmconfig.changeVolumePathes(args, vmConfig).decode()
     vmDisks = virtClient.getDomainDisks(args, vmConfig)
     if not vmDisks:
         raise RestoreError("Unable to parse disks from config")

@@ -1,3 +1,10 @@
+Version 2.35
+---------
+ * virtnbdrestore: fix restore issue in case virtual machine is using
+ volume based disk configuration: the restore process attempted to identify
+ the volumes which do not exist anymore. Adjust virtual machine config and
+ reset the volume base setting to a file based notation. (#280)
+
 Version 2.34
 ---------
  * virtnbdbackup: show hint about virtual machine config adjustment
