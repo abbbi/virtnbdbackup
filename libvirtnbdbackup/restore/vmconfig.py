@@ -35,6 +35,34 @@ def read(ConfigFile: str) -> str:
         raise
 
 
+def changeVolumePathes(args: Namespace, vmConfig: str) -> bytes:
+    """In case a virtual machine is using the volume based notation to
+    configure disks, parsing the disk list from the configuration will
+    fail because the volume is not existent anymore. Modify the disk
+    setting from volume to file based before continuing to detect the
+    attached disks. (#280)
+    """
+    tree = xml.asTree(vmConfig)
+    for disk in tree.xpath("devices/disk"):
+        dev = disk.xpath("target")[0].get("dev")
+        diskType = disk.get("type")
+        if diskType == "volume":
+            source = disk.xpath("source")[0]
+            disk.set("type", "file")
+            volume = source.get("volume")
+            volume = os.path.join(args.output, volume)
+            source.set("file", volume)
+            for attr in ["pool", "volume"]:
+                source.attrib.pop(attr, None)
+            logging.warning(
+                "Disk [%s]: is using volume notation, overriding setting to [%s]",
+                dev,
+                volume,
+            )
+
+    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
+
+
 def removeDisk(vmConfig: str, excluded) -> bytes:
     """Remove disk from config, in case it has been excluded
     from the backup."""
@@ -87,10 +115,6 @@ def adjust(
     components excluded during restore."""
     tree = xml.asTree(vmConfig)
     for disk in tree.xpath("devices/disk"):
-        if disk.get("type") == "volume":
-            logging.info("Disk has type volume, resetting to type file.")
-            disk.set("type", "file")
-
         dev = disk.xpath("target")[0].get("dev")
         logging.debug("Handling target device: [%s]", dev)
 
