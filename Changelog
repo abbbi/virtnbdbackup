@@ -1,3 +1,9 @@
+Version 2.36
+---------
+ * virtnbdbackup: add `--pause` option: Suspend and resume virtual machine
+ while starting backup job. This can be useful for virtual machines where
+ freezing file systems using the qemu guest agent is not possible.
+
 Version 2.35
 ---------
  * virtnbdrestore: fix restore issue in case virtual machine is using

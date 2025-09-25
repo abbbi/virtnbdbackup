@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 from argparse import Namespace
 from typing import List
-from libvirt import virDomain
+from libvirt import virDomain, libvirtError
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.virt.exceptions import startBackupFailed
@@ -31,6 +31,17 @@ def start(
     disks: List[DomainDisk],
 ) -> bool:
     """Start backup job via libvirt API"""
+
+    paused: bool = False
+
+    if args.pause is True and args.start_domain is False:
+        try:
+            domObj.suspend()
+            paused = True
+            logging.info("Paused virtual machine.")
+        except libvirtError as e:
+            logging.warning("Attempting to pause VM failed: [%s]", e)
+
     try:
         logging.info("Starting backup job.")
         virtClient.startBackup(
@@ -42,5 +53,12 @@ def start(
         return True
     except startBackupFailed as e:
         logging.error(e)
+    finally:
+        if paused is True:
+            try:
+                domObj.resume()
+                logging.info("Resumed virtual machine.")
+            except libvirtError as e:
+                logging.warning("Attempting to resume VM failed: [%s]", e)
 
     return False

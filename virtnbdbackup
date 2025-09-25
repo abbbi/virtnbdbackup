@@ -128,6 +128,13 @@ def main() -> None:
         help="Start virtual machine if it is offline. (default: %(default)s)",
     )
     opt.add_argument(
+        "--pause",
+        default=False,
+        required=False,
+        action="store_true",
+        help="Pause virtual machine while starting backup job. (default: %(default)s)",
+    )
+    opt.add_argument(
         "-i",
         "--include",
         default=None,
