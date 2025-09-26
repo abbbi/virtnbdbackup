@@ -22,7 +22,7 @@ COPY . /tmp/build/
 RUN \
 apt-get update && \
 apt-get install -y --no-install-recommends \
-ca-certificates openssh-client python3-all python3-libnbd python3-libvirt python3-lz4 python3-setuptools python3-tqdm qemu-utils python3-lxml python3-paramiko python3-colorlog && \
+ca-certificates openssh-client python3-all python3-libnbd python3-libvirt python3-lz4 python3-setuptools python3-tqdm qemu-utils python3-lxml python3-paramiko python3-colorlog nbdkit nbdkit-plugin-python && \
 cd /tmp/build/ && python3 setup.py install && cd .. && \
 apt-get purge -y ca-certificates && apt-get -y autoremove --purge && apt-get clean && \
 rm -rf /var/lib/apt/lists/* /tmp/*
