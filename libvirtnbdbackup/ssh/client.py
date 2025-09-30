@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
 import socket
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Optional
 from enum import Enum
 from paramiko import (
     AutoAddPolicy,
@@ -54,6 +54,7 @@ class client:
         if mode == Mode.UPLOAD:
             self.copy = self.copyTo
         self.connection = self.connect()
+        self._sftp: Optional[SFTPClient] = None
 
     def connect(self) -> SSHClient:
         """Connect to remote system"""
@@ -85,8 +86,10 @@ class client:
 
     @property
     def sftp(self) -> SFTPClient:
-        """Copy file"""
-        return self.connection.open_sftp()
+        """Return SFTP client, opening connection on first use."""
+        if self._sftp is None:
+            self._sftp = self.connection.open_sftp()
+        return self._sftp
 
     def exists(self, filepath: str) -> bool:
         """
@@ -160,7 +163,8 @@ class client:
 
     def disconnect(self):
         """Disconnect"""
-        if self.sftp:
-            self.sftp.close()
+        if self._sftp is not None:
+            self._sftp.close()
+            self._sftp = None
         if self.connection:
             self.connection.close()
