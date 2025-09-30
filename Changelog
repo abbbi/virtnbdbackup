@@ -1,3 +1,8 @@
+Version 2.38
+---------
+ [Francisco Javier]
+ * virtnbdbackup: re-use existing sftp connections during backup. (#283)
+
 Version 2.37
 ---------
  * Add missing nbdkit and python plugin to docker container image. (#282)
