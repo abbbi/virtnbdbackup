@@ -319,9 +319,7 @@ def create(
     checkpointName: str = f"{defaultCheckpointName}.0"
     parentCheckpoint: str = ""
     cptFile: str = f"{args.output}/{args.domain}.cpt"
-
     checkpoints: List[str] = read(cptFile)
-    log.info("Loaded checkpoints from: [%s]", cptFile)
 
     if args.offline is False:
         if redefine(domObj, args) is False:
@@ -330,12 +328,15 @@ def create(
     # save level to reuse it properly when filename is selected for the backup
     args.level_filename = args.level
 
-    log.info("Checkpoint handling.")
+    # remove checkpoints as loaded from the checkpoint json file
     if args.level == "full" and checkpoints:
+        log.info("Loaded checkpoints from: [%s]", cptFile)
         if not removeAll(domObj, checkpoints, args, defaultCheckpointName):
             raise RemoveCheckpointError("Failed to remove checkpoint.")
         os.remove(cptFile)
         checkpoints = []
+    # if not checkpoints are found, remove all existent ones matching the
+    # name
     elif args.level == "full" and len(checkpoints) < 1:
         if not removeAll(domObj, None, args, defaultCheckpointName):
             raise RemoveCheckpointError("Failed to remove checkpoint.")
