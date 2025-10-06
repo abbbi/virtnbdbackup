@@ -39,6 +39,11 @@ from libvirtnbdbackup.exceptions import (
 
 log = logging.getLogger()
 
+redefineFlags = (
+    libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
+    | libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE_VALIDATE
+)
+
 
 def exists(
     domObj: libvirt.virDomain, checkpointName: str
@@ -225,8 +230,7 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
         try:
             domObj.checkpointCreateXML(
                 checkpointConfig.decode(),
-                libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
-                | libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE_VALIDATE,
+                redefineFlags,
             )
         except libvirt.libvirtError as e:
             log.error("Redefining checkpoint failed: [%s]: %s", checkpointName, e)
@@ -271,17 +275,11 @@ def validate(domObj: libvirt.virDomain, checkpointName: str) -> bool:
     try:
         c = domObj.checkpointLookupByName(checkpointName)
         checkpointXml = c.getXMLDesc(0)
-        flags = (
-            libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE
-            | libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE_VALIDATE
-        )
 
         # Redefine the checkpoint using the provided XML description
-        c = domObj.checkpointCreateXML(checkpointXml, flags)
-        if not c:
+        if not domObj.checkpointCreateXML(checkpointXml, redefineFlags):
             return False
         return True
-
     except libvirt.libvirtError as e:
         log.warning("Failed to validate checkpoint: [%s]", e)
         return False
@@ -335,7 +333,7 @@ def create(
             log.info("Offline backup, using latest checkpoint, saving only delta.")
             checkpointName = parentCheckpoint
 
-            # Autostart is disabled, validation could not be performed
+        # Autostart is disabled, validation could not be performed
         elif not validate(domObj, parentCheckpoint):
             log.warning(
                 "Checkpoint [%s] is invalid, switching backup to full.",
