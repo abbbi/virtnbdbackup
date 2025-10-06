@@ -1,0 +1,49 @@
+name: cbtmiss CI on ubuntu-22.04
+
+on: [push, pull_request]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: abbbi/github-actions-tune@v1
+    - name: Set up libvirt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          apparmor-profiles \
+          bridge-utils \
+          dnsmasq-base \
+          ebtables \
+          libarchive-tools \
+          libguestfs-tools \
+          libvirt-clients \
+          libvirt-daemon \
+          libvirt-daemon-system \
+          qemu-kvm \
+          qemu-utils \
+          python3-libnbd \
+          python3-tqdm \
+          python3-lz4 \
+          python3-libvirt \
+          python3-lxml \
+          python3-paramiko\
+          python3-scp \
+          python3-colorlog \
+          nbdkit \
+          nbdkit-plugin-python \
+          unzip \
+          libnbd-bin \
+        ;
+        # start daemon
+        echo 'security_driver = "none"' | sudo tee -a /etc/libvirt/qemu.conf
+        sudo aa-teardown
+        sudo rm -f /etc/apparmor.d/libvirt/libvirt*
+        sudo systemctl start libvirtd
+        sudo systemctl restart libvirtd
+        sudo modprobe nbd max_partitions=10
+    - name: Execute tests (cbtmiss)
+      run: cd t && sudo -E make cbtmiss.tests
