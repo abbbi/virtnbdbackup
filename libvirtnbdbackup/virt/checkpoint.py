@@ -86,7 +86,6 @@ def delete(
             checkpointName,
         )
         return True
-    log.debug("Attempt to remove checkpoint: [%s]", checkpointName)
 
     if not validate(domObj, checkpointName):
         log.warning(
@@ -95,6 +94,7 @@ def delete(
         flags = libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY
 
     try:
+        log.debug("Attempt to remove checkpoint: [%s]", checkpointName)
         cptObj.delete(flags)
         log.debug("Removed checkpoint: [%s]", checkpointName)
         return True
@@ -335,7 +335,7 @@ def create(
             raise RemoveCheckpointError("Failed to remove checkpoint.")
         os.remove(cptFile)
         checkpoints = []
-    # if not checkpoints are found, remove all existent ones matching the
+    # if no checkpoints are found in file, remove all existent ones matching the
     # name
     elif args.level == "full" and len(checkpoints) < 1:
         if not removeAll(domObj, None, args, defaultCheckpointName):
@@ -352,7 +352,6 @@ def create(
         if args.offline is True:
             log.info("Offline backup, using latest checkpoint, saving only delta.")
             checkpointName = parentCheckpoint
-
         # Autostart is disabled, validation could not be performed
         elif not validate(domObj, parentCheckpoint):
             log.warning(
