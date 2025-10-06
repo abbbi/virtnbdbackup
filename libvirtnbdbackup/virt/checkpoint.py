@@ -77,7 +77,7 @@ def delete(
     domObj: libvirt.virDomain, cptObj: libvirt.virDomainCheckpoint, checkpointName: str
 ) -> bool:
     """Delete checkpoint or checkpoint metadata in case validation
-    fails (bitmap is missing, but checkpoint still existant)"""
+    fails (bitmap is missing, but checkpoint still existent)"""
     flags: int = 0
     checkpointName = cptObj.getName()
     if defaultCheckpointName not in checkpointName:
