@@ -64,7 +64,7 @@ def getXml(cptObj: libvirt.virDomainCheckpoint) -> str:
 
 def getSize(domObj: libvirt.virDomain, checkpointName: str) -> int:
     """Return current size of checkpoint for all disks"""
-    size = 0
+    size: int = 0
     cpt = exists(domObj, checkpointName)
     cptTree = xml.asTree(getXml(cpt))
     for s in cptTree.xpath("disks/disk/@size"):
@@ -73,8 +73,12 @@ def getSize(domObj: libvirt.virDomain, checkpointName: str) -> int:
     return size
 
 
-def delete(cptObj: libvirt.virDomainCheckpoint, checkpointName: str) -> bool:
-    """Delete checkpoint"""
+def delete(
+    domObj: libvirt.virDomain, cptObj: libvirt.virDomainCheckpoint, checkpointName: str
+) -> bool:
+    """Delete checkpoint or checkpoint metadata in case validation
+    fails (bitmap is missing, but checkpoint still existant)"""
+    flags: int = 0
     checkpointName = cptObj.getName()
     if defaultCheckpointName not in checkpointName:
         log.debug(
@@ -83,8 +87,15 @@ def delete(cptObj: libvirt.virDomainCheckpoint, checkpointName: str) -> bool:
         )
         return True
     log.debug("Attempt to remove checkpoint: [%s]", checkpointName)
+
+    if not validate(domObj, checkpointName):
+        log.warning(
+            "Checkpoint inconsistency detected, removing metadata for checkpoint."
+        )
+        flags = libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY
+
     try:
-        cptObj.delete()
+        cptObj.delete(flags)
         log.debug("Removed checkpoint: [%s]", checkpointName)
         return True
     except libvirt.libvirtError as errmsg:
@@ -122,12 +133,15 @@ def _hasForeign(domObj: libvirt.virDomain, checkpointName: str) -> Optional[str]
     match our name, return so.
     """
     cpts = domObj.listAllCheckpoints()
-    if cpts:
-        for cpt in cpts:
-            checkpointName = cpt.getName()
-            log.debug("Found foreign checkpoint: [%s]", checkpointName)
-            if defaultCheckpointName not in checkpointName:
-                return checkpointName
+    if not cpts:
+        return None
+
+    for cpt in cpts:
+        checkpointName = cpt.getName()
+        log.debug("Found foreign checkpoint: [%s]", checkpointName)
+        if defaultCheckpointName not in checkpointName:
+            return checkpointName
+
     return None
 
 
@@ -165,6 +179,7 @@ def removeAll(
     used during FULL backup to reset checkpoint chain
     """
     log.debug("Cleaning up persistent storage %s", args.checkpointdir)
+    log.info("Removing all existent checkpoints before full backup.")
     try:
         for checkpointFile in glob.glob(f"{args.checkpointdir}/*.xml"):
             log.debug("Remove checkpoint file: %s", checkpointFile)
@@ -177,23 +192,25 @@ def removeAll(
         cpts = domObj.listAllCheckpoints()
         if cpts:
             for cpt in cpts:
-                if delete(cpt, checkpointName) is False:
+                if delete(domObj, cpt, checkpointName) is False:
                     return False
         return True
 
     for cp in checkpointList:
         cptObj = exists(domObj, cp)
         if cptObj:
-            if delete(cptObj, checkpointName) is False:
+            if delete(domObj, cptObj, checkpointName) is False:
                 return False
     return True
 
 
 def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
     """Redefine checkpoints from persistent storage"""
-    log.info("Loading checkpoint list from: [%s]", args.checkpointdir)
     checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
     checkpointList.sort(key=os.path.getmtime)
+
+    if checkpointList:
+        log.info("Loaded checkpoint list from: [%s]", args.checkpointdir)
 
     for checkpointFile in checkpointList:
         log.debug("Loading checkpoint config from: [%s]", checkpointFile)
@@ -271,7 +288,10 @@ def save(args: Namespace) -> None:
 
 
 def validate(domObj: libvirt.virDomain, checkpointName: str) -> bool:
-    """Validate that checkpoint exists"""
+    """Validate that checkpoint and bitmap exist and are OK
+    Currently the only way to correctly verify consistency is by redefine the checkpoint with
+    VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE_VALIDATE option set, which will check the bitmap
+    consistency, too."""
     try:
         c = domObj.checkpointLookupByName(checkpointName)
         checkpointXml = c.getXMLDesc(0)
@@ -300,8 +320,8 @@ def create(
     parentCheckpoint: str = ""
     cptFile: str = f"{args.output}/{args.domain}.cpt"
 
-    log.info("Loading checkpoints from: [%s]", cptFile)
     checkpoints: List[str] = read(cptFile)
+    log.info("Loaded checkpoints from: [%s]", cptFile)
 
     if args.offline is False:
         if redefine(domObj, args) is False:
@@ -312,7 +332,6 @@ def create(
 
     log.info("Checkpoint handling.")
     if args.level == "full" and checkpoints:
-        log.info("Removing all existent checkpoints before full backup.")
         if not removeAll(domObj, checkpoints, args, defaultCheckpointName):
             raise RemoveCheckpointError("Failed to remove checkpoint.")
         os.remove(cptFile)
@@ -339,7 +358,6 @@ def create(
                 "Checkpoint [%s] is invalid, switching backup to full.",
                 parentCheckpoint,
             )
-
             args.level = "full"
             # reset back to defaults
             parentCheckpoint = ""
