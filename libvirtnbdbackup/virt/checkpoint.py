@@ -138,7 +138,6 @@ def _hasForeign(domObj: libvirt.virDomain, checkpointName: str) -> Optional[str]
 
     for cpt in cpts:
         checkpointName = cpt.getName()
-        log.debug("Found foreign checkpoint: [%s]", checkpointName)
         if defaultCheckpointName not in checkpointName:
             return checkpointName
 
@@ -178,9 +177,9 @@ def removeAll(
     """Remove all existing checkpoints for a virtual machine,
     used during FULL backup to reset checkpoint chain
     """
-    log.debug("Cleaning up persistent storage %s", args.checkpointdir)
     log.info("Removing all existent checkpoints before full backup.")
     try:
+        log.debug("Cleaning up persistent storage %s", args.checkpointdir)
         for checkpointFile in glob.glob(f"{args.checkpointdir}/*.xml"):
             log.debug("Remove checkpoint file: %s", checkpointFile)
             os.remove(checkpointFile)
@@ -213,8 +212,8 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
         log.info("Loaded checkpoint list from: [%s]", args.checkpointdir)
 
     for checkpointFile in checkpointList:
-        log.debug("Loading checkpoint config from: [%s]", checkpointFile)
         try:
+            log.debug("Loading checkpoint config from: [%s]", checkpointFile)
             with output.openfile(checkpointFile, "rb") as f:
                 checkpointConfig = f.read()
                 root = ElementTree.fromstring(checkpointConfig)
