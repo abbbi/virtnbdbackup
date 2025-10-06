@@ -1,4 +1,4 @@
-name: fstrim CI on ubuntu-22.04
+name: cbtmiss CI on ubuntu-22.04
 
 on: [push, pull_request]
 
