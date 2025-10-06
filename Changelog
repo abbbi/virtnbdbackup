@@ -5,9 +5,9 @@ Version 2.38
 
  [Michael Ablassmeier]
  * virtnbdbackup: During full backup, all old checkpoints are removed.
- Sometimes there might be situations where bitmaps are not existant anymore.
+ Sometimes there might be situations where bitmaps are not existent anymore.
  Now, during full backup, checkpoint consistency is validated prior to
- removal, and checkpoints tied to  non-existant bitmaps will be removed with
+ removal, and checkpoints tied to  non-existent bitmaps will be removed with
  VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY flags enabled, to allow flawless
  full backups. The utility will issue WARNINGS in this case.
 
