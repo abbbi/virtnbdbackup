@@ -3,6 +3,16 @@ Version 2.38
  [Francisco Javier]
  * virtnbdbackup: reuse existing sftp connections during backup. (#283)
 
+ [Michael Ablassmeier]
+ * virtnbdbackup: During full backup, all old checkpoints are removed.
+ Sometimes there might be situations where bitmaps are not existant anymore.
+ Now, during full backup, checkpoint consistency is validated prior to
+ removal, and checkpoints tied to  non-existant bitmaps will be removed with
+ VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY flags enabled, to allow flawless
+ full backups. The utility will issue WARNINGS in this case.
+
+ See discussion (#285)
+
 Version 2.37
 ---------
  * Add missing nbdkit and python plugin to docker container image. (#282)

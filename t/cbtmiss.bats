@@ -47,7 +47,26 @@ setup() {
     run wait_for_agent $VM
 }
 @test "Backup: create full backup" {
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/cbtmiss_first
+    [[ "${output}" =~  "Saved qcow image config" ]]
+    [ "$status" -eq 0 ]
+}
+@test "Stop VM and remove bitmap from qcow image" {
+    run virsh destroy ${VM}
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run qemu-img info ${TMPDIR}/cbtmiss.qcow2
+    echo "output = ${output}"
+    run qemu-img bitmap ${TMPDIR}/cbtmiss.qcow2 --remove virtnbdbackup.0
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+    run virsh start ${VM}
+    run wait_for_agent $VM
+}
+@test "Backup: create full backup again, must delete checkpoint metadata only" {
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/cbtmiss
+    [[ "${output}" =~  "removing metadata for checkpoint" ]]
+    [[ "${output}" =~  "WARNING" ]]
     [[ "${output}" =~  "Saved qcow image config" ]]
     [ "$status" -eq 0 ]
 }
@@ -58,7 +77,7 @@ setup() {
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
 }
-@test "Stop VM and remove CBT" {
+@test "Stop VM and remove bitmap from qcow image again" {
     run virsh destroy ${VM}
     echo "output = ${output}"
     [ "$status" -eq 0 ]
@@ -99,7 +118,7 @@ setup() {
     run execute_qemu_command $VM sync
     [ "$status" -eq 0 ]
 }
-@test "Stop VM and remove CBT 2" {
+@test "Stop VM and remove bitmap from qcow image 3" {
     run virsh destroy ${VM}
     echo "output = ${output}"
     [ "$status" -eq 0 ]
