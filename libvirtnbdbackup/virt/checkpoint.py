@@ -172,7 +172,10 @@ def removeAll(
     args: Namespace,
 ) -> bool:
     """Remove all existing checkpoints for a virtual machine,
-    used during FULL backup to reset checkpoint chain
+    used during FULL backup to reset checkpoint chain, either
+    by using the list from the checkpoint file (for transient
+    checkpoint storage using --checkpointdir) or by using the
+    checkpoints as listed by the libvirt API
     """
     log.info("Removing all existent checkpoints before full backup.")
     try:
@@ -186,10 +189,11 @@ def removeAll(
 
     if checkpointList is None:
         cpts = domObj.listAllCheckpoints()
-        if cpts:
-            for cpt in cpts:
-                if delete(domObj, cpt) is False:
-                    return False
+        if not cpts:
+            return True
+        for cpt in cpts:
+            if delete(domObj, cpt) is False:
+                return False
         return True
 
     for cp in checkpointList:
