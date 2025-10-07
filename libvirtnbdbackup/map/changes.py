@@ -64,7 +64,7 @@ def replay(dataRanges: List, args: Namespace) -> None:
                 replaySrc.seek(extent["offset"])
                 logging.debug(
                     "Seek [%s], to [%s], currently at: [%s]",
-                    replayDevice,
+                    replayDevice.name,
                     extent["originalOffset"],
                     replayDevice.tell(),
                 )
