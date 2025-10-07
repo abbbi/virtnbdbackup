@@ -75,6 +75,16 @@ setup() {
     run virsh checkpoint-delete $VM --checkpointname virtnbdbackup.0
     [ "$status" -eq 0 ]
 }
+@test "Checkpoints: Foreign checkpoint must be detected" {
+    [ -z $INCTEST ] && skip "skipping"
+    virsh checkpoint-create-as $VM --name foreign --diskspec sda > /dev/null
+    run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/foreign-checkpoints
+    echo "output = ${output}"
+    [[ "$output" =~ "Foreign checkpoint found" ]]
+    [ "$status" -eq 1 ]
+    run virsh checkpoint-delete $VM --checkpointname foreign
+    [ "$status" -eq 0 ]
+}
 @test "Start backup job and nbd endpoint to create reference image" {
     rm -rf $BACKUPSET
     run ../virtnbdbackup -t raw $OPT -d $VM -s -o $BACKUPSET --socketfile ${TMPDIR}/sock
