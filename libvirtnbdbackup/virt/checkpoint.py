@@ -73,9 +73,7 @@ def getSize(domObj: libvirt.virDomain, checkpointName: str) -> int:
     return size
 
 
-def delete(
-    domObj: libvirt.virDomain, cptObj: libvirt.virDomainCheckpoint, checkpointName: str
-) -> bool:
+def delete(domObj: libvirt.virDomain, cptObj: libvirt.virDomainCheckpoint) -> bool:
     """Delete checkpoint or checkpoint metadata in case validation
     fails (bitmap is missing, but checkpoint still existent)"""
     flags: int = 0
@@ -121,7 +119,7 @@ def backup(args: Namespace, domObj: libvirt.virDomain) -> bool:
         return False
 
 
-def _hasForeign(domObj: libvirt.virDomain, checkpointName: str) -> Optional[str]:
+def _hasForeign(domObj: libvirt.virDomain) -> Optional[str]:
     """Check if the virtual machine has an checkpoint which was not
     created by virtnbdbackup
 
@@ -152,7 +150,7 @@ def checkForeign(
     not originating from this utility"""
     foreign = None
     if args.level in ("full", "inc", "diff"):
-        foreign = _hasForeign(domObj, defaultCheckpointName)
+        foreign = _hasForeign(domObj)
 
     if not foreign:
         return True
@@ -172,7 +170,6 @@ def removeAll(
     domObj: libvirt.virDomain,
     checkpointList: Union[List[Any], None],
     args: Namespace,
-    checkpointName: str,
 ) -> bool:
     """Remove all existing checkpoints for a virtual machine,
     used during FULL backup to reset checkpoint chain
@@ -191,14 +188,14 @@ def removeAll(
         cpts = domObj.listAllCheckpoints()
         if cpts:
             for cpt in cpts:
-                if delete(domObj, cpt, checkpointName) is False:
+                if delete(domObj, cpt) is False:
                     return False
         return True
 
     for cp in checkpointList:
         cptObj = exists(domObj, cp)
         if cptObj:
-            if delete(domObj, cptObj, checkpointName) is False:
+            if delete(domObj, cptObj) is False:
                 return False
     return True
 
@@ -330,14 +327,14 @@ def create(
     # remove checkpoints as loaded from the checkpoint json file
     if args.level == "full" and checkpoints:
         log.info("Loaded checkpoints from: [%s]", cptFile)
-        if not removeAll(domObj, checkpoints, args, defaultCheckpointName):
+        if not removeAll(domObj, checkpoints, args):
             raise RemoveCheckpointError("Failed to remove checkpoint.")
         os.remove(cptFile)
         checkpoints = []
     # if no checkpoints are found in file, remove all existent ones matching the
     # name
     elif args.level == "full" and len(checkpoints) < 1:
-        if not removeAll(domObj, None, args, defaultCheckpointName):
+        if not removeAll(domObj, None, args):
             raise RemoveCheckpointError("Failed to remove checkpoint.")
         checkpoints = []
 
