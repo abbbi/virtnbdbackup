@@ -18,26 +18,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import logging
 from argparse import Namespace
-from typing import List
+from typing import List, IO, Any
 from time import sleep
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup import output
 
 
-def wait(offset: int, replayDevice, timeout: int = 60) -> None:
+def wait(offset: int, replayDevice: IO[Any], timeout: int = 60) -> None:
     """Sometimes seeking the NBD device may not yet be possible after
     it has just been initialized. Wait until we can seek to the biggest
     offset without OS error before continuing"""
-    rty: int = 0
-    while True:
-        if rty >= timeout:
-            raise output.exceptions.OutputException("Timeout during setting up device.")
+    for _ in range(timeout):
         try:
             replayDevice.seek(offset)
-            break
+            return
         except OSError:
             sleep(1)
-            rty += 1
+    raise output.exceptions.OutputException("Timeout during setting up device.")
 
 
 def replay(dataRanges: List, args: Namespace) -> None:
