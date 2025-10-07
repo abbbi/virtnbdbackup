@@ -19,8 +19,25 @@ import os
 import logging
 from argparse import Namespace
 from typing import List
+from time import sleep
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup import output
+
+
+def wait(offset: int, replayDevice, timeout: int = 60) -> None:
+    """Sometimes seeking the NBD device may not yet be possible after
+    it has just been initialized. Wait until we can seek to the biggest
+    offset without OS error before continuing"""
+    rty: int = 0
+    while True:
+        if rty >= timeout:
+            raise output.exceptions.OutputException("Timeout during setting up device.")
+        try:
+            replayDevice.seek(offset)
+            break
+        except OSError:
+            sleep(1)
+            rty += 1
 
 
 def replay(dataRanges: List, args: Namespace) -> None:
@@ -35,14 +52,25 @@ def replay(dataRanges: List, args: Namespace) -> None:
     )
     dataSize = sum(extent["length"] for extent in blockListInc)
     progressBar = lib.progressBar(dataSize, "replaying..", args)
+
     with output.openfile(args.device, "wb") as replayDevice:
+        wait(blockListInc[-1]["originalOffset"], replayDevice)
         for extent in blockListInc:
             if args.noprogress:
                 logging.info(
-                    "Replaying offset %s from %s", extent["offset"], extent["file"]
+                    "Replaying offset [%s] from [%s] original offset [%s]",
+                    extent["offset"],
+                    extent["file"],
+                    extent["originalOffset"],
                 )
             with output.openfile(os.path.abspath(extent["file"]), "rb") as replaySrc:
                 replaySrc.seek(extent["offset"])
+                logging.debug(
+                    "Seek [%s], to [%s], currently at: [%s]",
+                    replayDevice,
+                    extent["originalOffset"],
+                    replayDevice.tell(),
+                )
                 replayDevice.seek(extent["originalOffset"])
                 replayDevice.write(replaySrc.read(extent["length"]))
             replayDevice.seek(0)

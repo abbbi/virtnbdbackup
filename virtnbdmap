@@ -234,6 +234,7 @@ def main() -> None:
             changes.replay(dataRanges, args)
         except OutputException as e:
             logging.error("Failed to replay changes: %s", e)
+            qemu.util("").disconnect(args.device)
             lib.killProc(nbdkitProcess.pid)
             sys.exit(1)
 
