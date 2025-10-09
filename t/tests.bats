@@ -325,6 +325,7 @@ toOut() {
     [ "$status" -eq 0 ]
     run ../virtnbdbackup -d $VM -l inc -o ${TMPDIR}/ext-checkpoint
     echo "output = ${output}"
+    [[ "$output" =~ "Foreign checkpoint found" ]]
     [ "$status" -eq 1 ]
     run virsh checkpoint-delete $VM "external"
     echo "output = ${output}"
@@ -338,6 +339,7 @@ toOut() {
     [ "$status" -eq 0 ]
     run ../virtnbdbackup -v -d $VM -l full -o ${TMPDIR}/ext-checkpoint-full
     echo "output = ${output}"
+    [[ "$output" =~ "Foreign checkpoint found" ]]
     [ "$status" -eq 1 ]
     run virsh checkpoint-delete $VM "external"
     echo "output = ${output}"
