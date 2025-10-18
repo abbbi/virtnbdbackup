@@ -84,6 +84,21 @@ jobs:
                   rm /work/dist/*.tar.gz
                   rename .rpm .fedora41.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
+          - name: Build on fedora42
+            uses: addnab/docker-run-action@v3
+            with:
+                image: fedora:42
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  yum -yq install rpm-build python3 \
+                    python3-setuptools util-linux
+                  mkdir -p /work/dist/fedora42
+                  cd /work/
+                  python3.13 setup.py bdist_rpm --python /usr/bin/python3.13 \
+                    --requires "python3-libvirt python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog qemu-img openssh-clients"
+                  rm /work/dist/*.tar.gz
+                  rename .rpm .fedora42.rpm /work/dist/*.rpm
+                  mv /work/dist/* artifacts/
           - name: Build on opensuse
             uses: addnab/docker-run-action@v3
             with:
@@ -183,6 +198,17 @@ jobs:
                 run: |
                   yum -yq install epel-release
                   yum -yq install /work/artifacts/*noarch*fedora41.rpm
+                  virtnbdbackup -h
+                  virtnbdrestore -h
+                  virtnbdmap -h
+          - name: Test installation on fedora42
+            uses: addnab/docker-run-action@v3
+            with:
+                image: fedora:42
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  yum -yq install epel-release
+                  yum -yq install /work/artifacts/*noarch*fedora42.rpm
                   virtnbdbackup -h
                   virtnbdrestore -h
                   virtnbdmap -h
