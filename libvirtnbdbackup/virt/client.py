@@ -300,7 +300,9 @@ class client:
         )
         log.warning(msg)
 
-    def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
+    def getDomainDisks(  # pylint: disable=too-many-branches
+        self, args: Namespace, vmConfig: str
+    ) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
         all unsupported or excluded devices
         """
