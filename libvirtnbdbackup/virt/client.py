@@ -348,6 +348,10 @@ class client:
                     self._hint(dev)
                     continue
                 diskPath = disk.xpath("source")[0].get("dev")
+            elif diskType == "network":
+                log.error("Unsupported network disk type for disk [%s]", dev)
+                self._hint(dev)
+                continue
             else:
                 log.error("Unable to detect disk volume type for disk [%s]", dev)
                 continue

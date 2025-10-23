@@ -1,6 +1,8 @@
 Version 2.39
 ---------
  * Add fedora 42 to build scripts.
+ * Gracefully handle network attached disk devices, show error message and
+ hint (#286)
 
 Version 2.38
 ---------
