@@ -16,7 +16,7 @@ from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.restore import server
 from libvirtnbdbackup.restore import files
-from libvirtnbdbackup.restore import image
+from libvirtnbdbackup.restore import image as image_mod
 from libvirtnbdbackup.restore import header
 from libvirtnbdbackup.restore import data
 from libvirtnbdbackup.restore import vmconfig
@@ -280,7 +280,7 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
             createTarget = targetFile
 
         try:
-            image.create(args, meta, createTarget, args.sshClient)
+            image_mod.create(args, meta, createTarget, args.sshClient)
         except RestoreError as errmsg:
             raise RestoreError("Creating target image failed.") from errmsg
 
@@ -323,3 +323,4 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
         restConfig = vmconfig.setVMName(args, restConfig.decode())
 
     return restConfig
+
