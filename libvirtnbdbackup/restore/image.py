@@ -16,10 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
+import re
 import logging
 import json
 from argparse import Namespace
-from typing import List, Dict
+from typing import List, Dict, Optional
+
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
@@ -27,6 +29,15 @@ from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh.exceptions import sshError
+
+
+_RBD_RE = re.compile(r"^rbd:(?P<pool>[^/]+)(?:/(?P<image>[^/]+))?$")
+
+
+def _is_rbd_target(s: Optional[str]) -> bool:
+    if not s or not isinstance(s, str):
+        return False
+    return _RBD_RE.match(s) is not None
 
 
 def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
@@ -78,9 +89,11 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
             "Unable apply QCOW specific lazy_refcounts option: [%s]", errmsg
         )
 
+    # Handle data-file path only when the output is a filesystem path.
+    # If args.output is an RBD URL (rbd:pool[/image]), we must not join it with filenames.
     try:
         dataFile = qcowConfig["format-specific"]["data"]["data-file"]
-        if args.adjust_config is True:
+        if args.adjust_config is True and not _is_rbd_target(getattr(args, "output", None)):
             dataFilePath = os.path.join(
                 args.output,
                 os.path.basename(dataFile),
@@ -91,14 +104,15 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
                 dataFilePath,
             )
         else:
+            dataFilePath = dataFile
             logging.info(
                 "QCOW image with data-file backend detected, keeping original path: [%s]",
-                dataFile,
+                dataFilePath,
             )
 
         opt.append("-o")
         opt.append(f"data_file={dataFilePath}")
-    except KeyError as errmsg:
+    except KeyError:
         pass
 
     try:
@@ -106,7 +120,7 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
             opt.append("-o")
             opt.append("data_file_raw=true")
         logging.info("QCOW image with RAW data-file backend detected.")
-    except KeyError as errmsg:
+    except KeyError:
         pass
 
     return opt
@@ -114,7 +128,20 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
 
 def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
     """Read QCOW image related backup json and create target image file using
-    its original options"""
+    its original options.
+
+    RBD-aware behavior:
+      - If targetFile is an RBD URL (rbd:<pool>[/<image>]), we do NOT create anything here.
+        The disk restore pipeline will stream the reconstructed raw image into RBD via
+        `qemu-img convert -O raw rbd:...` after writing to a local staging file.
+    """
+    if _is_rbd_target(targetFile):
+        logging.info(
+            "Target [%s] is an RBD URL; skipping local image creation (handled later by qemu-img convert).",
+            targetFile,
+        )
+        return
+
     options = getConfig(args, meta)
     logging.info(
         "Create virtual disk [%s] format: [%s] size: [%s] based on: [%s] preallocated: [%s]",
@@ -145,3 +172,4 @@ def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
     except (ProcessError, sshError) as e:
         logging.error("Failed to create restore target: [%s]", e)
         raise RestoreError from e
+
