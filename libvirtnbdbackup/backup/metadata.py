@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import os
+import os, zlib
 import logging
 from argparse import Namespace
 from typing import List, Union
@@ -31,6 +31,33 @@ from libvirtnbdbackup.output.exceptions import OutputException
 
 log = logging.getLogger()
 
+def adler32_full_file(path: str, bufsize: int = 8 * 1024 * 1024) -> int:
+    """
+    Compute Adler-32 over the entire file, matching virtnbdrestore's verify path.
+    """
+    csum = 1  # zlib.adler32 seed
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(bufsize), b""):
+            csum = zlib.adler32(chunk, csum)
+    return csum & 0xFFFFFFFF
+
+def _fsync_file(path: str) -> None:
+    try:
+        with open(path, "rb", buffering=0) as f:
+            os.fsync(f.fileno())
+    except Exception:
+        pass
+
+def write_checksum_sidecar(target_file: str, crc: int) -> None:
+    sidecar = f"{target_file}.chksum"
+    with open(sidecar, "w") as fh:
+        fh.write(f"{crc}\n")
+    try:
+        with open(sidecar, "rb", buffering=0) as f:
+            os.fsync(f.fileno())
+    except Exception:
+        pass
+        
 
 def backupChecksum(fileStream, targetFile):
     """Save the calculated adler32 checksum, it can be verified
