@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import string
 import random
+import time
 import logging
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple, Union
@@ -67,7 +68,6 @@ class client:
                     credential[4] = user_data[0]
                 elif credential[0] == libvirt.VIR_CRED_PASSPHRASE:
                     credential[4] = user_data[1]
-
             return 0
 
         log.debug("Username: %s", user)
@@ -80,7 +80,6 @@ class client:
                 user_data = [user, password]
                 auth.append(_cred)
                 auth.append(user_data)
-
             return libvirt.openAuth(uri, auth, 0)
         except libvirt.libvirtError as e:
             raise connectionFailed(e) from e
@@ -102,7 +101,7 @@ class client:
         is established to a remote host."""
         log.debug("Libvirt URI: [%s]", args.uri)
 
-        if args.user and args.password:
+        if getattr(args, "user", None) and getattr(args, "password", None):
             conn = self._connectAuth(args.uri, args.user, args.password)
         else:
             conn = self._connectOpen(args.uri)
@@ -115,10 +114,7 @@ class client:
         # domain files will be copied via SFTP.
         if "qemu+ssh" in args.uri:
             remoteHostname = conn.getHostname()
-            log.info(
-                "Connected to remote host: [%s]",
-                remoteHostname,
-            )
+            log.info("Connected to remote host: [%s]", remoteHostname)
             self.remoteHost = remoteHostname
 
         return conn
@@ -212,17 +208,66 @@ class client:
         except libvirt.libvirtError as errmsg:
             log.warning("Failed to set autostart flag for domain: [%s]", errmsg)
 
-    def defineDomain(self, vmConfig: bytes, autoStart: bool) -> bool:
-        """Define domain based on restored config"""
+    def defineDomain(
+        self, vmConfig: bytes, autoStart: bool, allowExisting: bool = False
+    ) -> bool:
+        """Define domain based on restored config.
+
+        When allowExisting=True:
+          - If a domain with the same name already exists, do NOT fail—just warn and return True.
+          - If autoStart is True, apply autostart to the existing domain.
+        """
+        # Extract domain name from the XML we'll define
+        try:
+            tree = xml.asTree(vmConfig.decode())
+            name_el = tree.find("name")
+            dom_name = name_el.text if name_el is not None else None
+        except Exception as e:
+            log.error("Failed to parse restored VM config for name: %s", e)
+            return False
+
+        # If requested, tolerate existing domains
+        if allowExisting and dom_name:
+            try:
+                existing = self._conn.lookupByName(dom_name)
+            except libvirt.libvirtError:
+                existing = None
+
+            if existing is not None:
+                log.warning(
+                    "Domain [%s] already exists; skipping re-definition because --auto-register is enabled.",
+                    dom_name,
+                )
+                if autoStart:
+                    self.domainAutoStart(existing)
+                return True
+
+        # Normal define path
         try:
             log.info("Redefining domain based on adjusted config.")
             domObj = self._conn.defineXMLFlags(vmConfig.decode(), 0)
             log.info("Successfully redefined domain [%s]", domObj.name())
         except libvirt.libvirtError as errmsg:
+            # If allowExisting is set, also tolerate 'already exists' errors that happen mid-define.
+            msg = str(errmsg)
+            if allowExisting and "already exists" in msg.lower() and dom_name:
+                log.warning(
+                    "Domain [%s] already exists; continuing because --auto-register is enabled. (%s)",
+                    dom_name,
+                    msg,
+                )
+                try:
+                    domObj = self._conn.lookupByName(dom_name)
+                    if autoStart:
+                        self.domainAutoStart(domObj)
+                except libvirt.libvirtError:
+                    pass
+                return True
+
             log.error("Failed to define domain: [%s]", errmsg)
             return False
 
-        if autoStart is True:
+        if autoStart:
             self.domainAutoStart(domObj)
 
         return True
@@ -231,11 +276,11 @@ class client:
         """Return object with general vm information relevant
         for backup"""
         tree = xml.asTree(vmConfig)
-        settings = {}
+        settings: Dict[str, str] = {}
 
         for flag in ["loader", "nvram", "kernel", "initrd"]:
             try:
-                settings[flag] = tree.find("os").find(flag).text
+                settings[flag] = tree.find("os").find(flag).text  # type: ignore[union-attr]
             except AttributeError as e:
                 log.debug("No setting [%s] found: %s", flag, e)
 
@@ -287,7 +332,7 @@ class client:
 
         return diskPath
 
-    def _hint(self, dev: str):
+    def _hint(self, dev: str) -> None:
         """Show hint about possibility to reconfigure virtual machine with raw
         devices to support incremental backups"""
 
@@ -300,13 +345,11 @@ class client:
         )
         log.warning(msg)
 
-    def getDomainDisks(  # pylint: disable=too-many-branches
-        self, args: Namespace, vmConfig: str
-    ) -> List[DomainDisk]:
+    def getDomainDisks(self, args: Namespace, vmConfig: str) -> List[DomainDisk]:
         """Parse virtual machine configuration for disk devices, filter
         all unsupported or excluded devices
         """
-        devices = []
+        devices: List[DomainDisk] = []
 
         excludeList = None
         if args.exclude is not None:
@@ -351,9 +394,30 @@ class client:
                     continue
                 diskPath = disk.xpath("source")[0].get("dev")
             elif diskType == "network":
-                log.error("Unsupported network disk type for disk [%s]", dev)
-                self._hint(dev)
-                continue
+                # Support Ceph RBD volumes (network/protocol='rbd') when --raw is used
+                log.debug("Disk [%s]: network notation", dev)
+                src = disk.xpath("source")[0]
+                protocol = src.get("protocol")
+                # Only handle RBD here; other network protocols are not supported
+                if protocol != "rbd":
+                    log.info(
+                        "Skipping network disk [%s]: unsupported protocol [%s]",
+                        dev,
+                        protocol,
+                    )
+                    continue
+                if args.raw is False:
+                    # RBD presents as driver type='raw' — include only when --raw is set.
+                    self._hint(dev)
+                    log.info("Skipping RBD disk [%s] (use --raw to include)", dev)
+                    continue
+                # Expect name="pool/image" on <source>
+                name = src.get("name")
+                if not name or "/" not in name:
+                    log.error("Invalid RBD source 'name' for disk [%s]", dev)
+                    continue
+                # Synthesize a 'path' so downstream logic has a stable identifier
+                diskPath = f"rbd:{name}"
             else:
                 log.error("Unable to detect disk volume type for disk [%s]", dev)
                 continue
@@ -388,7 +452,7 @@ class client:
         log.debug("Device list: %s ", devices)
         return devices
 
-    def _createBackupXml(self, args: Namespace, diskList) -> str:
+    def _createBackupXml(self, args: Namespace, diskList: List[DomainDisk]) -> str:
         """Create XML file for starting an backup task using libvirt API."""
         top = xml.ElementTree.Element("domainbackup", {"mode": "pull"})
         if self.remoteHost == "":
@@ -398,9 +462,9 @@ class client:
         else:
             listen = self.remoteHost
             tls = "no"
-            if args.tls:
+            if getattr(args, "tls", False):
                 tls = "yes"
-            if args.nbd_ip != "":
+            if getattr(args, "nbd_ip", "") != "":
                 listen = args.nbd_ip
             xml.ElementTree.SubElement(
                 top,
@@ -414,19 +478,19 @@ class client:
             inc = xml.ElementTree.SubElement(top, "incremental")
             inc.text = args.cpt.parent
 
-        for disk in diskList:
+        for d in diskList:
             scratchId = "".join(
                 random.choices(string.ascii_uppercase + string.digits, k=5)
             )
-            scratchFile = f"{args.scratchdir}/backup.{scratchId}.{disk.target}"
+            scratchFile = f"{args.scratchdir}/backup.{scratchId}.{d.target}"
             log.debug("Using scratch file: %s", scratchFile)
-            dE = xml.ElementTree.SubElement(disks, "disk", {"name": disk.target})
+            dE = xml.ElementTree.SubElement(disks, "disk", {"name": d.target})
             xml.ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
 
         return xml.indent(top)
 
     def _createCheckpointXml(
-        self, diskList: List[Any], parentCheckpoint: str, checkpointName: str
+        self, diskList: List[DomainDisk], parentCheckpoint: str, checkpointName: str
     ) -> str:
         """Create valid checkpoint XML file which is passed to libvirt API"""
         top = xml.ElementTree.Element("domaincheckpoint")
@@ -439,29 +503,81 @@ class client:
             cptName = xml.ElementTree.SubElement(pct, "name")
             cptName.text = parentCheckpoint
         disks = xml.ElementTree.SubElement(top, "disks")
-        for disk in diskList:
+        for d in diskList:
             # No persistent checkpoint will be created for raw disks,
             # because it is not supported. Backup will only be crash
-            # consistent. If we would like to create a consistent
-            # backup, we would have to create an snapshot for these
-            # kind of disks, example:
-            # virsh checkpoint-create-as vm4 --diskspec sdb
-            # error: unsupported configuration:  \
-            # checkpoint for disk sdb unsupported for storage type raw
-            # See also:
-            # https://lists.gnu.org/archive/html/qemu-devel/2021-03/msg07448.html
-            if disk.format != "raw":
-                xml.ElementTree.SubElement(disks, "disk", {"name": disk.target})
+            # consistent.
+            if d.format != "raw":
+                xml.ElementTree.SubElement(disks, "disk", {"name": d.target})
 
         return xml.indent(top)
+        
+    def ensureDomainStopped(self, name: str, graceful_timeout: int = 60) -> bool:
+        """
+        Ensure the domain 'name' is not running.
+        1) Attempt graceful ACPI shutdown and wait up to 'graceful_timeout' seconds.
+        2) If still running, force poweroff (destroy).
+        Returns True if the domain is stopped or does not exist; False on failure.
+        """
+        try:
+            dom = self.getDomain(name)
+        except domainNotFound:
+            # Domain with that name isn't defined -> nothing to stop.
+            return True
+
+        try:
+            if not dom.isActive():
+                return True
+        except libvirt.libvirtError as e:
+            log.warning("Failed to check domain state for [%s]: %s", name, e)
+            # Try to proceed anyway
+
+        # 1) Graceful shutdown
+        try:
+            log.info("Requesting graceful shutdown of domain [%s]...", name)
+            dom.shutdown()
+        except libvirt.libvirtError as e:
+            log.warning("Graceful shutdown request failed for [%s]: %s", name, e)
+
+        deadline = time.time() + graceful_timeout
+        while time.time() < deadline:
+            try:
+                if not dom.isActive():
+                    log.info("Domain [%s] shut down gracefully.", name)
+                    return True
+            except libvirt.libvirtError:
+                # If we can't query state, give it a moment
+                pass
+            time.sleep(1)
+
+        # 2) Force poweroff
+        log.warning("Graceful shutdown timed out for [%s]; forcing poweroff.", name)
+        try:
+            dom.destroy()
+        except libvirt.libvirtError as e:
+            log.error("Force poweroff failed for [%s]: %s", name, e)
+            return False
+
+        # Confirm it’s off
+        for _ in range(30):
+            try:
+                if not dom.isActive():
+                    log.info("Domain [%s] is now stopped.", name)
+                    return True
+            except libvirt.libvirtError:
+                pass
+            time.sleep(0.5)
+
+        log.error("Domain [%s] still appears to be running after destroy().", name)
+        return False    
 
     def startBackup(
         self,
         args: Namespace,
         domObj: libvirt.virDomain,
-        diskList: List[Any],
+        diskList: List[DomainDisk],
     ) -> None:
-        """Attempt to start pull based backup task using  XML description"""
+        """Attempt to start pull based backup task using XML description"""
         backupXml = self._createBackupXml(args, diskList)
         checkpointXml = None
         freezed = False
@@ -505,3 +621,4 @@ class client:
         except libvirt.libvirtError as err:
             log.warning("Failed to stop backup job: [%s]", err)
             return False
+
