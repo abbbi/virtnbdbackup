@@ -19,6 +19,7 @@ rm -rf libnbd-*
 virtualenv -p $(which python3) ${VENVDIR}
 git clone https://github.com/abbbi/virtnbdbackup.git -b ${BRANCH}
 source ${VENVDIR}/bin/activate
+pip install -U setuptools
 curl https://download.libguestfs.org/libnbd/${LIBNBD_MAJ}/${LIBNBD_VERSION}.tar.gz  > ${LIBNBD_VERSION}.tar.gz
 tar xzf ${LIBNBD_VERSION}.tar.gz
 cd ${LIBNBD_VERSION}
