@@ -107,67 +107,141 @@ def setVMName(args: Namespace, vmConfig: str) -> bytes:
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
-def adjust(
-    args: Namespace, restoreDisk: DomainDisk, vmConfig: str, targetFile: str
-) -> bytes:
-    """Adjust virtual machine configuration after restoring. Changes
-    the paths to the virtual machine disks and attempts to remove
-    components excluded during restore."""
+def adjust(args, disk, vmConfig: str, adjustTarget: str) -> bytes:
+    """
+    Adjust the provided libvirt VM XML (vmConfig) to point the given `disk`
+    (matched by its target dev, e.g. vda) at `adjustTarget`.
+
+    RBD target ("rbd:<pool>/<image>"):
+      <disk type='network' device='disk'>
+        <driver name='qemu' type='raw'/>
+        <source protocol='rbd' name='pool/image'/>
+        [<auth username='...'><secret type='ceph' uuid='...'/></auth>]
+        <target dev='vda' bus='virtio'/>
+      </disk>
+
+    File target (/path/to/file):
+      <disk type='file' device='disk'>
+        <driver name='qemu' type='qcow2|raw'/>  (left as-is unless absent)
+        <source file='/path/to/file'/>
+      </disk>
+
+    If args.detach_unrestored is True AND args.disk is set, all other <disk> entries
+    are removed so the clone never references original images.
+
+    Additionally, we de-duplicate: any non-selected disk that ends up pointing to the
+    same RBD pool/image as the selected disk is removed.
+    """
     tree = xml.asTree(vmConfig)
-    for disk in tree.xpath("devices/disk"):
-        dev = disk.xpath("target")[0].get("dev")
-        logging.debug("Handling target device: [%s]", dev)
+    want_rbd = isinstance(adjustTarget, str) and adjustTarget.startswith("rbd:")
 
-        device = disk.get("device")
-        driver = disk.xpath("driver")[0].get("type")
+    rbd_user = getattr(args, "rbd_user", None)
+    rbd_secret_uuid = getattr(args, "rbd_secret_uuid", None)
+    target_name = getattr(disk, "target", None)
 
-        if disktype.Optical(device, dev):
-            logging.info("Removing device [%s], type [%s] from vm config", dev, device)
-            disk.getparent().remove(disk)
-            continue
+    def _target_dev(disk_el):
+        tgt = disk_el.find("target")
+        return tgt.get("dev") if tgt is not None else None
 
-        if disktype.Raw(driver, device) and args.raw is False:
-            logging.warning(
-                "Removing raw disk [%s] from vm config, use --raw to copy as is.",
-                dev,
-            )
-            disk.getparent().remove(disk)
-            continue
+    devices = tree.find("devices")
+    if devices is None:
+        # No devices section? return unchanged
+        return xml.ElementTree.tostring(tree, encoding="utf-8")
 
-        backingStore = disk.xpath("backingStore")
-        if backingStore:
-            logging.info("Removing existent backing store settings")
-            disk.remove(backingStore[0])
+    # Find the selected disk element
+    selected = None
+    for d in xml.disks(tree):
+        if _target_dev(d) == target_name:
+            selected = d
+            break
+    if selected is None:
+        # Could not find matching disk; return unchanged
+        return xml.ElementTree.tostring(tree, encoding="utf-8")
 
-        dataStore = disk.xpath("source/dataStore")
-        if dataStore and dev == restoreDisk.target:
-            originalFile = os.path.basename(
-                disk.xpath("source/dataStore/source")[0].get("file")
-            )
-            abspath = os.path.join(
-                os.path.abspath(os.path.dirname(targetFile)), originalFile
-            )
-            logging.info(
-                "Adjusting dataStore setting for disk [%s] from [%s] to [%s]",
-                restoreDisk.target,
-                disk.xpath("source/dataStore/source")[0].get("file"),
-                abspath,
-            )
-            disk.xpath("source/dataStore/source")[0].set("file", abspath)
+    # ----- Adjust the selected disk -----
+    if want_rbd:
+        # Parse rbd:pool/image
+        pool_image = adjustTarget.split(":", 1)[1]
+        if "/" not in pool_image:
+            raise ValueError(f"Invalid RBD target '{adjustTarget}', expected rbd:<pool>/<image>")
+        pool, image = pool_image.split("/", 1)
 
-        originalFile = disk.xpath("source")[0].get("file")
-        if dev == restoreDisk.target:
-            abspath = os.path.abspath(targetFile)
-            logging.info(
-                "Change target file for disk [%s] from [%s] to [%s]",
-                restoreDisk.target,
-                originalFile,
-                abspath,
-            )
-            disk.xpath("source")[0].set("file", abspath)
+        # Force disk type to network, ensure driver
+        selected.set("type", "network")
+        if selected.get("device") is None:
+            selected.set("device", "disk")
 
-    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
+        drv = selected.find("driver")
+        if drv is None:
+            drv = xml.ElementTree.SubElement(selected, "driver")
+        drv.set("name", "qemu")
+        if drv.get("type") is None:
+            drv.set("type", "raw")
 
+        # Remove all existing <source> and <auth> nodes before creating clean RBD source
+        for n in list(selected.findall("source")):
+            selected.remove(n)
+        for n in list(selected.findall("auth")):
+            selected.remove(n)
+
+        src = xml.ElementTree.SubElement(selected, "source")
+        src.set("protocol", "rbd")
+        src.set("name", f"{pool}/{image}")
+
+        # Optional auth
+        if rbd_user or rbd_secret_uuid:
+            auth = xml.ElementTree.SubElement(selected, "auth")
+            if rbd_user:
+                auth.set("username", rbd_user)
+            if rbd_secret_uuid:
+                secret = xml.ElementTree.SubElement(auth, "secret")
+                secret.set("type", "ceph")
+                secret.set("uuid", rbd_secret_uuid)
+
+        # De-duplication: remove any other disk that points to the same pool/image
+        for d in list(xml.disks(tree)):
+            if d is selected:
+                continue
+            # Check if other disk has an RBD source with same name
+            s = d.find("source")
+            if s is not None and s.get("protocol") == "rbd" and s.get("name") == f"{pool}/{image}":
+                try:
+                    devices.remove(d)
+                    logging.info("Removed duplicate disk referencing the same RBD [%s/%s].", pool, image)
+                except Exception:
+                    pass
+
+    else:
+        # Filesystem-backed disk
+        selected.set("type", "file")
+        if selected.get("device") is None:
+            selected.set("device", "disk")
+
+        # Remove all existing <source> and <auth> just in case
+        for n in list(selected.findall("source")):
+            selected.remove(n)
+        for n in list(selected.findall("auth")):
+            selected.remove(n)
+
+        src = selected.find("source")
+        if src is None:
+            src = xml.ElementTree.SubElement(selected, "source")
+        src.attrib.clear()
+        src.set("file", adjustTarget)
+
+    # ----- Optionally detach all other (unrestored) disks -----
+    detach_others = bool(getattr(args, "detach_unrestored", False)) and bool(getattr(args, "disk", None))
+    if detach_others:
+        for d in list(xml.disks(tree)):
+            if d is selected:
+                continue
+            try:
+                devices.remove(d)
+                logging.info("Detached unrestored disk [%s] from adjusted VM config.", _target_dev(d))
+            except Exception:
+                pass
+
+    return xml.ElementTree.tostring(tree, encoding="utf-8")
 
 def restore(
     args: Namespace,
