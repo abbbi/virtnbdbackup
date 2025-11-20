@@ -2,14 +2,16 @@
 
 This dockerfile is intended for scenarios where isn't viable to provide the
 necessary environment, such as dependencies or tools, due to system
-limitations; such as an old OS version, inmutable or embedded rootfs, live
+limitations; such as an old OS version, immutable or embedded rootfs, live
 distros, docker oriented OSes, etc.
 
 Originally was created to be used on Unraid OS (tested since v6.9.2), and
 should work equally fine on any other GNU/Linux distro as much as
 [requirements](#requirements) are accomplished.
 
-Includes `virtnbdbackup`, `virtnbdrestore` and similar utils, installed along with their required dependecies. Other utilities, such as latest Qemu Utils and OpenSSH Client, are also included to leverage all available features.
+Includes `virtnbdbackup`, `virtnbdrestore` and similar utils, installed along
+with their required dependencies. Other utilities, such as latest Qemu Utils
+and OpenSSH Client, are also included to leverage all available features.
 
 Currently, is being built from latest `debian:trixie-slim` official image.
 
@@ -52,7 +54,7 @@ Currently, is being built from latest `debian:trixie-slim` official image.
   /var/tmp:/var/tmp`
 
 - When working with VMs that require to boot with UEFI emulation (e.g. Windows
-  10 and up), addiitonal bind mounts are needed:
+  10 and up), additional bind mounts are needed:
 
   Path to `/etc/libvirt/qemu/nvram` is required to backup/restore nvram files
   per VM (which seems to be the same on Qemu implementations tested so far)
