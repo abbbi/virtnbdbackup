@@ -2,8 +2,8 @@
 # setup virtnbdbackup within virtualenv including
 # required libnbd bindings.
 VENVDIR=$(pwd)/virtnbdbackup-venv
-LIBNBD_MAJ="1.12-stable"
-LIBNBD_VERSION="libnbd-1.12.6"
+LIBNBD_MAJ="1.22-stable"
+LIBNBD_VERSION="libnbd-1.22.5"
 
 set -e
 
@@ -33,4 +33,4 @@ make install
 cd ..
 python -m pip install -r virtnbdbackup/requirements.txt 
 cd virtnbdbackup/
-python setup.py install
+pip install -U .
