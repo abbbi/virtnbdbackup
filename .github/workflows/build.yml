@@ -99,10 +99,10 @@ jobs:
                   rm /work/dist/*.tar.gz
                   rename .rpm .fedora42.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
-          - name: Build on opensuse
+          - name: Build on opensuse 15
             uses: addnab/docker-run-action@v3
             with:
-                image: opensuse/leap:15.5
+                image: opensuse/leap:15
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   zypper in -y  rpm-build python3 python3-setuptools
@@ -111,6 +111,19 @@ jobs:
                   python3 setup.py bdist_rpm --requires "python3-libvirt-python python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog python3-dataclasses qemu-tools openssh-clients"
                   rm /work/dist/*.tar.gz
                   rename .rpm .opensuse15.rpm /work/dist/*.rpm
+                  mv /work/dist/* artifacts/
+          - name: Build on opensuse 16
+            uses: addnab/docker-run-action@v3
+            with:
+                image: opensuse/leap:16
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  zypper in -y  rpm-build python3 python3-setuptools
+                  mkdir -p /work/dist/opensuse16
+                  cd /work/
+                  python3 setup.py bdist_rpm --requires "python3-libvirt-python python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog python3-dataclasses qemu-tools openssh-clients"
+                  rm /work/dist/*.tar.gz
+                  rename .rpm .opensuse16.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
           - name: Build on debian
             uses: addnab/docker-run-action@v3
@@ -136,13 +149,23 @@ jobs:
                   mv deb_dist/*.deb artifacts/
                   python3 setup.py sdist
                   mv dist/*.tar.gz artifacts/
-          - name: Test installation on opensuse
+          - name: Test installation on opensuse 15
             uses: addnab/docker-run-action@v3
             with:
-                image: opensuse/leap:15.5
+                image: opensuse/leap:15
                 options: -v ${{ github.workspace }}:/work
                 run: |
-                  zypper in -y --allow-unsigned-rpm /work/artifacts/*noarch*opensuse*.rpm
+                  zypper in -y --allow-unsigned-rpm /work/artifacts/*noarch*opensuse15*.rpm
+                  virtnbdbackup -h
+                  virtnbdrestore -h
+                  virtnbdmap -h
+          - name: Test installation on opensuse 16
+            uses: addnab/docker-run-action@v3
+            with:
+                image: opensuse/leap:16
+                options: -v ${{ github.workspace }}:/work
+                run: |
+                  zypper in -y --allow-unsigned-rpm /work/artifacts/*noarch*opensuse16*.rpm
                   virtnbdbackup -h
                   virtnbdrestore -h
                   virtnbdmap -h
