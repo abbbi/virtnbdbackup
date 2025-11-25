@@ -115,7 +115,7 @@ jobs:
           - name: Build on opensuse 16
             uses: addnab/docker-run-action@v3
             with:
-                image: opensuse/leap:16
+                image: opensuse/leap:16.0
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   zypper in -y  rpm-build python3 python3-setuptools
@@ -162,7 +162,7 @@ jobs:
           - name: Test installation on opensuse 16
             uses: addnab/docker-run-action@v3
             with:
-                image: opensuse/leap:16
+                image: opensuse/leap:16.0
                 options: -v ${{ github.workspace }}:/work
                 run: |
                   zypper in -y --allow-unsigned-rpm /work/artifacts/*noarch*opensuse16*.rpm
