@@ -118,10 +118,13 @@ jobs:
                 image: opensuse/leap:16.0
                 options: -v ${{ github.workspace }}:/work
                 run: |
-                  zypper in -y  rpm-build python3 python3-setuptools
+                  zypper in -y  rpm-build python3 python3-pip
+                  # setuptools shipped with 16.0 mangle shebang:
+                  # https://github.com/pypa/setuptools/issues/4934
+                  pip install setuptools==75.8.2
                   mkdir -p /work/dist/opensuse16
                   cd /work/
-                  python3 setup.py bdist_rpm --requires "python3-libvirt-python python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog python3-dataclasses qemu-tools openssh-clients"
+                  python3 setup.py bdist_rpm --python /usr/bin/python3 --requires "python3-libvirt-python python3-libnbd python3-lxml python3-tqdm python3-lz4 nbdkit-server nbdkit-python-plugin python3-paramiko python3-typing-extensions python3-colorlog qemu-tools openssh-clients"
                   rm /work/dist/*.tar.gz
                   rename .rpm .opensuse16.rpm /work/dist/*.rpm
                   mv /work/dist/* artifacts/
