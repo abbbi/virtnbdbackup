@@ -1,3 +1,10 @@
+Version 2.40
+---------
+ * Add OpenSUSE 16 to build scripts
+ * Use trixie for docker container
+ * venv/create.sh fails to successfully build libnbd without python setuptools
+ (#290)
+
 Version 2.39
 ---------
  * Add fedora 42 to build scripts.
