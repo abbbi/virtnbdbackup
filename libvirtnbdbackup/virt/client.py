@@ -469,9 +469,7 @@ class client:
 
         try:
             flags = libvirt.VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN
-            log.info(
-                "Setting supported flag to prevent vm shutdown during backup."
-            )
+            log.info("Setting supported flag to prevent vm shutdown during backup.")
         except AttributeError:
             pass
 
