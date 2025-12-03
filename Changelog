@@ -4,6 +4,13 @@ Version 2.40
  * Use trixie for docker container
  * venv/create.sh fails to successfully build libnbd without python setuptools
  (#290)
+ * Add support for VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN: As with
+ libvirt version 11.10, this flag prevents VM shutdown while an backup job is
+ still active. The VM is in that scenario reset and paused instead of
+ terminated allowing the backup to finish. Once the backup finishes the VM
+ process is terminated. See:
+
+  https://libvirt.org/kbase/live_full_disk_backup.html#shutdown-of-the-guest-os-during-backup
 
 Version 2.39
 ---------

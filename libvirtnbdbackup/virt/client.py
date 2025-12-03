@@ -465,6 +465,15 @@ class client:
         backupXml = self._createBackupXml(args, diskList)
         checkpointXml = None
         freezed = False
+        flags = 0
+
+        try:
+            flags = libvirt.VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN
+            log.info(
+                "Setting supported flag to prevent vm shutdown during backup."
+            )
+        except AttributeError:
+            pass
 
         # do not create checkpoint during copy/diff backup.
         # backup saves delta until the last checkpoint
@@ -475,7 +484,7 @@ class client:
         freezed = fs.freeze(domObj, args.freeze_mountpoint)
         try:
             log.debug("Starting backup job via libvirt API.")
-            domObj.backupBegin(backupXml, checkpointXml)
+            domObj.backupBegin(backupXml, checkpointXml, flags)
             log.debug("Started backup job via libvirt API.")
         except libvirt.libvirtError as errmsg:
             code = errmsg.get_error_code()
