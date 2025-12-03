@@ -28,7 +28,8 @@ export bashcompdir=/tmp
 ./configure --prefix="${VENVDIR}" --exec-prefix="${VENVDIR}" \
     --disable-ocaml \
     --disable-golang \
-    --disable-fuse
+    --disable-fuse \
+    --disable-rust
 make -j "$(nproc)"
 make install
 cd ..

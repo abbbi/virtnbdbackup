@@ -1,3 +1,7 @@
+Version 2.41
+---------
+ * Disable building rust bindings when creating venv (#293)
+￼
 Version 2.40
 ---------
  * Add OpenSUSE 16 to build scripts
