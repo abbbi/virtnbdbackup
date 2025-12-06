@@ -31,6 +31,9 @@ from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import server
 from libvirtnbdbackup.backup import target
 from libvirtnbdbackup.backup.metadata import backupChecksum
+from libvirtnbdbackup.backup.metadata import adler32_full_file
+from libvirtnbdbackup.backup.metadata import write_checksum_sidecar
+from libvirtnbdbackup.backup.metadata import _fsync_file
 from libvirtnbdbackup import extenthandler
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
@@ -208,24 +211,33 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
         if args.compress:
             dStream.writeCompressionTrailer(writer, compressedSizes)
 
-    progressBar.close()
+        progressBar.close()
     writer.close()
     connection.disconnect()
 
     if args.offline is True and virtClient.remoteHost == "":
         logging.info("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)
-
     if args.offline is True:
         lib.remove(args, nbdProc.pidFile)
 
     if not args.stdout:
         if args.noprogress is True:
-            logging.info(
-                "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
-            )
-        partialfile.rename(targetFilePartial, targetFile)
-    if streamType != "raw":
-        backupChecksum(fileStream, targetFile)
+            logging.info("Backup of disk [%s] finished, file: [%s]", disk.target, targetFile)
 
+        # finalize filename before checksumming
+        partialfile.rename(targetFilePartial, targetFile)
+        _fsync_file(targetFile)
+
+        if streamType == "raw":
+            logging.info("RAW path: computing full-file Adler32 for %s", targetFile)
+            checksum = adler32_full_file(targetFile)
+            logging.info("RAW path: Adler32=%d", checksum)
+            write_checksum_sidecar(targetFile, checksum)
+        else:
+            logging.info("STREAM path: writing stream metadata checksum for %s", targetFile)
+            backupChecksum(fileStream, targetFile)
+
+    # Always return (even when args.stdout is True)
     return backupSize, True
+

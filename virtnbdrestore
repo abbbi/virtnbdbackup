@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.9
 """
 Copyright (C) 2023 Michael Ablassmeier <abi@grinser.de>
 
@@ -21,6 +21,7 @@ import sys
 import logging
 import argparse
 from typing import List
+
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import virt
@@ -49,7 +50,7 @@ def main() -> None:
             "\t%(prog)s -i /backup/ -o dump\n"
             "   # Verify checksums for existing data files in backup:\n"
             "\t%(prog)s -i /backup/ -o verify\n"
-            "   # Complete restore with all disks:\n"
+            "   # Complete restore with all disks to a directory:\n"
             "\t%(prog)s -i /backup/ -o /target\n"
             "   # Complete restore, adjust config and redefine vm after restore:\n"
             "\t%(prog)s -cD -i /backup/ -o /target\n"
@@ -62,12 +63,14 @@ def main() -> None:
             "   # Restore and process specific file sequence:\n"
             "\t%(prog)s -i /backup/ -o /target "
             "--sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data\n"
-            "   # Restore to remote system:\n"
-            "\t%(prog)s -U qemu+ssh://root@remotehost/system"
-            " --ssh-user root -i /backup/ -o /remote_target"
+            "   # Restore to remote system (file target):\n"
+            "\t%(prog)s -U qemu+ssh://root@remotehost/system --ssh-user root -i /backup/ -o /remote_target\n"
+            "   # Restore to Ceph RBD (no directory required):\n"
+            "\t%(prog)s -U qemu+ssh://root@remotehost/system -i /backup/ -o rbd:<pool>/<image> -c --auto-register\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
+
     opt = parser.add_argument_group("General options")
     opt.add_argument(
         "-a",
@@ -86,7 +89,11 @@ def main() -> None:
         help="Directory including a backup set",
     )
     opt.add_argument(
-        "-o", "--output", required=True, type=str, help="Restore target directory"
+        "-o",
+        "--output",
+        required=True,
+        type=str,
+        help="Restore target (absolute directory for file restores, or RBD URL like rbd:<pool>[/<image>])",
     )
     opt.add_argument(
         "-u",
@@ -148,6 +155,16 @@ def main() -> None:
         help="Register/define VM after restore. (default: %(default)s)",
     )
     opt.add_argument(
+        "--auto-register",
+        default=False,
+        action="store_true",
+        help=(
+            "When used with -D/--define, do not fail if a domain with the same name already exists; "
+            "warn and keep the existing registration. If --autostart is also set, autostart will be "
+            "applied to the existing domain."
+        ),
+    )
+    opt.add_argument(
         "-C",
         "--config-file",
         default=defaultConfig,
@@ -190,6 +207,7 @@ def main() -> None:
     # default values for common usage of lib.getDomainDisks
     args.exclude = None
     args.include = args.disk
+
     lib.setThreadName()
     stream = streamer.SparseStream(types)
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
@@ -237,54 +255,97 @@ def main() -> None:
             logging.error("Unable to connect libvirt: [%s]", e)
             sys.exit(1)
 
-        if virtClient.remoteHost:
-            if not args.output.startswith("/"):
-                logging.error(
-                    "Absolute target path required for restore to remote system"
-                )
-                sys.exit(1)
+    # Determine if the target is RBD early so we can handle remote/local setup
+    is_rbd_output = isinstance(getattr(args, "output", None), str) and args.output.startswith("rbd:")
 
-            args.sshClient = lib.sshSession(
-                args, virtClient.remoteHost, mode=Mode.UPLOAD
-            )
-            if not args.sshClient:
-                logging.error("Remote restore detected but ssh session setup failed")
-                sys.exit(1)
-            if not args.sshClient.exists(args.output):
-                logging.info("Create target directory: [%s]", args.output)
-                args.sshClient.sftp.mkdir(args.output)
-        else:
+    # Remote file restores require an absolute directory path; RBD targets do not.
+    if virtClient.remoteHost and not is_rbd_output:
+        if not args.output.startswith("/"):
+            logging.error("Absolute target path required for restore to remote system (file restores)")
+            sys.exit(1)
+
+        args.sshClient = lib.sshSession(args, virtClient.remoteHost, mode=Mode.UPLOAD)
+        if not args.sshClient:
+            logging.error("Remote restore detected but ssh session setup failed")
+            sys.exit(1)
+        if not args.sshClient.exists(args.output):
+            logging.info("Create target directory: [%s]", args.output)
+            args.sshClient.sftp.mkdir(args.output)
+    else:
+        # For local file restores, ensure directory exists; for RBD, nothing to create
+        if not is_rbd_output:
             output.target.Directory().create(args.output)
 
-        ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml")
-        if not ConfigFiles:
-            logging.error("No domain config file found")
-            sys.exit(1)
-        if args.until is not None:
-            ConfigFile = ConfigFiles[int(args.until.split(".")[-1])]
+    # Select VM config file from backup
+    ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml")
+    if not ConfigFiles:
+        logging.error("No domain config file found")
+        sys.exit(1)
+    if args.until is not None:
+        ConfigFile = ConfigFiles[int(args.until.split(".")[-1])]
+    else:
+        ConfigFile = ConfigFiles[-1]
+    logging.info("Using config file: [%s]", ConfigFile)
+
+    # Autostart marker (from backup metadata)
+    autoStart = False
+    if lib.getLatest(args.input, "autostart.*", -1):
+        autoStart = True
+
+    # Do the restore
+    restConfig: bytes = b""
+    try:
+        if args.sequence is not None:
+            sequence.restore(args, dataFiles, virtClient)
         else:
-            ConfigFile = ConfigFiles[-1]
-        logging.info("Using config file: [%s]", ConfigFile)
+            restConfig = disk.restore(args, ConfigFile, virtClient)
+    except RestoreError as errmsg:
+        logging.error("Disk restore failed: [%s]", errmsg)
+        sys.exit(1)
 
-        autoStart = False
-        if lib.getLatest(args.input, "autostart.*", -1):
-            autoStart = True
+    # Restore auxiliary files (e.g. OVMF/NVRAM if applicable)
+    files.restore(args, ConfigFile, virtClient)
 
-        restConfig: bytes = b""
-        try:
-            if args.sequence is not None:
-                sequence.restore(args, dataFiles, virtClient)
-            else:
-                restConfig = disk.restore(args, ConfigFile, virtClient)
-        except RestoreError as errmsg:
-            logging.error("Disk restore failed: [%s]", errmsg)
-            sys.exit(1)
+    # Re-evaluate is_rbd_output (unchanged, but keep logic clear)
+    is_rbd_output = isinstance(getattr(args, "output", None), str) and args.output.startswith("rbd:")
 
-        files.restore(args, ConfigFile, virtClient)
+    # Finalize: write or register the adjusted VM config
+    if is_rbd_output:
+        # For RBD targets, do NOT try to write "vmconfig.xml" into the RBD URL.
+        adjusted_xml = restConfig if isinstance(restConfig, (bytes, bytearray)) else restConfig.encode()
+
+        # Define/register immediately if requested (use backup's autostart marker)
+        if getattr(args, "auto_register", False):
+            ok = virtClient.defineDomain(
+                adjusted_xml,
+                autoStart=autoStart,
+                allowExisting=True,
+            )
+            if not ok:
+                logging.error("Failed to define domain from adjusted config for RBD target.")
+                sys.exit(1)
+            logging.info("Domain defined from adjusted config (RBD target).")
+
+        # Always save a local copy of the adjusted XML for auditing
+        tmpdir = getattr(args, "tmpdir", "/var/tmp")
+        os.makedirs(tmpdir, exist_ok=True)
+        local_xml = os.path.join(tmpdir, "virtnbdrestore.vmconfig.adjusted.xml")
+        with open(local_xml, "wb") as fh:
+            fh.write(adjusted_xml)
+        logging.info("Saved adjusted VM XML to [%s].", local_xml)
+
+    else:
+        # Filesystem targets keep the original behavior (writes .../vmconfig.xml)
         vmconfig.restore(args, ConfigFile, restConfig, args.config_file)
+
+        # Refresh storage pool for file-based images and optionally define the VM
         virtClient.refreshPool(args.output)
         if args.define is True:
-            if not virtClient.defineDomain(restConfig, autoStart):
+            if not virtClient.defineDomain(
+                restConfig,
+                autoStart=autoStart,
+                allowExisting=getattr(args, "auto_register", False),
+            ):
                 sys.exit(1)
 
 
