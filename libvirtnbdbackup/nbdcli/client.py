@@ -96,19 +96,10 @@ class client:
         connect and fail if no connection can be established. In case of unix
         domain socket, wait until socket file is created by qemu-nbd."""
         log.info("Waiting until NBD server at [%s] is up.", self.cType.uri)
-        retry = 0
-        maxRetry = 20
-        sleepTime = 1
-        while True:
-            sleep(sleepTime)
-            if retry >= maxRetry:
-                raise exceptions.NbdConnectionTimeout(
-                    "Timeout during connection to NBD server backend."
-                )
-
+        for retry in range(20):
+            sleep(1)
             if self.cType.backupSocket and not os.path.exists(self.cType.backupSocket):
                 log.info("Waiting for NBD Server unix socket, Retry: %s", retry)
-                retry = retry + 1
                 continue
 
             try:
@@ -116,12 +107,15 @@ class client:
             except exceptions.NbdConnectionError as e:
                 self.nbd = nbd.NBD()
                 log.info("Waiting for NBD Server connection, Retry: %s [%s]", retry, e)
-                retry = retry + 1
                 continue
 
             log.info("Connection to NBD backend succeeded.")
             self.connection = connection
             return self
+
+        raise exceptions.NbdConnectionTimeout(
+            "Timeout during connection to NBD server backend."
+        )
 
     def disconnect(self) -> None:
         """Close nbd connection handle"""

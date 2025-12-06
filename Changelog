@@ -1,6 +1,7 @@
 Version 2.41
 ---------
  * Disable building rust bindings when creating venv (#293)
+ * Small code cleanups
 ￼
 Version 2.40
 ---------

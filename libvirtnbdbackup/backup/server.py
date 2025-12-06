@@ -37,9 +37,8 @@ def setup(args: Namespace, disk: DomainDisk, remoteHost: str, port: int) -> proc
     socket = f"{args.socketfile}.{disk.target}"
     if remoteHost != "":
         logging.info(
-            "Offline backup, starting remote NBD server, socket: [%s:%s], port: [%s]",
-            remoteHost,
-            socket,
+            "Offline backup, starting remote NBD server, address: [%s:%s]",
+            args.nbd_ip or remoteHost,
             port,
         )
         nbdProc = qemu.util(disk.target).startRemoteBackupNbdServer(
