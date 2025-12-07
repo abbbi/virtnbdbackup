@@ -19,6 +19,7 @@ import os
 import logging
 from argparse import Namespace
 from typing import List, Union
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from libvirtnbdbackup import output
 from libvirtnbdbackup.virt.client import DomainDisk
@@ -36,9 +37,11 @@ def backupChecksum(fileStream, targetFile):
     """Save the calculated adler32 checksum, it can be verified
     by virtnbdbrestore's verify function.'"""
     checksum = fileStream.checksum()
-    logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
+    with logging_redirect_tqdm():
+        log.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
     chksumfile = f"{targetFile}.chksum"
-    logging.info("Saving checksum to: [%s]", chksumfile)
+    with logging_redirect_tqdm():
+        log.info("Saving checksum to: [%s]", chksumfile)
     with output.openfile(chksumfile, "w") as cf:
         cf.write(f"{checksum}")
 
