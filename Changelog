@@ -2,6 +2,9 @@ Version 2.41
 ---------
  * Disable building rust bindings when creating venv (#293)
  * Small code cleanups
+ * Use TQDM's logging_redirect_tqdm if available: This prevents the
+ progressbar from being broken if multiple disks are backed up and
+ log output of different threads appear between progress.
 ￼
 Version 2.40
 ---------
