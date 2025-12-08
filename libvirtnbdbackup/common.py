@@ -107,6 +107,21 @@ def getLogFile(fileName: str) -> Optional[logging.FileHandler]:
         return None
 
 
+def safeInfo(msg, *args, **kwargs):
+    """Use tqdm redirect to not destroy progress bars"""
+    kwargs.setdefault("stacklevel", 2)
+    try:
+        from tqdm.contrib.logging import (  # pylint: disable=import-outside-toplevel
+            logging_redirect_tqdm,
+        )
+    except ModuleNotFoundError:
+        log.info(msg, *args, **kwargs)
+        return
+
+    with logging_redirect_tqdm():
+        log.info(msg, *args, **kwargs)
+
+
 def configLogger(
     args: Namespace, fileLog: Optional[logging.FileHandler], counter: logCount
 ):

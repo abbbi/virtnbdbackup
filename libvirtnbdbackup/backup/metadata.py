@@ -27,6 +27,7 @@ from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.common import safeInfo
 
 
 log = logging.getLogger()
@@ -36,9 +37,9 @@ def backupChecksum(fileStream, targetFile):
     """Save the calculated adler32 checksum, it can be verified
     by virtnbdbrestore's verify function.'"""
     checksum = fileStream.checksum()
-    log.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
+    safeInfo("Checksum for file: [%s]:[%s]", targetFile, checksum)
     chksumfile = f"{targetFile}.chksum"
-    log.info("Saving checksum to: [%s]", chksumfile)
+    safeInfo("Saving checksum to: [%s]", chksumfile)
     with output.openfile(chksumfile, "w") as cf:
         cf.write(f"{checksum}")
 

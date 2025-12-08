@@ -19,7 +19,7 @@ import logging
 from typing import BinaryIO
 from argparse import Namespace
 from libvirtnbdbackup.virt.client import DomainDisk
-from libvirtnbdbackup.common import getIdent
+from libvirtnbdbackup.common import getIdent, safeInfo
 
 
 def get(
@@ -30,7 +30,7 @@ def get(
         logging.info("Writing data to zip archive.")
         fileStream.open(targetFile)
     else:
-        logging.info("Write data to target file: [%s].", targetFilePartial)
+        safeInfo("Write data to target file: [%s].", targetFilePartial)
         fileStream.open(targetFilePartial)
 
     return fileStream

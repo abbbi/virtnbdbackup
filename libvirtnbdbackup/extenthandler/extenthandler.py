@@ -19,7 +19,7 @@ import logging
 from typing import List, Any, Generator, Dict
 from nbd import CONTEXT_BASE_ALLOCATION
 from libvirtnbdbackup.objects import Extent, _ExtentObj
-from libvirtnbdbackup.common import humanize
+from libvirtnbdbackup.common import humanize, safeInfo
 
 log = logging.getLogger("extenthandler")
 
@@ -249,7 +249,7 @@ class ExtentHandler:
                 j += 1
 
         if totalLength > 0:
-            log.info(
+            safeInfo(
                 "Detected %d bytes [%s] non-sparse blocks for current bitmap.",
                 totalLength,
                 humanize(totalLength),
@@ -261,9 +261,9 @@ class ExtentHandler:
         """Check the status for each extent, whether if it is
         real data or zeroes, return a list of extent objects
         """
-        log.info("Start receiving backup extents.")
+        safeInfo("Start receiving backup extents.")
         extents = self.queryExtents()
-        log.info("Finished receiving extents.")
+        safeInfo("Finished receiving extents.")
         extentList: List[Extent] = []
         start: int = 0
         baseStart: int = 0
@@ -290,7 +290,7 @@ class ExtentHandler:
                 extObj.offset + extObj.length,
             )
         if self.no_sparse_detection is True:
-            log.info("Skipping detection of sparse/fstrimmed blocks.")
+            safeInfo("Skipping detection of sparse/fstrimmed blocks.")
             return extentList
 
         if self._metaContext != CONTEXT_BASE_ALLOCATION:
