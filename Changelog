@@ -2,7 +2,8 @@ Version 2.41
 ---------
  * Disable building rust bindings when creating venv (#293)
  * Small code cleanups
-￼
+ * Use tqdm logging_redirect_tqdm to not break progress bars (#294) ￼
+
 Version 2.40
 ---------
  * Add OpenSUSE 16 to build scripts

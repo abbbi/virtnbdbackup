@@ -52,7 +52,7 @@ def _getExtentHandler(args: Namespace, nbdClient):
     """Query dirty blocks either via qemu client or self
     implemented extend handler"""
     if args.qemu:
-        logging.info("Using qemu tools to query extents")
+        lib.safeInfo("Using qemu tools to query extents")
         extentHandler = extenthandler.ExtentHandler(
             qemu.util(nbdClient.cType.exportName),
             nbdClient.cType,
@@ -94,7 +94,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
             raise exceptions.DiskBackupFailed("Failed to start NBD server.")
 
     if disk.discardOption is not None:
-        logging.info("Virtual disk discard option: [%s]", disk.discardOption)
+        lib.safeInfo("Virtual disk discard option: [%s]", disk.discardOption)
 
     connection = server.connect(args, disk, metaContext, remoteIP, port, virtClient)
 
@@ -107,17 +107,17 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
         return 0, False
 
     thinBackupSize = sum(extent.length for extent in extents if extent.data is True)
-    logging.info("Got %s extents to backup.", len(extents))
+    lib.safeInfo("Got %s extents to backup.", len(extents))
     logging.debug("%s", lib.dumpExtentJson(extents))
-    logging.info("%s bytes [%s] virtual disk size", diskSize, lib.humanize(diskSize))
-    logging.info(
+    lib.safeInfo("%s bytes [%s] virtual disk size", diskSize, lib.humanize(diskSize))
+    lib.safeInfo(
         "%s bytes [%s] of data extents to backup",
         thinBackupSize,
         lib.humanize(thinBackupSize),
     )
 
     if args.level in ("inc", "diff") and thinBackupSize == 0:
-        logging.info("No dirty blocks found")
+        lib.safeInfo("No dirty blocks found")
         args.noprogress = True
 
     targetFile, targetFilePartial = target.Set(args, disk)
@@ -132,10 +132,10 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     writer = target.get(args, fileStream, targetFile, targetFilePartial)
 
     if streamType == "raw":
-        logging.info("Creating full provisioned raw backup image")
+        lib.safeInfo("Creating full provisioned raw backup image")
         writer.truncate(diskSize)
     else:
-        logging.info("Creating thin provisioned stream backup image")
+        lib.safeInfo("Creating thin provisioned stream backup image")
         header = dStream.dumpMetadata(
             args,
             diskSize,
@@ -213,7 +213,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     connection.disconnect()
 
     if args.offline is True and virtClient.remoteHost == "":
-        logging.info("Stopping NBD Service.")
+        lib.safeInfo("Stopping NBD Service.")
         lib.killProc(nbdProc.pid)
 
     if args.offline is True:
@@ -221,7 +221,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
 
     if not args.stdout:
         if args.noprogress is True:
-            logging.info(
+            lib.safeInfo(
                 "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
         partialfile.rename(targetFilePartial, targetFile)
