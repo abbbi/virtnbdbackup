@@ -36,9 +36,9 @@ def backupChecksum(fileStream, targetFile):
     """Save the calculated adler32 checksum, it can be verified
     by virtnbdbrestore's verify function.'"""
     checksum = fileStream.checksum()
-    logging.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
+    log.info("Checksum for file: [%s]:[%s]", targetFile, checksum)
     chksumfile = f"{targetFile}.chksum"
-    logging.info("Saving checksum to: [%s]", chksumfile)
+    log.info("Saving checksum to: [%s]", chksumfile)
     with output.openfile(chksumfile, "w") as cf:
         cf.write(f"{checksum}")
 
