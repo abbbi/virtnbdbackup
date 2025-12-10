@@ -2,9 +2,11 @@ Version 2.42
 ---------
  * virtnbdrestore: add --compress option: if enabled, NBD server used for
  restore will make use of the qcow compression driver.  This way, restored
- data within the qcow image is compressed via the qcow compression type set.
- Restores images that contained compressed blocks will then be as small, or
- sometimes even smaller than original images.  (#295)
+ data within the qcow image is compressed according to the image compression
+ type setting.
+
+ This will be beneficial for images that contained many compressed blocks, as
+ the resulting restore images will be way smaller. (#295)
 
 Version 2.41
 ---------
