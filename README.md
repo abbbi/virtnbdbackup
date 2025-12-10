@@ -814,7 +814,7 @@ In case the original virtual machine qcow image contained compressed blocks, it
 makes sense to use the `--compress` option during restore. If used, the target
 NBD server started during restore will enable the compression driver. The
 written data blocks are then compressed according to the qcow images
-compression option.
+compression setting.
 
 `Note`:
 > The backup does not keep track which blocks have been compressed in the image
