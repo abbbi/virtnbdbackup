@@ -35,6 +35,29 @@ class util:
 
     def __init__(self, exportName: str) -> None:
         self.exportName = exportName
+        self.restoreCmd = [
+            "qemu-nbd",
+            "--fork",
+            "--discard=unmap",
+            "-x",
+            f"{self.exportName}",
+        ]
+
+    @staticmethod
+    def _getcompress(args: Namespace, targetFile: str) -> List:
+        """Check if --compress option is set and if so, use
+        qemu's compress driver during data write'"""
+        cmd = []
+        if  args.compress is not True:
+            cmd.append(targetFile)
+            cmd.append("--format=qcow2")
+        else:
+            cmd.append("--image-opts")
+            cmd.append(
+                f"driver=compress,file.driver=qcow2,file.file.driver=file,file.file.filename={targetFile}"
+            )
+
+        return cmd
 
     @staticmethod
     def map(cType, context: str) -> str:
@@ -106,22 +129,15 @@ class util:
 
         return sshClient.run(" ".join(cmd))
 
-    def startRestoreNbdServer(self, targetFile: str, socketFile: str) -> processInfo:
+    def startRestoreNbdServer(self, args: Namespace, targetFile: str) -> processInfo:
         """Start local nbd server process for restore operation"""
         pidFile = self._gt("qemu-nbd", ".pid")
-        cmd = [
-            "qemu-nbd",
-            "--discard=unmap",
-            "--format=qcow2",
-            "-x",
-            f"{self.exportName}",
-            f"{targetFile}",
-            "-k",
-            f"{socketFile}",
-            "--pid-file",
-            f"{pidFile}",
-            "--fork",
-        ]
+        cmd = self.restoreCmd
+        cmd = cmd + self._getcompress(args, targetFile)
+        cmd.append("-k")
+        cmd.append(args.socketfile)
+        cmd.append("--pid-file")
+        cmd.append(pidFile)
         return command.run(cmd, pidFile=pidFile)
 
     @staticmethod
@@ -148,25 +164,19 @@ class util:
         """Start nbd server process remotely over ssh for restore operation"""
         pidFile = self._gt("qemu-nbd-restore", ".pid")
         logFile = self._gt("qemu-nbd-restore", ".log")
-        cmd = [
-            "qemu-nbd",
-            "--discard=unmap",
-            "--format=qcow2",
-            "-x",
-            f"{self.exportName}",
-            f"'{targetFile}'",
-            "-p",
-            f"{args.nbd_port}",
-            "--pid-file",
-            f"{pidFile}",
-            "--fork",
-        ]
+        cmd = self.restoreCmd
+        cmd = cmd + self._getcompress(args, targetFile)
+        cmd.append("-p")
+        cmd.append(f"{args.nbd_port}")
+        cmd.append("--pid-file")
+        cmd.append(pidFile)
         if args.tls is True:
             self._addTls(cmd, args.tls_cert)
         if args.nbd_ip != "":
             cmd.append("-b")
             cmd.append(args.nbd_ip)
         cmd.append(f"> {logFile} 2>&1")
+        logging.debug(cmd)
         try:
             return args.sshClient.run(" ".join(cmd), pidFile, logFile)
         except sshError:

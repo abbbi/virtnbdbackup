@@ -807,6 +807,15 @@ configuration and register the virtual machine:
 virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset/vm1 -o /remote/target
 ```
 
+## Restore with enabled compression
+
+In case the virtual machine qcow image contains mostly compressed blocks, it
+makes sense to use the `--compress` option during restore. If used, the target
+NBD server used for restore will enable the compression driver. The written
+data blocks are then compressed according to the qcow images compression
+option.
+
+
 # Post restore steps and considerations
 
 If you restore the virtual machine with its original name on the same

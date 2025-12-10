@@ -34,7 +34,7 @@ def setup(args: Namespace, exportName: str, targetFile: str, virtClient: virt.cl
     cType: Union[nbdcli.TCP, nbdcli.Unix]
     if not virtClient.remoteHost:
         logging.info("Starting local NBD server on socket: [%s]", args.socketfile)
-        proc = qFh.startRestoreNbdServer(targetFile, args.socketfile)
+        proc = qFh.startRestoreNbdServer(args, targetFile)
         cType = nbdcli.Unix(exportName, "", args.socketfile)
     else:
         remoteIP = virtClient.remoteHost

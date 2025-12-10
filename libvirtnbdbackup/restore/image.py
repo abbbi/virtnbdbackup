@@ -79,6 +79,16 @@ def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
         )
 
     try:
+        cType = qcowConfig["format-specific"]["data"]["compression-type"]
+        opt.append("-o")
+        opt.append(f"compression_type={cType}")
+        logging.info("Setting qcow image compression type: [%s]", cType)
+    except KeyError as errmsg:
+        logging.warning(
+            "Unable apply QCOW specific lazy_refcounts option: [%s]", errmsg
+        )
+
+    try:
         dataFile = qcowConfig["format-specific"]["data"]["data-file"]
         if args.adjust_config is True:
             dataFilePath = os.path.join(
