@@ -48,7 +48,7 @@ class util:
         """Check if --compress option is set and if so, use
         qemu's compress driver during data write'"""
         cmd = []
-        if  args.compress is not True:
+        if args.compress is not True:
             cmd.append(targetFile)
             cmd.append("--format=qcow2")
         else:
