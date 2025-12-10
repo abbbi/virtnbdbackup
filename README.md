@@ -54,6 +54,7 @@ of your `kvm/qemu` virtual machines.
   - [Point in time recovery](#point-in-time-recovery)
   - [Restoring with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
   - [Remote Restore](#remote-restore)
+  - [Restore with enabled compression](#restore-with-enabled-compression)
 - [Post restore steps and considerations](#post-restore-steps-and-considerations)
 - [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
 - [Transient virtual machines: checkpoint persistency on clusters](#transient-virtual-machines-checkpoint-persistency-on-clusters)
