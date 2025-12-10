@@ -6,7 +6,7 @@ Version 2.42
  type setting.
 
  This will be beneficial for images that contained many compressed blocks, as
- the resulting restore images will be way smaller. (#295)
+ the restored images will be way smaller. (#295)
 
 Version 2.41
 ---------
