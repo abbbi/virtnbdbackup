@@ -54,6 +54,7 @@ of your `kvm/qemu` virtual machines.
   - [Point in time recovery](#point-in-time-recovery)
   - [Restoring with modified virtual machine config](#restoring-with-modified-virtual-machine-config)
   - [Remote Restore](#remote-restore)
+  - [Restore with enabled compression](#restore-with-enabled-compression)
 - [Post restore steps and considerations](#post-restore-steps-and-considerations)
 - [Single file restore and instant recovery](#single-file-restore-and-instant-recovery)
 - [Transient virtual machines: checkpoint persistency on clusters](#transient-virtual-machines-checkpoint-persistency-on-clusters)
@@ -806,6 +807,18 @@ configuration and register the virtual machine:
 ```
 virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset/vm1 -o /remote/target
 ```
+
+## Restore with enabled compression
+
+In case the original virtual machine qcow image contained compressed blocks, it
+makes sense to use the `--compress` option during restore. If used, the target
+NBD server started during restore will enable the compression driver. The
+written data blocks are then compressed according to the qcow images
+compression setting.
+
+`Note`:
+> The backup does not keep track which blocks have been compressed in the image
+> originally. The compression algorithm used will be applied to all blocks.
 
 # Post restore steps and considerations
 

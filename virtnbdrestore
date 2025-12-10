@@ -175,6 +175,12 @@ def main() -> None:
         action="store_true",
         help="Preallocate restored qcow images. (default: %(default)s)",
     )
+    opt.add_argument(
+        "--compress",
+        default=False,
+        action="store_true",
+        help="Use compression driver during restore. (default: %(default)s)",
+    )
 
     remopt = parser.add_argument_group("Remote Restore options")
     argopt.addRemoteArgs(remopt)
@@ -269,6 +275,9 @@ def main() -> None:
         autoStart = False
         if lib.getLatest(args.input, "autostart.*", -1):
             autoStart = True
+
+        if args.compress is True:
+            logging.info("Using compression driver during restore")
 
         restConfig: bytes = b""
         try:

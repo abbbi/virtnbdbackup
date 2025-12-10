@@ -512,6 +512,13 @@ toOut() {
     [ "$status" -eq 0 ]
     run virsh start $VM
 }
+@test "Restore: restore data using compression option" {
+    [ -z $INCTEST ] && skip "skipping"
+    rm -rf ${TMPDIR}/RESTORECOMPRESSED
+    run ../virtnbdrestore --compress -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECOMPRESSED/
+    echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
 @test "Offline Backup: full backup with vm startup option" {
     run virsh destroy $VM
     run ../virtnbdbackup -d $VM -l full -o ${TMPDIR}/offline-full-option -S
@@ -700,6 +707,12 @@ toOut() {
 }
 @test "Restore: test remote restore functionality via localhost" {
     run ../virtnbdrestore -U qemu+ssh://root@localhost/system --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore --logfile ${TMPDIR}/remoterestore.log
+    echo "output = ${output}"
+    [[ "${output}" =~  "Connecting remote system" ]]
+    [ "$status" -eq 0 ]
+}
+@test "Restore: test remote restore functionality with compress option via localhost" {
+    run ../virtnbdrestore -U qemu+ssh://root@localhost/system --compress --ssh-user root -v -i  ${TMPDIR}/remotebackup -o ${TMPDIR}/remoterestore_compressed --logfile ${TMPDIR}/remoterestore_compressed.log
     echo "output = ${output}"
     [[ "${output}" =~  "Connecting remote system" ]]
     [ "$status" -eq 0 ]
