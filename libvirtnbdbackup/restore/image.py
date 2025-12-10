@@ -29,7 +29,9 @@ from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh.exceptions import sshError
 
 
-def getConfig(args: Namespace, meta: Dict[str, str]) -> List[str]:
+def getConfig( # pylint: disable=too-many-statements
+    args: Namespace, meta: Dict[str, str]
+) -> List[str]:
     """Check if backup includes exported qcow config and return a list
     of options passed to qemu-img create command"""
     opt: List[str] = []

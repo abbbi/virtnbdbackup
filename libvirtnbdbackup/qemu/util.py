@@ -54,7 +54,7 @@ class util:
         else:
             cmd.append("--image-opts")
             cmd.append(
-                f"driver=compress,file.driver=qcow2,file.file.driver=file,file.file.filename={targetFile}"
+                f"driver=compress,file.driver=qcow2,file.file.driver=file,file.file.filename={targetFile}"  # pylint: disable=line-too-long
             )
 
         return cmd
