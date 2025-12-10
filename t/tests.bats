@@ -515,7 +515,7 @@ toOut() {
 @test "Restore: restore data using compression option" {
     [ -z $INCTEST ] && skip "skipping"
     rm -rf ${TMPDIR}/RESTORECOMPRESSED
-    run ../virtnbdrestore --compresss -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECOMPRESSED/
+    run ../virtnbdrestore --compress -i ${TMPDIR}/inctest/ -o ${TMPDIR}/RESTORECOMPRESSED/
     echo "output = ${output}"
     [ "$status" -eq 0 ]
 }
