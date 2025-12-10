@@ -810,12 +810,15 @@ virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/
 
 ## Restore with enabled compression
 
-In case the virtual machine qcow image contains mostly compressed blocks, it
+In case the original virtual machine qcow image contained compressed blocks, it
 makes sense to use the `--compress` option during restore. If used, the target
-NBD server used for restore will enable the compression driver. The written
-data blocks are then compressed according to the qcow images compression
-option.
+NBD server started during restore will enable the compression driver. The
+written data blocks are then compressed according to the qcow images
+compression option.
 
+`Note`:
+> The backup does not keep track which blocks have been compressed in the image
+> originally. The compression algorithm used will be applied to all blocks.
 
 # Post restore steps and considerations
 
