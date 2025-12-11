@@ -1,3 +1,7 @@
+Version 2.43
+---------
+ * Small code cleanups
+
 Version 2.42
 ---------
  * virtnbdrestore: add --compress option: if enabled, NBD server used for
