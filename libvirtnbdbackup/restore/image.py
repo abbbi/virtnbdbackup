@@ -84,11 +84,9 @@ def getConfig(  # pylint: disable=too-many-statements
         cType = qcowConfig["format-specific"]["data"]["compression-type"]
         opt.append("-o")
         opt.append(f"compression_type={cType}")
-        logging.info("Setting qcow image compression type: [%s]", cType)
+        logging.info("Setting image compression type: [%s]", cType)
     except KeyError as errmsg:
-        logging.warning(
-            "Unable apply QCOW specific lazy_refcounts option: [%s]", errmsg
-        )
+        pass
 
     try:
         dataFile = qcowConfig["format-specific"]["data"]["data-file"]
