@@ -35,7 +35,6 @@ from libvirtnbdbackup import extenthandler
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup import common as lib
-from libvirtnbdbackup import output
 from libvirtnbdbackup.output import stream
 
 
@@ -128,7 +127,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     # in case of zip file output we want to use the existing
     # opened output channel
     if not args.stdout:
-        fileStream = stream.get(args, output.target())
+        fileStream = stream.get(args)
     writer = target.get(args, fileStream, targetFile, targetFilePartial)
 
     if streamType == "raw":

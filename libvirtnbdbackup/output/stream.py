@@ -17,19 +17,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from argparse import Namespace
 from typing import Union
-from libvirtnbdbackup import output
+from libvirtnbdbackup.output.target.directory import Directory
+from libvirtnbdbackup.output.target.zip import Zip
 
 
 def get(
-    args: Namespace, repository: output.target
-) -> Union[output.target.Directory, output.target.Zip]:
+    args: Namespace,
+) -> Union[Directory, Zip]:
     """Get filehandle for output files based on output
     mode"""
-    fileStream: Union[output.target.Directory, output.target.Zip]
+    fileStream: Union[Directory, Zip]
     if args.stdout is False:
-        fileStream = repository.Directory()
+        fileStream = Directory()
     else:
-        fileStream = repository.Zip()
+        fileStream = Zip()
         args.output = "./"
         args.worker = 1
 

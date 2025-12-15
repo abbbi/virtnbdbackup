@@ -266,7 +266,6 @@ def main() -> None:
     )
     argopt.addDebugArgs(debopt)
 
-    repository = output.target()
     args = lib.argparse(parser)
 
     lib.setThreadName()
@@ -278,7 +277,7 @@ def main() -> None:
     if args.quiet is True:
         args.noprogress = True
 
-    fileStream = stream.get(args, repository)
+    fileStream = stream.get(args)
 
     try:
         if not args.stdout:
