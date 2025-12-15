@@ -162,29 +162,12 @@ def configLogger(
     )
 
 
-def hasFullBackup(args: Namespace) -> int:
-    """Check if full backup file exists in target directory"""
-    fullFiles = glob.glob(f"{args.output}/*.full.data")
-    return len(fullFiles) > 0
-
-
 def exists(args: Namespace, filePath: str) -> bool:
     """Check if file exists either remotely or locally."""
     if args.sshClient:
         return args.sshClient.exists(filePath)
 
     return os.path.exists(filePath)
-
-
-def targetIsEmpty(args: Namespace) -> bool:
-    """Check if target directory does not include an backup
-    already (no .data or .data.partial files)"""
-    if exists(args, args.output) and args.level in ("full", "copy", "auto"):
-        dirList = glob.glob(f"{args.output}/*.data*")
-        if len(dirList) > 0:
-            return False
-
-    return True
 
 
 def getLatest(targetDir: str, search: str, key=None) -> List[str]:

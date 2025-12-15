@@ -48,3 +48,7 @@ class TargetPlugin:
     def exists(self, args: Namespace, fileName: str):
         """check if file exists"""
         raise NotImplementedError
+
+    def empty(self, args: Namespace):
+        """check if target is empty"""
+        raise NotImplementedError

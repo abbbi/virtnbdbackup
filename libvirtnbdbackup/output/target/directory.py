@@ -120,16 +120,15 @@ class Directory(TargetPlugin):
         except OSError as e:
             raise exceptions.OutputException(f"Failed to rename file: [{e}]") from e
 
-    def _exists(self, args: Namespace, fileName: str) -> int:
+    def _exists(self, args: Namespace, fileName: str) -> bool:
         """Check for possible partial backup files"""
         partialFiles = glob.glob(os.path.join(args.output, fileName))
-        return len(partialFiles) > 0
+        if len(partialFiles) > 0:
+            return True
+        return False
 
     def exists(self, args: Namespace, fileName: str) -> bool:
         """Check if target directory has an partial backup,
         makes backup utility exit errnous in case backup
         type is full or inc"""
-        if args.level in ("inc", "diff") and self._exists(args, fileName) is True:
-            return True
-
-        return False
+        return self._exists(args, fileName)

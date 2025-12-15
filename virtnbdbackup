@@ -370,7 +370,7 @@ def main() -> None:
         check.vmfeature(virtClient, domObj)
         checkpoint.checkForeign(args, domObj)
         check.vmstate(args, virtClient, domObj)
-        check.targetDir(args)
+        check.targetDir(args, fileStream)
     except exceptions.BackupException as e:
         logging.error(e)
         sys.exit(1)

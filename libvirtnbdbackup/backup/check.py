@@ -22,6 +22,7 @@ from libvirt import virDomain
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup import exceptions
+from libvirtnbdbackup.output.base import TargetPlugin
 
 log = logging.getLogger()
 
@@ -45,24 +46,22 @@ def arguments(args: Namespace) -> None:
         )
 
 
-def targetDir(args: Namespace) -> None:
+def targetDir(fileStream: TargetPlugin, args: Namespace) -> None:
     """Check if target directory backup is started to meets
     all requirements based on the backup level executed"""
-    if (
-        args.level not in ("copy", "full", "auto")
-        and not lib.hasFullBackup(args)
-        and not args.stdout
+    if args.level not in ("copy", "full", "auto") and not fileStream.exists(
+        args, "*.full.data"
     ):
         raise exceptions.BackupException(
             f"Unable to execute [{args.level}] backup: "
             f"No full backup found in target directory: [{args.output}]"
         )
 
-    if lib.targetIsEmpty(args) and args.level == "auto":
+    if not fileStream.exists(args, "*") and args.level == "auto":
         log.info("Backup mode auto, target folder is empty: executing full backup.")
         args.level = "full"
-    elif not lib.targetIsEmpty(args) and args.level == "auto":
-        if not lib.hasFullBackup(args):
+    elif not fileStream.exists(args, "*") and args.level == "auto":
+        if not fileStream.exists(args, "*.full.data"):
             raise exceptions.BackupException(
                 "Can't execute switch to auto incremental backup: "
                 f"specified target folder [{args.output}] does not contain full backup.",
@@ -70,7 +69,7 @@ def targetDir(args: Namespace) -> None:
         log.info("Backup mode auto: executing incremental backup.")
         args.level = "inc"
     elif not args.stdout and not args.startonly and not args.killonly:
-        if not lib.targetIsEmpty(args):
+        if not fileStream.exists(args, "*"):
             raise exceptions.BackupException(
                 "Target directory already contains full or copy backup."
             )
