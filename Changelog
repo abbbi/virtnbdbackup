@@ -1,3 +1,11 @@
+Version 2.50
+---------
+ * Plugin system: virtnbdbackup now has a simple plugin system that allows to
+ add output target plugin classes. This adds support to ship custom
+ implementations to support other protocols for storing the backup data, like
+ for example S3.
+
+
 Version 2.43
 ---------
  * Small code cleanups
