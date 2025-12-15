@@ -27,8 +27,7 @@ from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.output.exceptions import OutputException
-from libvirtnbdbackup.output.target.directory import Directory
-from libvirtnbdbackup.output.target.zip import Zip
+from libvirtnbdbackup.output.base import TargetPlugin
 from libvirtnbdbackup.common import safeInfo
 
 
@@ -110,7 +109,7 @@ def saveFiles(
     args: Namespace,
     vmConfig: str,
     disks: List[DomainDisk],
-    fileStream: Union[Directory, Zip],
+    fileStream: TargetPlugin,
     logFile: str,
 ):
     """Save additional files such as virtual machine configuration
