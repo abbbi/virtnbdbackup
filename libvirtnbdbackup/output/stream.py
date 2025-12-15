@@ -57,4 +57,4 @@ def get(args: Namespace) -> TargetPlugin:
     if pluginClass is None:
         raise OutputException(f"No suitable plugin found for target: [{args.output}]")
 
-    return pluginClass()
+    return pluginClass(args)

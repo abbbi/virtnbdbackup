@@ -15,9 +15,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from typing import Optional
+from argparse import Namespace
+
 
 class TargetPlugin:
     """Plugin base class"""
+
+    def __init__(self, args: Optional[Namespace] = None):
+        raise NotImplementedError
 
     def open(self, targetFile, mode):
         """open"""
