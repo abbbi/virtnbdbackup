@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 import logging
 from typing import BinaryIO
 from argparse import Namespace
@@ -44,10 +45,10 @@ def Set(args: Namespace, disk: DomainDisk, ext: str = "data"):
     if level in ("full", "copy"):
         if disk.format == "raw":
             level = "copy"
-        targetFile = f"{args.output}/{disk.target}.{level}.{ext}"
+        targetFile = os.path.join(args.output, f"{disk.target}.{level}.{ext}")
     elif level in ("inc", "diff"):
         cptName = getIdent(args)
-        targetFile = f"{args.output}/{disk.target}.{level}.{cptName}.{ext}"
+        targetFile = os.path.join(args.output, f"{disk.target}.{level}.{cptName}.{ext}")
 
     targetFilePartial = f"{targetFile}.partial"
 

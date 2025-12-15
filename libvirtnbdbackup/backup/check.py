@@ -46,7 +46,7 @@ def arguments(args: Namespace) -> None:
         )
 
 
-def targetDir(fileStream: TargetPlugin, args: Namespace) -> None:
+def targetDir(args: Namespace, fileStream: TargetPlugin) -> None:
     """Check if target directory backup is started to meets
     all requirements based on the backup level executed"""
     if args.level not in ("copy", "full", "auto") and not fileStream.exists(
@@ -57,10 +57,11 @@ def targetDir(fileStream: TargetPlugin, args: Namespace) -> None:
             f"No full backup found in target directory: [{args.output}]"
         )
 
-    if not fileStream.exists(args, "*") and args.level == "auto":
-        log.info("Backup mode auto, target folder is empty: executing full backup.")
-        args.level = "full"
-    elif not fileStream.exists(args, "*") and args.level == "auto":
+    if args.level == "auto":
+        if not fileStream.exists(args, "*.data"):
+            log.info("Backup mode auto, target folder is empty: executing full backup.")
+            args.level = "full"
+            return
         if not fileStream.exists(args, "*.full.data"):
             raise exceptions.BackupException(
                 "Can't execute switch to auto incremental backup: "
@@ -68,8 +69,11 @@ def targetDir(fileStream: TargetPlugin, args: Namespace) -> None:
             )
         log.info("Backup mode auto: executing incremental backup.")
         args.level = "inc"
-    elif not args.stdout and not args.startonly and not args.killonly:
-        if not fileStream.exists(args, "*"):
+
+    if not args.startonly and not args.killonly and args.level in ("copy", "full"):
+        if fileStream.exists(args, "*.full.data") or fileStream.exists(
+            args, "*.copy.data"
+        ):
             raise exceptions.BackupException(
                 "Target directory already contains full or copy backup."
             )

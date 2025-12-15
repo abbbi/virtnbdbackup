@@ -132,3 +132,9 @@ class Directory(TargetPlugin):
         makes backup utility exit errnous in case backup
         type is full or inc"""
         return self._exists(args, fileName)
+
+    def empty(self, args: Namespace) -> bool:
+        print(os.listdir(args.output))
+        if len(os.listdir(args.output)) == 0:
+            return True
+        return False
