@@ -22,6 +22,7 @@ import logging
 import builtins
 from typing import IO, Union, Any
 from libvirtnbdbackup.output import exceptions
+from libvirtnbdbackup.output.base import TargetPlugin
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -31,7 +32,7 @@ else:
 log = logging.getLogger("directory")
 
 
-class Directory:
+class Directory(TargetPlugin):
     """Backup to target directory"""
 
     def __init__(self) -> None:

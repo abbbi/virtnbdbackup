@@ -1,5 +1,5 @@
 """
-Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
+Copyright (C) 2025  Michael Ablassmeier <abi@grinser.de>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,23 +15,46 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import pkgutil
+import importlib
+import inspect
 from argparse import Namespace
-from typing import Union
-from libvirtnbdbackup.output.target.directory import Directory
-from libvirtnbdbackup.output.target.zip import Zip
+from typing import Dict, Type
+
+from libvirtnbdbackup.output import target
+from libvirtnbdbackup.output.base import TargetPlugin
+from libvirtnbdbackup.output.exceptions import OutputException
 
 
-def get(
-    args: Namespace,
-) -> Union[Directory, Zip]:
-    """Get filehandle for output files based on output
-    mode"""
-    fileStream: Union[Directory, Zip]
-    if args.stdout is False:
-        fileStream = Directory()
+def loadPlugins() -> Dict[str, Type[TargetPlugin]]:
+    """Load available output plugins"""
+    plugin_classes = {}
+
+    for _, module_name, _ in pkgutil.iter_modules(target.__path__):
+        module = importlib.import_module(f"{target.__name__}.{module_name}")
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            if issubclass(obj, TargetPlugin) and obj is not TargetPlugin:
+                plugin_classes[name] = obj
+
+    return plugin_classes
+
+
+def get(args: Namespace) -> TargetPlugin:
+    """Get an instance of the appropriate plugin class."""
+    plugins = loadPlugins()
+
+    if ":" in args.output:
+        load = args.output.split(":", 1)[0]
+        pluginClass = plugins.get(load)
     else:
-        fileStream = Zip()
-        args.output = "./"
-        args.worker = 1
+        if not args.stdout:
+            pluginClass = plugins.get("Directory")
+        else:
+            pluginClass = plugins.get("Zip")
+            args.output = "./"
+            args.worker = 1
 
-    return fileStream
+    if pluginClass is None:
+        raise OutputException(f"No suitable plugin found for target: [{args.output}]")
+
+    return pluginClass()

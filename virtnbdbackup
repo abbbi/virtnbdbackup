@@ -277,7 +277,11 @@ def main() -> None:
     if args.quiet is True:
         args.noprogress = True
 
-    fileStream = stream.get(args)
+    try:
+        fileStream = stream.get(args)
+    except OutputException as e:
+        logging.error("Unable to open target: [%s]", e)
+        sys.exit(1)
 
     try:
         if not args.stdout:

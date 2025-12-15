@@ -1,5 +1,5 @@
 """
-Copyright (C) 2023  Michael Ablassmeier <abi@grinser.de>
+Copyright (C) 2025  Michael Ablassmeier <abi@grinser.de>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,4 +15,22 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = "2.50"
+
+class TargetPlugin:
+    """Plugin base class"""
+
+    def open(self, targetFile, mode):
+        """open"""
+        raise NotImplementedError
+
+    def close(self):
+        """close"""
+        raise NotImplementedError
+
+    def write(self, data):
+        """write"""
+        raise NotImplementedError
+
+    def create(self, targetDir):
+        """create"""
+        raise NotImplementedError

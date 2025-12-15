@@ -23,6 +23,8 @@ import time
 from typing import IO, Tuple
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.target.directory import Directory
+from libvirtnbdbackup.output.base import TargetPlugin
+
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -32,7 +34,7 @@ else:
 log = logging.getLogger("zip")
 
 
-class Zip:
+class Zip(TargetPlugin):
     """Backup to zip file"""
 
     def __init__(self) -> None:
@@ -51,10 +53,10 @@ class Zip:
         log.debug("Create: %s", targetDir)
         Directory().create(targetDir)
 
-    def open(self, fileName: str, mode: Literal["w"] = "w") -> IO[bytes]:
+    def open(self, targetFile: str, mode: Literal["w"] = "w") -> IO[bytes]:
         """Open wrapper"""
         zipFile = zipfile.ZipInfo(
-            filename=os.path.basename(fileName),
+            filename=os.path.basename(targetFile),
         )
         dateTime: time.struct_time = time.localtime(time.time())
         timeStamp: Tuple[int, int, int, int, int, int] = (
