@@ -28,7 +28,7 @@ from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.restore import files
 from libvirtnbdbackup.restore import sequence
 from libvirtnbdbackup.restore import disk
-from libvirtnbdbackup import output
+from libvirtnbdbackup.output.target.directory import Directory
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
@@ -260,7 +260,7 @@ def main() -> None:
                 logging.info("Create target directory: [%s]", args.output)
                 args.sshClient.sftp.mkdir(args.output)
         else:
-            output.target.Directory().create(args.output)
+            Directory().create(args.output)
 
         ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml")
         if not ConfigFiles:
