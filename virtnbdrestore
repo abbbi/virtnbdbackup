@@ -260,7 +260,7 @@ def main() -> None:
                 logging.info("Create target directory: [%s]", args.output)
                 args.sshClient.sftp.mkdir(args.output)
         else:
-            Directory().create(args.output)
+            Directory(None).create(args.output)
 
         ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml")
         if not ConfigFiles:
