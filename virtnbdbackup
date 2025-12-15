@@ -31,12 +31,10 @@ from libvirtnbdbackup import __version__
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.virt import checkpoint
-from libvirtnbdbackup import output
 from libvirtnbdbackup.output import stream
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup import exceptions
-from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import job
 from libvirtnbdbackup.backup import disk
 from libvirtnbdbackup.backup import metadata
@@ -311,7 +309,10 @@ def main() -> None:
         logging.error(e)
         sys.exit(1)
 
-    if partialfile.exists(args):
+    if fileStream.exists(args, "*.partial"):
+        logging.error("Partial backup found in target directory: [%s]", args.output)
+        logging.error("One of the last backups seems to have failed.")
+        logging.error("Consider re-executing full backup.")
         sys.exit(1)
 
     if not args.checkpointdir:

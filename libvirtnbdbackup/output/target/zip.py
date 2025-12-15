@@ -98,3 +98,11 @@ class Zip(TargetPlugin):
     def checksum(self) -> None:
         """Checksum: not implemented for zip file"""
         return
+
+    def rename(self, targetFilePartial: str, targetFile: str) -> None:
+        """rename"""
+        return
+
+    def exists(self, args: Namespace, fileName: str):
+        """Check if file exists"""
+        return

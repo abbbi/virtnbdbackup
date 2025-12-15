@@ -25,7 +25,7 @@ class TargetPlugin:
     def __init__(self, args: Optional[Namespace] = None):
         raise NotImplementedError
 
-    def open(self, targetFile, mode):
+    def open(self, targetFile: str, mode):
         """open"""
         raise NotImplementedError
 
@@ -37,6 +37,14 @@ class TargetPlugin:
         """write"""
         raise NotImplementedError
 
-    def create(self, targetDir):
+    def create(self, targetDir: str):
         """create"""
+        raise NotImplementedError
+
+    def rename(self, targetFilePartial: str, targetFile: str):
+        """rename file"""
+        raise NotImplementedError
+
+    def exists(self, args: Namespace, fileName: str):
+        """check if file exists"""
         raise NotImplementedError

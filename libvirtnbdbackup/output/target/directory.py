@@ -20,6 +20,7 @@ import sys
 import zlib
 import logging
 import builtins
+import glob
 from argparse import Namespace
 from typing import IO, Union, Any, Optional
 from libvirtnbdbackup.output import exceptions
@@ -110,3 +111,25 @@ class Directory(TargetPlugin):
         cur = self.chksum
         self.chksum = 1
         return cur
+
+    def rename(self, targetFilePartial: str, targetFile: str) -> None:
+        """After backup, move .partial file to real
+        target file"""
+        try:
+            os.rename(targetFilePartial, targetFile)
+        except OSError as e:
+            raise exceptions.OutputException(f"Failed to rename file: [{e}]") from e
+
+    def _exists(self, args: Namespace, fileName: str) -> int:
+        """Check for possible partial backup files"""
+        partialFiles = glob.glob(os.path.join(args.output, fileName))
+        return len(partialFiles) > 0
+
+    def exists(self, args: Namespace, fileName: str) -> bool:
+        """Check if target directory has an partial backup,
+        makes backup utility exit errnous in case backup
+        type is full or inc"""
+        if args.level in ("inc", "diff") and self._exists(args, fileName) is True:
+            return True
+
+        return False
