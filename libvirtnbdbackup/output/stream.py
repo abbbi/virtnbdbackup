@@ -28,15 +28,15 @@ from libvirtnbdbackup.output.exceptions import OutputException
 
 def loadPlugins() -> Dict[str, Type[TargetPlugin]]:
     """Load available output plugins"""
-    plugin_classes = {}
+    plugins = {}
 
     for _, module_name, _ in pkgutil.iter_modules(target.__path__):
         module = importlib.import_module(f"{target.__name__}.{module_name}")
         for name, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, TargetPlugin) and obj is not TargetPlugin:
-                plugin_classes[name] = obj
+                plugins[name] = obj
 
-    return plugin_classes
+    return plugins
 
 
 def get(args: Namespace) -> TargetPlugin:
