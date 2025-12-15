@@ -20,7 +20,8 @@ import sys
 import zipfile
 import logging
 import time
-from typing import IO, Tuple
+from argparse import Namespace
+from typing import IO, Tuple, Optional
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.target.directory import Directory
 from libvirtnbdbackup.output.base import TargetPlugin
@@ -37,7 +38,7 @@ log = logging.getLogger("zip")
 class Zip(TargetPlugin):
     """Backup to zip file"""
 
-    def __init__(self) -> None:
+    def __init__(self, args: Optional[Namespace]) -> None:
         self.zipStream: zipfile.ZipFile
         self.zipFileStream: IO[bytes]
 
@@ -51,7 +52,7 @@ class Zip(TargetPlugin):
     def create(self, targetDir) -> None:
         """Create wrapper"""
         log.debug("Create: %s", targetDir)
-        Directory().create(targetDir)
+        Directory(None).create(targetDir)
 
     def open(self, targetFile: str, mode: Literal["w"] = "w") -> IO[bytes]:
         """Open wrapper"""

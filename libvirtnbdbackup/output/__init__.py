@@ -17,4 +17,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .target.directory import Directory
 
-openfile = Directory().open
+openfile = Directory(args=None).open

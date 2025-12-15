@@ -20,7 +20,8 @@ import sys
 import zlib
 import logging
 import builtins
-from typing import IO, Union, Any
+from argparse import Namespace
+from typing import IO, Union, Any, Optional
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.base import TargetPlugin
 
@@ -35,7 +36,7 @@ log = logging.getLogger("directory")
 class Directory(TargetPlugin):
     """Backup to target directory"""
 
-    def __init__(self) -> None:
+    def __init__(self, args: Optional[Namespace]) -> None:
         self.fileHandle: IO[Any]
         self.chksum: int = 1
 
