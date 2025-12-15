@@ -310,7 +310,7 @@ def main() -> None:
         sys.exit(1)
 
     if fileStream.exists(args, "*.partial"):
-        logging.error("Partial backup found in target directory: [%s]", args.output)
+        logging.error("Partial backup found in backup target: [%s]", args.output)
         logging.error("One of the last backups seems to have failed.")
         logging.error("Consider re-executing full backup.")
         sys.exit(1)
