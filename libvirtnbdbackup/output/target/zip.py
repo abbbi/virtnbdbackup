@@ -54,7 +54,7 @@ class Zip(TargetPlugin):
         log.debug("Create: %s", targetDir)
         Directory(None).create(targetDir)
 
-    def open(self, targetFile: str, mode: Literal["w"] = "w") -> IO[bytes]:
+    def open(self, targetFile: str, mode="w") -> IO[bytes]:
         """Open wrapper"""
         zipFile = zipfile.ZipInfo(
             filename=os.path.basename(targetFile),
@@ -89,6 +89,11 @@ class Zip(TargetPlugin):
     def write(self, data: bytes) -> int:
         """Write wrapper"""
         return self.zipFileStream.write(data)
+
+    def read(self, dlen: int) -> int:
+        """Write wrapper"""
+        print("foo")
+        return self.zipFileStream.read(dlen)
 
     def close(self) -> None:
         """Close wrapper"""

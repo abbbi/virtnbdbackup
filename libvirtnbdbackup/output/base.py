@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import Optional
+from typing import Optional, Union, Literal
 from argparse import Namespace
 
 
@@ -25,7 +25,11 @@ class TargetPlugin:
     def __init__(self, args: Optional[Namespace] = None):
         raise NotImplementedError
 
-    def open(self, targetFile: str, mode: str = "w"):
+    def open(
+        self,
+        targetFile: str,
+        mode: Union[Literal["w"], Literal["wb"], Literal["rb"], Literal["r"]] = "wb",
+    ):
         """open"""
         raise NotImplementedError
 

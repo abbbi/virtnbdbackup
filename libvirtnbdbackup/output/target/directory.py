@@ -60,7 +60,7 @@ class Directory(TargetPlugin):
     def open(
         self,
         targetFile: str,
-        mode: Union[Literal["w"], Literal["wb"], Literal["rb"], Literal["r"]] = "wb",
+        mode="wb",
     ) -> IO[Any]:
         """Open target file"""
         try:

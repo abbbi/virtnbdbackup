@@ -267,7 +267,7 @@ def read(cFile: str, fileStream: TargetPlugin) -> List[str]:
         return checkpoints
 
     try:
-        with fileStream.open(cFile, "rb") as fh:
+        with fileStream.open(cFile, "r") as fh:
             checkpoints = json.loads(fh.read().decode())
         return checkpoints
     except OutputException as e:

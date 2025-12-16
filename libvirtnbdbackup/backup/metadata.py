@@ -41,7 +41,7 @@ def backupChecksum(fileStream: TargetPlugin, targetFile: str) -> None:
     safeInfo("Checksum for file: [%s]:[%s]", targetFile, checksum)
     chksumfile = f"{targetFile}.chksum"
     safeInfo("Saving checksum to: [%s]", chksumfile)
-    with fileStream.open(chksumfile, "w") as cf:
+    with fileStream.open(chksumfile) as cf:
         cf.write(b"{checksum}")
 
 
