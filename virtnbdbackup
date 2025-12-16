@@ -174,7 +174,7 @@ def main() -> None:
         "-w",
         "--worker",
         type=int,
-        default=None,
+        default=0,
         help=(
             "Amount of concurrent workers used "
             "to backup multiple disks. (default: amount of disks)"
@@ -278,6 +278,8 @@ def main() -> None:
     if args.quiet is True:
         args.noprogress = True
 
+    args.worker = max(args.worker, 1)
+
     try:
         fileStream = stream.get(args)
     except OutputException as e:
@@ -289,9 +291,6 @@ def main() -> None:
     except OutputException as e:
         logging.error("Can't open output file: [%s]", e)
         sys.exit(1)
-
-    if args.worker is not None and args.worker < 1:
-        args.worker = 1
 
     now = datetime.now().strftime("%m%d%Y%H%M%S")
     logFile = os.path.join(args.output, f"backup.{args.level}.{now}.log")
@@ -424,8 +423,10 @@ def main() -> None:
         "Backup will save [%s] attached disks.",
         len(disks),
     )
-    if args.worker is None or args.worker > int(len(disks)):
+
+    if args.worker == 0 or args.worker > int(len(disks)):
         args.worker = int(len(disks))
+
     logging.info("Concurrent backup processes: [%s]", args.worker)
 
     if args.killonly is True:
