@@ -134,7 +134,6 @@ class Directory(TargetPlugin):
         return self._exists(args, fileName)
 
     def empty(self, args: Namespace) -> bool:
-        print(os.listdir(args.output))
         if len(os.listdir(args.output)) == 0:
             return True
         return False

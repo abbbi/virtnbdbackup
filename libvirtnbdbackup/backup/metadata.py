@@ -38,6 +38,8 @@ def backupChecksum(fileStream: TargetPlugin, targetFile: str) -> None:
     """Save the calculated adler32 checksum, it can be verified
     by virtnbdbrestore's verify function.'"""
     checksum = fileStream.checksum()
+    if checksum is None:
+        return
     safeInfo("Checksum for file: [%s]:[%s]", targetFile, checksum)
     chksumfile = f"{targetFile}.chksum"
     safeInfo("Saving checksum to: [%s]", chksumfile)

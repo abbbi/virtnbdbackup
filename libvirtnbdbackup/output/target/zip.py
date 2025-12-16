@@ -15,16 +15,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
 import fnmatch
 import zipfile
 import logging
 import time
+import warnings
 from argparse import Namespace
 from typing import IO, Tuple, Optional
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.base import TargetPlugin
 
+warnings.filterwarnings("ignore", category=UserWarning, message="Duplicate name:")
 
 log = logging.getLogger("zip")
 
@@ -82,10 +83,6 @@ class zip(TargetPlugin):
     def write(self, data: bytes) -> int:
         """Write wrapper"""
         return self.zipFileStream.write(data)
-
-    def read(self, dlen: int) -> int:
-        """Write wrapper"""
-        return
 
     def close(self) -> None:
         """Close wrapper"""
