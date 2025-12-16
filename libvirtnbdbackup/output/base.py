@@ -53,10 +53,10 @@ class TargetPlugin:
         """rename file"""
         raise NotImplementedError
 
-    def exists(self, args: Namespace, fileName: str):
+    def exists(self, fileName: str):
         """check if file exists"""
         raise NotImplementedError
 
-    def empty(self, args: Namespace):
+    def empty(self):
         """check if target is empty"""
         raise NotImplementedError

@@ -22,7 +22,7 @@ import logging
 import builtins
 import glob
 from argparse import Namespace
-from typing import IO, Union, Any, Optional
+from typing import IO, Union, Any
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.base import TargetPlugin
 
@@ -37,9 +37,10 @@ log = logging.getLogger("directory")
 class Directory(TargetPlugin):
     """Backup to target directory"""
 
-    def __init__(self, args: Optional[Namespace]) -> None:
+    def __init__(self, args: Namespace) -> None:
         self.fileHandle: IO[Any]
         self.chksum: int = 1
+        self.args = args
 
     def create(self, targetDir) -> None:
         """Create wrapper"""
@@ -120,20 +121,20 @@ class Directory(TargetPlugin):
         except OSError as e:
             raise exceptions.OutputException(f"Failed to rename file: [{e}]") from e
 
-    def _exists(self, args: Namespace, fileName: str) -> bool:
+    def _exists(self, fileName: str) -> bool:
         """Check for possible partial backup files"""
-        partialFiles = glob.glob(os.path.join(args.output, fileName))
+        partialFiles = glob.glob(os.path.join(self.args.output, fileName))
         if len(partialFiles) > 0:
             return True
         return False
 
-    def exists(self, args: Namespace, fileName: str) -> bool:
+    def exists(self, fileName: str) -> bool:
         """Check if target directory has an partial backup,
         makes backup utility exit errnous in case backup
         type is full or inc"""
-        return self._exists(args, fileName)
+        return self._exists(fileName)
 
-    def empty(self, args: Namespace) -> bool:
-        if len(os.listdir(args.output)) == 0:
+    def empty(self) -> bool:
+        if len(os.listdir(self.args.output)) == 0:
             return True
         return False

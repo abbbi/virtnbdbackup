@@ -263,7 +263,7 @@ def read(cFile: str, fileStream: TargetPlugin) -> List[str]:
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints: List[str] = []
-    if not fileStream.exists(None, cFile):
+    if not fileStream.exists(cFile):
         return checkpoints
 
     try:

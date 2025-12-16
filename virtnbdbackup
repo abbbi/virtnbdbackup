@@ -311,7 +311,7 @@ def main() -> None:
         logging.error(e)
         sys.exit(1)
 
-    if fileStream.exists(args, "*.partial"):
+    if fileStream.exists("*.partial"):
         logging.error("Partial backup found in backup target: [%s]", args.output)
         logging.error("One of the last backups seems to have failed.")
         logging.error("Consider re-executing full backup.")
@@ -411,7 +411,7 @@ def main() -> None:
 
     if not disks:
         logging.error("Unable to detect disks suitable for backup.")
-        metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
+        metadata.saveFiles(args, disks, fileStream)
         sys.exit(1)
 
     try:

@@ -21,7 +21,7 @@ import logging
 import time
 import warnings
 from argparse import Namespace
-from typing import IO, Tuple, Optional
+from typing import IO, Tuple
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.base import TargetPlugin
 
@@ -33,9 +33,12 @@ log = logging.getLogger("zip")
 class zip(TargetPlugin):
     """Backup to zip file"""
 
-    def __init__(self, args: Optional[Namespace]) -> None:
+    def __init__(self, args: Namespace) -> None:
         self.zipStream: zipfile.ZipFile
         self.zipFileStream: IO[bytes]
+        self.args = args
+        # zip output only supports one concurrent stream
+        self.args.worker = min(self.args.worker, 1)
 
     def create(self, targetDir) -> None:
         try:
@@ -97,7 +100,7 @@ class zip(TargetPlugin):
         """rename"""
         return
 
-    def exists(self, args: Namespace, fileName: str):
+    def exists(self, fileName: str):
         """Check if file exists"""
         for file in self.zipStream.namelist():
             if fnmatch.fnmatch(file, fileName):
