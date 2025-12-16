@@ -123,7 +123,7 @@ class Directory(TargetPlugin):
 
     def _exists(self, fileName: str) -> bool:
         """Check for possible partial backup files"""
-        partialFiles = glob.glob(os.path.join(self.args.output, fileName))
+        partialFiles = glob.glob(fileName)
         if len(partialFiles) > 0:
             return True
         return False

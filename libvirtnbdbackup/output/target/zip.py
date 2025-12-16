@@ -65,7 +65,7 @@ class zip(TargetPlugin):
             )
             file.date_time = timeStamp
             file.compress_type = zipfile.ZIP_STORED
-        elif mode == "r":
+        else:
             file = targetFile
 
         try:

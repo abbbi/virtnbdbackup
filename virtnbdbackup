@@ -311,7 +311,7 @@ def main() -> None:
         logging.error(e)
         sys.exit(1)
 
-    if fileStream.exists("*.partial"):
+    if fileStream.exists(os.path.join(args.output, "*.partial")):
         logging.error("Partial backup found in backup target: [%s]", args.output)
         logging.error("One of the last backups seems to have failed.")
         logging.error("Consider re-executing full backup.")

@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import os
 import logging
 from typing import List, Any
 from argparse import Namespace
@@ -50,7 +51,7 @@ def targetDir(args: Namespace, fileStream: TargetPlugin) -> None:
     """Check if target directory backup is started to meets
     all requirements based on the backup level executed"""
     if args.level not in ("copy", "full", "auto") and not fileStream.exists(
-        "*.full.data"
+        os.path.join(args.output, "*.full.data")
     ):
         raise exceptions.BackupException(
             f"Unable to execute [{args.level}] backup: "
@@ -58,11 +59,11 @@ def targetDir(args: Namespace, fileStream: TargetPlugin) -> None:
         )
 
     if args.level == "auto":
-        if not fileStream.exists("*.data"):
+        if not fileStream.exists(os.path.join(args.output, "*.data")):
             log.info("Backup mode auto, target folder is empty: executing full backup.")
             args.level = "full"
             return
-        if not fileStream.exists("*.full.data"):
+        if not fileStream.exists(os.path.join(args.output, "*.full.data")):
             raise exceptions.BackupException(
                 "Can't execute switch to auto incremental backup: "
                 f"specified target folder [{args.output}] does not contain full backup.",
@@ -71,7 +72,9 @@ def targetDir(args: Namespace, fileStream: TargetPlugin) -> None:
         args.level = "inc"
 
     if not args.startonly and not args.killonly and args.level in ("copy", "full"):
-        if fileStream.exists("*.full.data") or fileStream.exists("*.copy.data"):
+        if fileStream.exists(
+            os.path.join(args.output, "*.full.data")
+        ) or fileStream.exists(os.path.join(args.output, "*.copy.data")):
             raise exceptions.BackupException(
                 "Target directory already contains full or copy backup."
             )

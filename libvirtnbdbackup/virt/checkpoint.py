@@ -207,7 +207,9 @@ def removeAll(
     return True
 
 
-def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
+def redefine(
+    domObj: libvirt.virDomain, args: Namespace, fileStream: TargetPlugin
+) -> bool:
     """Redefine checkpoints from persistent storage"""
     checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
     checkpointList.sort(key=os.path.getmtime)
@@ -218,7 +220,7 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
     for checkpointFile in checkpointList:
         try:
             log.debug("Loading checkpoint config from: [%s]", checkpointFile)
-            with output.openfile(checkpointFile, "rb") as f:
+            with fileStream.open(checkpointFile, "rb") as f:
                 checkpointConfig = f.read()
                 root = ElementTree.fromstring(checkpointConfig)
         except OutputException as e:
@@ -263,12 +265,14 @@ def read(cFile: str, fileStream: TargetPlugin) -> List[str]:
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints: List[str] = []
+    print(cFile)
     if not fileStream.exists(cFile):
+        print("noo")
         return checkpoints
 
     try:
         with fileStream.open(cFile, "r") as fh:
-            checkpoints = json.loads(fh.read().decode())
+            checkpoints = json.loads(fh.read())
         return checkpoints
     except OutputException as e:
         raise ReadCheckpointsError(f"Failed to read checkpoint file: [{e}]") from e
@@ -324,7 +328,7 @@ def create(
     checkpoints: List[str] = read(cptFile, fileStream)
 
     if args.offline is False:
-        if redefine(domObj, args) is False:
+        if redefine(domObj, args, fileStream) is False:
             raise RedefineCheckpointError("Failed to redefine checkpoints.")
 
     # save level to reuse it properly when filename is selected for the backup
