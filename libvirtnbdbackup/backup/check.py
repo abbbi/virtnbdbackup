@@ -33,6 +33,9 @@ def arguments(args: Namespace) -> None:
     if args.compress is not False and args.type == "raw":
         raise exceptions.BackupException("Compression not supported with raw output.")
 
+    # TODO: move support for this type of check to the
+    # output class loaded, each class should have its own
+    # set of settings
     if args.output.startswith("zip") and args.type == "raw":
         raise exceptions.BackupException("Output type raw not supported to zip.")
 
