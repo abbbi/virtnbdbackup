@@ -127,7 +127,7 @@ def diskformat(args: Namespace, disks: List[Any]) -> None:
 
 
 def blockjobs(
-    args, virtClient: virt.client, domObj: virDomain, disks: List[Any]
+    args: Namespace, virtClient: virt.client, domObj: virDomain, disks: List[Any]
 ) -> None:
     """Check if there is an already active backup operation on the domain
     disks. If so, fail accordingly"""
