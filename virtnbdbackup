@@ -267,10 +267,13 @@ def main() -> None:
     args = lib.argparse(parser)
 
     lib.setThreadName()
-    args.stdout = args.output == "-"
     args.sshClient = None
     args.diskInfo = []
     args.offline = False
+
+    if args.output == "-":
+        logging.error("In order to backup into zip file, use: -o zip://file.zip")
+        sys.exit(1)
 
     if args.quiet is True:
         args.noprogress = True
@@ -282,8 +285,7 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        if not args.stdout:
-            fileStream.create(args.output)
+        fileStream.create(args.output)
     except OutputException as e:
         logging.error("Can't open output file: [%s]", e)
         sys.exit(1)

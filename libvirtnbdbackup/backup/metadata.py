@@ -77,8 +77,7 @@ def backupDiskInfo(args: Namespace, fileStream: TargetPlugin, disk: DomainDisk):
         with fileStream.open(configFile) as fh:
             fh.write(info.out.encode())
         log.info("Saved qcow image config to: [%s]", configFile)
-        if args.stdout is True:
-            args.diskInfo.append(configFile)
+        args.diskInfo.append(configFile)
     except OutputException as e:
         log.warning("Failed to save qcow image config: [%s]", e)
 

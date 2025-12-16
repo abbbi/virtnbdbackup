@@ -125,7 +125,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     # during file close
     # in case of zip file output we want to use the existing
     # opened output channel
-    if not args.stdout:
+    if not args.output.startswith("zip"):
         fileStream = stream.get(args)
     writer = target.get(args, fileStream, targetFile, targetFilePartial)
 
@@ -217,12 +217,11 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     if args.offline is True:
         lib.remove(args, nbdProc.pidFile)
 
-    if not args.stdout:
-        if args.noprogress is True:
-            lib.safeInfo(
-                "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
-            )
-        fileStream.rename(targetFilePartial, targetFile)
+    if args.noprogress is True:
+        lib.safeInfo(
+            "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
+        )
+    fileStream.rename(targetFilePartial, targetFile)
     if streamType != "raw":
         backupChecksum(fileStream, targetFile)
 

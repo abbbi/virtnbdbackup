@@ -47,12 +47,7 @@ def get(args: Namespace) -> TargetPlugin:
         load = args.output.split(":", 1)[0]
         pluginClass = plugins.get(load)
     else:
-        if not args.stdout:
-            pluginClass = plugins.get("Directory")
-        else:
-            pluginClass = plugins.get("Zip")
-            args.output = "./"
-            args.worker = 1
+        pluginClass = plugins.get("Directory")
 
     if pluginClass is None:
         raise OutputException(f"No suitable plugin found for target: [{args.output}]")

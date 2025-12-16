@@ -16,49 +16,39 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import os
-import sys
+import fnmatch
 import zipfile
 import logging
 import time
 from argparse import Namespace
 from typing import IO, Tuple, Optional
 from libvirtnbdbackup.output import exceptions
-from libvirtnbdbackup.output.target.directory import Directory
 from libvirtnbdbackup.output.base import TargetPlugin
 
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 log = logging.getLogger("zip")
 
 
-class Zip(TargetPlugin):
+class zip(TargetPlugin):
     """Backup to zip file"""
 
     def __init__(self, args: Optional[Namespace]) -> None:
         self.zipStream: zipfile.ZipFile
         self.zipFileStream: IO[bytes]
 
-        log.info("Writing zip file stream to stdout")
+    def create(self, targetDir) -> None:
         try:
             # pylint: disable=consider-using-with
-            self.zipStream = zipfile.ZipFile(sys.stdout.buffer, "x", zipfile.ZIP_STORED)
+            self.zipStream = zipfile.ZipFile("test.zip", "a", zipfile.ZIP_STORED)
         except zipfile.error as e:
             raise exceptions.OutputOpenException(f"Failed to open zip file: {e}") from e
-
-    def create(self, targetDir) -> None:
-        """Create wrapper"""
-        log.debug("Create: %s", targetDir)
-        Directory(None).create(targetDir)
 
     def open(self, targetFile: str, mode="w") -> IO[bytes]:
         """Open wrapper"""
         zipFile = zipfile.ZipInfo(
-            filename=os.path.basename(targetFile),
+            filename=targetFile,
         )
+
         dateTime: time.struct_time = time.localtime(time.time())
         timeStamp: Tuple[int, int, int, int, int, int] = (
             dateTime.tm_year,
@@ -74,6 +64,7 @@ class Zip(TargetPlugin):
         try:
             # pylint: disable=consider-using-with
             self.zipFileStream = self.zipStream.open(zipFile, mode, force_zip64=True)
+            print(self.zipStream.infolist())
             return self.zipFileStream
         except zipfile.error as e:
             raise exceptions.OutputOpenException(
@@ -93,7 +84,7 @@ class Zip(TargetPlugin):
     def read(self, dlen: int) -> int:
         """Write wrapper"""
         print("foo")
-        return self.zipFileStream.read(dlen)
+        return self.zipFileStream.read()
 
     def close(self) -> None:
         """Close wrapper"""
@@ -110,4 +101,7 @@ class Zip(TargetPlugin):
 
     def exists(self, args: Namespace, fileName: str):
         """Check if file exists"""
-        return
+        for file in self.zipStream.namelist():
+            if fnmatch.fnmatch(file, fileName):
+                return True
+        return False

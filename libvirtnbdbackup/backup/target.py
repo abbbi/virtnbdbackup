@@ -27,8 +27,7 @@ def get(
     args: Namespace, fileStream, targetFile: str, targetFilePartial: str
 ) -> BinaryIO:
     """Open target file based on output writer"""
-    if args.stdout is True:
-        logging.info("Writing data to zip archive.")
+    if args.output.startswith("zip"):
         fileStream.open(targetFile)
     else:
         safeInfo("Write data to target file: [%s].", targetFilePartial)

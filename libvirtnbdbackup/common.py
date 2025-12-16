@@ -101,7 +101,7 @@ def getLogFile(fileName: str) -> Optional[logging.FileHandler]:
     """Try setup log handler, if this fails, something is already
     wrong, but we can at least provide correct error message."""
     try:
-        return logging.FileHandler(fileName)
+        return logging.FileHandler("/tmp/log")
     except OSError as e:
         logging.error("Failed to open logfile: [%s].", e)
         return None

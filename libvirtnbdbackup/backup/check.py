@@ -32,12 +32,12 @@ def arguments(args: Namespace) -> None:
     if args.compress is not False and args.type == "raw":
         raise exceptions.BackupException("Compression not supported with raw output.")
 
-    if args.stdout is True and args.type == "raw":
-        raise exceptions.BackupException("Output type raw not supported to stdout.")
+    if args.output.startswith("zip") and args.type == "raw":
+        raise exceptions.BackupException("Output type raw not supported to zip.")
 
-    if args.stdout is True and args.raw is True:
+    if args.output.startswith("zip") is True and args.raw is True:
         raise exceptions.BackupException(
-            "Saving raw images to stdout is not supported."
+            "Saving raw images to zip files is not supported."
         )
 
     if args.type == "raw" and args.level in ("inc", "diff"):
