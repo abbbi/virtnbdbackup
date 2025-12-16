@@ -36,6 +36,8 @@ from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.ssh import Mode
 from libvirtnbdbackup.virt.exceptions import connectionFailed
 from libvirtnbdbackup.exceptions import RestoreError
+from libvirtnbdbackup.output import stream
+from libvirtnbdbackup.output.exceptions import OutputException
 
 
 def main() -> None:
@@ -197,14 +199,19 @@ def main() -> None:
     args.exclude = None
     args.include = args.disk
     lib.setThreadName()
-    stream = streamer.SparseStream(types)
+    fstream = streamer.SparseStream(types)
     fileLog = lib.getLogFile(args.logfile) or sys.exit(1)
     counter = logCount()  # pylint: disable=unreachable
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
 
-    if not lib.exists(args, args.input):
-        logging.error("Backup source [%s] does not exist.", args.input)
+    args.output = args.input
+    args.worker=1
+    try:
+        # TODO: port to plugin code
+        fileStream = stream.get(args)
+    except OutputException as e:
+        logging.error("Unable to restore source: [%s]", e)
         sys.exit(1)
 
     dataFiles: List[str] = []

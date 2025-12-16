@@ -531,6 +531,7 @@ def main() -> None:
     virtClient.close()
 
     metadata.saveFiles(args, disks, fileStream)
+    metadata.backupConfig(args, fileStream, vmConfig)
 
     if domObj.autostart() == 1:
         metadata.backupAutoStart(args, fileStream)

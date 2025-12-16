@@ -46,19 +46,15 @@ def backupChecksum(fileStream: TargetPlugin, targetFile: str) -> None:
         cf.write(b"{checksum}")
 
 
-def backupConfig(
-    args: Namespace, fileStream: TargetPlugin, vmConfig: str
-) -> Union[str, None]:
+def backupConfig(args: Namespace, fileStream: TargetPlugin, vmConfig: str) -> None:
     """Save domain XML config file"""
     configFile = f"{args.output}/vmconfig.{lib.getIdent(args)}.xml"
     log.info("Saving VM config to: [%s]", configFile)
     try:
         with fileStream.open(configFile) as fh:
             fh.write(vmConfig.encode())
-        return configFile
     except OutputException as e:
         log.error("Failed to save VM config: [%s]", e)
-        return None
 
 
 def backupDiskInfo(args: Namespace, fileStream: TargetPlugin, disk: DomainDisk):
