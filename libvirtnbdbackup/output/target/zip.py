@@ -45,26 +45,28 @@ class zip(TargetPlugin):
 
     def open(self, targetFile: str, mode="w") -> IO[bytes]:
         """Open wrapper"""
-        zipFile = zipfile.ZipInfo(
-            filename=targetFile,
-        )
+        if mode == "w":
+            file = zipfile.ZipInfo(
+                filename=targetFile,
+            )
 
-        dateTime: time.struct_time = time.localtime(time.time())
-        timeStamp: Tuple[int, int, int, int, int, int] = (
-            dateTime.tm_year,
-            dateTime.tm_mon,
-            dateTime.tm_mday,
-            dateTime.tm_hour,
-            dateTime.tm_min,
-            dateTime.tm_sec,
-        )
-        zipFile.date_time = timeStamp
-        zipFile.compress_type = zipfile.ZIP_STORED
+            dateTime: time.struct_time = time.localtime(time.time())
+            timeStamp: Tuple[int, int, int, int, int, int] = (
+                dateTime.tm_year,
+                dateTime.tm_mon,
+                dateTime.tm_mday,
+                dateTime.tm_hour,
+                dateTime.tm_min,
+                dateTime.tm_sec,
+            )
+            file.date_time = timeStamp
+            file.compress_type = zipfile.ZIP_STORED
+        elif mode == "r":
+            file = targetFile
 
         try:
             # pylint: disable=consider-using-with
-            self.zipFileStream = self.zipStream.open(zipFile, mode, force_zip64=True)
-            print(self.zipStream.infolist())
+            self.zipFileStream = self.zipStream.open(file, mode, force_zip64=True)
             return self.zipFileStream
         except zipfile.error as e:
             raise exceptions.OutputOpenException(
@@ -83,8 +85,7 @@ class zip(TargetPlugin):
 
     def read(self, dlen: int) -> int:
         """Write wrapper"""
-        print("foo")
-        return self.zipFileStream.read()
+        return
 
     def close(self) -> None:
         """Close wrapper"""
