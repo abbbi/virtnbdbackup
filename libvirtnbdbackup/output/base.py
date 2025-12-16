@@ -25,12 +25,16 @@ class TargetPlugin:
     def __init__(self, args: Optional[Namespace] = None):
         raise NotImplementedError
 
-    def open(self, targetFile: str, mode):
+    def open(self, targetFile: str, mode: str = "w"):
         """open"""
         raise NotImplementedError
 
     def close(self):
         """close"""
+        raise NotImplementedError
+
+    def checksum(self):
+        """checksum"""
         raise NotImplementedError
 
     def write(self, data):

@@ -27,6 +27,7 @@ from libvirtnbdbackup import output
 from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.common import defaultCheckpointName
+from libvirtnbdbackup.output.base import TargetPlugin
 from libvirtnbdbackup.exceptions import (
     NoCheckpointsFound,
     ReadCheckpointsError,
@@ -101,12 +102,14 @@ def delete(domObj: libvirt.virDomain, cptObj: libvirt.virDomainCheckpoint) -> bo
         return False
 
 
-def backup(args: Namespace, domObj: libvirt.virDomain) -> bool:
+def backup(
+    args: Namespace, domObj: libvirt.virDomain, fileStream: TargetPlugin
+) -> bool:
     """save checkpoint config to persistent storage"""
-    checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
+    checkpointFile = os.path.join(args.checkpointdir, f"{args.cpt.name}.xml")
     log.info("Saving checkpoint config to: [%s]", checkpointFile)
     try:
-        with output.openfile(checkpointFile, "wb") as f:
+        with fileStream.open(checkpointFile) as f:
             c = exists(domObj, args.cpt.name)
             f.write(getXml(c).encode())
             return True
@@ -256,7 +259,7 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
     return True
 
 
-def read(cFile: str) -> List[str]:
+def read(cFile: str, fileStream: TargetPlugin) -> List[str]:
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints: List[str] = []
@@ -264,7 +267,7 @@ def read(cFile: str) -> List[str]:
         return checkpoints
 
     try:
-        with output.openfile(cFile, "rb") as fh:
+        with fileStream.open(cFile, "rb") as fh:
             checkpoints = json.loads(fh.read().decode())
         return checkpoints
     except OutputException as e:
@@ -273,13 +276,13 @@ def read(cFile: str) -> List[str]:
         raise ReadCheckpointsError(f"Invalid checkpoint file: [{e}]") from e
 
 
-def save(args: Namespace) -> None:
+def save(args: Namespace, fileStream: TargetPlugin) -> None:
     """Append created checkpoint to checkpoint
     file"""
     try:
-        checkpoints = read(args.cpt.file)
+        checkpoints = read(args.cpt.file, fileStream)
         checkpoints.append(args.cpt.name)
-        with output.openfile(args.cpt.file, "wb") as cFw:
+        with fileStream.open(args.cpt.file) as cFw:
             cFw.write(json.dumps(checkpoints).encode())
     except CheckpointException as e:
         raise CheckpointException from e
@@ -306,8 +309,7 @@ def validate(domObj: libvirt.virDomain, checkpointName: str) -> bool:
 
 
 def create(
-    args: Namespace,
-    domObj: libvirt.virDomain,
+    args: Namespace, domObj: libvirt.virDomain, fileStream: TargetPlugin
 ) -> None:
     """Checkpoint handling for different backup modes
     to be executed. Create, check and redefine checkpoints based
@@ -318,8 +320,8 @@ def create(
     """
     checkpointName: str = f"{defaultCheckpointName}.0"
     parentCheckpoint: str = ""
-    cptFile: str = f"{args.output}/{args.domain}.cpt"
-    checkpoints: List[str] = read(cptFile)
+    cptFile: str = os.path.join(args.output, f"{args.domain}.cpt")
+    checkpoints: List[str] = read(cptFile, fileStream)
 
     if args.offline is False:
         if redefine(domObj, args) is False:

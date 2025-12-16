@@ -433,7 +433,7 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        checkpoint.create(args, domObj)
+        checkpoint.create(args, domObj, fileStream)
     except exceptions.CheckpointException as errmsg:
         logging.error(errmsg)
         sys.exit(1)
@@ -487,11 +487,11 @@ def main() -> None:
     if args.level not in ("copy", "diff") and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
         try:
-            checkpoint.save(args)
+            checkpoint.save(args, fileStream)
         except exceptions.CheckpointException as e:
             logging.error("Extending checkpoint file failed: [%s]", e)
             sys.exit(1)
-        if not checkpoint.backup(args, domObj):
+        if not checkpoint.backup(args, domObj, fileStream):
             virtClient.stopBackup(domObj)
             sys.exit(1)
 
@@ -527,10 +527,10 @@ def main() -> None:
 
     virtClient.close()
 
-    metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
+    metadata.saveFiles(args, disks, fileStream)
 
     if domObj.autostart() == 1:
-        metadata.backupAutoStart(args)
+        metadata.backupAutoStart(args, fileStream)
 
     if counter.count.errors > 0:
         logging.error("Error during backup")

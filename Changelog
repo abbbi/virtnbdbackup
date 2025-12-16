@@ -1,5 +1,8 @@
 Version 2.50
 ---------
+ WIP: Still lots of abstractions to re-design..
+
+
  * Plugin system: virtnbdbackup now has a simple plugin system that allows to
  add output target plugin classes. This adds support to ship custom
  implementations to support other protocols for storing the backup data, like

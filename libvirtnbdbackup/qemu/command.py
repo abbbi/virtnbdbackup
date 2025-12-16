@@ -23,7 +23,6 @@ from typing import List, Tuple, Union
 from libvirtnbdbackup.qemu.exceptions import (
     ProcessError,
 )
-from libvirtnbdbackup.output import openfile
 from libvirtnbdbackup.objects import processInfo
 
 log = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ log = logging.getLogger(__name__)
 
 def _readlog(logFile: str, cmd: str) -> str:
     try:
-        with openfile(logFile, "rb") as fh:
+        with open(logFile, "rb") as fh:
             return fh.read().decode().strip()
     except Exception as errmsg:
         log.exception(errmsg)
