@@ -31,6 +31,8 @@ from typing import Optional, List, Any, Union, Dict
 from tqdm import tqdm
 import colorlog
 
+from libvirtnbdbackup.output.base import TargetPlugin
+from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup import ssh
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup import output
@@ -286,9 +288,9 @@ def dumpExtentJson(extents) -> str:
     return json.dumps(extList, indent=4, sort_keys=True)
 
 
-def dumpMetaData(dataFile: str, stream):
+def dumpMetaData(fileStream: TargetPlugin, dataFile: str, stream):
     """read metadata header"""
-    with output.openfile(dataFile, "rb") as reader:
+    with fileStream.open(dataFile, "rb") as reader:
         _, _, length = stream.readFrame(reader)
         return stream.loadMetadata(reader.read(length))
 

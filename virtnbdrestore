@@ -205,7 +205,6 @@ def main() -> None:
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
 
-    args.output = args.input
     args.worker=1
     try:
         # TODO: port to plugin code
@@ -232,7 +231,7 @@ def main() -> None:
             sys.exit(1)
 
     if args.action == "dump" or args.output == "dump":
-        files.dump(args, stream, dataFiles)
+        files.dump(args, fileStream, fstream, dataFiles)
         sys.exit(0)
 
     if args.action == "verify" or args.output == "verify":

@@ -23,10 +23,10 @@ from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.output.exceptions import OutputException
 
 
-def get(diskFile: str, stream: streamer.SparseStream) -> Dict[str, str]:
+def get(diskFile: str, stream: streamer.SparseStream, fileStream) -> Dict[str, str]:
     """Read header from data file"""
     try:
-        return lib.dumpMetaData(diskFile, stream)
+        return lib.dumpMetaData(fileStream, diskFile, stream)
     except StreamFormatException as errmsg:
         raise RestoreError(
             f"Reading metadata from [{diskFile}] failed: [{errmsg}]"

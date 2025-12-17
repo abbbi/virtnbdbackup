@@ -99,7 +99,7 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
     return True
 
 
-def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -> bool:
+def dump(args: Namespace, fileStream, stream: streamer.SparseStream, dataFiles: List[str]) -> bool:
     """Dump stream contents to json output"""
     logging.info("Dumping saveset meta information")
     entries = []
@@ -115,7 +115,7 @@ def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -
             sourceFile = os.path.join(args.input, dataFile)
 
         try:
-            meta = header.get(sourceFile, stream)
+            meta = header.get(sourceFile, stream, fileStream)
         except RestoreError as e:
             logging.error(e)
             continue
