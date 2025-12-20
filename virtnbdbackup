@@ -21,7 +21,6 @@ import signal
 import logging
 import argparse
 from typing import List
-from datetime import datetime
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from nbd import __version__ as __nbdversion__
@@ -292,12 +291,8 @@ def main() -> None:
         logging.error("Can't open output file: [%s]", e)
         sys.exit(1)
 
-    now = datetime.now().strftime("%m%d%Y%H%M%S")
-    logFile = os.path.join(args.output, f"backup.{args.level}.{now}.log")
-    fileLog = lib.getLogFile(logFile) or sys.exit(1)
-
     counter = logCount()  # pylint: disable=unreachable
-    lib.configLogger(args, fileLog, counter)
+    lib.configLogger(args, fileStream, counter)
     lib.printVersion(__version__)
 
     logging.info("Backup level: [%s]", args.level)

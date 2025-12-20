@@ -49,6 +49,8 @@ class zip(TargetPlugin):
 
     def open(self, targetFile: str, mode="w") -> IO[bytes]:
         """Open wrapper"""
+        if mode == "a":
+            mode = "w"
         if mode == "w":
             file = zipfile.ZipInfo(
                 filename=targetFile,

@@ -24,6 +24,7 @@ import logging.handlers
 import signal
 import shutil
 import pprint
+from datetime import datetime
 from time import time
 from threading import current_thread
 from argparse import Namespace
@@ -99,17 +100,6 @@ def sshSession(
     return None
 
 
-def getLogFile(fileName: str) -> Optional[logging.FileHandler]:
-    """Try setup log handler, if this fails, something is already
-    wrong, but we can at least provide correct error message."""
-    try:
-        # TODO: let the target writer plugin open the logfile
-        return logging.FileHandler("/tmp/log")
-    except OSError as e:
-        logging.error("Failed to open logfile: [%s].", e)
-        return None
-
-
 def safeInfo(msg, *args, **kwargs):
     """Use tqdm redirect to not destroy progress bars"""
     rootlog = logging.getLogger("")
@@ -127,9 +117,17 @@ def safeInfo(msg, *args, **kwargs):
 
 
 def configLogger(
-    args: Namespace, fileLog: Optional[logging.FileHandler], counter: logCount
+    args: Namespace, fileStream: TargetPlugin, counter: logCount
 ):
     """Setup logging"""
+
+
+    now = datetime.now().strftime("%m%d%Y%H%M%S")
+    logFile = os.path.join(args.output, f"backup.{args.level}.{now}.log")
+
+    logf = fileStream.open(logFile, "a")
+    fileLog = logging.StreamHandler(logf)
+
     syslog = False
     try:
         syslog = args.syslog is True
