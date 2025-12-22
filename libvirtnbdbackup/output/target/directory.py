@@ -122,11 +122,9 @@ class Directory(TargetPlugin):
             raise exceptions.OutputException(f"Failed to rename file: [{e}]") from e
 
     def _exists(self, fileName: str) -> bool:
-        """Check for possible partial backup files"""
-        partialFiles = glob.glob(fileName)
-        if len(partialFiles) > 0:
-            return True
-        return False
+        """Check for possible existing files"""
+        fl = glob.glob(fileName)
+        return len(fl) > 0
 
     def exists(self, fileName: str) -> bool:
         """Check if target directory has an partial backup,
@@ -135,6 +133,4 @@ class Directory(TargetPlugin):
         return self._exists(fileName)
 
     def empty(self) -> bool:
-        if len(os.listdir(self.args.output)) == 0:
-            return True
-        return False
+        return len(os.listdir(self.args.output)) == 0
