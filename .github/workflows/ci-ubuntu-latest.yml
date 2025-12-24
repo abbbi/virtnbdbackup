@@ -106,7 +106,7 @@ jobs:
         sudo chmod go+r /log.tar.gz
     - name: Archive Test Results
       if: always()
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: test-results
         path: /log.tar.gz

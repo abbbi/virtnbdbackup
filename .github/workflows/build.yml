@@ -251,7 +251,7 @@ jobs:
                   virtnbdmap -h
           - name: Archive Results
             if: always()
-            uses: actions/upload-artifact@v5
+            uses: actions/upload-artifact@v6
             with:
               name: packages
               path: artifacts/
