@@ -290,7 +290,7 @@ def main() -> None:
         args.worker = 1
 
     now = datetime.now().strftime("%m%d%Y%H%M%S")
-    logFile = f"{args.output}/backup.{args.level}.{now}.log"
+    logFile = os.path.join(args.output, f"backup.{args.level}.{now}.log")
     fileLog = lib.getLogFile(logFile) or sys.exit(1)
 
     counter = logCount()  # pylint: disable=unreachable
@@ -311,7 +311,7 @@ def main() -> None:
         sys.exit(1)
 
     if not args.checkpointdir:
-        args.checkpointdir = f"{args.output}/checkpoints"
+        args.checkpointdir = os.path.join(args.output, "checkpoints")
     else:
         logging.info("Store checkpoints in: [%s]", args.checkpointdir)
 

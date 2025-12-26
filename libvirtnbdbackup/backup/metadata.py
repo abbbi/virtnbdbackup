@@ -48,7 +48,7 @@ def backupChecksum(fileStream, targetFile):
 
 def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
     """Save domain XML config file"""
-    configFile = f"{args.output}/vmconfig.{lib.getIdent(args)}.xml"
+    configFile = os.path.join(args.output, f"vmconfig.{lib.getIdent(args)}.xml")
     log.info("Saving VM config to: [%s]", configFile)
     try:
         with output.openfile(configFile, "wb") as fh:
@@ -86,9 +86,11 @@ def backupBootConfig(args: Namespace) -> None:
     """Save domain uefi/nvram/kernel and loader if configured."""
     for setting, val in args.info.items():
         if args.level != "copy":
-            tFile = f"{args.output}/{os.path.basename(val)}.{lib.getIdent(args)}"
+            tFile = os.path.join(
+                args.output, f"{os.path.basename(val)}.{lib.getIdent(args)}"
+            )
         else:
-            tFile = f"{args.output}/{os.path.basename(val)}"
+            tFile = os.path.join(args.output, f"{os.path.basename(val)}")
         log.info("Save additional boot config [%s] to: [%s]", setting, tFile)
         lib.copy(args, val, tFile)
         args.info[setting] = tFile
@@ -98,7 +100,7 @@ def backupAutoStart(args: Namespace) -> None:
     """Save information if virtual machine was marked
     for autostart during system boot"""
     log.info("Autostart setting configured for virtual machine.")
-    autoStartFile = f"{args.output}/autostart.{lib.getIdent(args)}"
+    autoStartFile = os.path.join(args.output, f"autostart.{lib.getIdent(args)}")
     try:
         with output.openfile(autoStartFile, "wb") as fh:
             fh.write(b"True")

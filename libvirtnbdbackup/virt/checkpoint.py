@@ -103,7 +103,7 @@ def delete(domObj: libvirt.virDomain, cptObj: libvirt.virDomainCheckpoint) -> bo
 
 def backup(args: Namespace, domObj: libvirt.virDomain) -> bool:
     """save checkpoint config to persistent storage"""
-    checkpointFile = f"{args.checkpointdir}/{args.cpt.name}.xml"
+    checkpointFile = os.path.join(args.checkpointdir, f"{args.cpt.name}.xml")
     log.info("Saving checkpoint config to: [%s]", checkpointFile)
     try:
         with output.openfile(checkpointFile, "wb") as f:
@@ -180,7 +180,7 @@ def removeAll(
     log.info("Removing all existent checkpoints before full backup.")
     try:
         log.debug("Cleaning up persistent storage %s", args.checkpointdir)
-        for checkpointFile in glob.glob(f"{args.checkpointdir}/*.xml"):
+        for checkpointFile in glob.glob(os.path.join(args.checkpointdir, "*.xml")):
             log.debug("Remove checkpoint file: %s", checkpointFile)
             os.remove(checkpointFile)
     except OSError as e:
@@ -318,7 +318,7 @@ def create(
     """
     checkpointName: str = f"{defaultCheckpointName}.0"
     parentCheckpoint: str = ""
-    cptFile: str = f"{args.output}/{args.domain}.cpt"
+    cptFile: str = os.path.join(args.output, f"{args.domain}.cpt")
     checkpoints: List[str] = read(cptFile)
 
     if args.offline is False:

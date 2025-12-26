@@ -418,7 +418,9 @@ class client:
             scratchId = "".join(
                 random.choices(string.ascii_uppercase + string.digits, k=5)
             )
-            scratchFile = f"{args.scratchdir}/backup.{scratchId}.{disk.target}"
+            scratchFile = os.path.join(
+                args.scratchdir, f"backup.{scratchId}.{disk.target}"
+            )
             log.debug("Using scratch file: %s", scratchFile)
             dE = xml.ElementTree.SubElement(disks, "disk", {"name": disk.target})
             xml.ElementTree.SubElement(dE, "scratch", {"file": f"{scratchFile}"})
