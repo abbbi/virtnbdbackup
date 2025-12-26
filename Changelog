@@ -12,6 +12,8 @@ Version 2.50
 Version 2.43
 ---------
  * Small code cleanups
+ * Fix got an unexpected keyword argument 'stacklevel' issue on older
+ distributions (#297)
 
 Version 2.42
 ---------
