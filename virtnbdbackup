@@ -344,6 +344,9 @@ def main() -> None:
             virtClient.stopBackup(domObj)
         sys.exit(1)
 
+    logging.info("Local libvirt library version: [%s]", libvirt.getVersion())
+    logging.info("Local NBD library version: [%s]", __nbdversion__)
+
     try:
         virtClient = virt.client(args)
         domObj = virtClient.getDomain(args.domain)
@@ -357,9 +360,6 @@ def main() -> None:
     virtClient._conn.registerCloseCallback(  # pylint: disable=W0212
         connectionError, args
     )
-
-    logging.info("Libvirt library version: [%s]", libvirt.getVersion())
-    logging.info("NBD library version: [%s]", __nbdversion__)
 
     try:
         check.vmfeature(virtClient, domObj)
