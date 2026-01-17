@@ -116,8 +116,9 @@ class client:
         if "qemu+ssh" in args.uri:
             remoteHostname = conn.getHostname()
             log.info(
-                "Connected to remote host: [%s]",
+                "Connected to remote host: [%s] livirt version: [%s]",
                 remoteHostname,
+                self.libvirtVersion,
             )
             self.remoteHost = remoteHostname
 
