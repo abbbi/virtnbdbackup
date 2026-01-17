@@ -1,10 +1,11 @@
 Version 2.44
 ---------
- * Remote backup fails: "unsupported flags (0x2) in function qemuBackupBegin".
- If local system was running a newer libvirt version than the remote system,
- VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN flag was added even if not
- yet supported by the remote system. Now flags are only activated if remote
- system is running on a version supporting the flags, too. (#298)
+ * Remote backup fails: "unsupported flags (0x2) in function qemuBackupBegin":
+ If system executing virtnbdbackup ships newer libvirt library version than
+ remote system, VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN flag was
+ added even if not yet supported by the remote system. Now flags are only
+ activated if remote system is running on a version supporting the flags, too.
+ (#298)
  * Enhance logging: log both local and remote libvirt versions.
 
 Version 2.43
