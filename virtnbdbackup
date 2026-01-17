@@ -25,13 +25,13 @@ from datetime import datetime
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from nbd import __version__ as __nbdversion__
+import libvirt
 from libvirtnbdbackup import sighandle
 from libvirtnbdbackup import argopt
 from libvirtnbdbackup import __version__
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.virt import checkpoint
-from libvirtnbdbackup import output
 from libvirtnbdbackup.output import stream
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
@@ -358,7 +358,7 @@ def main() -> None:
         connectionError, args
     )
 
-    logging.info("Libvirt library version: [%s]", virtClient.libvirtVersion)
+    logging.info("Libvirt library version: [%s]", libvirt.getVersion())
     logging.info("NBD library version: [%s]", __nbdversion__)
 
     try:
