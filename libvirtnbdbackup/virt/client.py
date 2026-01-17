@@ -118,7 +118,7 @@ class client:
             log.info(
                 "Connected to remote host: [%s] livirt version: [%s]",
                 remoteHostname,
-                self.libvirtVersion,
+                conn.getLibvirtVersion(),
             )
             self.remoteHost = remoteHostname
 
