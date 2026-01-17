@@ -191,6 +191,20 @@ class client:
 
         return False
 
+    def _get_flags(self) -> int:
+        """Check if both local and remote libvirt versions support required
+        additional flags for possible backup enhancements"""
+        flags = 0
+
+        try:
+            if self.libvirtVersion >= 11010000:
+                flags = libvirt.VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN
+                log.info("Setting supported flag to prevent vm shutdown during backup.")
+        except AttributeError:
+            pass
+
+        return flags
+
     @staticmethod
     def getDomainConfig(domObj: libvirt.virDomain) -> str:
         """Return Virtual Machine configuration as XML"""
@@ -467,13 +481,7 @@ class client:
         backupXml = self._createBackupXml(args, diskList)
         checkpointXml = None
         freezed = False
-        flags = 0
-
-        try:
-            flags = libvirt.VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN
-            log.info("Setting supported flag to prevent vm shutdown during backup.")
-        except AttributeError:
-            pass
+        flags = self._get_flags()
 
         # do not create checkpoint during copy/diff backup.
         # backup saves delta until the last checkpoint
