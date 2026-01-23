@@ -335,6 +335,7 @@ def main() -> None:
         )
         try:
             virtClient = virt.client(args)
+            virtClient.connect()
         except connectionFailed as e:
             logging.error("Unrecoverable connection error: %s", e)
             sys.exit(1)
@@ -349,6 +350,7 @@ def main() -> None:
 
     try:
         virtClient = virt.client(args)
+        virtClient.connect()
         domObj = virtClient.getDomain(args.domain)
     except domainNotFound as e:
         logging.error("%s", e)

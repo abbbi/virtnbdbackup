@@ -237,13 +237,17 @@ def main() -> None:
         if args.define is True:
             args.adjust_config = True
 
+        connected = False
         try:
             virtClient = virt.client(args)
+            connected = virtClient.connect()
         except connectionFailed as e:
-            logging.error("Unable to connect libvirt: [%s]", e)
-            sys.exit(1)
+            if args.define is True:
+                logging.error("Unable to connect libvirt: [%s]: cannot define VM", e)
+                sys.exit(1)
+            logging.warning("Unable to connect libvirt: [%s]", e)
 
-        if virtClient.remoteHost:
+        if virtClient and virtClient.remoteHost:
             if not args.output.startswith("/"):
                 logging.error(
                     "Absolute target path required for restore to remote system"
@@ -291,7 +295,8 @@ def main() -> None:
 
         files.restore(args, ConfigFile, virtClient)
         vmconfig.restore(args, ConfigFile, restConfig, args.config_file)
-        virtClient.refreshPool(args.output)
+        if connected:
+            virtClient.refreshPool(args.output)
         if args.define is True:
             if not virtClient.defineDomain(restConfig, autoStart):
                 sys.exit(1)
