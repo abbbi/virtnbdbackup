@@ -51,10 +51,18 @@ class client:
     """Libvirt related functions"""
 
     def __init__(self, uri: Namespace) -> None:
+        self._conn: libvirt.virConnect = None
+        self.libvirtVersion: int
         self.remoteHost: str = ""
-        self._conn = self._connect(uri)
+        self.uri = uri
         self._domObj = None
+
+    def connect(self) -> bool:
+        """Connect libvirtd"""
+        self._conn = self._connect(self.uri)
         self.libvirtVersion = self._conn.getLibVersion()
+
+        return True
 
     @staticmethod
     def _connectAuth(uri: str, user: str, password: str) -> libvirt.virConnect:

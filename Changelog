@@ -1,3 +1,9 @@
+Version 2.45
+---------
+ * virtnbdrestore: Make restore possible if no libvirt daemon is running:
+ In case define option is not set, its not required to have a running libvirt
+ daemon on the system restoring the disk images. (#300)
+
 Version 2.44
 ---------
  * Remote backup fails: "unsupported flags (0x2) in function qemuBackupBegin":

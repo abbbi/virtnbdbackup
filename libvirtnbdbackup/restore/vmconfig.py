@@ -188,7 +188,9 @@ def restore(
                 cnf.write(adjustedConfig)
             logging.info("Adjusted config placed in: [%s]", targetFile)
         if args.define is False:
-            logging.info("Use 'virsh define %s' to define VM", targetFile)
+            logging.info(
+                "Use 'virsh -c %s define %s' to define VM", args.uri, targetFile
+            )
     else:
         lib.copy(args, vmConfig, targetFile)
         logging.info("Copied original vm config to [%s]", targetFile)
