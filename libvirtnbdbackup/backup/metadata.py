@@ -20,6 +20,7 @@ import json
 import logging
 from argparse import Namespace
 from typing import List, Union
+import libvirt
 
 from libvirtnbdbackup import output
 from libvirtnbdbackup.virt.client import DomainDisk
@@ -32,8 +33,6 @@ from libvirtnbdbackup.output.target.directory import Directory
 from libvirtnbdbackup.output.target.zip import Zip
 from libvirtnbdbackup.common import safeInfo
 from libvirtnbdbackup.virt import guest
-
-import libvirt
 
 
 log = logging.getLogger()
