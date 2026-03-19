@@ -126,9 +126,9 @@ def backupGuestInfo(args: Namespace) -> None:
 def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> None:
     """Save bitlocker recovery keys"""
     try:
-        output = guest.Exec(domObj, "manage-bde.exe", ["-status"])
+        bde = guest.Exec(domObj, "manage-bde.exe", ["-status"])
         log.info("Bitlocker tools detected, attempting to backup recovery keys.")
-        log.debug(output)
+        log.debug(bde)
     except libvirt.libvirtError:
         log.info("System does not appear to have bitlocker tools installed, skipping.")
 
@@ -148,21 +148,20 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
             )
         except RuntimeError:
             log.warning(
-                "Unable to extract recovery key for volume [%s], see debug log for details",
+                "Unable to extract recovery key for volume [%s], see debug log for error details.",
                 vol,
             )
             continue
 
-
-"""
-    osInfoFile = os.path.join(args.output, f"osinfo.{lib.getIdent(args)}")
-    try:
-        with output.openfile(osInfoFile, "w") as fh:
-            fh.write(json.dumps(args.guestInfo, indent=4))
-        log.info("Saved guest related osinfo to [%s]", osInfoFile)
-    except OutputException as e:
-        log.warning("Failed to save osinfo data: [%s]", e)
-"""
+        keyFile = os.path.join(
+            args.output, f"bitlocker.recovery.key.{vol}.{lib.getIdent(args)}"
+        )
+        try:
+            with output.openfile(keyFile, "w") as fh:
+                fh.write(protectors)
+            log.info("Saved bitlocker recovery key to [%s]", keyFile)
+        except OutputException as e:
+            log.warning("Failed to save osinfo data: [%s]", e)
 
 
 def saveFiles(
