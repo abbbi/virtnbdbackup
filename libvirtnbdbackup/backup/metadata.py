@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
+import json
 import logging
 from argparse import Namespace
 from typing import List, Union
@@ -106,6 +107,17 @@ def backupAutoStart(args: Namespace) -> None:
             fh.write(b"True")
     except OutputException as e:
         log.warning("Failed to save autostart information: [%s]", e)
+
+
+def backupGuestInfo(args: Namespace) -> None:
+    """Save OS related informations"""
+    osInfoFile = os.path.join(args.output, f"osinfo.{lib.getIdent(args)}")
+    try:
+        with output.openfile(osInfoFile, "w") as fh:
+            fh.write(json.dumps(args.guestInfo, indent=4))
+        log.info("Saved guest related osinfo to [%s]", osInfoFile)
+    except OutputException as e:
+        log.warning("Failed to save osinfo data: [%s]", e)
 
 
 def saveFiles(

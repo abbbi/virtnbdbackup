@@ -542,6 +542,9 @@ def main() -> None:
     if domObj.autostart() == 1:
         metadata.backupAutoStart(args)
 
+    if args.guestInfo:
+        metadata.backupGuestInfo(args)
+
     if counter.count.errors > 0:
         logging.error("Error during backup")
         sys.exit(1)
