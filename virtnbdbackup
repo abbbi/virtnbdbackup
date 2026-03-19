@@ -368,7 +368,7 @@ def main() -> None:
         gi = domObj.guestInfo()
         logging.info(
             "Domain info: OS: [%s] Arch: [%s] Hostname: [%s]",
-            gi["os.name"],
+            gi["os.pretty-name"],
             gi["os.machine"],
             gi["hostname"],
         )
