@@ -122,12 +122,23 @@ def backupGuestInfo(args: Namespace) -> None:
     except OutputException as e:
         log.warning("Failed to save osinfo data: [%s]", e)
 
+
 def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> None:
     """Save bitlocker recovery keys"""
     try:
-        guest.Exec(domObj, "manage-bde.exe", "-status")
-    except libvirt.libvirtError as e:
+        output = guest.Exec(domObj, "manage-bde.exe", "-status")
+        log.info("Bitlocker tools detected, attempting to backup recovery keys.")
+        log.debug(output)
+    except libvirt.libvirtError:
         log.info("System does not appear to have bitlocker tools installed, skipping.")
+
+    for i in range(0, args.guestInfo["fs.count"]):
+        vol = args.guestInfo.get(f"fs.{i}.mountpoint", None)
+        if vol:
+            vol = vol.replace("\\", "")
+            log.info("Get bitlocker recovery key for volume: [%s]", vol)
+
+
 """
     osInfoFile = os.path.join(args.output, f"osinfo.{lib.getIdent(args)}")
     try:
