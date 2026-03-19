@@ -31,6 +31,9 @@ from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.output.target.directory import Directory
 from libvirtnbdbackup.output.target.zip import Zip
 from libvirtnbdbackup.common import safeInfo
+from libvirtnbdbackup.virt import guest
+
+import libvirt
 
 
 log = logging.getLogger()
@@ -118,6 +121,22 @@ def backupGuestInfo(args: Namespace) -> None:
         log.info("Saved guest related osinfo to [%s]", osInfoFile)
     except OutputException as e:
         log.warning("Failed to save osinfo data: [%s]", e)
+
+def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> None:
+    """Save bitlocker recovery keys"""
+    try:
+        guest.Exec(domObj, "manage-bde.exe", "-status")
+    except libvirt.libvirtError as e:
+        log.info("System does not appear to have bitlocker tools installed, skipping.")
+"""
+    osInfoFile = os.path.join(args.output, f"osinfo.{lib.getIdent(args)}")
+    try:
+        with output.openfile(osInfoFile, "w") as fh:
+            fh.write(json.dumps(args.guestInfo, indent=4))
+        log.info("Saved guest related osinfo to [%s]", osInfoFile)
+    except OutputException as e:
+        log.warning("Failed to save osinfo data: [%s]", e)
+"""
 
 
 def saveFiles(
