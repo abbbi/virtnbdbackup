@@ -273,6 +273,7 @@ def main() -> None:
     args.sshClient = None
     args.diskInfo = []
     args.offline = False
+    args.guestInfo = {}
 
     if args.quiet is True:
         args.noprogress = True
@@ -362,6 +363,18 @@ def main() -> None:
     virtClient._conn.registerCloseCallback(  # pylint: disable=W0212
         connectionError, args
     )
+
+    try:
+        gi = domObj.guestInfo()
+        logging.info(
+            "Domain info: OS: [%s] Arch: [%s] Hostname: [%s]",
+            gi["os.name"],
+            gi["os.machine"],
+            gi["hostname"],
+        )
+        args.guestInfo = gi
+    except (libvirt.libvirtError, KeyError) as e:
+        logging.debug("Unable to show domain info: [%s]", e)
 
     try:
         check.vmfeature(virtClient, domObj)
