@@ -137,7 +137,7 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
         if not vol:
             continue
         if not ":" in vol:
-            log.info("Skipping volume: [%s]")
+            log.info("Skipping volume: [%s]", vol)
             continue
 
         vol = vol.replace("\\", "")
