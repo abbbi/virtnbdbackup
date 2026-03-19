@@ -154,7 +154,8 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
             continue
 
         keyFile = os.path.join(
-            args.output, f"bitlocker.recovery.key.{vol}.{lib.getIdent(args)}"
+            args.output,
+            f"bitlocker.recovery.key.{vol.replace(':','')}{lib.getIdent(args)}",
         )
         try:
             with output.openfile(keyFile, "w") as fh:
