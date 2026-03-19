@@ -110,7 +110,7 @@ def backupAutoStart(args: Namespace) -> None:
 
 
 def backupGuestInfo(args: Namespace) -> None:
-    """Save OS related informations"""
+    """Save OS related information"""
     osInfoFile = os.path.join(args.output, f"osinfo.{lib.getIdent(args)}")
     try:
         with output.openfile(osInfoFile, "w") as fh:
