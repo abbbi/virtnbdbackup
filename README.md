@@ -46,6 +46,7 @@ of your `kvm/qemu` virtual machines.
     - [Using a separate network for data transfer](#using-a-separate-network-for-data-transfer)
     - [Piping data to other hosts](#piping-data-to-other-hosts)
   - [Kernel/initrd and additional files](#kernelinitrd-and-additional-files)
+  - [Windows Bitlocker recovery keys](#windows-bitlocker-recovery-keys)
 - [Restore examples](#restore-examples)
   - [Dumping backup information](#dumping-backup-information)
   - [Verifying created backups](#verifying-created-backups)
@@ -665,6 +666,14 @@ During restore unzip the data from both zip files into a single directory:
 If an domain has configured custom kernel, initrd, loader or nvram images
 (usually the case if the domain boots from OVM UEFI BIOS), these files will be
 saved to the backup folder as well.
+
+## Windows Bitlocker recovery keys
+
+In case the domain backed up has an reachable guest agent and required
+utilities are installed (manage-bde.exe) it is attempted to extract the
+bitlocker recovery keys for encrypted volumes during backup. Those keys can be
+used to unlock a recovered virtual machine whose related TPM devices are
+missing.
 
 # Restore examples
 

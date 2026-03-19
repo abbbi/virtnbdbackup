@@ -4,7 +4,9 @@ Version 2.46
  agent and show some basic information during backup. Add the full osinfo
  output to the backup. Can be useful for inspection regarding network
  configuration and/or configured devices.
-
+ * virtnbdbackup: In case a virtual machine has an guest agent installed and
+ an Windows operating system is detected, it is now attempted to extract
+ existing bitlocker recovery keys for the encrypted volumes.
 
 Version 2.45
 ---------
