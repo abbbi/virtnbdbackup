@@ -18,9 +18,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import time
 import base64
+import logging
 import libvirt
 import libvirt_qemu
-import logging
 
 
 def Exec(
