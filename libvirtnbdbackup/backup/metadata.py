@@ -160,9 +160,9 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
         try:
             with output.openfile(keyFile, "w") as fh:
                 fh.write(protectors)
-            log.info("Saved bitlocker recovery key to [%s]", keyFile)
+            log.info("Saved Bitlocker recovery key to [%s]", keyFile)
         except OutputException as e:
-            log.warning("Failed to save osinfo data: [%s]", e)
+            log.warning("Failed to save recovery key: [%s]", e)
 
 
 def saveFiles(
