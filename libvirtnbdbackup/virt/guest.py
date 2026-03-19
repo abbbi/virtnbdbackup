@@ -18,7 +18,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import time
 import base64
-from typing import Tuple, Any
 import libvirt
 import libvirt_qemu
 
@@ -28,7 +27,7 @@ def Exec(
     command: str,
     args: str,
     timeout: int = 30,
-) -> Tuple[Any, Any]:
+) -> str:
     """Execute command within VM using guest-agent"""
 
     def agent_cmd(payload: dict) -> dict:
@@ -52,7 +51,9 @@ def Exec(
     result = agent_cmd(payload)
     pid = result["return"]["pid"]
 
-    # Poll for completion.
+    stdout: str = ""
+    stderr: str = ""
+
     deadline = time.time() + timeout
     while time.time() < deadline:
         status_req = {
@@ -61,13 +62,20 @@ def Exec(
         }
         status = agent_cmd(status_req)["return"]
         if status.get("exited"):
-            # TODO: handle error, raise
-            # status.get("exitcode", 1))
             out_data = status.get("out-data")
             err_data = status.get("err-data")
-            return base64.b64decode(out_data).decode(
-                errors="replace"
-            ), base64.b64decode(err_data).decode(errors="replace")
+            if out_data:
+                stdout = base64.b64decode(out_data).decode(errors="replace")
+            if err_data:
+                stderr = base64.b64decode(err_data).decode(errors="replace")
+
+            if status.get("exitcode", 1) == 1:
+                raise RuntimeError(
+                    f"Executing guest command failed: [{stdout}] [{stderr}]"
+                )
+
+            return stdout
+
         time.sleep(0.5)
 
     raise TimeoutError(f"Timed out waiting for command in guest (pid={pid})")
