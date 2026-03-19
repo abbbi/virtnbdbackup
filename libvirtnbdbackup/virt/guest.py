@@ -25,7 +25,7 @@ import libvirt_qemu
 def Exec(
     domObj: libvirt.virDomain,
     command: str,
-    args: str,
+    args: list[str],
     timeout: int = 30,
 ) -> str:
     """Execute command within VM using guest-agent"""
@@ -44,7 +44,7 @@ def Exec(
         "execute": "guest-exec",
         "arguments": {
             "path": f"{command}",
-            "arg": [f"{args}"],
+            "arg": args,
             "capture-output": True,
         },
     }

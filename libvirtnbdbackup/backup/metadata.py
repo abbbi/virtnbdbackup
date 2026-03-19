@@ -126,7 +126,7 @@ def backupGuestInfo(args: Namespace) -> None:
 def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> None:
     """Save bitlocker recovery keys"""
     try:
-        output = guest.Exec(domObj, "manage-bde.exe", "-status")
+        output = guest.Exec(domObj, "manage-bde.exe", ["-status"])
         log.info("Bitlocker tools detected, attempting to backup recovery keys.")
         log.debug(output)
     except libvirt.libvirtError:
@@ -134,9 +134,14 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
 
     for i in range(0, args.guestInfo["fs.count"]):
         vol = args.guestInfo.get(f"fs.{i}.mountpoint", None)
-        if vol:
-            vol = vol.replace("\\", "")
-            log.info("Get bitlocker recovery key for volume: [%s]", vol)
+        if not vol:
+            continue
+
+        vol = vol.replace("\\", "")
+        log.info("Get bitlocker recovery key for volume: [%s]", vol)
+        output = guest.Exec(domObj, "manage-bde.exe", ["-protectors", "-get", vol])
+        print(output)
+
 
 
 """
