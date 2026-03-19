@@ -31,7 +31,7 @@ jobs:
         black --check virtnbd-nbdkit-plugin
     - name: Python lint test
       run: |
-        sudo apt-get install python3-colorlog python3-paramiko -y
+        sudo apt-get install python3-colorlog python3-paramiko python3-libvirt -y
         sudo pip3 install pylint==2.14.5
         pylint libvirtnbdbackup
         pylint virtnbd-nbdkit-plugin
