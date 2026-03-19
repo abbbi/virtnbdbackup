@@ -544,6 +544,8 @@ def main() -> None:
 
     if args.guestInfo:
         metadata.backupGuestInfo(args)
+        if args.guestInfo["os.id"] == "mswindows":
+            metadata.backupBitlockerRecoveryKey(args, domObj)
 
     if counter.count.errors > 0:
         logging.error("Error during backup")

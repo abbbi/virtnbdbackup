@@ -20,6 +20,7 @@ import json
 import logging
 from argparse import Namespace
 from typing import List, Union
+import libvirt
 
 from libvirtnbdbackup import output
 from libvirtnbdbackup.virt.client import DomainDisk
@@ -31,6 +32,7 @@ from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.output.target.directory import Directory
 from libvirtnbdbackup.output.target.zip import Zip
 from libvirtnbdbackup.common import safeInfo
+from libvirtnbdbackup.virt import guest
 
 
 log = logging.getLogger()
@@ -118,6 +120,48 @@ def backupGuestInfo(args: Namespace) -> None:
         log.info("Saved guest related osinfo to [%s]", osInfoFile)
     except OutputException as e:
         log.warning("Failed to save osinfo data: [%s]", e)
+
+
+def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> None:
+    """Save bitlocker recovery keys"""
+    try:
+        bde = guest.Exec(domObj, "manage-bde.exe", ["-status"])
+        log.info("Bitlocker tools detected, attempting to backup recovery keys.")
+        log.debug(bde)
+    except libvirt.libvirtError:
+        log.info("System does not appear to have bitlocker tools installed, skipping.")
+
+    for i in range(0, args.guestInfo["fs.count"]):
+        vol = args.guestInfo.get(f"fs.{i}.mountpoint", None)
+        if not vol:
+            continue
+        if not ":" in vol:
+            log.info("Skipping volume: [%s]", vol)
+            continue
+
+        vol = vol.replace("\\", "")
+        log.info("Get bitlocker recovery key for volume: [%s]", vol)
+        try:
+            protectors = guest.Exec(
+                domObj, "manage-bde.exe", ["-protectors", "-get", vol]
+            )
+        except RuntimeError:
+            log.warning(
+                "Unable to extract recovery key for volume [%s], see debug log for error details.",
+                vol,
+            )
+            continue
+
+        keyFile = os.path.join(
+            args.output,
+            f"bitlocker.recovery.key.{vol.replace(':','')}.{lib.getIdent(args)}",
+        )
+        try:
+            with output.openfile(keyFile, "w") as fh:
+                fh.write(protectors)
+            log.info("Saved Bitlocker recovery key to [%s]", keyFile)
+        except OutputException as e:
+            log.warning("Failed to save recovery key: [%s]", e)
 
 
 def saveFiles(
