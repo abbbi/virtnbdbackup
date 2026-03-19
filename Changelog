@@ -1,3 +1,11 @@
+Version 2.46
+---------
+ * virtnbdbackup: if guest agent is active, retrieve guestinfo output via
+ agent and show some basic information during backup. Add the full osinfo
+ output to the backup. Can be useful for inspection regarding network
+ configuration and/or configured devices.
+
+
 Version 2.45
 ---------
  * virtnbdrestore: Make restore possible if no libvirt daemon is running:
