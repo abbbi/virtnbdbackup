@@ -20,6 +20,7 @@ import time
 import base64
 import libvirt
 import libvirt_qemu
+import logging
 
 
 def Exec(
@@ -66,8 +67,10 @@ def Exec(
             err_data = status.get("err-data")
             if out_data:
                 stdout = base64.b64decode(out_data).decode(errors="replace")
+                logging.debug(stdout)
             if err_data:
                 stderr = base64.b64decode(err_data).decode(errors="replace")
+                logging.debug(stderr)
 
             if status.get("exitcode", 1) == 1:
                 raise RuntimeError(

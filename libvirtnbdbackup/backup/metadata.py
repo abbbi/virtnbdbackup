@@ -146,7 +146,6 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
             protectors = guest.Exec(
                 domObj, "manage-bde.exe", ["-protectors", "-get", vol]
             )
-            log.debug(protectors)
         except RuntimeError:
             log.warning(
                 "Unable to extract recovery key for volume [%s], see debug log for details",
