@@ -151,6 +151,9 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
                 vol,
             )
             continue
+        except (TimeoutError, libvirt.libvirtError) as e:
+            log.warning("Unable to pull recovery keys for [%s]: %s", vol, e)
+            continue
 
         keyFile = os.path.join(
             args.output,
