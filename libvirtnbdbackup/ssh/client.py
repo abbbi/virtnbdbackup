@@ -73,15 +73,13 @@ class client:  # pylint: disable=too-many-positional-arguments,too-many-argument
             cli = SSHClient()
             cli.load_system_host_keys()
             cli.set_missing_host_key_policy(AutoAddPolicy())
-            connect_kwargs = {
-                "hostname": self.host,
-                "username": self.user,
-                "port": self.port,
-                "timeout": 5000,
-            }
-            if self.key_filename:
-                connect_kwargs["key_filename"] = self.key_filename
-            cli.connect(**connect_kwargs)
+            cli.connect(
+                hostname=self.host,
+                username=self.user,
+                port=self.port,
+                timeout=5000,
+                key_filename=self.key_filename,
+            )
             return cli
         except AuthenticationException as e:
             raise exceptions.sshError(f"SSH key authentication failed: {e}")
