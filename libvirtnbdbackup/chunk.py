@@ -21,7 +21,7 @@ from libvirtnbdbackup import block
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.exceptions import DiskBackupFailed
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 
 def write(

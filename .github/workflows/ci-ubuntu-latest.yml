@@ -34,6 +34,8 @@ jobs:
         sudo apt-get install python3-colorlog python3-paramiko python3-libvirt -y
         sudo pip3 install pylint==3.3.4
         pylint libvirtnbdbackup
+        pylint virtnbdbackup
+        pylint virtnbdrestore
         pylint virtnbd-nbdkit-plugin
     - name: Python typing tests
       run: |

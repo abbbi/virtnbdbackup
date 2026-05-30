@@ -26,6 +26,8 @@ from libvirtnbdbackup.objects import processInfo
 from libvirtnbdbackup.nbdcli.exceptions import NbdClientException
 from libvirtnbdbackup.exceptions import DiskBackupFailed
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+
 
 def setup(args: Namespace, disk: DomainDisk, remoteHost: str, port: int) -> processInfo:
     """Start background qemu-nbd process used during backup

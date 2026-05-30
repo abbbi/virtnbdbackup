@@ -29,6 +29,8 @@ from libvirtnbdbackup.virt.client import DomainDisk
 
 log = logging.getLogger(__name__)
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+
 
 class util:
     """Wrapper for qemu executables"""
