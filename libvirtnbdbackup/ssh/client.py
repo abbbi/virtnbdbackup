@@ -44,12 +44,18 @@ class client:
     remote copy files from hypervisor host"""
 
     def __init__(
-        self, host: str, user: str, port: int = 22, mode: Mode = Mode.DOWNLOAD
+        self,
+        host: str,
+        user: str,
+        port: int = 22,
+        mode: Mode = Mode.DOWNLOAD,
+        key_filename: Optional[str] = None,
     ):
         self.client = None
         self.host = host
         self.user = user
         self.port = port
+        self.key_filename = key_filename
         self.copy: Callable[[str, str], None] = self.copyFrom
         if mode == Mode.UPLOAD:
             self.copy = self.copyTo
@@ -67,12 +73,15 @@ class client:
             cli = SSHClient()
             cli.load_system_host_keys()
             cli.set_missing_host_key_policy(AutoAddPolicy())
-            cli.connect(
-                self.host,
-                username=self.user,
-                port=self.port,
-                timeout=5000,
-            )
+            connect_kwargs = {
+                "hostname": self.host,
+                "username": self.user,
+                "port": self.port,
+                "timeout": 5000,
+            }
+            if self.key_filename:
+                connect_kwargs["key_filename"] = self.key_filename
+            cli.connect(**connect_kwargs)
             return cli
         except AuthenticationException as e:
             raise exceptions.sshError(f"SSH key authentication failed: {e}")

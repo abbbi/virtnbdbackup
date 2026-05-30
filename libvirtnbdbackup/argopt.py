@@ -66,6 +66,16 @@ def addRemoteArgs(opt: _ArgumentGroup) -> None:
         ),
     )
     opt.add_argument(
+        "--ssh-private-key",
+        default=None,
+        required=False,
+        type=str,
+        help=(
+            "Path to private key file for SSH authentication "
+            "(equivalent to ssh -i). (default: %(default)s)"
+        ),
+    )
+    opt.add_argument(
         "--password",
         default=None,
         required=False,
