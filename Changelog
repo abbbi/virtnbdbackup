@@ -1,3 +1,7 @@
+Version 2.47
+---------
+ * add --ssh-private-key arg for custom SSH key authentication (#315)
+
 Version 2.46
 ---------
  * virtnbdbackup: if guest agent is active, retrieve guestinfo output via
