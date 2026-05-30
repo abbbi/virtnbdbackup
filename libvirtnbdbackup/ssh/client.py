@@ -39,11 +39,11 @@ class Mode(Enum):
     DOWNLOAD = 2
 
 
-class client:
+class client:  # pylint: disable=too-many-positional-arguments,too-many-arguments,too-many-instance-attributes
     """Wrapper around paramiko/sftp put and get functions, to be able to
     remote copy files from hypervisor host"""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-positional-arguments,too-many-arguments,too-many-instance-attributes
         self,
         host: str,
         user: str,
