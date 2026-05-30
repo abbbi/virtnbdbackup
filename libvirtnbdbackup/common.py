@@ -90,7 +90,8 @@ def sshSession(
 ) -> Union[ssh.client, None]:
     """Use ssh to copy remote files"""
     try:
-        return ssh.client(remoteHost, args.ssh_user, args.ssh_port, mode)
+        key_filename = getattr(args, "ssh_private_key", None)
+        return ssh.client(remoteHost, args.ssh_user, args.ssh_port, mode, key_filename)
     except sshError as err:
         log.warning("Failed to setup SSH connection: [%s]", err)
 
