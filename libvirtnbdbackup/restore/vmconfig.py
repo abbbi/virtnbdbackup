@@ -142,7 +142,7 @@ def adjust(
         dataStore = disk.xpath("source/dataStore")
         if dataStore and dev == restoreDisk.target:
             sourceEl = disk.xpath("source/dataStore/source")[0]
-            originalFile = sourceEl.get('file') or sourceEl.get('dev')
+            originalFile = sourceEl.get("file") or sourceEl.get("dev")
             if originalFile:
                 originalFile = os.path.basename(originalFile)
 
@@ -155,14 +155,14 @@ def adjust(
                     originalFile,
                     abspath,
                 )
-                if sourceEl.get('file') is not None:
-                    sourceEl.set('file', abspath)
-                elif sourceEl.get('dev') is not None:
-                    sourceEl.set('dev', abspath)
+                if sourceEl.get("file") is not None:
+                    sourceEl.set("file", abspath)
+                elif sourceEl.get("dev") is not None:
+                    sourceEl.set("dev", abspath)
 
         sourceMain = disk.xpath("source")[0]
         originalFile = sourceMain.get("file") or sourceMain.get("dev")
-        
+
         if dev == restoreDisk.target:
             abspath = os.path.abspath(targetFile)
             logging.info(
