@@ -105,6 +105,7 @@ def getConfig(  # pylint: disable=too-many-statements
                 "QCOW image with data-file backend detected, keeping original path: [%s]",
                 dataFile,
             )
+            dataFilePath = dataFile
 
         opt.append("-o")
         opt.append(f"data_file={dataFilePath}")
