@@ -1,6 +1,9 @@
 Version 2.47
 ---------
  * add --ssh-private-key arg for custom SSH key authentication (#315)
+ * virtnbdrestore: Fix UnboundLocalError: cannot access local variable
+ 'dataFilePath' exception if restore of virtual machines with data-file
+ setting is attempted without using -c option (#317)
 
 Version 2.46
 ---------
