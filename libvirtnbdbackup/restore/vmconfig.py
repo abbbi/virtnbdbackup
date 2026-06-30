@@ -141,21 +141,28 @@ def adjust(
 
         dataStore = disk.xpath("source/dataStore")
         if dataStore and dev == restoreDisk.target:
-            originalFile = os.path.basename(
-                disk.xpath("source/dataStore/source")[0].get("file")
-            )
-            abspath = os.path.join(
-                os.path.abspath(os.path.dirname(targetFile)), originalFile
-            )
-            logging.info(
-                "Adjusting dataStore setting for disk [%s] from [%s] to [%s]",
-                restoreDisk.target,
-                disk.xpath("source/dataStore/source")[0].get("file"),
-                abspath,
-            )
-            disk.xpath("source/dataStore/source")[0].set("file", abspath)
+            sourceEl = disk.xpath("source/dataStore/source")[0]
+            originalFile = sourceEl.get("file") or sourceEl.get("dev")
+            if originalFile:
+                originalFile = os.path.basename(originalFile)
 
-        originalFile = disk.xpath("source")[0].get("file")
+                abspath = os.path.join(
+                    os.path.abspath(os.path.dirname(targetFile)), originalFile
+                )
+                logging.info(
+                    "Adjusting dataStore setting for disk [%s] from [%s] to [%s]",
+                    restoreDisk.target,
+                    originalFile,
+                    abspath,
+                )
+                if sourceEl.get("file") is not None:
+                    sourceEl.set("file", abspath)
+                elif sourceEl.get("dev") is not None:
+                    sourceEl.set("dev", abspath)
+
+        sourceMain = disk.xpath("source")[0]
+        originalFile = sourceMain.get("file") or sourceMain.get("dev")
+
         if dev == restoreDisk.target:
             abspath = os.path.abspath(targetFile)
             logging.info(
@@ -165,6 +172,11 @@ def adjust(
                 abspath,
             )
             disk.xpath("source")[0].set("file", abspath)
+
+            if sourceMain.get("file") is not None:
+                sourceMain.set("file", abspath)
+            elif sourceMain.get("dev") is not None:
+                sourceMain.set("dev", abspath)
 
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
