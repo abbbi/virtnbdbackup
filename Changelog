@@ -1,6 +1,6 @@
 Version 2.48
 ---------
-
+ * set remoteHost in case qemu+tls is used as libvirt URI (#319)
 
 Version 2.47
 ---------
