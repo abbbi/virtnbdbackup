@@ -121,7 +121,7 @@ class client:
         # This will spawn the NBD service for data transfer via
         # TCP socket instead of local socket file and related virtual
         # domain files will be copied via SFTP.
-        if "qemu+ssh" in args.uri or "qemu+tls" in args.uri:
+        if args.uri.startswith("qemu+ssh") or args.uri.startswith("qemu+tls"):
             remoteHostname = conn.getHostname()
             log.info(
                 "Connected to remote host: [%s] libvirt version: [%s]",
