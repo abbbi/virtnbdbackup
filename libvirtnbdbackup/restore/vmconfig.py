@@ -93,7 +93,7 @@ def removeUuid(vmConfig: str) -> bytes:
 
 
 def removeMacAddress(vmConfig: str) -> bytes:
-    """Remove mac addresses configured for interfaces from the config file to allow"""
+    """Remove mac addresses configured for interfaces from the config file prior to define"""
     tree = xml.asTree(vmConfig)
     try:
         logging.info("Removing mac address settings from vm config.")
