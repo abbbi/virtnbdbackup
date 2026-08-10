@@ -1,5 +1,7 @@
 Version 2.49
 ---------
+ * virtnbdrestore: remove mac addresses tied to network interfaces if -c
+ option is set. Mac address will be auto-generated upon define (#320)
 
 Version 2.48
 ---------

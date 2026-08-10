@@ -180,6 +180,14 @@
       <alias name='rng0'/>
       <address type='pci' domain='0x0000' bus='0x06' slot='0x00' function='0x0'/>
     </rng>
+    <interface type='network'>
+      <mac address='52:54:11:94:ff:4f'/>
+      <source network='default' portid='99e9e122-49c8-40d6-bedd-127efc707d93' bridge='virbr0'/>
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+      <alias name='net0'/>
+      <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
+    </interface>
   </devices>
   <qemu:capabilities>
     <qemu:add capability='incremental-backup'/>

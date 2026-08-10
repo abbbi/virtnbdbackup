@@ -92,6 +92,25 @@ def removeUuid(vmConfig: str) -> bytes:
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
+def removeMacAddress(vmConfig: str) -> bytes:
+    """Remove mac addresses configured for interfaces from the config file prior to define"""
+    tree = xml.asTree(vmConfig)
+    try:
+        logging.info("Removing mac address settings from vm config.")
+        interfaces = tree.xpath("/domain/devices/interface")
+
+        removed_count = 0
+        for interface in interfaces:
+            logging.info("Removing mac address for interface [%s]", removed_count)
+            for mac in interface.xpath("./mac"):
+                interface.remove(mac)
+                removed_count += 1
+    except IndexError:
+        pass
+
+    return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
+
+
 def setVMName(args: Namespace, vmConfig: str) -> bytes:
     """Change / set the VM name to be restored"""
     tree = xml.asTree(vmConfig)
