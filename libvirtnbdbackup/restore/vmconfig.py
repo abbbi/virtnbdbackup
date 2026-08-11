@@ -98,6 +98,8 @@ def removeMacAddress(vmConfig: str) -> bytes:
     try:
         logging.info("Removing mac address settings from vm config.")
         interfaces = tree.xpath("/domain/devices/interface")
+        if interfaces:
+            logging.info("Removing mac address settings from vm config.")
 
         removed_count = 0
         for interface in interfaces:
