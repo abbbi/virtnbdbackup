@@ -64,7 +64,9 @@ def main() -> None:
             "--sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data\n"
             "   # Restore to remote system:\n"
             "\t%(prog)s -U qemu+ssh://root@remotehost/system"
-            " --ssh-user root -i /backup/ -o /remote_target"
+            " --ssh-user root -i /backup/ -o /remote_target\n"
+            "   # Restore single disk to raw device:\n"
+            "\t%(prog)s -i /backup/ -d vda --raw-target /dev/disk1"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
@@ -86,7 +88,7 @@ def main() -> None:
         help="Directory including a backup set",
     )
     opt.add_argument(
-        "-o", "--output", required=True, type=str, help="Restore target directory"
+        "-o", "--output", required=False, type=str, help="Restore target directory"
     )
     opt.add_argument(
         "-u",
@@ -181,6 +183,12 @@ def main() -> None:
         action="store_true",
         help="Use compression driver during restore. (default: %(default)s)",
     )
+    opt.add_argument(
+        "-RT",
+        "--raw-target",
+        type=str,
+        help="Restore single disk to raw target. Requires --disk and is mutually exclusive with --output",
+    )
 
     remopt = parser.add_argument_group("Remote Restore options")
     argopt.addRemoteArgs(remopt)
@@ -202,6 +210,10 @@ def main() -> None:
     counter = logCount()  # pylint: disable=unreachable
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
+
+    if not (args.output or args.raw_target):
+        logging.error("Command must have at least one (--output, --raw-target)")
+        sys.exit(1)
 
     if not lib.exists(args, args.input):
         logging.error("Backup source [%s] does not exist.", args.input)
@@ -233,6 +245,18 @@ def main() -> None:
             sys.exit(1)
         sys.exit(0)
 
+    if args.output and args.raw_target:
+        logging.error("Cannot use --raw-target with --output")
+        sys.exit(1)
+
+    if args.raw_target and not (args.disk or args.sequence):
+        logging.error("Must provide one --disk or --sequence with --raw-target")
+        sys.exit(1)
+
+    if args.raw_target and args.compress is True:
+        logging.error("--compress cannot be used with --raw-target")
+        sys.exit(1)
+
     if args.action == "restore":
         if args.define is True:
             args.adjust_config = True
@@ -248,11 +272,12 @@ def main() -> None:
             logging.warning("Unable to connect libvirt: [%s]", e)
 
         if virtClient and virtClient.remoteHost:
-            if not args.output.startswith("/"):
-                logging.error(
-                    "Absolute target path required for restore to remote system"
-                )
-                sys.exit(1)
+            if args.output:
+                if not args.output.startswith("/"):
+                    logging.error(
+                        "Absolute target path required for restore to remote system"
+                    )
+                    sys.exit(1)
 
             args.sshClient = lib.sshSession(
                 args, virtClient.remoteHost, mode=Mode.UPLOAD
@@ -260,11 +285,13 @@ def main() -> None:
             if not args.sshClient:
                 logging.error("Remote restore detected but ssh session setup failed")
                 sys.exit(1)
-            if not args.sshClient.exists(args.output):
-                logging.info("Create target directory: [%s]", args.output)
-                args.sshClient.sftp.mkdir(args.output)
+            if args.output:
+                if not args.sshClient.exists(args.output):
+                    logging.info("Create target directory: [%s]", args.output)
+                    args.sshClient.sftp.mkdir(args.output)
         else:
-            Directory().create(args.output)
+            if args.output:
+                Directory().create(args.output)
 
         ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml")
         if not ConfigFiles:
@@ -292,6 +319,10 @@ def main() -> None:
         except RestoreError as errmsg:
             logging.error("Disk restore failed: [%s]", errmsg)
             sys.exit(1)
+
+        if args.raw_target:
+            logging.info("Raw target restore complete: [%s]", args.raw_target)
+            sys.exit(0)
 
         files.restore(args, ConfigFile, virtClient)
         vmconfig.restore(args, ConfigFile, restConfig, args.config_file)

@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
+import subprocess
 from argparse import Namespace
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import common as lib
@@ -48,6 +49,22 @@ def _backingstore(args: Namespace, disk: DomainDisk) -> None:
         logging.warning("Configured backing store images must be changed.")
 
 
+def _getBlockdevSize(path: str, sshClient=None) -> int:
+    cmd = ["blockdev", "--getsize64", path]
+
+    if sshClient is None:
+        result = subprocess.run(
+            cmd,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return int(result.stdout.decode())
+
+    output = sshClient.run(" ".join(cmd))
+    return int(output.out)
+
+
 def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     args: Namespace, ConfigFile: str, virtClient: virt.client
 ) -> bytes:
@@ -77,9 +94,17 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
                 restConfig = vmconfig.removeDisk(restConfig.decode(), disk.target)
             continue
 
-        targetFile = files.target(args, disk)
+        if args.raw_target:
+            targetFile = args.raw_target
+        else:
+            targetFile = files.target(args, disk)
 
-        if args.raw and disk.format == "raw":
+        if (
+            args.raw
+            and disk.format == "raw"
+            or args.raw_target
+            and disk.format == "raw"
+        ):
             logging.info("Restoring raw image to [%s]", targetFile)
             lib.copy(args, restoreDisk[0], targetFile)
             continue
@@ -96,10 +121,36 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
 
         meta = header.get(restoreDisk[cptnum], stream)
 
+        if args.raw_target:
+            targetExists = lib.exists(args, targetFile)
+            if not targetExists:
+                raise RestoreError(
+                    f"Raw target [{targetFile}] does not exists, unable to restore."
+                )
+
+            logging.info(
+                "Raw target [%s] already exists, restoring into it as-is", targetFile
+            )
+            try:
+                targetSize = _getBlockdevSize(targetFile, args.sshClient)
+            except Exception as err:
+                raise RestoreError(
+                    f"Unable to retrieve target block device size. {err}"
+                ) from err
+
+            backupSize = int(meta["virtualSize"])
+            if targetSize < backupSize:
+                raise RestoreError(
+                    f"Raw target [{targetFile}] is not large enough for restore. BackupSize: [{backupSize}] TargetSize: [{targetSize}]"
+                )
+
         try:
-            image.create(args, meta, targetFile, args.sshClient)
+            if args.output:
+                image.create(args, meta, targetFile, args.sshClient)
         except RestoreError as errmsg:
-            raise RestoreError("Creating target image failed.") from errmsg
+            raise RestoreError(
+                f"Creating target image failed. Exception {errmsg}"
+            ) from errmsg
 
         try:
             connection = server.start(args, meta["diskName"], targetFile, virtClient)

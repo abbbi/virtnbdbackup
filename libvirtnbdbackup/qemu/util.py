@@ -50,14 +50,15 @@ class util:
         """Check if --compress option is set and if so, use
         qemu's compress driver during data write'"""
         cmd = []
-        if args.compress is not True:
-            cmd.append(targetFile)
-            cmd.append("--format=qcow2")
-        else:
+        fmt = "raw" if args.raw_target else "qcow2"
+        if args.compress is True:
             cmd.append("--image-opts")
             cmd.append(
                 f"driver=compress,file.driver=qcow2,file.file.driver=file,file.file.filename={targetFile}"  # pylint: disable=line-too-long
             )
+        else:
+            cmd.append(targetFile)
+            cmd.append(f"--format={fmt}")
 
         return cmd
 

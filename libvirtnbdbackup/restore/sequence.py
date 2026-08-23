@@ -41,14 +41,18 @@ def restore(args: Namespace, dataFiles: List[str], virtClient: virt.client) -> b
         return result
 
     diskName = meta["diskName"]
-    targetFile = os.path.join(args.output, diskName)
-    if lib.exists(args, targetFile):
-        raise RestoreError(f"Targetfile {targetFile} already exists.")
 
-    try:
-        image.create(args, meta, targetFile, args.sshClient)
-    except RestoreError as errmsg:
-        raise errmsg
+    if args.raw_target:
+        targetFile = args.raw_target
+    else:
+        targetFile = os.path.join(args.output, diskName)
+        if lib.exists(args, targetFile):
+            raise RestoreError(f"Targetfile {targetFile} already exists.")
+
+        try:
+            image.create(args, meta, targetFile, args.sshClient)
+        except RestoreError as errmsg:
+            raise errmsg
 
     connection = server.start(args, diskName, targetFile, virtClient)
 
