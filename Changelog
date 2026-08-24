@@ -1,6 +1,7 @@
 Version 2.50
 ---------
-
+ * virtnbdrestore: add --relocate-data-file option to override QCOW data-file
+ backends per disk during restore.
 
 Version 2.49
 ---------

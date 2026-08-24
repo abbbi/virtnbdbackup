@@ -60,6 +60,15 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
     if not vmDisks:
         raise RestoreError("Unable to parse disks from config")
 
+    unknownRelocations = set(args.relocate_data_file).difference(
+        disk.target for disk in vmDisks
+    )
+    if unknownRelocations:
+        raise RestoreError(
+            "Unknown disk target in data-file relocation: "
+            + ", ".join(sorted(unknownRelocations))
+        )
+
     restConfig: bytes = vmConfig.encode()
     for disk in vmDisks:
         if args.disk not in (None, disk.target):

@@ -28,6 +28,7 @@ from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.restore import files
 from libvirtnbdbackup.restore import sequence
 from libvirtnbdbackup.restore import disk
+from libvirtnbdbackup.restore import image
 from libvirtnbdbackup.output.target.directory import Directory
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
@@ -180,6 +181,13 @@ def main() -> None:
         default=False,
         action="store_true",
         help="Use compression driver during restore. (default: %(default)s)",
+    )
+    opt.add_argument(
+        "--relocate-data-file",
+        default={},
+        type=image.parseDataFileRelocations,
+        metavar="DISK:PATH[,DISK:PATH...]",
+        help="Override QCOW data-file paths by target disk name.",
     )
 
     remopt = parser.add_argument_group("Remote Restore options")

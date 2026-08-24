@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import logging
 import json
-from argparse import Namespace
+from argparse import ArgumentTypeError, Namespace
 from typing import List, Dict
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import output
@@ -29,6 +29,26 @@ from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.ssh.exceptions import sshError
 
 
+def parseDataFileRelocations(value: str) -> Dict[str, str]:
+    """Parse comma-separated disk:data-file relocation mappings."""
+    relocations: Dict[str, str] = {}
+    for mapping in value.split(","):
+        diskName, separator, dataFile = mapping.partition(":")
+        diskName = diskName.strip()
+        dataFile = dataFile.strip()
+        if not separator or not diskName or not dataFile:
+            raise ArgumentTypeError(
+                "data-file relocations must use DISK:PATH[,DISK:PATH...]"
+            )
+        if diskName in relocations:
+            raise ArgumentTypeError(
+                f"duplicate data-file relocation for disk '{diskName}'"
+            )
+        relocations[diskName] = dataFile
+
+    return relocations
+
+
 def getConfig(  # pylint: disable=too-many-statements
     args: Namespace, meta: Dict[str, str]
 ) -> List[str]:
@@ -36,8 +56,13 @@ def getConfig(  # pylint: disable=too-many-statements
     of options passed to qemu-img create command"""
     opt: List[str] = []
     qcowConfig = None
+    relocatedDataFile = getattr(args, "relocate_data_file", {}).get(meta["diskName"])
     qcowConfigFile = lib.getLatest(args.input, f"{meta['diskName']}*.qcow.json*", -1)
     if not qcowConfigFile:
+        if relocatedDataFile:
+            raise RestoreError(
+                f"Disk [{meta['diskName']}] has no saved QCOW data-file configuration"
+            )
         logging.warning(
             "No QCOW image config found in [%s], will use default options.", args.input
         )
@@ -53,6 +78,11 @@ def getConfig(  # pylint: disable=too-many-statements
         OutputException,
         json.decoder.JSONDecodeError,
     ) as errmsg:
+        if relocatedDataFile:
+            raise RestoreError(
+                f"Unable to relocate data-file for disk [{meta['diskName']}]: "
+                f"failed to load saved QCOW configuration"
+            ) from errmsg
         logging.warning(
             "Unable to load original QCOW image config, using defaults: [%s].",
             errmsg,
@@ -90,7 +120,15 @@ def getConfig(  # pylint: disable=too-many-statements
 
     try:
         dataFile = qcowConfig["format-specific"]["data"]["data-file"]
-        if args.adjust_config is True:
+        if relocatedDataFile:
+            dataFilePath = relocatedDataFile
+            logging.info(
+                "Relocating QCOW data-file backend for disk [%s] from [%s] to [%s]",
+                meta["diskName"],
+                dataFile,
+                dataFilePath,
+            )
+        elif args.adjust_config is True:
             dataFilePath = os.path.join(
                 args.output,
                 os.path.basename(dataFile),
@@ -110,7 +148,10 @@ def getConfig(  # pylint: disable=too-many-statements
         opt.append("-o")
         opt.append(f"data_file={dataFilePath}")
     except KeyError as errmsg:
-        pass
+        if relocatedDataFile:
+            raise RestoreError(
+                f"Disk [{meta['diskName']}] does not use a QCOW data-file backend"
+            ) from errmsg
 
     try:
         if qcowConfig["format-specific"]["data"]["data-file-raw"] is True:

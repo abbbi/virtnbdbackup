@@ -740,6 +740,19 @@ virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore
 All incremental backups found will be applied to the target images
 in the output directory `/tmp/restore`
 
+If QCOW images in the backup use data-file backends, their saved paths can be
+overridden per target disk during restore. Multiple mappings are separated by
+commas:
+
+```
+virtnbdrestore -c -i /tmp/backupset/vm1 -o /tmp/restore \
+  --relocate-data-file vda:/dev/rawA,vdb:/dev/rawB
+```
+
+The relocated path is used when creating the QCOW image. If `-c` is specified,
+the corresponding `dataStore` path in the restored virtual machine
+configuration is updated as well.
+
 `Note`:
 > The restore utility will copy the latest virtual machine config to the
 > target directory, but won't alter its contents. You have to adjust the config

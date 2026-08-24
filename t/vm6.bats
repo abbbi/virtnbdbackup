@@ -122,8 +122,17 @@ setup() {
     [ "$status" -eq 0 ]
 }
 @test "Restore: restore vm with new name" {
-    run ../virtnbdrestore -cD --name restored -i ${TMPDIR}/fstrim -o ${TMPDIR}/restore
+    run ../virtnbdrestore -cD --name restored -i ${TMPDIR}/fstrim -o ${TMPDIR}/restore --relocate-data-file vda:${TMPDIR}/relocated-vm6-sda.raw
     echo "output = ${output}"
+    [ "$status" -eq 0 ]
+}
+@test "Verify restored data-file relocation" {
+    run qemu-img info --output=json ${TMPDIR}/restore/fstrim.qcow2
+    [[ "${output}" =~ "${TMPDIR}/relocated-vm6-sda.raw" ]]
+    [ "$status" -eq 0 ]
+
+    run virsh dumpxml restored
+    [[ "${output}" =~ "${TMPDIR}/relocated-vm6-sda.raw" ]]
     [ "$status" -eq 0 ]
 }
 @test "Compare restored data files against reference tar images" {

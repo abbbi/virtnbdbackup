@@ -165,11 +165,14 @@ def adjust(
             sourceEl = disk.xpath("source/dataStore/source")[0]
             originalFile = sourceEl.get("file") or sourceEl.get("dev")
             if originalFile:
-                originalFile = os.path.basename(originalFile)
-
-                abspath = os.path.join(
-                    os.path.abspath(os.path.dirname(targetFile)), originalFile
-                )
+                relocatedDataFile = args.relocate_data_file.get(restoreDisk.target)
+                if relocatedDataFile:
+                    abspath = relocatedDataFile
+                else:
+                    abspath = os.path.join(
+                        os.path.abspath(os.path.dirname(targetFile)),
+                        os.path.basename(originalFile),
+                    )
                 logging.info(
                     "Adjusting dataStore setting for disk [%s] from [%s] to [%s]",
                     restoreDisk.target,
