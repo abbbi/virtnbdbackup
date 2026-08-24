@@ -187,7 +187,7 @@ def main() -> None:
         "-RT",
         "--raw-target",
         type=str,
-        help="Restore single disk to raw target. Requires --disk and is mutually exclusive with --output",
+        help="Restore single disk to raw target. Requires --disk.",
     )
 
     remopt = parser.add_argument_group("Remote Restore options")

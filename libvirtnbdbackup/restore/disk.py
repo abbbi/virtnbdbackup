@@ -141,7 +141,8 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
             backupSize = int(meta["virtualSize"])
             if targetSize < backupSize:
                 raise RestoreError(
-                    f"Raw target [{targetFile}] is not large enough for restore. BackupSize: [{backupSize}] TargetSize: [{targetSize}]"
+                    f"Raw target [{targetFile}] is not large enough for restore."
+                    f"BackupSize: [{backupSize}] TargetSize: [{targetSize}]"
                 )
 
         try:
