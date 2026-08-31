@@ -64,6 +64,7 @@ of your `kvm/qemu` virtual machines.
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
 - [Internals](#internals)
+  - [Output target plugins](#output-target-plugins)
   - [Backup Format](#backup-format)
   - [Extents](#extents)
   - [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
