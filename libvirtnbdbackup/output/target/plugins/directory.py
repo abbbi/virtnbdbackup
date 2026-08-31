@@ -1,11 +1,13 @@
 """Directory output target plugin."""
 
 import builtins
+import glob
 import logging
 import os
+import pprint
 import shutil
 import zlib
-from typing import IO, Any, Optional
+from typing import IO, Any, List, Optional
 
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.target.base import OutputTarget
@@ -15,6 +17,8 @@ log = logging.getLogger("directory")
 
 class Directory(OutputTarget):
     """Write backup files to a target directory."""
+
+    supports_input = True
 
     def __init__(self) -> None:
         self.fileHandle: IO[Any]
@@ -97,3 +101,19 @@ class Directory(OutputTarget):
             raise exceptions.OutputException(
                 f"Failed to copy [{source}] to [{target}]: [{e}]"
             ) from e
+
+    def exists(self, path: str) -> bool:
+        """Return whether a filesystem input path exists."""
+        return os.path.exists(path)
+
+    def list(self, path: str, pattern: str, key: Optional[int] = None) -> List[str]:
+        """List filesystem input paths matching a pattern by modification time."""
+        files = glob.glob(os.path.join(path, pattern))
+        files.sort(key=os.path.getmtime)
+        if key is not None:
+            try:
+                files = [files[key]]
+            except IndexError:
+                files = []
+        log.debug("Sorted data files: \n%s", pprint.pformat(files))
+        return files

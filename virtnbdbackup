@@ -106,6 +106,8 @@ def main() -> None:
     )
     opt.add_argument(
         "--output-target",
+        "--output-plugin",
+        dest="output_target",
         default=None,
         type=str,
         help=(

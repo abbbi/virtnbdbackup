@@ -22,7 +22,6 @@ import logging
 from typing import List
 from argparse import Namespace
 from libvirtnbdbackup import virt
-from libvirtnbdbackup import output
 from libvirtnbdbackup.restore import vmconfig
 from libvirtnbdbackup.restore import header
 from libvirtnbdbackup import common as lib
@@ -33,11 +32,11 @@ from libvirtnbdbackup.exceptions import RestoreError
 
 def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
     """Notice user if backed up vm had loader / nvram"""
-    config = vmconfig.read(vmConfig)
+    config = vmconfig.read(vmConfig, args.inputSource)
     info = virtClient.getDomainInfo(config)
 
     for setting, val in info.items():
-        f = lib.getLatest(args.input, f"*{os.path.basename(val)}*", -1)
+        f = args.inputSource.list(args.input, f"*{os.path.basename(val)}*", -1)
 
         if len(f) == 0:
             logging.warning(
@@ -58,7 +57,7 @@ def restore(args: Namespace, vmConfig: str, virtClient: virt.client) -> None:
         logging.info(
             "Restoring configured file [%s] for boot option [%s]", val, setting
         )
-        lib.copy(args, f[0], val)
+        lib.copyFromSource(args, args.inputSource, f[0], val)
 
 
 def verify(args: Namespace, dataFiles: List[str]) -> bool:
@@ -76,7 +75,7 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
         if args.sequence:
             sourceFile = os.path.join(args.input, dataFile)
 
-        with output.openfile(sourceFile, "rb") as vfh:
+        with args.inputSource.open(sourceFile, "rb") as vfh:
             adler = 1
             data = vfh.read(args.buffsize)
             while data:
@@ -85,11 +84,11 @@ def verify(args: Namespace, dataFiles: List[str]) -> bool:
 
         chksumFile = f"{sourceFile}.chksum"
         logging.info("Checksum result: %s", adler)
-        if not os.path.exists(chksumFile):
+        if not args.inputSource.exists(chksumFile):
             logging.info("No checksum found, skipping: [%s]", sourceFile)
             continue
         logging.info("Comparing checksum with stored information")
-        with output.openfile(chksumFile, "r") as s:
+        with args.inputSource.open(chksumFile, "r") as s:
             storedSum = int(s.read())
         if storedSum != adler:
             logging.error("Stored sums do not match: [%s]!=[%s]", storedSum, adler)
@@ -115,7 +114,7 @@ def dump(args: Namespace, stream: streamer.SparseStream, dataFiles: List[str]) -
             sourceFile = os.path.join(args.input, dataFile)
 
         try:
-            meta = header.get(sourceFile, stream)
+            meta = header.get(sourceFile, stream, args.inputSource)
         except RestoreError as e:
             logging.error(e)
             continue

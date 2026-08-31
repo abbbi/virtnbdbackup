@@ -61,3 +61,21 @@ entry_points={
 ```
 
 The entry-point name is the value passed to `--output-target`.
+
+Because this example inherits the directory plugin's input methods, it can also
+be selected as a restore input source:
+
+```console
+virtnbdrestore \
+  --input /var/backups/example-vm \
+  --output /var/lib/libvirt/images/example-vm \
+  --input-source example-directory
+```
+
+`virtnbdrestore` uses the plugin's `exists`, `list`, and `open` methods to read
+the backup set identified by `--input`. Input-capable plugins set
+`supports_input = True`. The `--output` argument continues to identify where
+reconstructed virtual machine images are written.
+
+`--output-plugin` is accepted as an alias for `--output-target` by
+`virtnbdbackup`.

@@ -1075,7 +1075,13 @@ like it would be possible using the `virsh -c` option:
 
 Output targets are selected through the `virtnbdbackup.output_targets`
 setuptools entry-point group. The built-in `directory` and `zip` targets remain
-the defaults. An installed target can be selected with `--output-target`.
+the defaults. `virtnbdbackup` selects an installed target with
+`--output-target` or its `--output-plugin` alias.
+
+For restore operations, `--input-source` selects the plugin used to discover
+and read files below `--input`. Input-capable plugins implement the `exists`,
+`list`, and `open` methods. The restore `--output` option remains the destination
+for reconstructed virtual machine images.
 
 A minimal installable plugin and setup instructions are available in
 [`examples/output-target-plugin`](examples/output-target-plugin/README.md).

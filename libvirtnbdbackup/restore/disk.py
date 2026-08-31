@@ -54,7 +54,7 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
     """Handle disk restore operation and adjust virtual machine
     configuration accordingly."""
     stream = streamer.SparseStream(types)
-    vmConfig = vmconfig.read(ConfigFile)
+    vmConfig = vmconfig.read(ConfigFile, args.inputSource)
     vmConfig = vmconfig.changeVolumePathes(args, vmConfig).decode()
     vmDisks = virtClient.getDomainDisks(args, vmConfig)
     if not vmDisks:
@@ -75,7 +75,7 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
             logging.info("Skipping disk [%s] for restore", disk.target)
             continue
 
-        restoreDisk = lib.getLatest(args.input, f"{disk.target}*.data")
+        restoreDisk = args.inputSource.list(args.input, f"{disk.target}*.data")
         logging.debug("Restoring disk: [%s]", restoreDisk)
         if len(restoreDisk) < 1:
             logging.warning(
@@ -90,7 +90,7 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
 
         if args.raw and disk.format == "raw":
             logging.info("Restoring raw image to [%s]", targetFile)
-            lib.copy(args, restoreDisk[0], targetFile)
+            lib.copyFromSource(args, args.inputSource, restoreDisk[0], targetFile)
             continue
 
         if "full" not in restoreDisk[0] and "copy" not in restoreDisk[0]:
@@ -103,7 +103,7 @@ def restore(  # pylint: disable=too-many-branches,too-many-statements,too-many-l
         if args.until is not None:
             cptnum = int(args.until.split(".")[-1])
 
-        meta = header.get(restoreDisk[cptnum], stream)
+        meta = header.get(restoreDisk[cptnum], stream, args.inputSource)
 
         try:
             image.create(args, meta, targetFile, args.sshClient)

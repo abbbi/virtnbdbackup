@@ -17,16 +17,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from typing import Dict
 from libvirtnbdbackup import common as lib
+from libvirtnbdbackup.output.target import OutputTarget
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream.exceptions import StreamFormatException
 from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.output.exceptions import OutputException
 
 
-def get(diskFile: str, stream: streamer.SparseStream) -> Dict[str, str]:
+def get(
+    diskFile: str, stream: streamer.SparseStream, inputSource: OutputTarget
+) -> Dict[str, str]:
     """Read header from data file"""
     try:
-        return lib.dumpMetaData(diskFile, stream)
+        return lib.dumpMetaData(diskFile, stream, inputSource)
     except StreamFormatException as errmsg:
         raise RestoreError(
             f"Reading metadata from [{diskFile}] failed: [{errmsg}]"

@@ -2,9 +2,14 @@
 
 from libvirtnbdbackup.output.target.base import OutputTarget
 from libvirtnbdbackup.output.target.plugins import Directory, Zip
-from libvirtnbdbackup.output.target.registry import create, names, register
+from libvirtnbdbackup.output.target.registry import (
+    create,
+    create_input,
+    names,
+    register,
+)
 
 register("directory", Directory)
 register("zip", Zip)
 
-__all__ = ["OutputTarget", "create", "names", "register"]
+__all__ = ["OutputTarget", "create", "create_input", "names", "register"]

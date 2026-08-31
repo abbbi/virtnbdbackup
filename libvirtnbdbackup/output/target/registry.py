@@ -57,16 +57,30 @@ def discover() -> None:
             ) from e
 
 
-def create(name: str, **kwargs) -> OutputTarget:
-    """Create a registered output target plugin instance."""
+def _get(name: str) -> Type[OutputTarget]:
+    """Return a registered output target plugin class."""
     discover()
     try:
-        plugin = _plugins[name]
+        return _plugins[name]
     except KeyError as e:
         targets = ", ".join(sorted(_plugins)) or "none"
         raise exceptions.OutputPluginException(
             f"Unknown output target plugin [{name}], available plugins: {targets}"
         ) from e
+
+
+def create(name: str, **kwargs) -> OutputTarget:
+    """Create a registered output target plugin instance."""
+    return _get(name)(**kwargs)
+
+
+def create_input(name: str, **kwargs) -> OutputTarget:
+    """Create a plugin after verifying that it supports restore input."""
+    plugin = _get(name)
+    if not plugin.supports_input:
+        raise exceptions.OutputPluginException(
+            f"Plugin [{name}] does not support restore input"
+        )
     return plugin(**kwargs)
 
 

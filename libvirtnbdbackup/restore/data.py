@@ -57,7 +57,7 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
 
     try:
         # pylint: disable=consider-using-with
-        reader = open(dataFile, "rb")
+        reader = args.inputSource.open(dataFile, "rb")
     except OSError as errmsg:
         logging.error("Failed to open backup file for reading: [%s].", errmsg)
         raise RestoreError from errmsg

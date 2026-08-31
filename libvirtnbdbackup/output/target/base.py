@@ -1,11 +1,13 @@
 """Output target plugin interface."""
 
 from abc import ABC, abstractmethod
-from typing import IO, Any, Optional
+from typing import IO, Any, List, Optional
 
 
 class OutputTarget(ABC):
     """Interface implemented by output target plugins."""
+
+    supports_input = False
 
     @abstractmethod
     def create(self, targetDir: str) -> None:
@@ -44,6 +46,14 @@ class OutputTarget(ABC):
                 self.write(data)
         finally:
             self.close()
+
+    def exists(self, path: str) -> bool:
+        """Return whether an input path exists in this plugin."""
+        raise NotImplementedError
+
+    def list(self, path: str, pattern: str, key: Optional[int] = None) -> List[str]:
+        """List input paths matching a pattern."""
+        raise NotImplementedError
 
     def finish(self) -> None:
         """Finalize the output target after all files have been written."""
