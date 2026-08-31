@@ -26,3 +26,7 @@ class OutputOpenException(OutputException):
 
 class OutputCreateDirectory(OutputException):
     """Can't create output directory"""
+
+
+class OutputPluginException(OutputException):
+    """Output target plugin registration or loading failed"""

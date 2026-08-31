@@ -22,15 +22,13 @@ from argparse import Namespace
 from typing import List, Union
 import libvirt
 
-from libvirtnbdbackup import output
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.output.exceptions import OutputException
-from libvirtnbdbackup.output.target.directory import Directory
-from libvirtnbdbackup.output.target.zip import Zip
+from libvirtnbdbackup.output.target import OutputTarget
 from libvirtnbdbackup.common import safeInfo
 from libvirtnbdbackup.virt import guest
 
@@ -38,23 +36,25 @@ from libvirtnbdbackup.virt import guest
 log = logging.getLogger()
 
 
-def backupChecksum(fileStream, targetFile):
+def backupChecksum(fileStream: OutputTarget, targetFile: str) -> None:
     """Save the calculated adler32 checksum, it can be verified
     by virtnbdbrestore's verify function.'"""
     checksum = fileStream.checksum()
     safeInfo("Checksum for file: [%s]:[%s]", targetFile, checksum)
     chksumfile = f"{targetFile}.chksum"
     safeInfo("Saving checksum to: [%s]", chksumfile)
-    with output.openfile(chksumfile, "w") as cf:
-        cf.write(f"{checksum}")
+    with fileStream.open(chksumfile, "wb") as checksumStream:
+        checksumStream.write(f"{checksum}".encode())
 
 
-def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
+def backupConfig(
+    args: Namespace, vmConfig: str, outputTarget: OutputTarget
+) -> Union[str, None]:
     """Save domain XML config file"""
     configFile = os.path.join(args.output, f"vmconfig.{lib.getIdent(args)}.xml")
     log.info("Saving VM config to: [%s]", configFile)
     try:
-        with output.openfile(configFile, "wb") as fh:
+        with outputTarget.open(configFile, "wb") as fh:
             fh.write(vmConfig.encode())
         return configFile
     except OutputException as e:
@@ -62,7 +62,9 @@ def backupConfig(args: Namespace, vmConfig: str) -> Union[str, None]:
         return None
 
 
-def backupDiskInfo(args: Namespace, disk: DomainDisk):
+def backupDiskInfo(
+    args: Namespace, disk: DomainDisk, outputTarget: OutputTarget
+) -> None:
     """Save information about qcow image, used to reconstruct
     the qemu image with the same settings during restore"""
     try:
@@ -76,16 +78,14 @@ def backupDiskInfo(args: Namespace, disk: DomainDisk):
 
     configFile = f"{args.output}/{disk.target}.{lib.getIdent(args)}.qcow.json"
     try:
-        with output.openfile(configFile, "wb") as fh:
+        with outputTarget.open(configFile, "wb") as fh:
             fh.write(info.out.encode())
         log.info("Saved qcow image config to: [%s]", configFile)
-        if args.stdout is True:
-            args.diskInfo.append(configFile)
     except OutputException as e:
         log.warning("Failed to save qcow image config: [%s]", e)
 
 
-def backupBootConfig(args: Namespace) -> None:
+def backupBootConfig(args: Namespace, outputTarget: OutputTarget) -> None:
     """Save domain uefi/nvram/kernel and loader if configured."""
     for setting, val in args.info.items():
         if args.level != "copy":
@@ -95,34 +95,43 @@ def backupBootConfig(args: Namespace) -> None:
         else:
             tFile = os.path.join(args.output, f"{os.path.basename(val)}")
         log.info("Save additional boot config [%s] to: [%s]", setting, tFile)
-        lib.copy(args, val, tFile)
+        if args.stdout is True:
+            if args.sshClient:
+                with args.sshClient.sftp.open(val, "rb") as source:
+                    outputTarget.add_stream(source, os.path.basename(tFile))
+            else:
+                outputTarget.add_file(val, os.path.basename(tFile))
+        else:
+            lib.copy(args, val, tFile)
         args.info[setting] = tFile
 
 
-def backupAutoStart(args: Namespace) -> None:
+def backupAutoStart(args: Namespace, outputTarget: OutputTarget) -> None:
     """Save information if virtual machine was marked
     for autostart during system boot"""
     log.info("Autostart setting configured for virtual machine.")
     autoStartFile = os.path.join(args.output, f"autostart.{lib.getIdent(args)}")
     try:
-        with output.openfile(autoStartFile, "wb") as fh:
+        with outputTarget.open(autoStartFile, "wb") as fh:
             fh.write(b"True")
     except OutputException as e:
         log.warning("Failed to save autostart information: [%s]", e)
 
 
-def backupGuestInfo(args: Namespace) -> None:
+def backupGuestInfo(args: Namespace, outputTarget: OutputTarget) -> None:
     """Save OS related information"""
     osInfoFile = os.path.join(args.output, f"osinfo.{lib.getIdent(args)}")
     try:
-        with output.openfile(osInfoFile, "w") as fh:
-            fh.write(json.dumps(args.guestInfo, indent=4))
+        with outputTarget.open(osInfoFile, "wb") as fh:
+            fh.write(json.dumps(args.guestInfo, indent=4).encode())
         log.info("Saved guest related osinfo to [%s]", osInfoFile)
     except OutputException as e:
         log.warning("Failed to save osinfo data: [%s]", e)
 
 
-def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> None:
+def backupBitlockerRecoveryKey(
+    args: Namespace, domObj: libvirt.virDomain, outputTarget: OutputTarget
+) -> None:
     """Save bitlocker recovery keys"""
     try:
         bde = guest.Exec(domObj, "manage-bde.exe", ["-status"])
@@ -160,8 +169,8 @@ def backupBitlockerRecoveryKey(args: Namespace, domObj: libvirt.virDomain) -> No
             f"bitlocker.recovery.key.{vol.replace(':','')}.{lib.getIdent(args)}",
         )
         try:
-            with output.openfile(keyFile, "w") as fh:
-                fh.write(protectors)
+            with outputTarget.open(keyFile, "wb") as fh:
+                fh.write(protectors.encode())
             log.info("Saved Bitlocker recovery key to [%s]", keyFile)
         except OutputException as e:
             log.warning("Failed to save recovery key: [%s]", e)
@@ -171,41 +180,31 @@ def saveFiles(
     args: Namespace,
     vmConfig: str,
     disks: List[DomainDisk],
-    fileStream: Union[Directory, Zip],
+    fileStream: OutputTarget,
     logFile: str,
 ):
     """Save additional files such as virtual machine configuration
     and UEFI / kernel images"""
-    configFile = backupConfig(args, vmConfig)
+    backupConfig(args, vmConfig, fileStream)
 
-    backupBootConfig(args)
+    backupBootConfig(args, fileStream)
     for disk in disks:
         if disk.format.startswith("qcow"):
-            backupDiskInfo(args, disk)
+            backupDiskInfo(args, disk, fileStream)
     if args.stdout is True:
-        addFiles(args, configFile, fileStream, logFile)
+        addFiles(args, fileStream, logFile)
 
 
-def addFiles(args: Namespace, configFile: Union[str, None], zipStream, logFile: str):
-    """Add backup log and other files to zip archive"""
-    if configFile is not None:
-        log.info("Adding vm config to zipfile")
-        zipStream.zipStream.write(configFile, configFile)
+def addFiles(
+    args: Namespace,
+    outputTarget: OutputTarget,
+    logFile: str,
+) -> None:
+    """Add backup metadata through the output target plugin."""
     if args.level in ("full", "inc"):
         log.info("Adding checkpoint info to zipfile")
-        zipStream.zipStream.write(args.cpt.file, args.cpt.file)
-        for dirname, _, files in os.walk(args.checkpointdir):
-            zipStream.zipStream.write(dirname)
-            for filename in files:
-                zipStream.zipStream.write(os.path.join(dirname, filename))
-
-    for setting, val in args.info.items():
-        log.info("Adding additional [%s] setting file [%s] to zipfile", setting, val)
-        zipStream.zipStream.write(val, os.path.basename(val))
-
-    for diskInfo in args.diskInfo:
-        log.info("Adding QCOW image format file [%s] to zipfile", diskInfo)
-        zipStream.zipStream.write(diskInfo, os.path.basename(diskInfo))
+        outputTarget.add_file(args.cpt.file, args.cpt.file)
+        outputTarget.add_tree(args.checkpointdir)
 
     log.info("Adding backup log [%s] to zipfile", logFile)
-    zipStream.zipStream.write(logFile, logFile)
+    outputTarget.add_file(logFile, logFile)
