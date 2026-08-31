@@ -155,6 +155,13 @@ def adjust(
             disk.getparent().remove(disk)
             continue
 
+        if args.remove_skipped_disks and args.disk is not None and dev not in args.disk:
+            logging.info(
+                "Removing device [%s], from vm config: user requested skipping.", dev
+            )
+            disk.getparent().remove(disk)
+            continue
+
         backingStore = disk.xpath("backingStore")
         if backingStore:
             logging.info("Removing existent backing store settings")

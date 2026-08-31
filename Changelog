@@ -1,7 +1,11 @@
 Version 2.50
 ---------
- * virtnbdrestore: add --relocate-data-file option to override QCOW data-file
- backends per disk during restore.
+ * virtnbdrestore:
+	add --relocate-data-file option to override QCOW data-file backends per
+	disk during restore.
+	add --remove-skipped-disks option: if option -d is specified to process
+	only specific disks, adjust virtual machine configuration and remove
+	disks not specified.
 
 Version 2.49
 ---------
