@@ -58,7 +58,8 @@ def main() -> None:
             "\t%(prog)s -cD --name foo -i /backup/ -o /target\n"
             "   # Restore only disk 'vda':\n"
             "\t%(prog)s -i /backup/ -o /target -d vda\n"
-            "   # Restore only disk 'vda', define vm and adjust config to include only processed disk:\n"
+            "   # Restore only disk 'vda', define vm and adjust config to"
+            " include only processed disk:\n"
             "\t%(prog)s -cDR --name foo -i /backup/ -o /target -d vda\n"
             "   # Point in time restore:\n"
             "\t%(prog)s -i /backup/ -o /target --until virtnbdbackup.2\n"
@@ -126,7 +127,8 @@ def main() -> None:
         "--remove-skipped-disks",
         default=False,
         action="store_true",
-        help="Remove disks not included in -d parameter from vm config during restore. (default: %(default)s)",
+        help="Remove disks not included in -d parameter from vm config during "
+        " restore. (default: %(default)s)",
     )
     opt.add_argument(
         "-n",
