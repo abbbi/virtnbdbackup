@@ -29,7 +29,9 @@ from libvirtnbdbackup.restore import files
 from libvirtnbdbackup.restore import sequence
 from libvirtnbdbackup.restore import disk
 from libvirtnbdbackup.restore import image
-from libvirtnbdbackup.output.target.directory import Directory
+from libvirtnbdbackup.output.target import create as createOutputTarget
+from libvirtnbdbackup.output.target import create_input as createInputSource
+from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup.sparsestream import streamer
@@ -91,6 +93,13 @@ def main() -> None:
     )
     opt.add_argument(
         "-o", "--output", required=True, type=str, help="Restore target directory"
+    )
+    opt.add_argument(
+        "--input-source",
+        dest="input_source",
+        default=None,
+        type=str,
+        help="Plugin used to read the backup source. Defaults to 'directory'.",
     )
     opt.add_argument(
         "-u",
@@ -222,7 +231,14 @@ def main() -> None:
     lib.configLogger(args, fileLog, counter)
     lib.printVersion(__version__)
 
-    if not lib.exists(args, args.input):
+    try:
+        pluginName = args.input_source or "directory"
+        args.inputSource = createInputSource(pluginName)
+    except OutputException as e:
+        logging.error("Can't open input source: [%s]", e)
+        sys.exit(1)
+
+    if not args.inputSource.exists(args.input):
         logging.error("Backup source [%s] does not exist.", args.input)
         sys.exit(1)
 
@@ -238,7 +254,7 @@ def main() -> None:
             logging.error("Sequence must start with full or copy backup.")
             sys.exit(1)
     else:
-        dataFiles = lib.getLatest(args.input, "*.data")
+        dataFiles = args.inputSource.list(args.input, "*.data")
         if not dataFiles:
             logging.error("No data files found in directory: [%s]", args.input)
             sys.exit(1)
@@ -283,9 +299,9 @@ def main() -> None:
                 logging.info("Create target directory: [%s]", args.output)
                 args.sshClient.sftp.mkdir(args.output)
         else:
-            Directory().create(args.output)
+            createOutputTarget("directory").create(args.output)
 
-        ConfigFiles = lib.getLatest(args.input, "vmconfig*.xml")
+        ConfigFiles = args.inputSource.list(args.input, "vmconfig*.xml")
         if not ConfigFiles:
             logging.error("No domain config file found")
             sys.exit(1)
@@ -296,7 +312,7 @@ def main() -> None:
         logging.info("Using config file: [%s]", ConfigFile)
 
         autoStart = False
-        if lib.getLatest(args.input, "autostart.*", -1):
+        if args.inputSource.list(args.input, "autostart.*", -1):
             autoStart = True
 
         if args.compress is True:

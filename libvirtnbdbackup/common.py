@@ -34,6 +34,7 @@ import colorlog
 from libvirtnbdbackup import ssh
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup import output
+from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.logcount import logCount
 
 log = logging.getLogger("lib")
@@ -234,6 +235,20 @@ def copy(args: Namespace, source: str, target: str) -> None:
         log.warning("Remote copy from [%s] to [%s] failed: [%s]", source, target, e)
 
 
+def copyFromSource(args: Namespace, inputSource, source: str, target: str) -> None:
+    """Copy a plugin input stream to a local or remote restore target."""
+    try:
+        with inputSource.open(source, "rb") as reader:
+            if args.sshClient:
+                destination = args.sshClient.sftp.open(target, "wb")
+            else:
+                destination = output.openfile(target, "wb")
+            with destination:
+                shutil.copyfileobj(reader, destination)
+    except (OSError, OutputException, sshError) as e:
+        log.warning("Failed to copy [%s] to [%s]: [%s]", source, target, e)
+
+
 def remove(args: Namespace, file: str) -> None:
     """Remove file either locally or remote"""
     try:
@@ -304,9 +319,9 @@ def dumpExtentJson(extents) -> str:
     return json.dumps(extList, indent=4, sort_keys=True)
 
 
-def dumpMetaData(dataFile: str, stream):
+def dumpMetaData(dataFile: str, stream, inputSource):
     """read metadata header"""
-    with output.openfile(dataFile, "rb") as reader:
+    with inputSource.open(dataFile, "rb") as reader:
         _, _, length = stream.readFrame(reader)
         return stream.loadMetadata(reader.read(length))
 

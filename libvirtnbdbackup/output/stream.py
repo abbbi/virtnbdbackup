@@ -16,21 +16,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from argparse import Namespace
-from typing import Union
-from libvirtnbdbackup.output.target.directory import Directory
-from libvirtnbdbackup.output.target.zip import Zip
+from libvirtnbdbackup.output.target import OutputTarget, create
 
 
 def get(
     args: Namespace,
-) -> Union[Directory, Zip]:
+) -> OutputTarget:
     """Get filehandle for output files based on output
     mode"""
-    fileStream: Union[Directory, Zip]
-    if args.stdout is False:
-        fileStream = Directory()
-    else:
-        fileStream = Zip()
+    pluginName = getattr(args, "output_target", None)
+    if pluginName is None:
+        pluginName = "zip" if args.stdout else "directory"
+
+    fileStream = create(pluginName)
+    if args.stdout is True:
         args.output = "./"
         args.worker = 1
 

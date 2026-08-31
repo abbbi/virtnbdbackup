@@ -26,10 +26,11 @@ from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.virt import disktype
 
 
-def read(ConfigFile: str) -> str:
+def read(ConfigFile: str, inputSource) -> str:
     """Read saved virtual machine config'"""
     try:
-        return output.openfile(ConfigFile, "rb").read().decode()
+        with inputSource.open(ConfigFile, "rb") as configStream:
+            return configStream.read().decode()
     except:
         logging.error("Can't read config file: [%s]", ConfigFile)
         raise

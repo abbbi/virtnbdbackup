@@ -36,7 +36,7 @@ def restore(args: Namespace, dataFiles: List[str], virtClient: virt.client) -> b
     result: bool = False
 
     sourceFile = os.path.join(args.input, dataFiles[-1])
-    meta = header.get(sourceFile, stream)
+    meta = header.get(sourceFile, stream, args.inputSource)
     if not meta:
         return result
 

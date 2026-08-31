@@ -64,6 +64,7 @@ of your `kvm/qemu` virtual machines.
   - [OpenNebula](#opennebula)
 - [Authentication](#authentication)
 - [Internals](#internals)
+  - [Output target plugins](#output-target-plugins)
   - [Backup Format](#backup-format)
   - [Extents](#extents)
   - [Backup I/O and performance: scratch files](#backup-io-and-performance-scratch-files)
@@ -1069,6 +1070,22 @@ like it would be possible using the `virsh -c` option:
 > to backup virtual machines as regular user.
 
 # Internals
+
+## Output target plugins
+
+Output targets are selected through the `virtnbdbackup.output_targets`
+setuptools entry-point group. The built-in `directory` and `zip` targets remain
+the defaults. `virtnbdbackup` selects an installed target with
+`--output-target` or its `--output-plugin` alias.
+
+For restore operations, `--input-source` selects the plugin used to discover
+and read files below `--input`. Input-capable plugins implement the `exists`,
+`list`, and `open` methods. The restore `--output` option remains the destination
+for reconstructed virtual machine images.
+
+A minimal installable plugin and setup instructions are available in
+[`examples/output-target-plugin`](examples/output-target-plugin/README.md).
+
 ## Backup Format
 
 Currently, there are two output formats implemented:

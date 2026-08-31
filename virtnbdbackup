@@ -105,6 +105,17 @@ def main() -> None:
         "-o", "--output", required=True, type=str, help="Output target directory"
     )
     opt.add_argument(
+        "--output-target",
+        "--output-plugin",
+        dest="output_target",
+        default=None,
+        type=str,
+        help=(
+            "Output target plugin name. Defaults to 'directory', or 'zip' when "
+            "output is '-'."
+        ),
+    )
+    opt.add_argument(
         "-C",
         "--checkpointdir",
         required=False,
@@ -278,9 +289,8 @@ def main() -> None:
     if args.quiet is True:
         args.noprogress = True
 
-    fileStream = stream.get(args)
-
     try:
+        fileStream = stream.get(args)
         if not args.stdout:
             fileStream.create(args.output)
     except OutputException as e:
@@ -540,12 +550,14 @@ def main() -> None:
     metadata.saveFiles(args, vmConfig, disks, fileStream, logFile)
 
     if domObj.autostart() == 1:
-        metadata.backupAutoStart(args)
+        metadata.backupAutoStart(args, fileStream)
 
     if args.guestInfo:
-        metadata.backupGuestInfo(args)
+        metadata.backupGuestInfo(args, fileStream)
         if args.guestInfo["os.id"] == "mswindows":
-            metadata.backupBitlockerRecoveryKey(args, domObj)
+            metadata.backupBitlockerRecoveryKey(args, domObj, fileStream)
+
+    fileStream.finish()
 
     if counter.count.errors > 0:
         logging.error("Error during backup")

@@ -21,7 +21,6 @@ import json
 from argparse import ArgumentTypeError, Namespace
 from typing import List, Dict
 from libvirtnbdbackup.qemu import util as qemu
-from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.qemu.exceptions import ProcessError
@@ -57,7 +56,9 @@ def getConfig(  # pylint: disable=too-many-statements
     opt: List[str] = []
     qcowConfig = None
     relocatedDataFile = getattr(args, "relocate_data_file", {}).get(meta["diskName"])
-    qcowConfigFile = lib.getLatest(args.input, f"{meta['diskName']}*.qcow.json*", -1)
+    qcowConfigFile = args.inputSource.list(
+        args.input, f"{meta['diskName']}*.qcow.json*", -1
+    )
     if not qcowConfigFile:
         if relocatedDataFile:
             raise RestoreError(
@@ -71,7 +72,7 @@ def getConfig(  # pylint: disable=too-many-statements
     lastConfigFile = qcowConfigFile[0]
 
     try:
-        with output.openfile(lastConfigFile, "rb") as qFh:
+        with args.inputSource.open(lastConfigFile, "rb") as qFh:
             qcowConfig = json.loads(qFh.read().decode())
         logging.info("Using QCOW options from backup file: [%s]", lastConfigFile)
     except (
