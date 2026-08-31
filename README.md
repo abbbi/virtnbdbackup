@@ -1073,10 +1073,10 @@ like it would be possible using the `virsh -c` option:
 
 ## Output target plugins
 
-Output targets are selected through the `virtnbdbackup.output_targets`
-setuptools entry-point group. The built-in `directory` and `zip` targets remain
-the defaults. `virtnbdbackup` selects an installed target with
-`--output-target` or its `--output-plugin` alias.
+Custom backup output targets can be added via plugin system, The built-in
+`directory` and `zip` targets are the current the defaults. `virtnbdbackup`
+selects an installed target with `--output-target` or its `--output-plugin`
+alias.
 
 For restore operations, `--input-source` selects the plugin used to discover
 and read files below `--input`. Input-capable plugins implement the `exists`,
