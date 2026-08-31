@@ -1069,6 +1069,16 @@ like it would be possible using the `virsh -c` option:
 > to backup virtual machines as regular user.
 
 # Internals
+
+## Output target plugins
+
+Output targets are selected through the `virtnbdbackup.output_targets`
+setuptools entry-point group. The built-in `directory` and `zip` targets remain
+the defaults. An installed target can be selected with `--output-target`.
+
+A minimal installable plugin and setup instructions are available in
+[`examples/output-target-plugin`](examples/output-target-plugin/README.md).
+
 ## Backup Format
 
 Currently, there are two output formats implemented:

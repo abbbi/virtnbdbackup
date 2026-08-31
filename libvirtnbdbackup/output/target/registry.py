@@ -1,8 +1,7 @@
 """Registry and entry-point discovery for output target plugins."""
 
-from typing import Dict, List, Type
-
-import pkg_resources
+import importlib
+from typing import Any, Dict, Iterable, List, Type
 
 from libvirtnbdbackup.output import exceptions
 from libvirtnbdbackup.output.target.base import OutputTarget
@@ -11,6 +10,21 @@ ENTRY_POINT_GROUP = "virtnbdbackup.output_targets"
 
 _plugins: Dict[str, Type[OutputTarget]] = {}
 _entry_points_loaded = False
+
+
+def _entryPoints() -> Iterable[Any]:
+    """Return compatible entry points on both current and older Python."""
+    try:
+        metadata = importlib.import_module("importlib.metadata")
+    except ImportError:  # pragma: no cover - Python 3.7 and older
+        resources = importlib.import_module("pkg_resources")
+        return resources.iter_entry_points(ENTRY_POINT_GROUP)
+
+    try:
+        return metadata.entry_points(group=ENTRY_POINT_GROUP)
+    except TypeError:  # pragma: no cover - Python 3.8 and 3.9
+        discovered = metadata.entry_points()
+        return discovered.get(ENTRY_POINT_GROUP, ())
 
 
 def register(name: str, plugin: Type[OutputTarget]) -> None:
@@ -34,7 +48,7 @@ def discover() -> None:
     if _entry_points_loaded:
         return
     _entry_points_loaded = True
-    for entryPoint in pkg_resources.iter_entry_points(ENTRY_POINT_GROUP):
+    for entryPoint in _entryPoints():
         try:
             register(entryPoint.name, entryPoint.load())
         except Exception as e:

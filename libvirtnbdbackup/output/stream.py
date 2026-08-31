@@ -24,10 +24,12 @@ def get(
 ) -> OutputTarget:
     """Get filehandle for output files based on output
     mode"""
-    if args.stdout is False:
-        fileStream = create("directory")
-    else:
-        fileStream = create("zip")
+    pluginName = getattr(args, "output_target", None)
+    if pluginName is None:
+        pluginName = "zip" if args.stdout else "directory"
+
+    fileStream = create(pluginName)
+    if args.stdout is True:
         args.output = "./"
         args.worker = 1
 
