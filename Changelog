@@ -6,6 +6,10 @@ Version 2.50
 	add --remove-skipped-disks option: if option -d is specified to process
 	only specific disks, adjust virtual machine configuration and remove
 	disks not specified.
+ * virtnbdbackup:
+  Refactor the existing directory and zip output targets into a real plugin
+  system that gives users the ability to implement custom plugins for
+  different backup targets.
 
 Version 2.49
 ---------
