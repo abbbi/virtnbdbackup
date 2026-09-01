@@ -1074,7 +1074,7 @@ like it would be possible using the `virsh -c` option:
 ## Output target plugins
 
 Custom backup output targets can be added via plugin system, The built-in
-`directory` and `zip` targets are the current the defaults. `virtnbdbackup`
+`directory` and `zip` targets are the current defaults. `virtnbdbackup`
 selects an installed target with `--output-target` or its `--output-plugin`
 alias.
 
