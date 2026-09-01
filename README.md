@@ -154,11 +154,11 @@ Up to RHEL/Centos8/Almalinux 8.5, libvirt packages from the advanced
 virtualization stream support all required features. To install libvirt from
 the stream use:
 
-  ```
-  yum install centos-release-advanced-virtualization
-  yum makecache
-  yum module install virt
-  ```
+```console
+yum install centos-release-advanced-virtualization
+yum makecache
+yum module install virt
+```
 
 and enable the feature by adjusting the virtual machine config.
 
@@ -235,7 +235,7 @@ You can build an docker image using the existing [Dockerfile README](docker/)
 All released versions and master branch are published via github container
 registry, too. Example:
 
-```
+```console
  docker run -it ghcr.io/abbbi/virtnbdbackup:master virtnbdbackup
 ```
 
@@ -331,7 +331,7 @@ configuration. A short example is outlined below:
  1) You need to create a QCOW image that has a data-file setting, matching the
     virtual size of your RAW device:
 
-```
+```console
  # point the data-file to a temporary file, as create will overwrite whatever it finds here
  qemu-img create -f qcow2 /tmp/metadata.qcow2 -o data_file=/tmp/TEMPFILE,data_file_raw=true ..
  rm -f /tmp/TEMPFILE
@@ -340,7 +340,7 @@ configuration. A short example is outlined below:
  2) Modify the qcow image to point to whatever RAW device you have your virtual machine
  disk data on:
 
-```
+```console
  qemu-img amend /tmp/metadata.qcow2 -o data_file=/your/original/volume.raw,data_file_raw=true
 ```
 
@@ -378,14 +378,14 @@ base for further incremental or differential backups.
 
 Start full backup of domain `vm1`, save data to `/tmp/backupset/vm1`:
 
-```
+```console
 virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1
 ```
 
 Start incremental backup for domain `vm1`, backup only changed blocks to the
 last full backup, the same directory is used as backup target:
 
-```
+```console
 virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1
 ```
 
@@ -462,7 +462,7 @@ the target folder is empty, backup mode auto will create an full backup. On the
 following executions, it will automatically switch to backup mode incremental,
 if the target folder already includes an full backup. Example:
 
-```
+```console
 virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates full backup
 virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates inc backup
 virtnbdbackup -d vm1 -l auto -o /tmp/2022-06 -> creates inc backup
@@ -476,7 +476,7 @@ Option `-x` can be used to exclude certain disks from the backup. The name of
 the disk to be excluded must match the disks target device name as configured
 in the domains xml definition, for example:
 
-```
+```console
 virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1 -x sda
 ```
 
@@ -486,7 +486,7 @@ by default, as they are not supported by the changed block tracking layer.
 It is also possible to only backup specific disks using the include option
 (`--include`, or `-i`):
 
-```
+```console
 virtnbdbackup -d vm1 -l full -o /tmp/backupset/vm1 -i sdf
 ```
 
@@ -497,7 +497,7 @@ next `incremental` or `differential` backup. This can be done by using the
 option `-p` which will query the virtual machine checkpoint information for the
 current size:
 
-```
+```console
 virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1 -p
 [..]
 [..] INFO virtnbdbackup - handleCheckpoints [MainThread]: Using checkpoint name: [virtnbdbackup.1].
@@ -516,7 +516,7 @@ is active, it is possible to specify an threshold for executing the backup
 using the `--threshold` option. The backup will then only be executed if the
 amount of data changed meets the specified threshold (in bytes):
 
-```
+```console
 virtnbdbackup -d vm1 -l inc -o /tmp/backupset/vm1 --threshold 3311264
 [..]
 [..] INFO virtnbdbackup - handleCheckpoints [MainThread]: Using checkpoint name: [virtnbdbackup.1].
@@ -581,7 +581,7 @@ The following example saves the virtual machine `vm1` from the remote libvirt
 host `hypervisor` to the local directory `/tmp/backupset/vm1`, it uses the `root`
 user for both the libvirt and ssh authentication:
 
-```
+```console
 virtnbdbackup -U qemu+ssh://root@hypervisor/system --ssh-user root -d vm1 -o  /tmp/backupset/vm1
 ```
 
@@ -632,7 +632,7 @@ checkpoint files in the directory it is executed from.
 
 Here is an example:
 
-```
+```console
  # mkdir backup-weekly; cd backup-weekly
  # virtnbdbackup -d vm1 -l full -o - | ssh root@remotehost 'cat > backup-full.zip'
  # [..]
@@ -646,7 +646,7 @@ Here is an example:
 Any subsequent incremental backup operations must be called from within this
 directory:
 
-```
+```console
  # cd backup-weekly
  # virtnbdbackup -d vm1 -l inc -o - | ssh root@remotehost 'cat > backup-inc1.zip'
  [..]
@@ -658,7 +658,7 @@ like git, to have some kind of central backup history tracking.
 During restore unzip the data from both zip files into a single directory:
 (use `virtnbdrestore` to reconstruct the virtual machine images):
 
-```
+```console
  # unzip -o -d restoredata backup-full.zip
  # unzip -o -d restoredata backup-inc1.zip
 ```
@@ -717,7 +717,7 @@ As with version >= 1.9.40  `virtnbdbackup` creates an check sum for each
 created data file. Using `virtnbdrestore` you can check the integrity for the
 created data files without having to restore:
 
-```
+```console
 virtnbdrestore -i /tmp/backup/vm1 -o verify
 [..] INFO lib common - printVersion [MainThread]: Version: 1.9.39 Arguments: ./virtnbdrestore -i /tmp/backup/vm1 -o verify
 [..] INFO root virtnbdrestore - verify [MainThread]: Computing checksum for: /tmp/backup/vm1/sda.full.data
@@ -734,7 +734,7 @@ this makes it easier to spot corrupted backup files due to storage issues.
 To restore all disks within the backupset into a usable qcow image use
 command:
 
-```
+```console
 virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore
 ```
 
@@ -745,7 +745,7 @@ If QCOW images in the backup use data-file backends, their saved paths can be
 overridden per target disk during restore. Multiple mappings are separated by
 commas:
 
-```
+```console
 virtnbdrestore -c -i /tmp/backupset/vm1 -o /tmp/restore \
   --relocate-data-file vda:/dev/rawA,vdb:/dev/rawB
 ```
@@ -768,7 +768,7 @@ configuration is updated as well.
 A single disk can be restored by using the option `-d`, the disk name has
 to match the virtual disks target name, for example:
 
-```
+```console
 virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore -d sda
 ```
 
@@ -778,7 +778,7 @@ Option `--until` allows to perform a point in time restore up to the desired
 checkpoint. The checkpoint name has to be specified as reported by the
 dump output (field `checkpointName`), for example:
 
-```
+```console
 virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore --until virtnbdbackup.2
 ```
 
@@ -787,7 +787,7 @@ rollback via `--sequence` option, but beware: you must be sure the sequence you
 apply has the right order, otherwise the restored image might be errnous,
 example:
 
-```
+```console
 virtnbdrestore -i /tmp/backupset/vm1 -o /tmp/restore --sequence vdb.full.data,vdb.inc.virtnbdbackup.1.data
 ```
 
@@ -815,7 +815,7 @@ restore accordingly, the following changes are done:
 A restored virtual machine can then be defined and started right from the
 restored directory (or use option `-D` to define automatically):
 
-```
+```console
 virtnbdrestore -c -i /tmp/backupset/vm1 -o /tmp/restore
 [..]
 [..] INFO virtnbdrestore - restoreConfig [MainThread]: Adjusted config placed in: [/tmp/restore/vmconfig.virtnbdbackup.0.xml]
@@ -829,7 +829,7 @@ apply. The following example will restore the virtual machine from the local
 directory `/tmp/backupset` to the remote system "hypervisor", alter its
 configuration and register the virtual machine:
 
-```
+```console
 virtnbdrestore -U qemu+ssh://root@hypervisor/system --ssh-user root -cD -i /tmp/backupset/vm1 -o /remote/target
 ```
 
@@ -867,7 +867,7 @@ module. It must be executed with superuser (root) rights or via sudo.
 The following example maps an existing backup image to the network block
 device `/dev/nbd0`:
 
-```
+```console
  # modprobe nbd max_partitions=15
  # virtnbdmap -f /backupset/vm1/sda.full.data
  [..] INFO virtnbdmap - <module> [MainThread]: Done mapping backup image to [/dev/nbd0]
@@ -877,7 +877,7 @@ device `/dev/nbd0`:
 While the process is running, you can access the backup image like a regular
 block device:
 
-```
+```console
 fdisk -l /dev/nbd0
 Disk /dev/nbd0: 2 GiB, 2147483648 bytes, 4194304 sectors
 ```
@@ -887,7 +887,7 @@ sequence of full and incremental backups as parameter. The changes from the
 incremental backups will then be replayed to the block device on the fly and
 the image will represent the latest state:
 
-```
+```console
 virtnbdmap -f /backupset/vm1/sda.full.data,/backupset/vm1/sda.inc.virtnbdbackup.1.data,/backupset/vm1/sda.inc.virtnbdbackup.2.data
 [..]
 [..] INFO virtnbdmap - main [MainThread]: Need to replay incremental backups
@@ -906,7 +906,7 @@ used to replay the changes.
 Further you can create an overlay image via `qemu-img` and boot from it right
 away (or boot directly from the /dev/nbd0 device).
 
-```
+```console
 qemu-img create -b /dev/nbd0 -f qcow2 bootme.qcow2
 qemu-system-x86_64 -enable-kvm -m 2000 -hda bootme.qcow2
 ```
@@ -972,7 +972,7 @@ As example:
  information about checkpoints and bitmaps, thus, the next full backup
  usually fails with:
 
-```
+```console
 virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb
 [..]
 unable to execute QEMU command 'transaction': Bitmap already exists: virtnbdbackup.0
@@ -983,7 +983,7 @@ unable to execute QEMU command 'transaction': Bitmap already exists: virtnbdback
  backup. As the new full backup removes all prior checkpoints the bitmap
  information is in sync after this operation and backup succeeds:
 
-```
+```console
 virtnbdbackup -d vm1 -l full -o /tmp/backup_hostb --checkpointdir /mnt/shared/vm1
 [..]
 redefineCheckpoints: Redefine missing checkpoint virtnbdbackup.0
@@ -1014,7 +1014,7 @@ authentication methods. Use the `-U` parameter in order to specify an
 authentication file, if you chose to run the utility locally on the
 hypervisor:
 
-```
+```console
 virtnbdbackup -U qemu:///system?authfile=/etc/ovirt-hosted-engine/virsh_auth.conf -d vm1 -o /tmp/backupset/vm1
 ```
 
@@ -1027,13 +1027,13 @@ You can also use remote backup functionality:
    [more info](https://github.com/abbbi/virtnbdbackup/issues/167#issuecomment-2028467071)
  * Firewall port for NBD must be open:
 
-```
+```console
  root@hv-node~# firewall-cmd --zone=public --add-port=10809/tcp
 ```
 
 and then backup via:
 
-```
+```console
 virtnbdbackup -U qemu+ssh://root@hv-node/session -d vm -o /backup --password password --user root --ssh-user root
 ```
 
@@ -1060,7 +1060,7 @@ against libvirtd with the usual URIs. Consider using the following options:
 It is also possible to specify the credentials stored as authentication file
 like it would be possible using the `virsh -c` option:
 
-```
+```console
  -U qemu:///system?authfile=/etc/virsh_auth.conf ..
 ```
 
@@ -1087,7 +1087,7 @@ A minimal installable plugin and setup instructions are available in
 [`examples/output-target-plugin`](examples/output-target-plugin/README.md).
 
 A more sophisticated approach is included with the
-[examples/ftp-output-target-plugin](examples/ftp-output-target-plugin/README.md).
+[`examples/ftp-output-target-plugin`](examples/ftp-output-target-plugin/README.md).
 
 ## Backup Format
 
@@ -1127,7 +1127,7 @@ To get more detailed debug output use `--verbose` option. To enable NBD
 specific debugging output export LIBNBD_DEBUG environment variable prior to
 executing the backup or restore:
 
-```
+```console
 export LIBNBD_DEBUG=1
 virtnbdbackup [..] --verbose
 ```
@@ -1186,7 +1186,7 @@ This inconsistency can be caused by several situations:
 To troubleshoot this situation, use virsh to list the checkpoints that libvirt
 thinks are existent using:
 
-```
+```console
 virsh checkpoint-list <domain>
  Name              Creation Time
  ----------------------------------------------
@@ -1213,7 +1213,7 @@ Note:
 
 To list the bitmaps use:
 
-```
+```console
 virsh destroy vm1       # shutdown vm
 virsh domblklist vm1 | grep sda
  sda      /tmp/tmp.Y2PskFFeVv/vm1-sda.qcow2
@@ -1234,7 +1234,7 @@ the bitmap is called "virtnbdbackup.1", indicating there is an inconsistency.
 
 Remove the dangling bitmap(s) via:
 
-```
+```console
   qemu-img bitmap /tmp/tmp.Y2PskFFeVv/vm1-sda.qcow2 --remove virtnbdbackup.1
 ```
 
@@ -1249,7 +1249,7 @@ required for further backups may not have yet been synced to the qcow image.
 
 In these cases, you need to delete the existent checkpoints using:
 
-```
+```console
  virsh checkpoint-delete <domain> --checkpointname <checkpoint_name> --metadata
 ```
 
@@ -1269,7 +1269,7 @@ may require manual intervention and should usually not happen.
 
 You can cleanup this situation by removing the reported checkpoints via:
 
-```
+```console
  virsh checkpoint-delete <domain> --checkpointname <checkpoint_name> --metadata
 ```
 
@@ -1302,7 +1302,7 @@ You can use option `-k` to forcibly kill any running active block jobs for the
 domain, but use with care. It is better to check which operation is active with
 the `virsh domjobinfo` command first.
 
-```
+```console
 virtnbdbackup  -d vm2 -l copy -k  -o -
 [..]
   INFO virtnbdbackup - main: Stopping domain jobs
@@ -1330,7 +1330,7 @@ to the configuration files (might not exist by default):
 
 or, on newer versions:
 
-```
+```console
 sudo mkdir -p /etc/apparmor.d/abstractions/libvirt-qemu.d
 cat <<EOF | sudo tee /etc/apparmor.d/abstractions/libvirt-qemu.d/virtnbdbackup
 /var/tmp/virtnbdbackup.* rw,
