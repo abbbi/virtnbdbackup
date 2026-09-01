@@ -44,7 +44,7 @@ A non-default port can be included, for example
 
 ```console
 virtnbdrestore \
-  --input ftp://backup.example.net/virtual-machines/example-vm \
+  --input ftp://server/virtual-machines/example-vm \
   --input-source ftp \
   --output /var/lib/libvirt/images/example-vm
 ```
