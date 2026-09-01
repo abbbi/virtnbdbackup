@@ -1086,6 +1086,9 @@ for reconstructed virtual machine images.
 A minimal installable plugin and setup instructions are available in
 [`examples/output-target-plugin`](examples/output-target-plugin/README.md).
 
+A more sophisticated approach is included with the
+[examples/ftp-output-target-plugin](examples/ftp-output-target-plugin/README.md).
+
 ## Backup Format
 
 Currently, there are two output formats implemented:
