@@ -45,12 +45,12 @@ def arguments(args: Namespace) -> None:
         )
 
 
-def targetDir(args: Namespace) -> None:
+def targetDir(args: Namespace, outputTarget=None) -> None:
     """Check if target directory backup is started to meets
     all requirements based on the backup level executed"""
     if (
         args.level not in ("copy", "full", "auto")
-        and not lib.hasFullBackup(args)
+        and not lib.hasFullBackup(args, outputTarget)
         and not args.stdout
     ):
         raise exceptions.BackupException(
@@ -58,19 +58,24 @@ def targetDir(args: Namespace) -> None:
             f"No full backup found in target directory: [{args.output}]"
         )
 
-    if lib.targetIsEmpty(args) and args.level == "auto":
+    if lib.targetIsEmpty(args, outputTarget) and args.level == "auto":
         log.info("Backup mode auto, target folder is empty: executing full backup.")
         args.level = "full"
-    elif not lib.targetIsEmpty(args) and args.level == "auto":
-        if not lib.hasFullBackup(args):
+    elif not lib.targetIsEmpty(args, outputTarget) and args.level == "auto":
+        if not lib.hasFullBackup(args, outputTarget):
             raise exceptions.BackupException(
                 "Can't execute switch to auto incremental backup: "
                 f"specified target folder [{args.output}] does not contain full backup.",
             )
         log.info("Backup mode auto: executing incremental backup.")
         args.level = "inc"
-    elif not args.stdout and not args.startonly and not args.killonly:
-        if not lib.targetIsEmpty(args):
+    elif (
+        args.level in ("copy", "full")
+        and not args.stdout
+        and not args.startonly
+        and not args.killonly
+    ):
+        if not lib.targetIsEmpty(args, outputTarget):
             raise exceptions.BackupException(
                 "Target directory already contains full or copy backup."
             )

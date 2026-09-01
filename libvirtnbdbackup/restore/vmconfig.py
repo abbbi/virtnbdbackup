@@ -236,6 +236,6 @@ def restore(
                 "Use 'virsh -c %s define %s' to define VM", args.uri, targetFile
             )
     else:
-        lib.copy(args, vmConfig, targetFile)
+        lib.copyFromSource(args, args.inputSource, vmConfig, targetFile)
         logging.info("Copied original vm config to [%s]", targetFile)
         logging.info("Note: virtual machine config must be adjusted manually.")

@@ -77,6 +77,7 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
 
     if meta["dataSize"] == 0:
         logging.info("File [%s] contains no dirty blocks, skipping.", dataFile)
+        reader.close()
         if meta["checkpointName"] == args.until:
             logging.info("Reached checkpoint [%s], stopping", args.until)
             raise UntilCheckpointReached
@@ -157,6 +158,7 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
             break
 
     logging.info("End of stream, [%s] of data processed", lib.humanize(dataSize))
+    reader.close()
     if meta["checkpointName"] == args.until:
         logging.info("Reached checkpoint [%s], stopping", args.until)
         raise UntilCheckpointReached

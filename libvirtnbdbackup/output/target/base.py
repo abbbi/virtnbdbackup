@@ -55,5 +55,13 @@ class OutputTarget(ABC):
         """List input paths matching a pattern."""
         raise NotImplementedError
 
+    def rename(self, source: str, target: str) -> None:
+        """Rename a file within the output target."""
+        raise NotImplementedError
+
+    def remove(self, path: str) -> None:
+        """Remove a file from the output target."""
+        raise NotImplementedError
+
     def finish(self) -> None:
         """Finalize the output target after all files have been written."""

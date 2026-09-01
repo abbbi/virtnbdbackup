@@ -26,17 +26,24 @@ from libvirtnbdbackup import exceptions
 log = logging.getLogger()
 
 
-def _exists(args: Namespace) -> int:
+def _exists(args: Namespace, outputTarget=None) -> int:
     """Check for possible partial backup files"""
-    partialFiles = glob.glob(f"{args.output}/*.partial")
+    if outputTarget is None:
+        partialFiles = glob.glob(f"{args.output}/*.partial")
+    else:
+        partialFiles = outputTarget.list(args.output, "*.partial")
     return len(partialFiles) > 0
 
 
-def exists(args: Namespace) -> bool:
+def exists(args: Namespace, outputTarget=None) -> bool:
     """Check if target directory has an partial backup,
     makes backup utility exit errnous in case backup
     type is full or inc"""
-    if args.level in ("inc", "diff") and args.stdout is False and _exists(args) is True:
+    if (
+        args.level in ("inc", "diff")
+        and args.stdout is False
+        and _exists(args, outputTarget) is True
+    ):
         log.error("Partial backup found in target directory: [%s]", args.output)
         log.error("One of the last backups seems to have failed.")
         log.error("Consider re-executing full backup.")

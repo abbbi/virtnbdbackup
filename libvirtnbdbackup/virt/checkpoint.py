@@ -16,16 +16,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import os
-import glob
 import json
 import logging
 from argparse import Namespace
 from typing import Optional, Union, Any, List
 from lxml import etree as ElementTree
 import libvirt
-from libvirtnbdbackup import output
 from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.output.target.base import OutputTarget
 from libvirtnbdbackup.common import defaultCheckpointName
 from libvirtnbdbackup.exceptions import (
     NoCheckpointsFound,
@@ -101,12 +100,14 @@ def delete(domObj: libvirt.virDomain, cptObj: libvirt.virDomainCheckpoint) -> bo
         return False
 
 
-def backup(args: Namespace, domObj: libvirt.virDomain) -> bool:
+def backup(
+    args: Namespace, domObj: libvirt.virDomain, outputTarget: OutputTarget
+) -> bool:
     """save checkpoint config to persistent storage"""
     checkpointFile = os.path.join(args.checkpointdir, f"{args.cpt.name}.xml")
     log.info("Saving checkpoint config to: [%s]", checkpointFile)
     try:
-        with output.openfile(checkpointFile, "wb") as f:
+        with outputTarget.open(checkpointFile, "wb") as f:
             c = exists(domObj, args.cpt.name)
             f.write(getXml(c).encode())
             return True
@@ -170,6 +171,7 @@ def removeAll(
     domObj: libvirt.virDomain,
     checkpointList: Union[List[Any], None],
     args: Namespace,
+    outputTarget: OutputTarget,
 ) -> bool:
     """Remove all existing checkpoints for a virtual machine,
     used during FULL backup to reset checkpoint chain, either
@@ -180,10 +182,10 @@ def removeAll(
     log.info("Removing all existent checkpoints before full backup.")
     try:
         log.debug("Cleaning up persistent storage %s", args.checkpointdir)
-        for checkpointFile in glob.glob(os.path.join(args.checkpointdir, "*.xml")):
+        for checkpointFile in outputTarget.list(args.checkpointdir, "*.xml"):
             log.debug("Remove checkpoint file: %s", checkpointFile)
-            os.remove(checkpointFile)
-    except OSError as e:
+            outputTarget.remove(checkpointFile)
+    except OutputException as e:
         log.error("Failed to clean persistent storage %s: %s", args.checkpointdir, e)
         return False
 
@@ -204,10 +206,11 @@ def removeAll(
     return True
 
 
-def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
+def redefine(
+    domObj: libvirt.virDomain, args: Namespace, outputTarget: OutputTarget
+) -> bool:
     """Redefine checkpoints from persistent storage"""
-    checkpointList = glob.glob(f"{args.checkpointdir}/*.xml")
-    checkpointList.sort(key=os.path.getmtime)
+    checkpointList = outputTarget.list(args.checkpointdir, "*.xml")
 
     if checkpointList:
         log.info("Loaded checkpoint list from: [%s]", args.checkpointdir)
@@ -215,7 +218,7 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
     for checkpointFile in checkpointList:
         try:
             log.debug("Loading checkpoint config from: [%s]", checkpointFile)
-            with output.openfile(checkpointFile, "rb") as f:
+            with outputTarget.open(checkpointFile, "rb") as f:
                 checkpointConfig = f.read()
                 root = ElementTree.fromstring(checkpointConfig)
         except OutputException as e:
@@ -256,15 +259,15 @@ def redefine(domObj: libvirt.virDomain, args: Namespace) -> bool:
     return True
 
 
-def read(cFile: str) -> List[str]:
+def read(cFile: str, outputTarget: OutputTarget) -> List[str]:
     """Open checkpoint file and read checkpoint
     information"""
     checkpoints: List[str] = []
-    if not os.path.exists(cFile):
+    if not outputTarget.exists(cFile):
         return checkpoints
 
     try:
-        with output.openfile(cFile, "rb") as fh:
+        with outputTarget.open(cFile, "rb") as fh:
             checkpoints = json.loads(fh.read().decode())
         return checkpoints
     except OutputException as e:
@@ -273,13 +276,13 @@ def read(cFile: str) -> List[str]:
         raise ReadCheckpointsError(f"Invalid checkpoint file: [{e}]") from e
 
 
-def save(args: Namespace) -> None:
+def save(args: Namespace, outputTarget: OutputTarget) -> None:
     """Append created checkpoint to checkpoint
     file"""
     try:
-        checkpoints = read(args.cpt.file)
+        checkpoints = read(args.cpt.file, outputTarget)
         checkpoints.append(args.cpt.name)
-        with output.openfile(args.cpt.file, "wb") as cFw:
+        with outputTarget.open(args.cpt.file, "wb") as cFw:
             cFw.write(json.dumps(checkpoints).encode())
     except CheckpointException as e:
         raise CheckpointException from e
@@ -308,6 +311,7 @@ def validate(domObj: libvirt.virDomain, checkpointName: str) -> bool:
 def create(
     args: Namespace,
     domObj: libvirt.virDomain,
+    outputTarget: OutputTarget,
 ) -> None:
     """Checkpoint handling for different backup modes
     to be executed. Create, check and redefine checkpoints based
@@ -319,10 +323,10 @@ def create(
     checkpointName: str = f"{defaultCheckpointName}.0"
     parentCheckpoint: str = ""
     cptFile: str = os.path.join(args.output, f"{args.domain}.cpt")
-    checkpoints: List[str] = read(cptFile)
+    checkpoints: List[str] = read(cptFile, outputTarget)
 
     if args.offline is False:
-        if redefine(domObj, args) is False:
+        if redefine(domObj, args, outputTarget) is False:
             raise RedefineCheckpointError("Failed to redefine checkpoints.")
 
     # save level to reuse it properly when filename is selected for the backup
@@ -331,14 +335,14 @@ def create(
     # remove checkpoints as loaded from the checkpoint json file
     if args.level == "full" and checkpoints:
         log.info("Loaded checkpoints from: [%s]", cptFile)
-        if not removeAll(domObj, checkpoints, args):
+        if not removeAll(domObj, checkpoints, args, outputTarget):
             raise RemoveCheckpointError("Failed to remove checkpoint.")
-        os.remove(cptFile)
+        outputTarget.remove(cptFile)
         checkpoints = []
     # if no checkpoints are found in file, remove all existent ones matching the
     # name
     elif args.level == "full" and len(checkpoints) < 1:
-        if not removeAll(domObj, None, args):
+        if not removeAll(domObj, None, args, outputTarget):
             raise RemoveCheckpointError("Failed to remove checkpoint.")
         checkpoints = []
 

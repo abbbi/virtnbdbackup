@@ -95,14 +95,12 @@ def backupBootConfig(args: Namespace, outputTarget: OutputTarget) -> None:
         else:
             tFile = os.path.join(args.output, f"{os.path.basename(val)}")
         log.info("Save additional boot config [%s] to: [%s]", setting, tFile)
-        if args.stdout is True:
-            if args.sshClient:
-                with args.sshClient.sftp.open(val, "rb") as source:
-                    outputTarget.add_stream(source, os.path.basename(tFile))
-            else:
-                outputTarget.add_file(val, os.path.basename(tFile))
+        targetName = os.path.basename(tFile) if args.stdout else tFile
+        if args.sshClient:
+            with args.sshClient.sftp.open(val, "rb") as source:
+                outputTarget.add_stream(source, targetName)
         else:
-            lib.copy(args, val, tFile)
+            outputTarget.add_file(val, targetName)
         args.info[setting] = tFile
 
 

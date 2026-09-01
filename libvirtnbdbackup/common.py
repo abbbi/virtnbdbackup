@@ -165,9 +165,12 @@ def configLogger(
     )
 
 
-def hasFullBackup(args: Namespace) -> int:
+def hasFullBackup(args: Namespace, outputTarget=None) -> int:
     """Check if full backup file exists in target directory"""
-    fullFiles = glob.glob(os.path.join(args.output, "*.full.data"))
+    if outputTarget is None:
+        fullFiles = glob.glob(os.path.join(args.output, "*.full.data"))
+    else:
+        fullFiles = outputTarget.list(args.output, "*.full.data")
     return len(fullFiles) > 0
 
 
@@ -179,9 +182,12 @@ def exists(args: Namespace, filePath: str) -> bool:
     return os.path.exists(filePath)
 
 
-def targetIsEmpty(args: Namespace) -> bool:
+def targetIsEmpty(args: Namespace, outputTarget=None) -> bool:
     """Check if target directory does not include an backup
     already (no .data or .data.partial files)"""
+    if outputTarget is not None:
+        return len(outputTarget.list(args.output, "*.data*")) == 0
+
     if exists(args, args.output) and args.level in ("full", "copy", "auto"):
         dirList = glob.glob(os.path.join(args.output, "*.data*"))
         if len(dirList) > 0:

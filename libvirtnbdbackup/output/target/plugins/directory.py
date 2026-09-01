@@ -132,3 +132,19 @@ class Directory(OutputTarget):
                 files = []
         log.debug("Sorted data files: \n%s", pprint.pformat(files))
         return files
+
+    def rename(self, source: str, target: str) -> None:
+        """Rename a filesystem output file."""
+        try:
+            os.rename(source, target)
+        except OSError as e:
+            raise exceptions.OutputException(
+                f"Failed to rename [{source}] to [{target}]: [{e}]"
+            ) from e
+
+    def remove(self, path: str) -> None:
+        """Remove a filesystem output file."""
+        try:
+            os.remove(path)
+        except OSError as e:
+            raise exceptions.OutputException(f"Failed to remove [{path}]: [{e}]") from e

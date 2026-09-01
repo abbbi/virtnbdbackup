@@ -27,7 +27,6 @@ from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup import exceptions
 from libvirtnbdbackup import chunk
 from libvirtnbdbackup import block
-from libvirtnbdbackup.backup import partialfile
 from libvirtnbdbackup.backup import server
 from libvirtnbdbackup.backup import target
 from libvirtnbdbackup.backup.metadata import backupChecksum
@@ -223,7 +222,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
             lib.safeInfo(
                 "Backup of disk [%s] finished, file: [%s]", disk.target, targetFile
             )
-        partialfile.rename(targetFilePartial, targetFile)
+        fileStream.rename(targetFilePartial, targetFile)
     if streamType != "raw":
         backupChecksum(fileStream, targetFile)
 

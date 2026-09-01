@@ -1,3 +1,8 @@
+Version 2.51
+---------
+ * virtnbdbackup: extend plugin layer to also include rename function for
+ partial files. Add example plugin for ftp storage backend.
+
 Version 2.50
 ---------
  * virtnbdrestore:

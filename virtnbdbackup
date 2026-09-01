@@ -33,6 +33,7 @@ from libvirtnbdbackup import virt
 from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.virt import checkpoint
 from libvirtnbdbackup.output import stream
+from libvirtnbdbackup.output.target import create as createOutputTarget
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.logcount import logCount
 from libvirtnbdbackup import exceptions
@@ -291,6 +292,9 @@ def main() -> None:
 
     try:
         fileStream = stream.get(args)
+        checkpointStream = (
+            createOutputTarget("directory") if args.stdout else fileStream
+        )
         if not args.stdout:
             fileStream.create(args.output)
     except OutputException as e:
@@ -302,7 +306,15 @@ def main() -> None:
 
     now = datetime.now().strftime("%m%d%Y%H%M%S")
     logFile = os.path.join(args.output, f"backup.{args.level}.{now}.log")
-    fileLog = lib.getLogFile(logFile) or sys.exit(1)
+    loggingHandler = getattr(fileStream, "logging_handler", None)
+    if loggingHandler is None:
+        fileLog = lib.getLogFile(logFile) or sys.exit(1)
+    else:
+        try:
+            fileLog = loggingHandler(logFile)
+        except OutputException as e:
+            logging.error("Failed to open logfile: [%s].", e)
+            sys.exit(1)
 
     counter = logCount()  # pylint: disable=unreachable
     lib.configLogger(args, fileLog, counter)
@@ -318,7 +330,7 @@ def main() -> None:
         logging.error(e)
         sys.exit(1)
 
-    if partialfile.exists(args):
+    if partialfile.exists(args, fileStream):
         sys.exit(1)
 
     if not args.checkpointdir:
@@ -326,7 +338,7 @@ def main() -> None:
     else:
         logging.info("Store checkpoints in: [%s]", args.checkpointdir)
 
-    fileStream.create(args.checkpointdir)
+    checkpointStream.create(args.checkpointdir)
 
     def connectionError(_, reason, args):
         """Callback if the libvirt connection drops mid
@@ -390,7 +402,7 @@ def main() -> None:
         check.vmfeature(virtClient, domObj)
         checkpoint.checkForeign(args, domObj)
         check.vmstate(args, virtClient, domObj)
-        check.targetDir(args)
+        check.targetDir(args, None if args.stdout else fileStream)
     except exceptions.BackupException as e:
         logging.error(e)
         sys.exit(1)
@@ -453,7 +465,7 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        checkpoint.create(args, domObj)
+        checkpoint.create(args, domObj, checkpointStream)
     except exceptions.CheckpointException as errmsg:
         logging.error(errmsg)
         sys.exit(1)
@@ -500,18 +512,18 @@ def main() -> None:
 
     if args.offline is not True:
         logging.info("Temporary scratch file target directory: [%s]", args.scratchdir)
-        fileStream.create(args.scratchdir)
+        os.makedirs(args.scratchdir, exist_ok=True)
         if not job.start(args, virtClient, domObj, disks):
             sys.exit(1)
 
     if args.level not in ("copy", "diff") and args.offline is False:
         logging.info("Started backup job with checkpoint, saving information.")
         try:
-            checkpoint.save(args)
+            checkpoint.save(args, checkpointStream)
         except exceptions.CheckpointException as e:
             logging.error("Extending checkpoint file failed: [%s]", e)
             sys.exit(1)
-        if not checkpoint.backup(args, domObj):
+        if not checkpoint.backup(args, domObj, checkpointStream):
             virtClient.stopBackup(domObj)
             sys.exit(1)
 
