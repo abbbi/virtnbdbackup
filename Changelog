@@ -1,3 +1,13 @@
+Version 2.52
+---------
+ * virtnbdbackup: before attempting to extract bitlocker keys, check the
+ bitlocker status of the volume prior to attempting extraction.
+
+ If bitlocker tools are found and multiple volumes are configured, this would
+ lead to an useless WARNING breaking --strict mode if one of the volumes does
+ not have bitlocker enabled.
+
+
 Version 2.51
 ---------
  * virtnbdbackup: extend plugin layer to also include rename function for

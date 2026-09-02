@@ -147,7 +147,15 @@ def backupBitlockerRecoveryKey(
             continue
 
         vol = vol.replace("\\", "")
-        log.info("Get bitlocker recovery key for volume: [%s]", vol)
+        log.info("Check if bitlocker is enabled for volume: [%s]", vol)
+        try:
+           status = guest.Exec(domObj, "manage-bde.exe", ["-status", "-ProtectionAsErrorLevel", vol])
+        except RuntimeError as e:
+            log.info(
+                "Bitlocker seems disabled for volume [%s], skipping: see debug log for details.",
+                vol,
+            )
+            continue
         try:
             protectors = guest.Exec(
                 domObj, "manage-bde.exe", ["-protectors", "-get", vol]
