@@ -1,15 +1,15 @@
 Version 2.52
 ---------
  * virtnbdbackup:
-	Before attempting to extract bitlocker keys, check the bitlocker status of
-	the volume prior to attempting extraction.
-	If bitlocker tools are found and multiple volumes are configured, this would
-	lead to an useless WARNING breaking --strict mode if one of the volumes does
-	not have bitlocker enabled.
+  Some fixes for bitlocker related issues:
+	- Before attempting to extract bitlocker keys, check the bitlocker status
+	for each volume instead of attempting to extract the keys right away.
 
-	Correctly catch exception if manage-bde.exe is missing on the system and
-	return function to save bitlocker keys early.
+	If bitlocker tools are found and multiple volumes are configured, this
+	would lead to an useless WARNING breaking --strict mode if one of the
+	volumes does not have bitlocker enabled.
 
+	- Return and catch exception if manage-bde.exe is missing on the system.
 
 Version 2.51
 ---------
