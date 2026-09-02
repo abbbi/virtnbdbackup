@@ -137,6 +137,7 @@ def backupBitlockerRecoveryKey(
         log.debug(bde)
     except libvirt.libvirtError:
         log.info("System does not appear to have bitlocker tools installed, skipping.")
+        return
 
     for i in range(0, args.guestInfo["fs.count"]):
         vol = args.guestInfo.get(f"fs.{i}.mountpoint", None)
