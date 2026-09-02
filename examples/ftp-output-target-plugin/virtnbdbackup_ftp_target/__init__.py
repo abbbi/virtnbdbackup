@@ -130,6 +130,7 @@ class FTPOutputTarget(OutputTarget):
     """Store and retrieve backup files on an FTP server."""
 
     supports_input = True
+    supported_backup_modes = ["full", "inc", "copy"]
 
     def __init__(self) -> None:
         self._ftp: Optional[ftplib.FTP] = None

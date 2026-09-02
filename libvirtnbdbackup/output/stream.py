@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from argparse import Namespace
 from libvirtnbdbackup.output.target import OutputTarget, create
+from libvirtnbdbackup.output.exceptions import OutputPluginException
 
 
 def get(
@@ -29,6 +30,14 @@ def get(
         pluginName = "zip" if args.stdout else "directory"
 
     fileStream = create(pluginName)
+
+    if hasattr(fileStream, "supported_backup_modes"):
+        if args.level not in fileStream.supported_backup_modes:
+            raise OutputPluginException(
+                f"The requested backup mode [{args.level}] not supported by"
+                f" the [{pluginName}] plugin."
+                f" Supported modes are: {fileStream.supported_backup_modes}"
+            )
     if args.stdout is True:
         args.output = "./"
         args.worker = 1

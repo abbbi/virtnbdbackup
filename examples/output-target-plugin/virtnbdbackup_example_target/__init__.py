@@ -29,6 +29,7 @@ class ExampleDirectoryTarget(Directory):
     """Directory target that logs each file opened by the backup."""
 
     supports_input = True
+    supported_backup_modes = ["full", "inc"]
 
     def open(self, targetFile: str, mode: str = "wb") -> IO[Any]:
         log.info("Example plugin opening target file: [%s]", targetFile)
