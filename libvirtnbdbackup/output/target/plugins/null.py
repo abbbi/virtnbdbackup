@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
 from typing import IO, Any
-from libvirtnbdbackup.output.target.directory import Directory
+from libvirtnbdbackup.output.target.plugins.directory import Directory
 
 
 log = logging.getLogger("Null")
