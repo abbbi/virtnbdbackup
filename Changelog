@@ -1,3 +1,9 @@
+Version 2.53
+---------
+ * Add default output plugin "null" which will silenly drop data during backup
+ operation: this can be quite handy for testing complete backup operations
+ without wasting disk space.
+
 Version 2.52
 ---------
  * virtnbdbackup:
