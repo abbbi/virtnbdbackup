@@ -1,8 +1,10 @@
 Version 2.53
 ---------
- * Add default output plugin "null" which will silenly drop data during backup
+ * Add output plugin "null" which will silenly drop data during backup
  operation: this can be quite handy for testing complete backup operations
- without wasting disk space.
+ without wasting disk space. Can also be used for investigating possible
+ performance problems ruling out the target storage as possible bottleneck,
+ leaving only the NBD backend/read operation.
 
 Version 2.52
 ---------

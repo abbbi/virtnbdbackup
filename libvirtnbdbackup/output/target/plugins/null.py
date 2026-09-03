@@ -25,7 +25,8 @@ log = logging.getLogger("Null")
 
 class Null(Directory):
     """Simulate write data without actually storing anything, for testing
-    backup operation without causing I/O"""
+    backup operation without causing I/O. This can give an good indication
+    on how fast data from the NBD backend can be read."""
 
     supports_input = True
     supported_backup_modes = ["full", "copy"]
