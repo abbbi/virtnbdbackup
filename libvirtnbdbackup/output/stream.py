@@ -34,7 +34,7 @@ def get(
     if hasattr(fileStream, "supported_backup_modes"):
         if args.level not in fileStream.supported_backup_modes:
             raise OutputPluginException(
-                f"The requested backup mode [{args.level}] not supported by"
+                f"The selected backup mode [{args.level}] is not supported by"
                 f" the [{pluginName}] plugin."
                 f" Supported modes are: {fileStream.supported_backup_modes}"
             )
