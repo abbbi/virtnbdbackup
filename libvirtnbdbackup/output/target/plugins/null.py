@@ -28,7 +28,7 @@ class Null(Directory):
     backup operation without causing I/O"""
 
     supports_input = True
-    supported_backup_modes = ["full"]
+    supported_backup_modes = ["full", "copy"]
 
     def open(self, targetFile: str, mode: str = "wb") -> IO[Any]:
         log.info("Will write data to the void ..")
