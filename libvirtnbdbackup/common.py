@@ -53,6 +53,24 @@ logDateFormat = "[%Y-%m-%d %H:%M:%S]"
 defaultCheckpointName = "virtnbdbackup"
 
 
+class JsonFormatter(logging.Formatter):
+    """Format log records as one JSON object per line"""
+
+    def format(self, record: logging.LogRecord) -> str:
+        data = {
+            "time": self.formatTime(record, logDateFormat),
+            "level": record.levelname,
+            "name": record.name,
+            "module": record.module,
+            "function": record.funcName,
+            "thread": record.threadName,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            data["exception"] = self.formatException(record.exc_info)
+        return json.dumps(data)
+
+
 def argparse(parser) -> Namespace:
     """Parse arguments"""
     return parser.parse_args()
@@ -135,13 +153,20 @@ def configLogger(
         syslog = args.syslog is True
     except AttributeError:
         pass
+    jsonLog = getattr(args, "json", False) is True
     handler: List[Any]
     handler = [
         fileLog,
         counter,
     ]
+    if fileLog is not None:
+        fileLog.setFormatter(
+            JsonFormatter() if jsonLog else logging.Formatter(logFormat, logDateFormat)
+        )
     stderrh = logging.StreamHandler(stream=sys.stderr)
-    if args.nocolor is False:
+    if jsonLog:
+        stderrh.setFormatter(JsonFormatter())
+    elif args.nocolor is False:
         formatter = colorlog.ColoredFormatter(
             logFormatColored,
             datefmt=logDateFormat,
@@ -156,7 +181,10 @@ def configLogger(
     if args.quiet is False:
         handler.append(stderrh)
     if syslog is True:
-        handler.append(logging.handlers.SysLogHandler(address="/dev/log"))
+        syslogh = logging.handlers.SysLogHandler(address="/dev/log")
+        if jsonLog:
+            syslogh.setFormatter(JsonFormatter())
+        handler.append(syslogh)
     logging.basicConfig(
         level=setLogLevel(args.verbose),
         format=logFormat,

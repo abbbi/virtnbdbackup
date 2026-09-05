@@ -247,6 +247,7 @@ def main() -> None:
         help="Disable logging to stderr (default: %(default)s)",
     )
     argopt.addLogColorArgs(logopt)
+    argopt.addLogJsonArgs(logopt)
     debopt = parser.add_argument_group("Debug options")
     debopt.add_argument(
         "-q",

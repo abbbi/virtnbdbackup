@@ -164,3 +164,16 @@ def addLogColorArgs(opt):
         help="Disable colored output (default: %(default)s)",
         action="store_true",
     )
+
+
+def addLogJsonArgs(opt):
+    """Option to enable JSON formatted log output"""
+    opt.add_argument(
+        "--json",
+        default=False,
+        help=(
+            "Log in JSON format instead of plain text, one JSON object per line. "
+            "Applies to stderr, logfile and syslog output. (default: %(default)s)"
+        ),
+        action="store_true",
+    )

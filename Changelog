@@ -1,5 +1,8 @@
 Version 2.53
 ---------
+ * Add "--json" option to virtnbdbackup, virtnbdrestore and virtnbdmap: emits
+ log messages (stderr, logfile and syslog) as one JSON object per line
+ instead of plain text (#213)
  * Add output plugin "null" which will silenly drop data during backup
  operation: this can be quite handy for testing complete backup operations
  without wasting disk space. Can also be used for investigating possible

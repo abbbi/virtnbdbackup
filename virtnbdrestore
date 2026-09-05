@@ -215,6 +215,7 @@ def main() -> None:
     logopt = parser.add_argument_group("Logging options")
     argopt.addLogArgs(logopt, parser.prog)
     argopt.addLogColorArgs(logopt)
+    argopt.addLogJsonArgs(logopt)
     debopt = parser.add_argument_group("Debug options")
     argopt.addDebugArgs(debopt)
 
