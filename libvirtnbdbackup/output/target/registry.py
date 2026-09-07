@@ -84,12 +84,12 @@ def _get(name: str) -> Type[OutputTarget]:
         ) from e
 
 
-def create(name: str, **kwargs) -> OutputTarget:
+def create(name: str, **kwargs: Any) -> OutputTarget:
     """Create a registered output target plugin instance."""
     return _get(name)(**kwargs)
 
 
-def create_input(name: str, **kwargs) -> OutputTarget:
+def create_input(name: str, **kwargs: Any) -> OutputTarget:
     """Create a plugin after verifying that it supports restore input."""
     plugin = _get(name)
     if not plugin.supports_input:

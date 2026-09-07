@@ -60,7 +60,7 @@ class Unix(nbdConn):
     backupSocket: str
     tls: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.uri = f"nbd+unix:///{self.exportName}?socket={self.backupSocket}"
 
 
@@ -74,7 +74,7 @@ class TCP(nbdConn):
     backupSocket: str = ""
     uri_prefix = "nbd://"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.tls:
             self.uri_prefix = "nbds://"
 

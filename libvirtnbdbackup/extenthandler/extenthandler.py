@@ -16,9 +16,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import logging
-from typing import List, Any, Generator, Dict
+from typing import List, Any, Generator, Dict, Union
 from nbd import CONTEXT_BASE_ALLOCATION
-from libvirtnbdbackup.objects import Extent, _ExtentObj
+from libvirtnbdbackup.objects import Extent, _ExtentObj, Unix, TCP
 from libvirtnbdbackup.common import humanize, safeInfo
 
 log = logging.getLogger("extenthandler")
@@ -33,7 +33,12 @@ class ExtentHandler:
     extent information as nbdinfo or qemu-img map
     """
 
-    def __init__(self, nbdFh, cType, no_sparse_detection: bool) -> None:
+    def __init__(
+        self,
+        nbdFh: Any,
+        cType: Union[Unix, TCP],
+        no_sparse_detection: bool,
+    ) -> None:
         self.useQemu = False
         self._maxRequestBlock: int = 4294967295
         self._align: int = 512

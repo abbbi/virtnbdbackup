@@ -50,7 +50,7 @@ class client:  # pylint: disable=too-many-positional-arguments,too-many-argument
         port: int = 22,
         mode: Mode = Mode.DOWNLOAD,
         key_filename: Optional[str] = None,
-    ):
+    ) -> None:
         self.client = None
         self.host = host
         self.user = user
@@ -128,7 +128,7 @@ class client:  # pylint: disable=too-many-positional-arguments,too-many-argument
         except SSHException as e:
             log.warning("Unable to upload file: [%s]", e)
 
-    def _execute(self, cmd) -> Tuple[int, str, str]:
+    def _execute(self, cmd: str) -> Tuple[int, str, str]:
         _, stdout, stderr = self.connection.exec_command(cmd)
         ret = stdout.channel.recv_exit_status()
         err = stderr.read().strip().decode()
@@ -168,7 +168,7 @@ class client:  # pylint: disable=too-many-positional-arguments,too-many-argument
 
         return processInfo(pid, logFile, err, out, pidFile)
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Disconnect"""
         if self._sftp is not None:
             self._sftp.close()

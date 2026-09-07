@@ -35,6 +35,7 @@ from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.output import stream
+from libvirtnbdbackup.output.target import OutputTarget
 
 
 def _setStreamType(args: Namespace, disk: DomainDisk) -> str:
@@ -46,7 +47,9 @@ def _setStreamType(args: Namespace, disk: DomainDisk) -> str:
     return streamType
 
 
-def _getExtentHandler(args: Namespace, nbdClient):
+def _getExtentHandler(
+    args: Namespace, nbdClient: nbdcli.client
+) -> extenthandler.ExtentHandler:
     """Query dirty blocks either via qemu client or self
     implemented extend handler"""
     if args.qemu:
@@ -68,7 +71,7 @@ def backup(  # pylint: disable=too-many-arguments,too-many-branches, too-many-lo
     args: Namespace,
     disk: DomainDisk,
     count: int,
-    fileStream,
+    fileStream: OutputTarget,
     virtClient: virt.client,
 ) -> Tuple[int, bool]:
     """Backup domain disk data."""

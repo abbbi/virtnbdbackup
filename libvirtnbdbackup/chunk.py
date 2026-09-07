@@ -16,16 +16,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from typing import List, Any, Tuple, IO, Union
+from tqdm import tqdm
 from nbd import Error as nbdError
 from libvirtnbdbackup import block
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.exceptions import DiskBackupFailed
+from libvirtnbdbackup.objects import Extent
+from libvirtnbdbackup.nbdcli.client import client as nbdClient
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 
 
 def write(
-    writer: IO[Any], blk, nbdCon, btype: str, compress: Union[bool, int], pbar
+    writer: IO[Any],
+    blk: Extent,
+    nbdCon: nbdClient,
+    btype: str,
+    compress: Union[bool, int],
+    pbar: tqdm,
 ) -> Tuple[int, List[int]]:
     """During extent processing, consecutive blocks with
     the same type(data or zeroed) are unified into one big chunk.
@@ -69,9 +77,9 @@ def read(
     reader: IO[Any],
     offset: int,
     length: int,
-    nbdCon,
+    nbdCon: nbdClient,
     compression: bool,
-    pbar,
+    pbar: tqdm,
 ) -> int:
     """Read data from reader and write to nbd connection
 

@@ -19,12 +19,13 @@ import os
 import logging
 import json
 from argparse import ArgumentTypeError, Namespace
-from typing import List, Dict
+from typing import List, Dict, Optional
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.exceptions import RestoreError
 from libvirtnbdbackup.qemu.exceptions import ProcessError
 from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.ssh.client import client as sshClientType
 from libvirtnbdbackup.ssh.exceptions import sshError
 
 
@@ -165,7 +166,12 @@ def getConfig(  # pylint: disable=too-many-statements
     return opt
 
 
-def create(args: Namespace, meta: Dict[str, str], targetFile: str, sshClient):
+def create(
+    args: Namespace,
+    meta: Dict[str, str],
+    targetFile: str,
+    sshClient: Optional[sshClientType],
+) -> None:
     """Read QCOW image related backup json and create target image file using
     its original options"""
     options = getConfig(args, meta)

@@ -16,12 +16,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import logging
-from typing import List, Any
+from typing import List, Any, Optional
 from argparse import Namespace
 from libvirt import virDomain
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup import exceptions
+from libvirtnbdbackup.output.target import OutputTarget
 
 log = logging.getLogger()
 
@@ -45,7 +46,7 @@ def arguments(args: Namespace) -> None:
         )
 
 
-def targetDir(args: Namespace, outputTarget=None) -> None:
+def targetDir(args: Namespace, outputTarget: Optional[OutputTarget] = None) -> None:
     """Check if target directory backup is started to meets
     all requirements based on the backup level executed"""
     if (
@@ -81,7 +82,7 @@ def targetDir(args: Namespace, outputTarget=None) -> None:
             )
 
 
-def vmstate(args, virtClient: virt.client, domObj: virDomain) -> None:
+def vmstate(args: Namespace, virtClient: virt.client, domObj: virDomain) -> None:
     """Check virtual machine state before executing backup
     and based on situation, either fallback to regular copy
     backup or attempt to bring VM into paused state"""
@@ -125,7 +126,7 @@ def diskformat(args: Namespace, disks: List[Any]) -> None:
 
 
 def blockjobs(
-    args, virtClient: virt.client, domObj: virDomain, disks: List[Any]
+    args: Namespace, virtClient: virt.client, domObj: virDomain, disks: List[Any]
 ) -> None:
     """Check if there is an already active backup operation on the domain
     disks. If so, fail accordingly"""

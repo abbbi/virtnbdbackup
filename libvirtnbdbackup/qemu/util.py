@@ -19,11 +19,12 @@ import json
 import logging
 import tempfile
 import subprocess
-from typing import List
+from typing import List, Optional, Union
 from argparse import Namespace
 
 from libvirtnbdbackup.ssh.exceptions import sshError
-from libvirtnbdbackup.objects import processInfo
+from libvirtnbdbackup.ssh.client import client as sshClientType
+from libvirtnbdbackup.objects import processInfo, Unix, TCP
 from libvirtnbdbackup.qemu import command
 from libvirtnbdbackup.virt.client import DomainDisk
 
@@ -62,7 +63,7 @@ class util:
         return cmd
 
     @staticmethod
-    def map(cType, context: str) -> str:
+    def map(cType: Union[Unix, TCP], context: str) -> str:
         """Read extent map using nbdinfo utility"""
         cmd = f"nbdinfo --json --map={context} '{cType.uri}'"
         log.debug("Starting CMD: [%s]", cmd)
@@ -83,7 +84,7 @@ class util:
         fileSize: int,
         diskFormat: str,
         qcowOptions: list,
-        sshClient=None,
+        sshClient: Optional[sshClientType] = None,
     ) -> processInfo:
         """Create the target qcow image"""
         fileParam = f"{targetFile}"
@@ -112,7 +113,9 @@ class util:
 
         return sshClient.run(" ".join(cmd))
 
-    def info(self, targetFile: str, sshClient=None) -> processInfo:
+    def info(
+        self, targetFile: str, sshClient: Optional[sshClientType] = None
+    ) -> processInfo:
         """Return qemu image information"""
         fileParam = f"{targetFile}"
         if sshClient:
@@ -186,7 +189,7 @@ class util:
             raise
 
     def startNbdkitProcess(
-        self, args: Namespace, nbdkitModule: str, blockMap, fullImage: str
+        self, args: Namespace, nbdkitModule: str, blockMap: str, fullImage: str
     ) -> processInfo:
         """Execute nbdkit process for virtnbdmap"""
         debug = "0"

@@ -16,14 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from typing import BinaryIO
+from typing import BinaryIO, Tuple, cast
 from argparse import Namespace
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.common import getIdent, safeInfo
+from libvirtnbdbackup.output.target import OutputTarget
 
 
 def get(
-    args: Namespace, fileStream, targetFile: str, targetFilePartial: str
+    args: Namespace, fileStream: OutputTarget, targetFile: str, targetFilePartial: str
 ) -> BinaryIO:
     """Open target file based on output writer"""
     if args.stdout is True:
@@ -33,10 +34,10 @@ def get(
         safeInfo("Write data to target file: [%s].", targetFilePartial)
         fileStream.open(targetFilePartial)
 
-    return fileStream
+    return cast(BinaryIO, fileStream)
 
 
-def Set(args: Namespace, disk: DomainDisk, ext: str = "data"):
+def Set(args: Namespace, disk: DomainDisk, ext: str = "data") -> Tuple[str, str]:
     """Set Target file name to write data to, used for both data files
     and qemu disk info"""
     targetFile: str = ""

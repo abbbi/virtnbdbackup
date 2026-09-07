@@ -191,7 +191,7 @@ def saveFiles(
     disks: List[DomainDisk],
     fileStream: OutputTarget,
     logFile: str,
-):
+) -> None:
     """Save additional files such as virtual machine configuration
     and UEFI / kernel images"""
     backupConfig(args, vmConfig, fileStream)

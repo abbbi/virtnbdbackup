@@ -18,15 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import glob
 import logging
+from typing import Optional
 from argparse import Namespace
 
 from libvirtnbdbackup import exceptions
+from libvirtnbdbackup.output.target import OutputTarget
 
 
 log = logging.getLogger()
 
 
-def _exists(args: Namespace, outputTarget=None) -> int:
+def _exists(args: Namespace, outputTarget: Optional[OutputTarget] = None) -> int:
     """Check for possible partial backup files"""
     if outputTarget is None:
         partialFiles = glob.glob(f"{args.output}/*.partial")
@@ -35,7 +37,7 @@ def _exists(args: Namespace, outputTarget=None) -> int:
     return len(partialFiles) > 0
 
 
-def exists(args: Namespace, outputTarget=None) -> bool:
+def exists(args: Namespace, outputTarget: Optional[OutputTarget] = None) -> bool:
     """Check if target directory has an partial backup,
     makes backup utility exit errnous in case backup
     type is full or inc"""

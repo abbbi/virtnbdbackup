@@ -18,8 +18,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import logging
 from time import sleep
+from typing import Any, Union
 import nbd
 from libvirtnbdbackup.nbdcli import exceptions
+from libvirtnbdbackup.objects import Unix, TCP
 
 log = logging.getLogger("nbd")
 
@@ -28,7 +30,7 @@ log = logging.getLogger("nbd")
 class client:
     """Helper functions for NBD"""
 
-    def __init__(self, cType, no_sparse_detection: bool):
+    def __init__(self, cType: Union[Unix, TCP], no_sparse_detection: bool) -> None:
         """
         Connect NBD backend
         """
@@ -44,7 +46,7 @@ class client:
         self.no_sparse_detection = no_sparse_detection
         self.nbd = nbd.NBD()
 
-        def debug(func, args):
+        def debug(func: str, args: Any) -> None:
             """Write NBD debugging messages to logfile instead of
             stderr"""
             log.debug("%s: %s", func, args)

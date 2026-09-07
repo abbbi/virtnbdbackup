@@ -17,8 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
 import sys
+import tempfile
+from types import FrameType
 from argparse import Namespace
-from typing import Any
+from typing import Any, Optional
 from libvirt import virDomain
 from libvirtnbdbackup import virt
 from libvirtnbdbackup import common as lib
@@ -36,7 +38,7 @@ class Backup:
         virtClient: virt.client,
         log: Any,
         signum: int,
-        _,
+        _: Optional[FrameType],
     ) -> None:
         """Catch signal, attempt to stop running backup job."""
         log.error("Signal caught: %s", signum)
@@ -68,11 +70,11 @@ class Map:
     def catch(
         args: Namespace,
         nbdkitProcess: processInfo,
-        blockMap,
+        blockMap: "tempfile._TemporaryFileWrapper",
         log: Any,
-        signum,
-        _,
-    ):
+        signum: int,
+        _: Optional[FrameType],
+    ) -> None:
         """Catch signal, attempt to stop processes."""
         log.info("Received signal: [%s]", signum)
         qemu.util("").disconnect(args.device)

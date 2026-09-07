@@ -28,7 +28,9 @@ from libvirtnbdbackup.exceptions import RestoreError
 log = logging.getLogger("restore")
 
 
-def setup(args: Namespace, exportName: str, targetFile: str, virtClient: virt.client):
+def setup(
+    args: Namespace, exportName: str, targetFile: str, virtClient: virt.client
+) -> nbdcli.client:
     """Setup NBD process required for restore, either remote or local"""
     qFh = qemu.util(exportName)
     cType: Union[nbdcli.TCP, nbdcli.Unix]
@@ -53,7 +55,9 @@ def setup(args: Namespace, exportName: str, targetFile: str, virtClient: virt.cl
     return nbdClient.connect()
 
 
-def start(args: Namespace, diskName: str, targetFile: str, virtClient: virt.client):
+def start(
+    args: Namespace, diskName: str, targetFile: str, virtClient: virt.client
+) -> nbdcli.client:
     """Start NDB Service"""
     try:
         return setup(args, diskName, targetFile, virtClient)

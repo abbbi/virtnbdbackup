@@ -40,7 +40,9 @@ def _readlog(logFile: str, cmd: str) -> str:
         ) from errmsg
 
 
-def _readpipe(p) -> Tuple[str, str]:
+def _readpipe(p: "subprocess.Popen[bytes]") -> Tuple[str, str]:
+    assert p.stdout is not None
+    assert p.stderr is not None
     out = p.stdout.read().decode().strip()
     err = p.stderr.read().decode().strip()
     return out, err

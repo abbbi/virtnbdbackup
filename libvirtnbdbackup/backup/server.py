@@ -19,6 +19,7 @@ import logging
 from argparse import Namespace
 from typing import Union
 from libvirtnbdbackup import nbdcli
+from libvirtnbdbackup.nbdcli.client import client as NbdCliClient
 from libvirtnbdbackup import virt
 from libvirtnbdbackup.virt.client import DomainDisk
 from libvirtnbdbackup.qemu import util as qemu
@@ -64,7 +65,7 @@ def connect(  # pylint: disable=too-many-arguments
     remoteIP: str,
     port: int,
     virtClient: virt.client,
-):
+) -> NbdCliClient:
     """Connect to started nbd endpoint"""
     socket = args.socketfile
     if args.offline is True:

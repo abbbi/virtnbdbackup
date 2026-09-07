@@ -141,7 +141,7 @@ def addDebugArgs(opt: _ArgumentGroup) -> None:
     )
 
 
-def addLogArgs(opt, prog):
+def addLogArgs(opt: _ArgumentGroup, prog: str) -> None:
     """Logging related arguments"""
     try:
         HOME = os.environ["HOME"]
@@ -156,7 +156,7 @@ def addLogArgs(opt, prog):
     )
 
 
-def addLogColorArgs(opt):
+def addLogColorArgs(opt: _ArgumentGroup) -> None:
     """Option to enable or disable colored output"""
     opt.add_argument(
         "--nocolor",
@@ -166,7 +166,7 @@ def addLogColorArgs(opt):
     )
 
 
-def addLogJsonArgs(opt):
+def addLogJsonArgs(opt: _ArgumentGroup) -> None:
     """Option to enable JSON formatted log output"""
     opt.add_argument(
         "--json",

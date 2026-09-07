@@ -20,6 +20,7 @@ import pprint
 from argparse import Namespace
 from libvirtnbdbackup import chunk
 from libvirtnbdbackup import lz4
+from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream import streamer
@@ -33,7 +34,7 @@ def restore(
     stream: streamer.SparseStream,
     disk: str,
     targetFile: str,
-    connection,
+    connection: nbdcli.client,
 ) -> bool:
     """Restore the data stream to the target file"""
     diskState = False
@@ -50,7 +51,7 @@ def _write(  # pylint: disable=too-many-branches,too-many-locals,too-many-statem
     stream: streamer.SparseStream,
     dataFile: str,
     targetFile: str,
-    connection,
+    connection: nbdcli.client,
 ) -> bool:
     """Restore data for disk"""
     sTypes = types.SparseStreamTypes()

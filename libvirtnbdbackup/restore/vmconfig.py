@@ -22,11 +22,12 @@ from argparse import Namespace
 from libvirtnbdbackup import output
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.objects import DomainDisk
+from libvirtnbdbackup.output.target import OutputTarget
 from libvirtnbdbackup.virt import xml
 from libvirtnbdbackup.virt import disktype
 
 
-def read(ConfigFile: str, inputSource) -> str:
+def read(ConfigFile: str, inputSource: OutputTarget) -> str:
     """Read saved virtual machine config'"""
     try:
         with inputSource.open(ConfigFile, "rb") as configStream:
@@ -64,7 +65,7 @@ def changeVolumePathes(args: Namespace, vmConfig: str) -> bytes:
     return xml.ElementTree.tostring(tree, encoding="utf8", method="xml")
 
 
-def removeDisk(vmConfig: str, excluded) -> bytes:
+def removeDisk(vmConfig: str, excluded: str) -> bytes:
     """Remove disk from config, in case it has been excluded
     from the backup."""
     tree = xml.asTree(vmConfig)

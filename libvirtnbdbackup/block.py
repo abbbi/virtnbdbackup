@@ -19,6 +19,8 @@ from typing import Generator, IO, Any, Union
 from nbd import Error as nbdError
 from libvirtnbdbackup import lz4
 from libvirtnbdbackup.exceptions import BackupException
+from libvirtnbdbackup.objects import Extent
+from libvirtnbdbackup.nbdcli.client import client as nbdClient
 
 
 def step(offset: int, length: int, maxRequestSize: int) -> Generator:
@@ -46,7 +48,11 @@ def step(offset: int, length: int, maxRequestSize: int) -> Generator:
 
 
 def write(
-    writer: IO[Any], block, nbdCon, btype: str, compress: Union[bool, int]
+    writer: IO[Any],
+    block: Extent,
+    nbdCon: nbdClient,
+    btype: str,
+    compress: Union[bool, int],
 ) -> int:
     """Write single block that does not exceed nbd maxRequestSize
     setting. In case compression is enabled, single blocks are

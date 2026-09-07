@@ -69,7 +69,7 @@ class client:
         """Use openAuth if connection for advanced SASL authentication mechanisms
         if username and password are set"""
 
-        def _cred(credentials, user_data) -> int:
+        def _cred(credentials: List[Any], user_data: List[str]) -> int:
             for credential in credentials:
                 if credential[0] == libvirt.VIR_CRED_AUTHNAME:
                     credential[4] = user_data[0]
@@ -310,7 +310,7 @@ class client:
 
         return diskPath
 
-    def _hint(self, dev: str):
+    def _hint(self, dev: str) -> None:
         """Show hint about possibility to reconfigure virtual machine with raw
         devices to support incremental backups"""
 
@@ -411,7 +411,7 @@ class client:
         log.debug("Device list: %s ", devices)
         return devices
 
-    def _createBackupXml(self, args: Namespace, diskList) -> str:
+    def _createBackupXml(self, args: Namespace, diskList: List[Any]) -> str:
         """Create XML file for starting an backup task using libvirt API."""
         top = xml.ElementTree.Element("domainbackup", {"mode": "pull"})
         if self.remoteHost == "":

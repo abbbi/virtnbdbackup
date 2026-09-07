@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import os
 import datetime
-from typing import List, Any, Tuple, Dict
+from typing import List, Any, Tuple, Dict, IO
 from argparse import Namespace
 from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.sparsestream import exceptions
@@ -28,7 +28,7 @@ from libvirtnbdbackup.sparsestream import exceptions
 class SparseStream:
     """Sparse Stream writer/reader class"""
 
-    def __init__(self, types, version: int = 2) -> None:
+    def __init__(self, types: Any, version: int = 2) -> None:
         """Stream version:
 
         1: base version
@@ -66,13 +66,13 @@ class SparseStream:
         }
         return json.dumps(meta, indent=4).encode("utf-8")
 
-    def writeCompressionTrailer(self, writer, trailer: List[Any]) -> None:
+    def writeCompressionTrailer(self, writer: IO[Any], trailer: List[Any]) -> None:
         """Dump compression trailer to end of stream"""
         size = writer.write(json.dumps(trailer).encode())
         writer.write(self.types.TERM)
         self.writeFrame(writer, self.types.COMP, 0, size)
 
-    def _readHeader(self, reader) -> Tuple[str, str, str]:
+    def _readHeader(self, reader: IO[Any]) -> Tuple[str, str, str]:
         """Attempt to read header"""
         header = reader.read(self.types.FRAME_LEN)
         try:
@@ -85,7 +85,7 @@ class SparseStream:
         return kind, start, length
 
     @staticmethod
-    def _parseHeader(kind, start: str, length: str) -> Tuple[str, int, int]:
+    def _parseHeader(kind: str, start: str, length: str) -> Tuple[str, int, int]:
         """Return parsed header information"""
         try:
             return kind, int(start, 16), int(length, 16)
@@ -94,7 +94,7 @@ class SparseStream:
                 f"Invalid frame format: [{err}]"
             ) from err
 
-    def readCompressionTrailer(self, reader) -> Dict[int, Any]:
+    def readCompressionTrailer(self, reader: IO[Any]) -> Dict[int, Any]:
         """If compressed stream is found, information about compressed
         block sizes is appended as last json payload.
 
@@ -124,14 +124,14 @@ class SparseStream:
                 f"Invalid meta header format: [{err}]"
             ) from err
 
-    def writeFrame(self, writer, kind, start: int, length: int) -> None:
+    def writeFrame(self, writer: IO[Any], kind: bytes, start: int, length: int) -> None:
         """Write backup frame
         Parameters:
             writer: (fh)    Writer object that implements .write()
         """
         writer.write(self.types.FRAME % (kind, start, length))
 
-    def readFrame(self, reader) -> Tuple[str, int, int]:
+    def readFrame(self, reader: IO[Any]) -> Tuple[str, int, int]:
         """Read backup frame
         Parameters:
             reader: (fh)    Reader object which implements .read()

@@ -18,15 +18,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import logging
 import json
-from typing import List, Dict, Tuple, IO
+from typing import List, Dict, Tuple, IO, Any
+from argparse import Namespace
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup import output
 from libvirtnbdbackup.output.exceptions import OutputException
 from libvirtnbdbackup.exceptions import RestoreError
+from libvirtnbdbackup.sparsestream import streamer
+from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup.sparsestream.exceptions import StreamFormatException
 
 
-def _parse(stream, sTypes, reader) -> Tuple[List, Dict]:
+def _parse(
+    stream: streamer.SparseStream, sTypes: types.SparseStreamTypes, reader: IO[Any]
+) -> Tuple[List, Dict]:
     """Read block offsets from backup stream image"""
     try:
         kind, start, length = stream.readFrame(reader)
@@ -49,7 +54,7 @@ def _parse(stream, sTypes, reader) -> Tuple[List, Dict]:
             dataRanges[-1]["nextBlockOffset"] = None
             break
 
-        blockInfo = {}
+        blockInfo: Dict[str, Any] = {}
         blockInfo["count"] = count
         blockInfo["offset"] = reader.tell()
         blockInfo["originalOffset"] = start
@@ -71,7 +76,12 @@ def _parse(stream, sTypes, reader) -> Tuple[List, Dict]:
     return dataRanges, meta
 
 
-def get(args, stream, sTypes, dataFiles: List) -> List:
+def get(
+    args: Namespace,
+    stream: streamer.SparseStream,
+    sTypes: types.SparseStreamTypes,
+    dataFiles: List,
+) -> List:
     """Get data ranges for each file specified"""
     dataRanges = []
     for dFile in dataFiles:

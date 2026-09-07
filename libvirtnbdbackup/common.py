@@ -26,7 +26,7 @@ import shutil
 import pprint
 from time import time
 from threading import current_thread
-from argparse import Namespace
+from argparse import ArgumentParser, Namespace
 from typing import Optional, List, Any, Union, Dict
 from tqdm import tqdm
 import colorlog
@@ -35,7 +35,10 @@ from libvirtnbdbackup import ssh
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup import output
 from libvirtnbdbackup.output.exceptions import OutputException
+from libvirtnbdbackup.output.target import OutputTarget
 from libvirtnbdbackup.logcount import logCount
+from libvirtnbdbackup.sparsestream import streamer
+from libvirtnbdbackup.objects import Extent
 
 log = logging.getLogger("lib")
 
@@ -71,17 +74,17 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(data)
 
 
-def argparse(parser) -> Namespace:
+def argparse(parser: ArgumentParser) -> Namespace:
     """Parse arguments"""
     return parser.parse_args()
 
 
-def printVersion(version) -> None:
+def printVersion(version: str) -> None:
     """Print version and passed arguments"""
     log.info("Version: %s Arguments: %s", version, " ".join(sys.argv))
 
 
-def humanize(num, suffix="B"):
+def humanize(num: float, suffix: str = "B") -> str:
     """Print size in human readable output"""
     for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(num) < 1024.0:
@@ -90,7 +93,7 @@ def humanize(num, suffix="B"):
     return f"{num:.1f}Yi{suffix}"
 
 
-def setThreadName(tn="main") -> None:
+def setThreadName(tn: str = "main") -> None:
     """Set thread name reported by logging function"""
     current_thread().name = tn
 
@@ -127,7 +130,7 @@ def getLogFile(fileName: str) -> Optional[logging.FileHandler]:
         return None
 
 
-def safeInfo(msg, *args, **kwargs):
+def safeInfo(msg: str, *args: Any, **kwargs: Any) -> None:
     """Use tqdm redirect to not destroy progress bars"""
     rootlog = logging.getLogger("")
     try:
@@ -146,7 +149,7 @@ def safeInfo(msg, *args, **kwargs):
 
 def configLogger(
     args: Namespace, fileLog: Optional[logging.FileHandler], counter: logCount
-):
+) -> None:
     """Setup logging"""
     syslog = False
     try:
@@ -193,7 +196,7 @@ def configLogger(
     )
 
 
-def hasFullBackup(args: Namespace, outputTarget=None) -> int:
+def hasFullBackup(args: Namespace, outputTarget: Optional[OutputTarget] = None) -> int:
     """Check if full backup file exists in target directory"""
     if outputTarget is None:
         fullFiles = glob.glob(os.path.join(args.output, "*.full.data"))
@@ -210,7 +213,7 @@ def exists(args: Namespace, filePath: str) -> bool:
     return os.path.exists(filePath)
 
 
-def targetIsEmpty(args: Namespace, outputTarget=None) -> bool:
+def targetIsEmpty(args: Namespace, outputTarget: Optional[OutputTarget] = None) -> bool:
     """Check if target directory does not include an backup
     already (no .data or .data.partial files)"""
     if outputTarget is not None:
@@ -224,7 +227,7 @@ def targetIsEmpty(args: Namespace, outputTarget=None) -> bool:
     return True
 
 
-def getLatest(targetDir: str, search: str, key=None) -> List[str]:
+def getLatest(targetDir: str, search: str, key: Optional[int] = None) -> List[str]:
     """get the last backed up file matching search
     from the backupset, used to find latest vm config,
     data files or data files by disk.
@@ -269,7 +272,9 @@ def copy(args: Namespace, source: str, target: str) -> None:
         log.warning("Remote copy from [%s] to [%s] failed: [%s]", source, target, e)
 
 
-def copyFromSource(args: Namespace, inputSource, source: str, target: str) -> None:
+def copyFromSource(
+    args: Namespace, inputSource: OutputTarget, source: str, target: str
+) -> None:
     """Copy a plugin input stream to a local or remote restore target."""
     try:
         with inputSource.open(source, "rb") as reader:
@@ -299,7 +304,7 @@ def remove(args: Namespace, file: str) -> None:
         log.warning("Remote remove failed: [%s]: [%s]", file, e)
 
 
-def progressBar(total: int, desc: str, args: Namespace, count=0) -> tqdm:
+def progressBar(total: int, desc: str, args: Namespace, count: int = 0) -> tqdm:
     """Return tqdm object"""
     return tqdm(
         total=total,
@@ -340,7 +345,7 @@ def getIdent(args: Namespace) -> Union[str, int]:
     return ident
 
 
-def dumpExtentJson(extents) -> str:
+def dumpExtentJson(extents: List[Extent]) -> str:
     """Dump extent object as json"""
     extList = []
     for extent in extents:
@@ -353,7 +358,9 @@ def dumpExtentJson(extents) -> str:
     return json.dumps(extList, indent=4, sort_keys=True)
 
 
-def dumpMetaData(dataFile: str, stream, inputSource):
+def dumpMetaData(
+    dataFile: str, stream: streamer.SparseStream, inputSource: OutputTarget
+) -> Dict[str, str]:
     """read metadata header"""
     with inputSource.open(dataFile, "rb") as reader:
         _, _, length = stream.readFrame(reader)
