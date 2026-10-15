@@ -21,7 +21,7 @@ from typing import Union
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup.nbdcli.client import client as NbdCliClient
 from libvirtnbdbackup import virt
-from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.objects import processInfo
 from libvirtnbdbackup.nbdcli.exceptions import NbdClientException

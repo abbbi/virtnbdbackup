@@ -22,7 +22,7 @@ from argparse import Namespace
 from typing import List, Union
 import libvirt
 
-from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup import common as lib
 from libvirtnbdbackup.qemu import util as qemu
 from libvirtnbdbackup.qemu.exceptions import ProcessError

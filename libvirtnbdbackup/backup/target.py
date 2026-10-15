@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 from typing import BinaryIO, Tuple, cast
 from argparse import Namespace
-from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.common import getIdent, safeInfo
 from libvirtnbdbackup.output.target import OutputTarget
 

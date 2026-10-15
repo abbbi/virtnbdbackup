@@ -20,7 +20,7 @@ from argparse import Namespace
 from typing import List
 from libvirt import virDomain, libvirtError
 from libvirtnbdbackup import virt
-from libvirtnbdbackup.virt.client import DomainDisk
+from libvirtnbdbackup.objects import DomainDisk
 from libvirtnbdbackup.virt.exceptions import startBackupFailed
 
 

@@ -20,8 +20,7 @@ from argparse import Namespace
 from typing import List, Any, Tuple
 from libvirtnbdbackup import nbdcli
 from libvirtnbdbackup import virt
-from libvirtnbdbackup.virt.client import DomainDisk
-from libvirtnbdbackup.objects import processInfo
+from libvirtnbdbackup.objects import processInfo, DomainDisk
 from libvirtnbdbackup.sparsestream import streamer
 from libvirtnbdbackup.sparsestream import types
 from libvirtnbdbackup import exceptions

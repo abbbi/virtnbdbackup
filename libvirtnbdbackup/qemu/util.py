@@ -24,9 +24,8 @@ from argparse import Namespace
 
 from libvirtnbdbackup.ssh.exceptions import sshError
 from libvirtnbdbackup.ssh.client import client as sshClientType
-from libvirtnbdbackup.objects import processInfo, Unix, TCP
+from libvirtnbdbackup.objects import processInfo, Unix, TCP, DomainDisk
 from libvirtnbdbackup.qemu import command
-from libvirtnbdbackup.virt.client import DomainDisk
 
 log = logging.getLogger(__name__)
 
